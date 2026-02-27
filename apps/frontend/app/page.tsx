@@ -1,62 +1,100 @@
-// app/page.tsx
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const [data, setData] = useState<number[]>([]);
+  const [count, setCount] = useState(0);
 
-  const handleClick = async () => {
-    try {
-      const res = await fetch("http://localhost:4000/iterate"); // Backend-Endpunkt
-      const result = await res.json();
-      setData(result);
-    } catch (err) {
-      console.error("Fehler beim Abrufen:", err);
-    }
+  const fetchCounter = async () => {
+    const res = await fetch('http://localhost:4000/counter');
+    const data = await res.json();
+    setCount(data);
   };
 
+  const increment = async () => {
+    const res = await fetch('http://localhost:4000/counter', {
+      method: 'POST',
+    });
+    const data = await res.json();
+    setCount(data);
+  };
+
+  useEffect(() => {
+    fetchCounter();
+  }, []);
+
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100vh",
-        gap: "2rem",
-        fontFamily: "sans-serif",
-        textAlign: "center",
-      }}
-    >
-      <h1 style={{ fontSize: "3rem" }}>FT Transcendence Test</h1>
-      <button
-        onClick={handleClick}
-        style={{
-          padding: "1rem 3rem",
-          fontSize: "1.5rem",
-          borderRadius: "12px",
-          backgroundColor: "#0070f3",
-          color: "#fff",
-          border: "none",
-          cursor: "pointer",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-        }}
-      >
-        Hole Iteration vom Backend
+    <div className="container">
+      <h1 className="title">Counter</h1>
+
+      <div className="counter">
+        {count.toString().padStart(4, '0').split('').map((digit, index) => (
+          <div key={index} className="digit">
+            {digit}
+          </div>
+        ))}
+      </div>
+
+      <button className="btn" onClick={increment}>
+        +1 Increase
       </button>
-      <pre
-        style={{
-          fontSize: "1.2rem",
-          color: "#333",
-          backgroundColor: "#f0f0f0",
-          padding: "1rem 2rem",
-          borderRadius: "8px",
-          minWidth: "300px",
-        }}
-      >
-        {JSON.stringify(data, null, 2)}
-      </pre>
+
+      <style jsx>{`
+        .container {
+          height: 100vh;
+          width: 100vw;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #111;
+          color: white;
+          font-family: monospace;
+        }
+
+        .title {
+          margin-bottom: 2rem;
+          font-size: 2rem;
+        }
+
+        .counter {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 2rem;
+        }
+
+        .digit {
+          background: black;
+          color: #00ff99;
+          font-size: 4rem;
+          padding: 1rem 1.5rem;
+          border-radius: 8px;
+          box-shadow: inset 0 0 20px #00ff99;
+          transition: transform 0.2s ease;
+        }
+
+        .digit:active {
+          transform: rotateX(360deg);
+        }
+
+        .btn {
+          padding: 1rem 2rem;
+          font-size: 1.5rem;
+          border-radius: 10px;
+          border: none;
+          cursor: pointer;
+          background: linear-gradient(135deg, #00ff99, #0077ff);
+          color: black;
+          font-weight: bold;
+          box-shadow: 0 0 20px #00ff99;
+          transition: 0.2s;
+        }
+
+        .btn:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 30px #00ff99;
+        }
+      `}</style>
     </div>
   );
 }

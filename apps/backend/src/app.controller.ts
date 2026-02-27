@@ -1,12 +1,17 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, Post } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  private counter = 0; // serverseitiger State
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Get('counter')
+  getCounter(): number {
+    return this.counter;
+  }
+
+  @Post('counter')
+  incrementCounter(): number {
+    this.counter += 1;
+    return this.counter;
   }
 }
