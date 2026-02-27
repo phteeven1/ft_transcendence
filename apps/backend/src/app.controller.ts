@@ -2,7 +2,7 @@ import { Controller, Get, Post } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  private counter = 0; // serverseitiger State
+  private counter = 0;
 
   @Get('counter')
   getCounter(): number {
