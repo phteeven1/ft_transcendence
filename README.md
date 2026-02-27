@@ -1,72 +1,127 @@
-Complete Tech Stack – Brief Description of All Components
-Frontend
+# 🕹️ FT_TRANSCENDENCE
 
-Next.js
-→ React framework for UI, routing, rendering (SSR/CSR), and API communication.
+---
 
-React
-→ Component-based UI logic and state management.
+# 📘 README
 
-TypeScript
-→ Static typing for clean and secure code.
+## 🕹 FT_TRANSCENDENCE
 
-Backend
+A full-stack web application built with modern scalable architecture.
 
-NestJS
-→ Structured server architecture (controllers, services, modules), REST API, authentication, and business logic.
+This project combines:
 
-Node.js
-→ JavaScript/TypeScript runtime for backend execution and frontend builds.
+* A reactive frontend
+* A structured backend
+* A relational database
+* High-performance caching
+* Containerized infrastructure
 
-Data & Persistence
+---
 
-Prisma
-→ ORM for type-safe database access and schema migrations.
+## 📂 Project Structure
 
-PostgreSQL
-→ Relational database for persistent data storage.
+```
+ft_transcendence/
+│
+├── apps/
+│   ├── frontend/        # Next.js application
+│   └── backend/         # NestJS application
+│
+├── packages/
+|   ├── database/
+|       ├──prisma/
+|
+├── docker-compose.yml
+└── README.md
+```
 
-Performance & State
+---
 
-Redis
-→ In-memory data store for caching, sessions, rate limiting, or real-time state handling.
+## ⚙️ Environment Requirements
 
-Realtime (if used)
+* Docker
+* Docker Compose
+* Node.js (for local development without Docker)
+* npm
 
-WebSockets (NestJS Gateway)
-→ Bidirectional real-time communication (e.g., game updates).
+---
 
-Authentication (if used)
+## 🚀 Starting the Environment (Docker)
 
-JWT (JSON Web Token)
-→ Token-based authentication between client and server.
+From project root:
 
-Infrastructure & DevOps
+```bash
+docker-compose up --build
+```
 
-Docker
-→ Containerization of individual services.
+Services will start:
 
-Docker Compose
-→ Orchestration of multiple containers (frontend, backend, database, Redis).
+* Frontend → [http://localhost:3000](http://localhost:3000)
+* Backend → [http://localhost:4000](http://localhost:4000)
+* PostgreSQL → internal container
+* Redis → internal container
 
-Code Management
+---
 
-Git
-→ Version control and team collaboration.
+## 🧪 Current Implementation Example
 
-npm
-→ Package management and script execution.
+At the moment, the project includes:
 
-Overall Stack Function (Simplified)
+* A backend-managed counter
+* REST endpoint:
 
-Next.js renders the user interface.
+  * `GET /counter`
+  * `POST /counter`
+* Frontend button triggering backend increment
+* Retro-style counter display
 
-NestJS processes incoming requests.
+Flow:
 
-Prisma communicates with PostgreSQL.
+1. Button click
+2. POST request to backend
+3. Backend increments counter
+4. New value returned
+5. Frontend re-renders updated number
 
-Redis accelerates frequently accessed or temporary data.
+---
 
-Docker encapsulates everything into reproducible environments.
+## 🧱 Development (Without Docker)
 
-Git manages the codebase within the team.
+### Backend
+
+```bash
+cd apps/backend
+npm install
+npm run start:dev
+```
+
+### Frontend
+
+```bash
+cd apps/frontend
+npm install
+npm run dev
+```
+
+---
+
+## 🔮 Future Extensions
+
+* Persistent counters via PostgreSQL
+* Redis-backed session storage
+* Realtime multiplayer via WebSockets
+* Authentication with JWT
+* Game logic expansion
+
+---
+
+## 👥 Team Collaboration
+
+* Git-based workflow
+* Feature branches
+* Clean modular architecture
+* Separation of concerns
+
+---
+
+Built with scalability, structure, and performance in mind.
