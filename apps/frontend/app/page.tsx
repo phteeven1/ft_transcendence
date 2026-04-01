@@ -5,6 +5,7 @@ import styles from './styles/page.module.css';
 
 export default function Home() {
   const [count, setCount] = useState(0);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   const fetchCounter = async () => {
     const res = await fetch('http://localhost:4000/counter');
@@ -25,8 +26,31 @@ export default function Home() {
   }, []);
 
   return (
+
     <div className={styles.container} >
-      <h1 className={styles.title}>Counter</h1>
+      <h1 className={styles.title}>Dicteé</h1>
+      <p className={styles.paragraph}>Welcome to Dicteé, your fun app for turning boring vocabulary lists into learning games. Upload your word lists, invite the other parents of the class. Then set up a direct link for your child and invite them to play with their friends. But first, you need to register.</p>
+      <div className={styles.buttonGroup}>
+        <a href="/register" className={styles.btn}>
+          Register
+        </a>
+        <button className={styles.btn} onClick={() => setShowSignIn(true)}>
+          Sign In
+        </button>
+      </div>
+
+      {/* Sign In Popup (Conditional Render) */}
+      {showSignIn && (
+        <div className={styles.popup}>
+          <div className={styles.popupContent}>
+            <h2>Sign In</h2>
+            <p>Sign in form or content goes here.</p>
+            <button className={styles.btn} onClick={() => setShowSignIn(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className={styles.counter}>
         {count.toString().padStart(4, '0').split('').map((digit, index) => (
