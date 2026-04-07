@@ -34,23 +34,10 @@ export default function Home() {
         <a href="/register" className={styles.btn}>
           Register
         </a>
-        <button className={styles.btn} onClick={() => setShowSignIn(true)}>
+        <a href="/signin" className={styles.btn}>
           Sign In
-        </button>
+        </a>
       </div>
-
-      {/* Sign In Popup (Conditional Render) */}
-      {showSignIn && (
-        <div className={styles.popup}>
-          <div className={styles.popupContent}>
-            <h2>Sign In</h2>
-            <p>Sign in form or content goes here.</p>
-            <button className={styles.btn} onClick={() => setShowSignIn(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className={styles.counter}>
         {count.toString().padStart(4, '0').split('').map((digit, index) => (
