@@ -9,7 +9,7 @@ export default function Dashboard() {
 
   // Redirect to login if not authenticated
   if (!user) {
-    router.push('/register');
+    router.push('/');
     return null;
   }
 
