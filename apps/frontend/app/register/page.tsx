@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
+import { useAuth } from '../context/auth-context';
+import { useRouter } from 'next/navigation';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -8,6 +10,9 @@ export default function Register() {
     userPassword: '',
     userEmail: '',
   });
+
+  const { login } = useAuth(); // Access the login function from auth context
+  const router = useRouter(); // For redirecting
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -20,12 +25,41 @@ export default function Register() {
     }
   };
 
+  // Simulated backend call (placeholder for smanthey)
+  const handleSubmit = async (e: SyntheticEvent) => {
+    e.preventDefault();
+
+    try {
+      // simulate a delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // simulate successful backend response
+      console.log('Simulating backend response...');
+      console.log('Username: ', formData.userName);
+      console.log('Email: ', formData.userEmail);
+
+      // update frontend auth state as if backend succeeded
+      login({
+        userName: formData.userName,
+        userEmail: formData.userEmail,      
+      });
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Simulated error:', error);
+      alert('Registration failed. Please try again.');
+    }
+  };
+
+  /*
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
     console.log('Username:', formData.userName);
     console.log('Password:', formData.userPassword);
     console.log('Email:', formData.userEmail);
   };
+  */
 
   return (
     <div className="max-w-md mx-auto p-4">
