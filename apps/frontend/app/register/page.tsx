@@ -62,7 +62,8 @@ export default function Register() {
   */
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="min-h-screen bg-emerald-200">
+    <div className="bg-emerald-200 max-w-md mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Register</h1>
       <p className="mb-6 text-gray-600">
         Create your account to get started.
@@ -127,6 +128,7 @@ export default function Register() {
           Submit
         </button>
       </form>
+    </div>
     </div>
   );
 }

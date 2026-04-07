@@ -14,11 +14,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p className="mb-6 text-gray-600">
-        This is a dashboard. Welcome, {user.userName}!
-      </p>
+    <div className="min-h-screen bg-emerald-200">
+      <div className="bg-emerald-200 max-w-md mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+        <p className="mb-6 text-gray-600">
+          This is a dashboard. Welcome, {user.userName}!
+        </p>
+      </div>
     </div>
   );
 }

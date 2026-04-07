@@ -49,7 +49,8 @@ export default function SignIn() {
 };
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="min-h-screen bg-emerald-200">
+    <div className="bg-emerald-200 max-w-md mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Sign In</h1>
       <p className="mb-6 text-gray-600">
         Welcome back! Please sign in to continue.
@@ -97,6 +98,7 @@ export default function SignIn() {
           Sign In
         </button>
       </form>
+    </div>
     </div>
   );
 }
