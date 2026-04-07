@@ -8,7 +8,7 @@ export default function TopBar() {
   const { user } = useAuth(); // get the logged-in user from auth context
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
+    <header className="flex items-center justify-between px-6 py-3 bg-emerald-200 border-b border-emerald-300">
       <div className="flex items-center gap-4">
         <span className="font-bold text-lg">Dictee</span>
         {/* Show "Signed In as <userName>" only if user is logged in */}
