@@ -3,8 +3,22 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 type User = {
+    userId: number;
     userName: string;
     userEmail: string;
+    userGroups: number[]; // array of groupId's the user is a member of
+    currentGroup?: number; // id of the currently selected group
+};
+
+type Member = {
+    memberId: number;
+    memberAdmin: boolean;
+};
+
+type Group = {
+    groupId: number;
+    groupName: string;
+    groupMembers: Member[];
 };
 
 type AuthContextType = {
