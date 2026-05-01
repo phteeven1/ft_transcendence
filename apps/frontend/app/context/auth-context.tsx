@@ -1,30 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-
-type User = {
-    userId: number;
-    userName: string;
-    userEmail: string;
-    userGroups: number[]; // array of groupId's the user is a member of
-    currentGroup?: number; // id of the currently selected group
-};
-
-type Member = {
-    memberId: number;
-    memberAdmin: boolean;
-};
-
-type Group = {
-    groupId: number;
-    groupName: string;
-    groupMembers: Member[];
-};
+import { User } from '../types';
 
 type AuthContextType = {
     user: User | null;
     login: (userData: User) => void;
     logout: () => void;
+    setCurrentGroup: (groupId: number) => void;
+    refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,8 +24,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
     };
 
+    const setCurrentGroup = (groupId: number) => {
+        if (user) setUser({ ...user, currentGroup: groupId });
+    };
+
+    const refreshUser = async () => {
+        if (user) {
+            const res = await fetch(`http://localhost:4000/users/${user.userId}`);
+            const data = await res.json();
+            setUser(data);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, logout, setCurrentGroup, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );
