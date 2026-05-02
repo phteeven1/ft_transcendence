@@ -30,7 +30,6 @@ export class GroupsService {
       groupMembers: [],
     };
     this.groups.push(newGroup);
-    // update the creator's user object too
     this.usersService.addAdminGroup(creatorId, newGroup.groupId);
     return newGroup;
   }
@@ -41,7 +40,6 @@ export class GroupsService {
     const group = this.findById(gId);
     if (group && !group.groupMembers.includes(uId)) {
       group.groupMembers.push(uId);
-      // update the user object too
       this.usersService.addMemberGroup(uId, gId);
     }
     return group;
@@ -77,10 +75,24 @@ export class GroupsService {
     const gId = Number(groupId);
     const uId = Number(userId);
     const group = this.findById(gId);
-    if (group && group.groupMembers.includes(uId)) {
+    if (!group) return undefined;
+
+    const isAdmin = group.groupAdmins.includes(uId);
+    const isMember = group.groupMembers.includes(uId);
+
+    if (isAdmin) {
+      group.groupAdmins = group.groupAdmins.filter(id => id !== uId);
+      this.usersService.removeAdminGroup(uId, gId);
+    } else if (isMember) {
       group.groupMembers = group.groupMembers.filter(id => id !== uId);
       this.usersService.removeMemberGroup(uId, gId);
     }
+
+    const totalMembers = group.groupAdmins.length + group.groupMembers.length;
+    if (totalMembers === 0) {
+      this.groups = this.groups.filter(g => g.groupId !== gId);
+    }
+
     return group;
   }
 
@@ -88,17 +100,14 @@ export class GroupsService {
     const gId = Number(groupId);
     const group = this.findById(gId);
     if (!group) return [];
-
     const admins: Member[] = group.groupAdmins
       .map(id => this.usersService.findById(id))
       .filter((u): u is NonNullable<typeof u> => u !== undefined)
       .map(u => ({ memberId: u.userId, memberName: u.userName, isAdmin: true }));
-
     const members: Member[] = group.groupMembers
       .map(id => this.usersService.findById(id))
       .filter((u): u is NonNullable<typeof u> => u !== undefined)
       .map(u => ({ memberId: u.userId, memberName: u.userName, isAdmin: false }));
-
     return [...admins, ...members];
   }
 

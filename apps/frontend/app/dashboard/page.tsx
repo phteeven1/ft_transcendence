@@ -17,7 +17,6 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // Refresh user from backend once on mount
   useEffect(() => {
     if (user && !hasFetched.current) {
       hasFetched.current = true;
@@ -25,7 +24,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Fetch groups when user group memberships are known
   useEffect(() => {
     if (!user?.isAdminOf || !user?.isMemberOf) return;
 
@@ -66,12 +64,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-emerald-200">
-      <div className="bg-emerald-200 max-w-md mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Manage Groups</h1>
-        <p className="mb-6 text-gray-600">
+      <div className="max-w-4xl mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-2 text-center">Manage Groups</h1>
+        <p className="mb-6 text-gray-600 text-center">
           Welcome, {user.userName}!
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <button
             onClick={() => router.push('/create_group')}
             className="bg-green-500 hover:bg-green-600 text-white font-medium py-4 px-4 rounded transition-colors"
