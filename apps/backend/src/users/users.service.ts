@@ -5,8 +5,8 @@ export type User = {
   userName: string;
   userPassword: string;
   userEmail: string;
-  userMemberGroups: number[];
-  userAdminGroups: number[];
+  isMemberOf: number[];
+  isAdminOf: number[];
   currentGroup?: number;
 };
 
@@ -21,8 +21,8 @@ export class UsersService {
       userName,
       userPassword,
       userEmail,
-      userMemberGroups: [],
-      userAdminGroups: [],
+      isMemberOf: [],
+      isAdminOf: [],
     };
     this.users.push(newUser);
     return newUser;
@@ -36,31 +36,35 @@ export class UsersService {
     return this.users.find(u => u.userName === userName);
   }
 
+  findByCredentials(userName: string, userPassword: string): User | undefined {
+    return this.users.find(u => u.userName === userName && u.userPassword === userPassword);
+  }
+
   findAll(): User[] {
     return this.users;
   }
 
   addMemberGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
-    if (user && !user.userMemberGroups.includes(groupId))
-      user.userMemberGroups.push(groupId);
+    if (user && !user.isMemberOf.includes(groupId))
+      user.isMemberOf.push(groupId);
   }
 
   addAdminGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
-    if (user && !user.userAdminGroups.includes(groupId))
-      user.userAdminGroups.push(groupId);
+    if (user && !user.isAdminOf.includes(groupId))
+      user.isAdminOf.push(groupId);
   }
 
   removeMemberGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
     if (user)
-      user.userMemberGroups = user.userMemberGroups.filter(id => id !== groupId);
+      user.isMemberOf = user.isMemberOf.filter(id => id !== groupId);
   }
 
   removeAdminGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
     if (user)
-      user.userAdminGroups = user.userAdminGroups.filter(id => id !== groupId);
+      user.isAdminOf = user.isAdminOf.filter(id => id !== groupId);
   }
 }

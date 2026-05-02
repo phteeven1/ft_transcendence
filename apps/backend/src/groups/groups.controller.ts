@@ -44,4 +44,9 @@ export class GroupsController {
   findByName(@Param('name') name: string) {
     return this.groupsService.findByName(name);
   }
+
+  @Get(':id/members')
+  findMembers(@Param('id') id: string) {
+    return this.groupsService.findMembers(Number(id));
+  }
 }

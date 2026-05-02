@@ -10,6 +10,13 @@ export class UsersController {
     return this.usersService.register(body.userName, body.userPassword, body.userEmail);
   }
 
+  @Post('signin')
+  signin(@Body() body: { userName: string; userPassword: string }) {
+    const user = this.usersService.findByCredentials(body.userName, body.userPassword);
+    if (!user) throw new Error('Invalid credentials');
+    return user;
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.usersService.findById(Number(id));

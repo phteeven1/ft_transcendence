@@ -8,6 +8,12 @@ export type Group = {
   groupMembers: number[];
 };
 
+export type Member = {
+  memberId: number;
+  memberName: string;
+  isAdmin: boolean;
+};
+
 @Injectable()
 export class GroupsService {
   private groups: Group[] = [];
@@ -76,6 +82,24 @@ export class GroupsService {
       this.usersService.removeMemberGroup(uId, gId);
     }
     return group;
+  }
+
+  findMembers(groupId: number): Member[] {
+    const gId = Number(groupId);
+    const group = this.findById(gId);
+    if (!group) return [];
+
+    const admins: Member[] = group.groupAdmins
+      .map(id => this.usersService.findById(id))
+      .filter((u): u is NonNullable<typeof u> => u !== undefined)
+      .map(u => ({ memberId: u.userId, memberName: u.userName, isAdmin: true }));
+
+    const members: Member[] = group.groupMembers
+      .map(id => this.usersService.findById(id))
+      .filter((u): u is NonNullable<typeof u> => u !== undefined)
+      .map(u => ({ memberId: u.userId, memberName: u.userName, isAdmin: false }));
+
+    return [...admins, ...members];
   }
 
   findById(groupId: number): Group | undefined {

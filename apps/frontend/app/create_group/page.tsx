@@ -4,7 +4,7 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 
 export default function CreateGroup() {
-  const { user, setCurrentGroup } = useAuth();
+  const { user, syncGroup } = useAuth();
   const router = useRouter();
   const [groupName, setGroupName] = useState('');
 
@@ -26,8 +26,8 @@ export default function CreateGroup() {
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
-      setCurrentGroup(data.groupId);
-      router.push('/manage_group');
+      const result = await syncGroup(data.groupId);
+      if (result) router.push('/manage_group');
     } catch (error) {
       console.error('Failed to create group:', error);
       alert('Failed to create group. Please try again.');
