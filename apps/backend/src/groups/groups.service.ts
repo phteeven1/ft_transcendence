@@ -38,7 +38,9 @@ export class GroupsService {
     const gId = Number(groupId);
     const uId = Number(userId);
     const group = this.findById(gId);
-    if (group && !group.groupMembers.includes(uId)) {
+    const isAlreadyMember = group?.groupMembers.includes(uId);
+    const isAlreadyAdmin = group?.groupAdmins.includes(uId);
+    if (group && !isAlreadyMember && !isAlreadyAdmin) {
       group.groupMembers.push(uId);
       this.usersService.addMemberGroup(uId, gId);
     }
@@ -93,6 +95,14 @@ export class GroupsService {
       this.groups = this.groups.filter(g => g.groupId !== gId);
     }
 
+    return group;
+  }
+
+  rename(groupId: number, groupName: string): Group | undefined {
+    const gId = Number(groupId);
+    const group = this.findById(gId);
+    if (!group) return undefined;
+    group.groupName = groupName;
     return group;
   }
 

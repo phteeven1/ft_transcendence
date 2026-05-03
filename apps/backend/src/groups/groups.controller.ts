@@ -30,6 +30,11 @@ export class GroupsController {
     return this.groupsService.leave(body.groupId, body.userId);
   }
 
+  @Post('rename')
+  rename(@Body() body: { groupId: number; groupName: string }) {
+    return this.groupsService.rename(body.groupId, body.groupName);
+  }
+
   @Get()
   findAll() {
     return this.groupsService.findAll();

@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Group } from '../types';
 
 export default function Dashboard() {
@@ -9,7 +9,25 @@ export default function Dashboard() {
   const router = useRouter();
   const [adminGroups, setAdminGroups] = useState<Group[]>([]);
   const [memberGroups, setMemberGroups] = useState<Group[]>([]);
-  const hasFetched = useRef(false);
+
+  const loadDashboard = async () => {
+    if (!user) return;
+    await refreshUser();
+    const freshUser = await fetch(`http://localhost:4000/users/${user.userId}`)
+      .then(res => res.json());
+    const adminResults = await Promise.all(
+      freshUser.isAdminOf.map((id: number) =>
+        fetch(`http://localhost:4000/groups/${id}`).then(res => res.json())
+      )
+    );
+    const memberResults = await Promise.all(
+      freshUser.isMemberOf.map((id: number) =>
+        fetch(`http://localhost:4000/groups/${id}`).then(res => res.json())
+      )
+    );
+    setAdminGroups(adminResults);
+    setMemberGroups(memberResults);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -18,48 +36,32 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
-    if (user && !hasFetched.current) {
-      hasFetched.current = true;
-      refreshUser();
-    }
+    loadDashboard();
   }, []);
 
   useEffect(() => {
-    if (!user?.isAdminOf || !user?.isMemberOf) return;
+    const interval = setInterval(() => {
+      loadDashboard();
+    }, 5000);
 
-    const fetchGroups = async () => {
-      try {
-        const adminResults = await Promise.all(
-          user.isAdminOf.map(id =>
-            fetch(`http://localhost:4000/groups/${id}`).then(res => {
-              if (!res.ok) throw new Error(`Failed to fetch group ${id}`);
-              return res.json();
-            })
-          )
-        );
-        const memberResults = await Promise.all(
-          user.isMemberOf.map(id =>
-            fetch(`http://localhost:4000/groups/${id}`).then(res => {
-              if (!res.ok) throw new Error(`Failed to fetch group ${id}`);
-              return res.json();
-            })
-          )
-        );
-        setAdminGroups(adminResults);
-        setMemberGroups(memberResults);
-      } catch (error) {
-        console.error('Failed to fetch groups:', error);
-      }
-    };
-
-    fetchGroups();
-  }, [user?.isAdminOf.join(','), user?.isMemberOf.join(',')]);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!user) return null;
 
   const handleGroupClick = async (groupId: number) => {
     const result = await syncGroup(groupId);
-    if (result) router.push('/manage_group');
+    if (!result) return;
+
+    const isMember = result.groupMembers.includes(user.userId) ||
+      result.groupAdmins.includes(user.userId);
+
+    if (!isMember) {
+      await loadDashboard();
+      return;
+    }
+
+    router.push('/manage_group');
   };
 
   return (

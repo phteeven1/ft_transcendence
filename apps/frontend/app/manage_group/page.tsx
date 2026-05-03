@@ -3,9 +3,16 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Member } from '../types';
+import MemberList from '../components/group/member-list';
+import BackToDashboard from '../components/group/back-to-dashboard';
+import LeaveGroup from '../components/group/leave-group';
+import SendInvite from '../components/group/send-invite';
+import PromoteToAdmin from '../components/group/promote-to-admin';
+import ResignAdmin from '../components/group/resign-admin';
+import RenameGroup from '../components/group/rename-group';
 
 export default function ManageGroup() {
-  const { user, group, syncGroup, leaveGroup, refreshUser } = useAuth();
+  const { user, group, syncGroup, leaveGroup } = useAuth();
   const router = useRouter();
   const [currentGroupMembers, setCurrentGroupMembers] = useState<Member[]>([]);
 
@@ -15,6 +22,13 @@ export default function ManageGroup() {
       return;
     }
     fetchMembers();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      syncAndRefresh();
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchMembers = async () => {
@@ -30,93 +44,35 @@ export default function ManageGroup() {
   };
 
   const syncAndRefresh = async () => {
-    if (!group) return;
-    await syncGroup(group.groupId);
-    await fetchMembers();
-  };
+    if (!group || !user) return;
+    const updatedGroup = await syncGroup(group.groupId);
+    if (!updatedGroup) return;
 
-  const handleBackToDashboard = () => {
-    leaveGroup();
-    router.push('/dashboard');
-  };
+    const isStillMember =
+      updatedGroup.groupMembers.includes(user.userId) ||
+      updatedGroup.groupAdmins.includes(user.userId);
 
-  const handleLeaveGroup = async () => {
-    if (!user || !group) return;
-
-    const totalMembers = group.groupMembers.length + group.groupAdmins.length;
-    const isOnlyAdmin = group.groupAdmins.includes(user.userId) &&
-      group.groupAdmins.length === 1;
-    const isLastMember = totalMembers === 1;
-
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently leave ${group.groupName}?`
-    );
-    if (!confirmed) return;
-
-    if (isOnlyAdmin && !isLastMember) {
-      window.alert(
-        'You are the only admin of this group. Before leaving, you need to make another member admin.'
-      );
+    if (!isStillMember) {
+      leaveGroup();
+      router.push('/dashboard');
       return;
     }
 
-    if (isLastMember) {
-      const confirmedDelete = window.confirm(
-        `You are the last member of ${group.groupName}. If you leave, the group will be permanently removed.`
-      );
-      if (!confirmedDelete) return;
-    }
-
-    try {
-      const res = await fetch('http://localhost:4000/groups/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.groupId, userId: user.userId }),
-      });
-      if (!res.ok) throw new Error(`Failed to leave group: ${res.status}`);
-      await refreshUser();
-      leaveGroup();
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Failed to leave group:', error);
-      window.alert('Something went wrong. Please try again.');
-    }
+    await fetchMembers();
   };
 
   if (!user || !group) return null;
 
   const isAdmin = group.groupAdmins.includes(user.userId);
 
-  const memberList = (
-    <ul className="overflow-y-auto max-h-64 md:max-h-full md:h-full border border-emerald-300 rounded">
-      {currentGroupMembers.map(member => (
-        <li
-          key={member.memberId}
-          className="flex items-center justify-between px-3 py-2 border-b border-emerald-300 last:border-b-0"
-        >
-          <span>{member.memberName}</span>
-          <span className="text-xs text-gray-500">
-            {member.isAdmin ? 'Admin' : 'Member'}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-
   const buttons = (
     <>
-      <button
-        onClick={handleBackToDashboard}
-        className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded transition-colors"
-      >
-        Back to Dashboard
-      </button>
-      <button
-        onClick={handleLeaveGroup}
-        className="bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded transition-colors"
-      >
-        Leave Group
-      </button>
+      <BackToDashboard />
+      <LeaveGroup syncAndRefresh={syncAndRefresh} />
+      {isAdmin && <SendInvite />}
+      {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
     </>
   );
 
@@ -132,7 +88,7 @@ export default function ManageGroup() {
         <div className="md:hidden flex flex-col gap-4">
           <div>
             <h2 className="text-lg font-semibold mb-2">Members</h2>
-            {memberList}
+            <MemberList members={currentGroupMembers} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             {buttons}
@@ -143,13 +99,12 @@ export default function ManageGroup() {
         <div className="hidden md:grid md:grid-cols-3 gap-6">
           <div className="col-span-1 flex flex-col">
             <h2 className="text-lg font-semibold mb-2">Members</h2>
-            {memberList}
+            <MemberList members={currentGroupMembers} />
           </div>
           <div className="col-span-2 grid grid-cols-2 gap-3 content-start pt-9">
             {buttons}
           </div>
         </div>
-
       </div>
     </div>
   );
