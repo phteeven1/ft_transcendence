@@ -69,6 +69,7 @@ export default function Register() {
             onKeyDown={handleKeyDown}
             className="w-full p-2 border rounded"
             placeholder="Choose a username"
+            autoComplete="name"
             required
           />
         </div>
@@ -78,7 +79,7 @@ export default function Register() {
             Password
           </label>
           <input
-            type="text"
+            type="password"
             id="userPassword"
             name="userPassword"
             value={formData.userPassword}
@@ -86,6 +87,7 @@ export default function Register() {
             onKeyDown={handleKeyDown}
             className="w-full p-2 border rounded"
             placeholder="Create a new password"
+            autoComplete="new-password"
             required
           />
         </div>

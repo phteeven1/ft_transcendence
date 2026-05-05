@@ -19,3 +19,11 @@ export type Member = {
   memberName: string;
   isAdmin: boolean;
 };
+
+export type Player = {
+  playerId: number;
+  playerInGroup: number;
+  playerParent: number;
+  playerName: string;
+  playerPassQuestion: string;
+};

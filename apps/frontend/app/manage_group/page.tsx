@@ -10,6 +10,7 @@ import SendInvite from '../components/group/send-invite';
 import PromoteToAdmin from '../components/group/promote-to-admin';
 import ResignAdmin from '../components/group/resign-admin';
 import RenameGroup from '../components/group/rename-group';
+import CreatePlayer from '../components/group/create-player';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -73,6 +74,7 @@ export default function ManageGroup() {
       {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
+      <CreatePlayer />
     </>
   );
 

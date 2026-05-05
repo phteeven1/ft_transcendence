@@ -48,7 +48,7 @@ Group Admins can:
 - Rename Vocabulary Lists.
 - Make a Vocabulary List the default list for current Games.
 - Remove Vocabulary Lists.
-- Terminate the Group (all other Group Admins will be requested to agree for termination to proceed).
+- Terminate the Group (FOR LATER->all other Group Admins will be requested to agree for termination to proceed).
 - Revoke their own Admin status (only if there is at least one other Admin).
 (optional)
 - Write Group Admin Messages.

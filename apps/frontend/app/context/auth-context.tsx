@@ -1,15 +1,18 @@
 'use client';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { User, Group } from '../types';
+import { User, Group, Player } from '../types';
 
 type AuthContextType = {
   user: User | null;
   group: Group | null;
+  player: Player | null;
   login: (userData: User) => void;
   logout: () => void;
   leaveGroup: () => void;
   syncGroup: (groupId: number) => Promise<Group | null>;
   refreshUser: () => Promise<void>;
+  loginAsPlayer: (playerData: Player) => void;
+  logoutPlayer: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +20,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
+  const [player, setPlayer] = useState<Player | null>(null);
+
+  const loginAsPlayer = (playerData: Player) => {
+    setUser(null);
+    setGroup(null);
+    setPlayer(playerData);
+  };
+
+  const logoutPlayer = () => {
+    setPlayer(null);
+  };
 
   const login = (userData: User) => {
     setUser(userData);
@@ -59,7 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, group, login, logout, leaveGroup, syncGroup, refreshUser }}>
+    <AuthContext.Provider value={{
+      user, group, player,
+      login, logout, leaveGroup, syncGroup, refreshUser,
+      loginAsPlayer, logoutPlayer,
+    }}>
       {children}
     </AuthContext.Provider>
   );

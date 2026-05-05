@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
 import { MailModule } from './mail/mail.module';
 import { InvitationsModule } from './invitations/invitations.module';
+import { PlayersModule } from './players/players.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { InvitationsModule } from './invitations/invitations.module';
     GroupsModule,
     MailModule,
     InvitationsModule,
+    PlayersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
