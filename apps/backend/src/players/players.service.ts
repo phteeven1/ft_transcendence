@@ -34,6 +34,34 @@ export class PlayersService {
     return safePlayer;
   }
 
+  rename(playerId: number, playerName: string): Omit<Player, 'playerPassAnswer'> | undefined {
+    const player = this.players.find(p => p.playerId === Number(playerId));
+    if (!player) return undefined;
+    player.playerName = playerName;
+    const { playerPassAnswer: _, ...safePlayer } = player;
+    return safePlayer;
+  }
+
+  updatePassPhrase(
+    playerId: number,
+    playerPassQuestion: string,
+    playerPassAnswer: string,
+  ): Omit<Player, 'playerPassAnswer'> | undefined {
+    const player = this.players.find(p => p.playerId === Number(playerId));
+    if (!player) return undefined;
+    player.playerPassQuestion = playerPassQuestion;
+    player.playerPassAnswer = playerPassAnswer;
+    const { playerPassAnswer: _, ...safePlayer } = player;
+    return safePlayer;
+  }
+
+  remove(playerId: number): boolean {
+    const index = this.players.findIndex(p => p.playerId === Number(playerId));
+    if (index === -1) return false;
+    this.players.splice(index, 1);
+    return true;
+  }
+
   findById(playerId: number): Omit<Player, 'playerPassAnswer'> | undefined {
     const player = this.players.find(p => p.playerId === Number(playerId));
     if (!player) return undefined;

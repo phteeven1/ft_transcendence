@@ -25,6 +25,28 @@ export class PlayersController {
     );
   }
 
+  @Post('rename')
+  rename(@Body() body: { playerId: number; playerName: string }) {
+    return this.playersService.rename(body.playerId, body.playerName);
+  }
+
+  @Post('updatePassPhrase')
+  updatePassPhrase(
+    @Body() body: { playerId: number; playerPassQuestion: string; playerPassAnswer: string },
+  ) {
+    return this.playersService.updatePassPhrase(
+      body.playerId,
+      body.playerPassQuestion,
+      body.playerPassAnswer,
+    );
+  }
+
+  @Post('remove')
+  remove(@Body() body: { playerId: number }) {
+    return this.playersService.remove(body.playerId);
+  }
+
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.playersService.findById(Number(id));

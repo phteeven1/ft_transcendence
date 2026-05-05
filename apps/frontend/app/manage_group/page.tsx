@@ -3,6 +3,8 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Member } from '../types';
+
+// All buttons are extracted to components/group, and then imported here
 import MemberList from '../components/group/member-list';
 import BackToDashboard from '../components/group/back-to-dashboard';
 import LeaveGroup from '../components/group/leave-group';
@@ -10,7 +12,7 @@ import SendInvite from '../components/group/send-invite';
 import PromoteToAdmin from '../components/group/promote-to-admin';
 import ResignAdmin from '../components/group/resign-admin';
 import RenameGroup from '../components/group/rename-group';
-import CreatePlayer from '../components/group/create-player';
+import ManagePlayers from '../components/group/manage-players';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -68,13 +70,14 @@ export default function ManageGroup() {
 
   const buttons = (
     <>
+      {/* This is a list of all buttons, with conditonal for admin when appropriate */}
       <BackToDashboard />
       <LeaveGroup syncAndRefresh={syncAndRefresh} />
       {isAdmin && <SendInvite />}
       {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
-      <CreatePlayer />
+      <ManagePlayers />
     </>
   );
 
