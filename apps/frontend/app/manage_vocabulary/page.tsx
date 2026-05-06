@@ -70,6 +70,18 @@ export default function ManageVocabulary() {
     setSelectedVocabulary(updated);
   };
 
+  const handleDeleted = (vocabularyId: number) => {
+    setVocabularies(prev => prev.filter(v => v.vocabularyId !== vocabularyId));
+    setSelectedVocabulary(null);
+  };
+
+  const handleEdited = (updated: Vocabulary) => {
+    setVocabularies(prev =>
+      prev.map(v => v.vocabularyId === updated.vocabularyId ? updated : v)
+    );
+    setSelectedVocabulary(updated);
+  };
+
   if (!user || !group) return null;
 
   return (
@@ -98,9 +110,9 @@ export default function ManageVocabulary() {
               onActivated={handleActivated}
             />
             <RenameVocabulary selectedVocabulary={selectedVocabulary} onRenamed={handleRenamed} />
-            <EditVocabulary selectedVocabulary={selectedVocabulary} />
+            <EditVocabulary selectedVocabulary={selectedVocabulary} onEdited={handleEdited} />
             <ShareVocabulary selectedVocabulary={selectedVocabulary} />
-            <DeleteVocabulary selectedVocabulary={selectedVocabulary} />
+            <DeleteVocabulary selectedVocabulary={selectedVocabulary} onDeleted={handleDeleted} />
             <button
               onClick={() => router.push('/manage_group')}
               className="w-full bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"

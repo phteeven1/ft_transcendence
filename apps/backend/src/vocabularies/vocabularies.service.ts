@@ -58,6 +58,15 @@ export class VocabulariesService {
     return vocabulary;
   }
 
+  updateEntries(vocabularyId: number, vocabularyWords: string[], vocabularyMeanings: string[]): Vocabulary | undefined {
+    const vocabulary = this.vocabularies.find(v => v.vocabularyId === Number(vocabularyId));
+    if (!vocabulary) return undefined;
+    vocabulary.vocabularyWords = vocabularyWords;
+    vocabulary.vocabularyMeanings = vocabularyMeanings;
+    vocabulary.vocabularyCount = vocabularyWords.length;
+    return vocabulary;
+  }
+
   remove(vocabularyId: number): boolean {
     const index = this.vocabularies.findIndex(v => v.vocabularyId === Number(vocabularyId));
     if (index === -1) return false;
