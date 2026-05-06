@@ -59,6 +59,17 @@ export default function ManageVocabulary() {
     setSelectedVocabulary(updated);
   };
 
+  const handleImported = (vocabulary: Vocabulary) => {
+    setVocabularies(prev => [...prev, vocabulary]);
+  };
+
+  const handleRenamed = (updated: Vocabulary) => {
+    setVocabularies(prev =>
+      prev.map(v => v.vocabularyId === updated.vocabularyId ? updated : v)
+    );
+    setSelectedVocabulary(updated);
+  };
+
   if (!user || !group) return null;
 
   return (
@@ -81,12 +92,12 @@ export default function ManageVocabulary() {
 
           {/* Action buttons */}
           <div className="col-span-2 grid grid-cols-2 gap-3 content-start">
-            <ImportVocabulary />
+            <ImportVocabulary onImported={handleImported} />
             <UseInGames
               selectedVocabulary={selectedVocabulary}
               onActivated={handleActivated}
             />
-            <RenameVocabulary selectedVocabulary={selectedVocabulary} />
+            <RenameVocabulary selectedVocabulary={selectedVocabulary} onRenamed={handleRenamed} />
             <EditVocabulary selectedVocabulary={selectedVocabulary} />
             <ShareVocabulary selectedVocabulary={selectedVocabulary} />
             <DeleteVocabulary selectedVocabulary={selectedVocabulary} />

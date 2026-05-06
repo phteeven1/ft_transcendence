@@ -20,20 +20,22 @@ export class VocabulariesService {
     vocabularyInGroup: number,
     vocabularyAuthor: number,
     vocabularyName: string,
-  ): Vocabulary {
+    vocabularyWords: string[] = [],
+    vocabularyMeanings: string[] = [],
+    ): Vocabulary {
     const newVocabulary: Vocabulary = {
-      vocabularyId: this.nextId++,
-      vocabularyInGroup: Number(vocabularyInGroup),
-      vocabularyAuthor: Number(vocabularyAuthor),
-      vocabularyName,
-      isCurrent: false,
-      vocabularyWords: [],
-      vocabularyMeanings: [],
-      vocabularyCount: 0,
+        vocabularyId: this.nextId++,
+        vocabularyInGroup: Number(vocabularyInGroup),
+        vocabularyAuthor: Number(vocabularyAuthor),
+        vocabularyName,
+        isCurrent: false,
+        vocabularyWords,
+        vocabularyMeanings,
+        vocabularyCount: vocabularyWords.length,
     };
     this.vocabularies.push(newVocabulary);
     return newVocabulary;
-  }
+    }
 
   setActive(vocabularyId: number, vocabularyInGroup: number): Vocabulary | undefined {
     const vId = Number(vocabularyId);

@@ -11,12 +11,16 @@ export class VocabulariesController {
       vocabularyInGroup: number;
       vocabularyAuthor: number;
       vocabularyName: string;
+      vocabularyWords?: string[];
+      vocabularyMeanings?: string[];
     },
   ) {
     return this.vocabulariesService.create(
       body.vocabularyInGroup,
       body.vocabularyAuthor,
       body.vocabularyName,
+      body.vocabularyWords ?? [],
+      body.vocabularyMeanings ?? [],
     );
   }
 
