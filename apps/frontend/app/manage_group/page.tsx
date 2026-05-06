@@ -14,6 +14,7 @@ import ResignAdmin from './_components/resign-admin';
 import RenameGroup from './_components/rename-group';
 import ManagePlayers from './_components/manage-players';
 import ExpelMember from './_components/expel-member';
+import DeleteGroup from './_components/delete-group';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -72,14 +73,15 @@ export default function ManageGroup() {
   const buttons = (
     <>
       {/* This is a list of all buttons, with conditonal for admin when appropriate */}
-      <BackToDashboard />
-      <LeaveGroup syncAndRefresh={syncAndRefresh} />
-      {isAdmin && <SendInvite />}
-      {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <ExpelMember currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <ManagePlayers />
+      {isAdmin && <SendInvite />}
+      {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
+      <LeaveGroup syncAndRefresh={syncAndRefresh} />
+      {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <ExpelMember currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
+      <BackToDashboard />
     </>
   );
 

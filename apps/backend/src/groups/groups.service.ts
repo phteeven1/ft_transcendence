@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { PlayersService } from '../players/players.service';
 
 export type Group = {
   groupId: number;
@@ -19,7 +20,10 @@ export class GroupsService {
   private groups: Group[] = [];
   private nextId = 1;
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly playersService: PlayersService,
+  ) {}
 
   create(groupName: string, creatorId: number): Group {
     const id = Number(creatorId);
@@ -115,6 +119,30 @@ export class GroupsService {
     group.groupMembers = group.groupMembers.filter(id => id !== uId);
     this.usersService.removeMemberGroup(uId, gId);
     return group;
+  }
+
+  delete(groupId: number): boolean {
+    const gId = Number(groupId);
+    const group = this.findById(gId);
+    if (!group) return false;
+
+    // Remove group from all admins' isAdminOf
+    group.groupAdmins.forEach(uId => {
+      this.usersService.removeAdminGroup(uId, gId);
+    });
+
+    // Remove group from all members' isMemberOf
+    group.groupMembers.forEach(uId => {
+      this.usersService.removeMemberGroup(uId, gId);
+    });
+
+    // Delete all player profiles belonging to this group
+    this.playersService.removeByGroup(gId);
+
+    // Delete the group itself
+    this.groups = this.groups.filter(g => g.groupId !== gId);
+
+    return true;
   }
 
   findMembers(groupId: number): Member[] {

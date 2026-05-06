@@ -62,6 +62,12 @@ export class PlayersService {
     return true;
   }
 
+  removeByGroup(playerInGroup: number): void {
+    this.players = this.players.filter(
+      p => p.playerInGroup !== Number(playerInGroup)
+    );
+  }
+
   findById(playerId: number): Omit<Player, 'playerPassAnswer'> | undefined {
     const player = this.players.find(p => p.playerId === Number(playerId));
     if (!player) return undefined;

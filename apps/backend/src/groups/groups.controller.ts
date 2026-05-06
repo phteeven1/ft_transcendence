@@ -40,6 +40,11 @@ export class GroupsController {
     return this.groupsService.expel(body.groupId, body.userId);
   }
 
+  @Post('delete')
+  delete(@Body() body: { groupId: number }) {
+    return this.groupsService.delete(body.groupId);
+  }
+
   @Get()
   findAll() {
     return this.groupsService.findAll();
