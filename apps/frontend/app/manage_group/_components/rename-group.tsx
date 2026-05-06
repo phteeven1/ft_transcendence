@@ -62,7 +62,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
     <>
       <button
         onClick={handleOpen}
-        className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
       >
         Rename Group
       </button>

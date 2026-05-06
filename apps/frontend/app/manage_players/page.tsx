@@ -95,7 +95,7 @@ export default function ManagePlayers() {
             <InviteToPlay selectedPlayer={selectedPlayer} />
             <button
               onClick={() => router.push('/manage_group')}
-              className="w-full bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
+              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
             >
               Back to Group
             </button>

@@ -89,7 +89,7 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
     <>
       <button
         onClick={handleOpen}
-        className="bg-purple-500 hover:bg-purple-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-4 rounded transition-colors"
       >
         Promote to Admin
       </button>

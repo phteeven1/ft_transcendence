@@ -56,7 +56,7 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
   return (
     <button
       onClick={handleLeaveGroup}
-      className="bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded transition-colors"
+      className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
     >
       Leave Group
     </button>
