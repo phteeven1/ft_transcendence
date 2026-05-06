@@ -106,6 +106,17 @@ export class GroupsService {
     return group;
   }
 
+  expel(groupId: number, userId: number): Group | undefined {
+    const gId = Number(groupId);
+    const uId = Number(userId);
+    const group = this.findById(gId);
+    if (!group) return undefined;
+    if (!group.groupMembers.includes(uId)) return undefined;
+    group.groupMembers = group.groupMembers.filter(id => id !== uId);
+    this.usersService.removeMemberGroup(uId, gId);
+    return group;
+  }
+
   findMembers(groupId: number): Member[] {
     const gId = Number(groupId);
     const group = this.findById(gId);

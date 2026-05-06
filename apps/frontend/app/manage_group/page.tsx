@@ -5,14 +5,15 @@ import { useEffect, useState } from 'react';
 import { Member } from '../types';
 
 // All buttons are extracted to components/group, and then imported here
-import MemberList from '../components/group/member-list';
-import BackToDashboard from '../components/group/back-to-dashboard';
-import LeaveGroup from '../components/group/leave-group';
-import SendInvite from '../components/group/send-invite';
-import PromoteToAdmin from '../components/group/promote-to-admin';
-import ResignAdmin from '../components/group/resign-admin';
-import RenameGroup from '../components/group/rename-group';
-import ManagePlayers from '../components/group/manage-players';
+import MemberList from './_components/member-list';
+import BackToDashboard from './_components/back-to-dashboard';
+import LeaveGroup from './_components/leave-group';
+import SendInvite from './_components/send-invite';
+import PromoteToAdmin from './_components/promote-to-admin';
+import ResignAdmin from './_components/resign-admin';
+import RenameGroup from './_components/rename-group';
+import ManagePlayers from './_components/manage-players';
+import ExpelMember from './_components/expel-member';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -75,6 +76,7 @@ export default function ManageGroup() {
       <LeaveGroup syncAndRefresh={syncAndRefresh} />
       {isAdmin && <SendInvite />}
       {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <ExpelMember currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <ManagePlayers />

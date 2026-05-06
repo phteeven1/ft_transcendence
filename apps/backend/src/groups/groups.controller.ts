@@ -35,6 +35,11 @@ export class GroupsController {
     return this.groupsService.rename(body.groupId, body.groupName);
   }
 
+  @Post('expel')
+  expel(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.expel(body.groupId, body.userId);
+  }
+
   @Get()
   findAll() {
     return this.groupsService.findAll();
