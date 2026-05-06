@@ -11,6 +11,8 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
   const { user, group, leaveGroup } = useAuth();
   const router = useRouter();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [resultMessage, setResultMessage] = useState('');
 
   if (!user || !group) return null;
 
@@ -20,10 +22,11 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
 
   const handleClick = () => {
     if (!isOnlyAdmin) {
-      alert(
+      setResultMessage(
         `You cannot delete ${group.groupName} while there are other admins. ` +
-        `Please ask all other admins to Resign as Admin or Leave Group first.`
+        `Please demote all other admins first.`
       );
+      setShowResult(true);
       return;
     }
     setShowConfirm(true);
@@ -42,7 +45,8 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
     } catch (error) {
       console.error('deleteGroup failed:', error);
       setShowConfirm(false);
-      alert('Something went wrong. Please try again.');
+      setResultMessage('Something went wrong. Please try again.');
+      setShowResult(true);
     }
   };
 
@@ -76,6 +80,23 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
                 className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result modal */}
+      {showResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <p className="mb-6 text-gray-700">{resultMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowResult(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                OK
               </button>
             </div>
           </div>

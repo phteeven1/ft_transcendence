@@ -7,6 +7,7 @@ export default function CreateGroup() {
   const { user, syncGroup } = useAuth();
   const router = useRouter();
   const [groupName, setGroupName] = useState('');
+  const [showError, setShowError] = useState(false);
 
   if (!user) {
     router.push('/');
@@ -30,7 +31,7 @@ export default function CreateGroup() {
       if (result) router.push('/manage_group');
     } catch (error) {
       console.error('Failed to create group:', error);
-      alert('Failed to create group. Please try again.');
+      setShowError(true);
     }
   };
 
@@ -69,6 +70,25 @@ export default function CreateGroup() {
           Back to Dashboard
         </button>
       </div>
+
+      {/* Error modal */}
+      {showError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <p className="mb-6 text-gray-700">
+              Failed to create group. Please try again.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowError(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

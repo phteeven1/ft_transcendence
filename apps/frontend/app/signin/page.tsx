@@ -10,6 +10,8 @@ export default function SignIn() {
     userName: '',
     userPassword: '',
   });
+  const [showError, setShowError] = useState(false);
+
   const { login } = useAuth();
   const router = useRouter();
 
@@ -41,7 +43,7 @@ export default function SignIn() {
       router.push('/dashboard');
     } catch (error) {
       console.error('Sign in failed:', error);
-      alert('Invalid username or password. Please try again.');
+      setShowError(true);
     }
   };
 
@@ -95,6 +97,25 @@ export default function SignIn() {
           </Link>
         </p>
       </div>
+
+      {/* Error modal */}
+      {showError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <p className="mb-6 text-gray-700">
+              Invalid username or password. Please try again.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowError(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
