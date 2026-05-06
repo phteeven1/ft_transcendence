@@ -15,6 +15,7 @@ import RenameGroup from './_components/rename-group';
 import ManagePlayers from './_components/manage-players';
 import ExpelMember from './_components/expel-member';
 import DeleteGroup from './_components/delete-group';
+import ManageVocabulary from './_components/manage-vocabulary';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -74,6 +75,7 @@ export default function ManageGroup() {
     <>
       {/* This is a list of all buttons, with conditonal for admin when appropriate */}
       <ManagePlayers />
+      {isAdmin && <ManageVocabulary />}
       {isAdmin && <SendInvite />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <LeaveGroup syncAndRefresh={syncAndRefresh} />

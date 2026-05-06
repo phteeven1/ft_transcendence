@@ -27,3 +27,14 @@ export type Player = {
   playerName: string;
   playerPassQuestion: string;
 };
+
+export type Vocabulary = {
+  vocabularyId: number;
+  vocabularyInGroup: number;
+  vocabularyAuthor: number;
+  vocabularyName: string;
+  isCurrent: boolean;
+  vocabularyWords: string[];
+  vocabularyMeanings: string[];
+  vocabularyCount: number;
+};

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { PlayersService } from '../players/players.service';
+import { VocabulariesService } from '../vocabularies/vocabularies.service';
 
 export type Group = {
   groupId: number;
@@ -23,6 +24,7 @@ export class GroupsService {
   constructor(
     private readonly usersService: UsersService,
     private readonly playersService: PlayersService,
+    private readonly vocabulariesService: VocabulariesService,
   ) {}
 
   create(groupName: string, creatorId: number): Group {
@@ -138,6 +140,9 @@ export class GroupsService {
 
     // Delete all player profiles belonging to this group
     this.playersService.removeByGroup(gId);
+
+    // Delete all vocabularies belonging to this group
+    this.vocabulariesService.removeByGroup(gId);
 
     // Delete the group itself
     this.groups = this.groups.filter(g => g.groupId !== gId);

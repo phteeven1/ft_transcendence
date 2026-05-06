@@ -7,6 +7,7 @@ import { GroupsModule } from './groups/groups.module';
 import { MailModule } from './mail/mail.module';
 import { InvitationsModule } from './invitations/invitations.module';
 import { PlayersModule } from './players/players.module';
+import { VocabulariesModule } from './vocabularies/vocabularies.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PlayersModule } from './players/players.module';
     MailModule,
     InvitationsModule,
     PlayersModule,
+    VocabulariesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
