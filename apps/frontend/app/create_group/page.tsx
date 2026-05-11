@@ -9,11 +9,14 @@ export default function CreateGroup() {
   const [groupName, setGroupName] = useState('');
   const [showError, setShowError] = useState(false);
 
+  // if no user, returns to landing page
   if (!user) {
     router.push('/');
     return null;
   }
 
+  // is called when Submit is clicked. Tries to POST to /groups/create in backend
+  // to create a new group, then syncs the group locally and redirects to /manage_group
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
@@ -35,6 +38,7 @@ export default function CreateGroup() {
     }
   };
 
+  // creates layout with input field and two buttons
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="bg-emerald-200 max-w-md mx-auto p-4">

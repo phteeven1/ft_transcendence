@@ -10,7 +10,7 @@ type AuthContextType = {
   logout: () => void;
   leaveGroup: () => void;
   syncGroup: (groupId: number) => Promise<Group | null>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
   loginAsPlayer: (playerData: Player) => void;
   logoutPlayer: () => void;
 };
@@ -60,15 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUser = async () => {
-    if (!user) return;
+  const refreshUser = async (): Promise<User | null> => {
+    if (!user) return null;
     try {
       const res = await fetch(`http://localhost:4000/users/${user.userId}`);
       if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
       const data: User = await res.json();
       setUser(data);
+      return data;
     } catch (error) {
       console.error('refreshUser failed:', error);
+      return null;
     }
   };
 

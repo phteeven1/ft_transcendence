@@ -10,11 +10,12 @@ export default function Dashboard() {
   const [adminGroups, setAdminGroups] = useState<Group[]>([]);
   const [memberGroups, setMemberGroups] = useState<Group[]>([]);
 
+  // refreshes current user from backend. Fetches data for all groups the user is admin of, 
+  // and all groups they are member of, and stores in state.
   const loadDashboard = async () => {
     if (!user) return;
-    await refreshUser();
-    const freshUser = await fetch(`http://localhost:4000/users/${user.userId}`)
-      .then(res => res.json());
+    const freshUser = await refreshUser();
+    if (!freshUser) return;
     const adminResults = await Promise.all(
       freshUser.isAdminOf.map((id: number) =>
         fetch(`http://localhost:4000/groups/${id}`).then(res => res.json())
@@ -29,16 +30,19 @@ export default function Dashboard() {
     setMemberGroups(memberResults);
   };
 
+  // if no user, return to landing page
   useEffect(() => {
     if (!user) {
       router.push('/');
     }
   }, [user]);
 
+  // re-loads dashboard every time user changes state
   useEffect(() => {
     loadDashboard();
   }, []);
 
+  // re-loads dashboard every 5s, to make sure that changes done to group by another user is not missed
   useEffect(() => {
     const interval = setInterval(() => {
       loadDashboard();
@@ -49,6 +53,9 @@ export default function Dashboard() {
 
   if (!user) return null;
 
+  // fetches full data of clicked group via syncGroup. If user is member of admin, it navigates 
+  // to /manage_group, else reloads dashboard. This is safety check if user was just removed by admin 
+  // in another session, and automatic 5s refresh didn't happen yet
   const handleGroupClick = async (groupId: number) => {
     const result = await syncGroup(groupId);
     if (!result) return;
@@ -64,6 +71,7 @@ export default function Dashboard() {
     router.push('/manage_group');
   };
 
+  // layout creates one button for Create New Croup, and one for each group the user is an admin or a member of.
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
