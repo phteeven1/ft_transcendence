@@ -1,4 +1,15 @@
 'use client';
+
+/*
+  renders a Promote to Admin button, opens a list of all members of current group in a modal
+  admins are greyed out and not selectable, members are selectable
+  clicking a members row toggles that member's id in selectedIds
+  clicking'Promote' POSTs /groups/promote for each selected id in parallel via Promise.all
+  then calls syncAndRefresh to update parent's state
+  selection modal closes. Result modal opens and displays summary of promotion
+  if nothing was selected, it skips fetch and shows "no members selected" message
+*/
+
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { Member } from '../../types';
@@ -43,6 +54,7 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
     );
   };
 
+  // guards against no members selected - then skips fetch and shows "no members selected"
   const handlePromote = async () => {
     if (selectedIds.length === 0) {
       setShowModal(false);
@@ -50,7 +62,7 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
       setShowResult(true);
       return;
     }
-
+    // POSTs all requests at once using Promise.all
     try {
       await Promise.all(
         selectedIds.map(userId =>
@@ -62,10 +74,12 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
         )
       );
 
+      // finds names of every one who was promoted
       const promotedNames = currentGroupMembers
         .filter(m => selectedIds.includes(m.memberId))
         .map(m => m.memberName);
 
+      // formats to differentiate between one and several promotions
       const namesString = promotedNames.length === 1
         ? promotedNames[0]
         : promotedNames.slice(0, -1).join(', ') + ' and ' + promotedNames[promotedNames.length - 1];
@@ -73,6 +87,7 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
       const wasWere = promotedNames.length === 1 ? 'was' : 'were';
       const adminText = promotedNames.length === 1 ? 'an admin' : 'admins';
 
+      // update state and show result
       await syncAndRefresh();
       setShowModal(false);
       setResultMessage(`${namesString} ${wasWere} promoted to ${adminText} in group ${group.groupName}.`);
