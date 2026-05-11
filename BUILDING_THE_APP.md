@@ -41,3 +41,19 @@ Typically, when adding a new functionality, it goes something like this.
 5. if the action opens a new page, then create dir, page.tsx and _components in the list of other pages.
     action_what/page.tsx
 6. go to backend. Adapt xxx.service.ts and xxx.controller.ts in necessary dirs, for example groups if action gets or posts data about groups.
+
+## To Do
+Things that still needs to be done
+
+### User Settings
+button in dashboard. Change username, change password, change email, toggle notifications on/off
+
+### Chat
+enable admins writing messages to the group and/or to the other group admins. Enable members writing to the group admins
+
+### Select game
+a dashboard with the following options: 
+- 
+
+
+
