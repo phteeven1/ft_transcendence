@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(0);  // counter can be removed. Part of demo
 
   const fetchCounter = async () => {
     const res = await fetch('http://localhost:4000/counter');
@@ -48,7 +48,7 @@ export default function Home() {
         </Link>
       </div>
 
-      <div className="flex justify-center gap-2 mb-4">
+     {/* <div className="flex justify-center gap-2 mb-4">
         {count.toString().padStart(4, '0').split('').map((digit, index) => (
           <div
             key={index}
@@ -57,14 +57,14 @@ export default function Home() {
             {digit}
           </div>
         ))}
-      </div>
+      </div> 
 
       <button
         className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded transition-colors"
         onClick={increment}
       >
         +1 Increase
-      </button>
+      </button> */}
     </div>
   );
 }

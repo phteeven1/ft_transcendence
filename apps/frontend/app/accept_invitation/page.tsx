@@ -1,8 +1,16 @@
 'use client';
+
 import { useState, useEffect, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User } from '../types';
+import InvitationValidating from './_components/invitation-validating';
+import InvitationInvalid from './_components/invitation-invalid';
+import InvitationAuth from './_components/invitation-auth';
+import InvitationConfirm from './_components/invitation-confirm';
+import InvitationJoining from './_components/invitation-joining';
+import InvitationError from './_components/invitation-error';
+import InvitationAlreadyMember from './_components/invitation-already-member';
 
 type PageState =
   | 'validating'
@@ -26,7 +34,6 @@ export default function AcceptInvitation() {
   const [groupId, setGroupId] = useState<number | null>(null);
   const [groupName, setGroupName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-
   const [formData, setFormData] = useState({
     userName: '',
     userPassword: '',
@@ -146,201 +153,48 @@ export default function AcceptInvitation() {
     }
   };
 
-  const handleDecline = () => {
-    router.push('/dashboard');
+  const handleDecline = () => router.push('/dashboard');
+  const handleGoToGroup = () => router.push('/manage_group');
+  const handleRetry = () => setPageState('confirm');
+  const handleAuthModeChange = (mode: AuthMode) => {
+    setAuthMode(mode);
+    setErrorMessage('');
   };
 
-  const containerClass = "min-h-screen bg-emerald-200";
-  const innerClass = "max-w-md mx-auto p-4";
-
-  if (pageState === 'validating') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <p className="text-gray-600 text-center mt-12">Validating invitation...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (pageState === 'invalid') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <h1 className="text-2xl font-bold mb-4 text-center">Invalid Invitation</h1>
-          <p className="text-gray-600 text-center">
-            This invitation link is invalid or has expired. Please ask for a new invitation.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (pageState === 'auth') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <h1 className="text-2xl font-bold mb-2 text-center">
-            You have been invited to join {groupName}
-          </h1>
-          <p className="mb-6 text-gray-600 text-center">
-            Please sign in or register to continue.
-          </p>
-
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => { setAuthMode('signin'); setErrorMessage(''); }}
-              className={`flex-1 py-2 rounded font-medium transition-colors ${
-                authMode === 'signin'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-blue-500 border border-blue-500'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { setAuthMode('register'); setErrorMessage(''); }}
-              className={`flex-1 py-2 rounded font-medium transition-colors ${
-                authMode === 'register'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-blue-500 border border-blue-500'
-              }`}
-            >
-              Register
-            </button>
-          </div>
-
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div>
-              <label htmlFor="userName" className="block mb-1">Username</label>
-              <input
-                type="text"
-                id="userName"
-                name="userName"
-                value={formData.userName}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                className="w-full p-2 border rounded"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="userPassword" className="block mb-1">Password</label>
-              <input
-                type="password"
-                id="userPassword"
-                name="userPassword"
-                value={formData.userPassword}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                className="w-full p-2 border rounded"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-            {authMode === 'register' && (
-              <div>
-                <label htmlFor="userEmail" className="block mb-1">Email</label>
-                <input
-                  type="email"
-                  id="userEmail"
-                  name="userEmail"
-                  value={formData.userEmail}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            )}
-            {errorMessage && (
-              <p className="text-red-600 text-sm">{errorMessage}</p>
-            )}
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-            >
-              Submit
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  if (pageState === 'confirm') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <h1 className="text-2xl font-bold mb-4 text-center">Join {groupName}?</h1>
-          <p className="mb-8 text-gray-600 text-center">
-            Would you like to join the learning group {groupName}?
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={handleDecline}
-              className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-medium py-3 px-4 rounded transition-colors"
-            >
-              No thanks
-            </button>
-            <button
-              onClick={handleJoin}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
-            >
-              Join Group
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (pageState === 'joining') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <p className="text-gray-600 text-center mt-12">Joining {groupName}...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (pageState === 'error') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <h1 className="text-2xl font-bold mb-4 text-center">Something went wrong</h1>
-          <p className="text-red-600 text-center mb-6">{errorMessage}</p>
-          <button
-            onClick={() => setPageState('confirm')}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (pageState === 'already_member') {
-    return (
-      <div className={containerClass}>
-        <div className={innerClass}>
-          <h1 className="text-2xl font-bold mb-4 text-center">Already a Member</h1>
-          <p className="text-gray-600 text-center mb-8">
-            You are already a member of {groupName}.
-          </p>
-          <button
-            onClick={() => router.push('/manage_group')}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-          >
-            Go to Group
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (pageState === 'validating') return <InvitationValidating />;
+  if (pageState === 'invalid') return <InvitationInvalid />;
+  if (pageState === 'auth') return (
+    <InvitationAuth
+      groupName={groupName}
+      authMode={authMode}
+      formData={formData}
+      errorMessage={errorMessage}
+      onAuthModeChange={handleAuthModeChange}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
+      onSubmit={handleAuth}
+    />
+  );
+  if (pageState === 'confirm') return (
+    <InvitationConfirm
+      groupName={groupName}
+      onJoin={handleJoin}
+      onDecline={handleDecline}
+    />
+  );
+  if (pageState === 'joining') return <InvitationJoining groupName={groupName} />;
+  if (pageState === 'error') return (
+    <InvitationError
+      errorMessage={errorMessage}
+      onRetry={handleRetry}
+    />
+  );
+  if (pageState === 'already_member') return (
+    <InvitationAlreadyMember
+      groupName={groupName}
+      onGoToGroup={handleGoToGroup}
+    />
+  );
 
   return null;
 }
