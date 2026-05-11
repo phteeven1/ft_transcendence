@@ -1,8 +1,18 @@
 'use client';
+
+// Expel Member button drives a three step modal flow.
+// 1. showModal: Shows all group members - admins greyed out - and allows user to select.
+//    'Expel' button stays disabled until a selection is made. Clicking 'Expel' closes modal.
+// 2. showConfirm: Asks user to confirm expelling the selected members. 
+//    'Back' returns to showModal, 'Expel' calls handleConfirmExpel, which POSTs to /groups/expel
+//    with id's of group and selected members. On success, it calls syncAndRefresh to update.
+// 3. showResult: shows either successful result or error message. 'OK' button to close.
+
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { Member } from '../../types';
 
+// defines shape of props that ExpelMember must receive from parent
 type Props = {
   currentGroupMembers: Member[];
   syncAndRefresh: () => Promise<void>;
@@ -16,6 +26,7 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
 
+  // Guard. Returns null if no group
   if (!group) return null;
 
   const nonAdmins = currentGroupMembers.filter(m => !m.isAdmin);
@@ -23,31 +34,38 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
 
   const selectedMember = currentGroupMembers.find(m => m.memberId === selectedId) ?? null;
 
+  // resets selectedId to null and opens selection modal.
   const handleOpen = () => {
     setSelectedId(null);
     setShowModal(true);
   };
 
+  // hides the selection modal and resets selectedId to null
   const handleClose = () => {
     setShowModal(false);
     setSelectedId(null);
   };
 
+  // hides the result modal and clears the result message
   const handleCloseResult = () => {
     setShowResult(false);
     setResultMessage('');
   };
 
+  // toggles the selection of a member. Already selected -> unselected -> selected
   const handleSelect = (memberId: number) => {
     setSelectedId(prev => prev === memberId ? null : memberId);
   };
 
+  // guards against no selection, then closes selection modal and opens confirmation modal
   const handleExpelClick = () => {
     if (!selectedId) return;
     setShowModal(false);
     setShowConfirm(true);
   };
 
+  // is called when 'Expel' is clicked in confirmation modal. Guards against no selected group or member
+  // POSTS to /groups/expel with group id and 
   const handleConfirmExpel = async () => {
     if (!selectedId || !selectedMember) return;
     try {

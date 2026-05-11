@@ -1,4 +1,14 @@
 'use client';
+
+/* renders Leave Group button, that handles several scenarios before actually leaving
+  all controlled by ModalState variable, that tells us where in the process we are at
+  Pre rendering, it calculates the following: total member count, is current user the only admin, 
+  and is current user the last member. The four stages are:
+  1. confirmLeave: initial 'are you sure?'
+  2. onlyAdmin: blocks leaving group, tells user to promote someone else to admin first
+  3. confirmLastMamber: warns that the group will be deleted if last member leaves
+  4. error: shown if backend call fails.
+*/
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
@@ -26,10 +36,14 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
     group.groupAdmins.includes(user.userId) && group.groupAdmins.length === 1;
   const isLastMember = totalMembers === 1;
 
+  // opens initial confirmation modal
   const handleClick = () => {
     setModal('confirmLeave');
   };
 
+  // checks which scenario applies. If user is only admin, shows onlyAdmin modal.
+  // if user is last member, shows confirmLastMember modal.
+  // otherwise, calls executeLeave
   const handleConfirmLeave = () => {
     if (isOnlyAdmin && !isLastMember) {
       setModal('onlyAdmin');
@@ -42,6 +56,8 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
     executeLeave();
   };
 
+  // POSTs to /groups/leave then refreshes the user in auth context
+  // and clears the group from auth context via leaveGroup(), then navigates to /dashboard
   const executeLeave = async () => {
     if (!user || !group) return;
     try {

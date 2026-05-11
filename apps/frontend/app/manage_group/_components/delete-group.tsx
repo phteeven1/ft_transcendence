@@ -14,12 +14,15 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
   const [showResult, setShowResult] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
 
+  // Guard. Returns null if no user or no group
   if (!user || !group) return null;
 
+  // true if user is the only admin in the group
   const isOnlyAdmin =
     group.groupAdmins.includes(user.userId) &&
     group.groupAdmins.length === 1;
 
+  // on clicking Delete Group. Checks conditional. 
   const handleClick = () => {
     if (!isOnlyAdmin) {
       setResultMessage(
@@ -32,6 +35,7 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
     setShowConfirm(true);
   };
 
+  // deletes the group by POSTing delete to backend with groupId.
   const handleConfirm = async () => {
     try {
       const res = await fetch('http://localhost:4000/groups/delete', {

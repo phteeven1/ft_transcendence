@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Member } from '../types';
 
-// All buttons are extracted to components/group, and then imported here
+// All buttons are extracted to manage_group/_components, and imported here
 import MemberList from './_components/member-list';
 import BackToDashboard from './_components/back-to-dashboard';
 import LeaveGroup from './_components/leave-group';
@@ -22,6 +22,7 @@ export default function ManageGroup() {
   const router = useRouter();
   const [currentGroupMembers, setCurrentGroupMembers] = useState<Member[]>([]);
 
+  // Guard. Sends to landing page if no user or no group
   useEffect(() => {
     if (!user || !group) {
       router.push('/');
@@ -30,6 +31,7 @@ export default function ManageGroup() {
     fetchMembers();
   }, []);
 
+  // forces refresh every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       syncAndRefresh();
@@ -37,6 +39,9 @@ export default function ManageGroup() {
     return () => clearInterval(interval);
   }, []);
 
+  // fetches the full Member objects for the current group from backend and stores in currentGroupMembers
+  // this is used to populate MemberList and is also passed as props to functions that
+  // needs to know who is in the group
   const fetchMembers = async () => {
     if (!group) return;
     try {
@@ -49,6 +54,10 @@ export default function ManageGroup() {
     }
   };
 
+  // this function is called every 5s to keep page in sync with changes made by others
+  // syncs the current group from backend via syncGroup -
+  // if user has been removed, it clears the group from both auth context via leaveGroup
+  // and redirects to /dashboard, otherwise, it calls fetchMember to refresh member list
   const syncAndRefresh = async () => {
     if (!group || !user) return;
     const updatedGroup = await syncGroup(group.groupId);
@@ -87,6 +96,7 @@ export default function ManageGroup() {
     </>
   );
 
+  // layout
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">

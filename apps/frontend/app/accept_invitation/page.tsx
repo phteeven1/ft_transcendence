@@ -1,5 +1,25 @@
 'use client';
 
+/* keeps track of sequence of accepting an invitation using a PageState variable 
+  that renders a subcomponent at every stage.
+  1. validating: (initial state) useEffect reads the token from the URL query string.
+    If no token, then jumps to 'invalid'.
+    Otherwise calls validateToken, which checks token against backend and fetches 
+    group name. On success it sets pageState to 'auth'.
+  2. auth: renders the sign-in/register form. User can toggle between register and sign-in.
+    on submit, handleAuth POSTs to either /users/signin or /users/register
+    On success, it stores in both auth context and local currentUser state,
+    then moves on to 'confirm'.
+  3. confirm: asks user if they want to join group. Declining sends to /dashboard
+    accepting calls handleJoin.
+  4. joining: shown while handleJoin is running. Checks if user is already member -
+    if so, jumps to 'already_member'
+    Otherwise, it POSTs to /groups/addMember 
+    then POSTs to /invitations/accept to consume token 
+    then refreshes the user and syncs group before navigating to /manage_group
+  5. already_member: is a terminal state. It offers a button to /manage_group
+  6. error: is a terminal state. Offers retry button that goes back to 'confirm'  */
+
 import { useState, useEffect, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -12,6 +32,7 @@ import InvitationJoining from './_components/invitation-joining';
 import InvitationError from './_components/invitation-error';
 import InvitationAlreadyMember from './_components/invitation-already-member';
 
+// PageState variable moves through sequence of steps, reading different subcomponents
 type PageState =
   | 'validating'
   | 'invalid'
@@ -41,6 +62,7 @@ export default function AcceptInvitation() {
   });
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
+  // pageState = validating. If no token exists, then returns invalid
   useEffect(() => {
     if (!token) {
       setPageState('invalid');
@@ -49,6 +71,7 @@ export default function AcceptInvitation() {
     validateToken();
   }, []);
 
+  // checks token against backend and fetches groups name. On success sets pageState to auth
   const validateToken = async () => {
     try {
       const res = await fetch(`http://localhost:4000/invitations/validate/${token}`);
@@ -72,15 +95,23 @@ export default function AcceptInvitation() {
     }
   };
 
+  // updates formData on any change to input fields
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // prevents pressing Enter from submitting
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') e.preventDefault();
   };
 
+  // is called when Submit is clicked on the auth form. preventDefault stops page from reloading
+  // then picks URL and requests body based on authMode (signin or register)
+  // POSTs to appropriate endpoint, and on success stores both local in currentUser
+  // and in auth context via login()
+  // then advances pageState to 'confirm'
+  // on failure it sets error message and displays inline.
   const handleAuth = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
@@ -112,6 +143,14 @@ export default function AcceptInvitation() {
     }
   };
 
+  // is called when user clicks "Join Group" on confirm screen.
+  // guards against missing data - if so, returns early
+  // sets pageStage to 'joining' to show screen while async is working
+  // Fetches group from backend and checks if user is alread admin or member
+  // - if so, jumps to 'already_member'
+  // POSTs to /groups/addMember to add the user to the group
+  // POSTs to /invitations/accept to consume token
+  // Refreshes user in auth context, syncs group, navigates to /manage_group
   const handleJoin = async () => {
     if (!currentUser || !groupId || !token) return;
     setPageState('joining');

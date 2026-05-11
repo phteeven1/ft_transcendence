@@ -20,6 +20,7 @@ export default function SelectGame() {
 
   if (!player) return null;
 
+  // Placeholder layout for selecting games
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-md mx-auto p-4">

@@ -15,17 +15,22 @@ export default function SignIn() {
   const { login } = useAuth();
   const router = useRouter();
 
+  // updates formData on any change to any of the two fields
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // prevents Enter at the end of an input from submitting
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
     }
   };
 
+  // prevents browser default of reloading page, then
+  // POSTs formData to /users/signin and stores returned User object in auth context
+  // then navigates to dashboard
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
@@ -47,6 +52,8 @@ export default function SignIn() {
     }
   };
 
+  // layout with two input fields and one Submit button. On Password field, 
+  // type is set to "password" to prevent browser from suggesting old passwords
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="bg-emerald-200 max-w-md mx-auto p-4">

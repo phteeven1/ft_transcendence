@@ -5,6 +5,7 @@ export default function BackToDashboard() {
   const { leaveGroup } = useAuth();
   const router = useRouter();
 
+  // this button sends the user back to dashboard
   const handleBackToDashboard = () => {
     leaveGroup();
     router.push('/dashboard');

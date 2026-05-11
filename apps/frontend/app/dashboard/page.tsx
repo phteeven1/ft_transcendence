@@ -47,7 +47,6 @@ export default function Dashboard() {
     const interval = setInterval(() => {
       loadDashboard();
     }, 5000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -59,15 +58,12 @@ export default function Dashboard() {
   const handleGroupClick = async (groupId: number) => {
     const result = await syncGroup(groupId);
     if (!result) return;
-
     const isMember = result.groupMembers.includes(user.userId) ||
       result.groupAdmins.includes(user.userId);
-
     if (!isMember) {
       await loadDashboard();
       return;
     }
-
     router.push('/manage_group');
   };
 
