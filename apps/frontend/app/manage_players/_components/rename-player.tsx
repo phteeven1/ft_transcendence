@@ -1,4 +1,13 @@
 'use client';
+
+/*
+renders button and one input field. Three states:
+- isOpen, controls modal
+- renameName, the new name
+- isActive, derived from selectedPlayer !== null
+*/
+
+
 import { useState } from 'react';
 import { Player } from '../../types';
 
@@ -13,6 +22,9 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
 
   const isActive = selectedPlayer !== null;
 
+  // guards against no selectedPlayer and empty input field
+  // POSTs playerId and new playerName to backend
+  // on success, calls onRenamed(updated) with full updated player from backend
   const handleRename = async () => {
     if (!selectedPlayer || !renameName.trim()) return;
     try {
@@ -34,6 +46,7 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
     }
   };
 
+  // Rename button is disabled until player is selected
   return (
     <>
       <button

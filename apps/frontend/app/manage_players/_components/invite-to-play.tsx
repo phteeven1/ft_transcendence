@@ -1,4 +1,10 @@
 'use client';
+
+/*
+this is the bridge between parent session and player session
+only prop is selectedPlayer, with no callback, since it doesn't modify players
+*/
+
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
@@ -15,6 +21,8 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
 
   const isActive = selectedPlayer !== null;
 
+  // guards against no player, then logs out of parent session
+  // logs in as player, navigates to select_game
   const handlePlayNow = () => {
     if (!selectedPlayer) return;
     logout();

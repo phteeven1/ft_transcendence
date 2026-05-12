@@ -34,3 +34,10 @@ gmail password: gek/329-BEX*586?
 App passwords on
 name: Dictee
 app password: ciyvrpoqnssxqlhy
+
+Things to do:
+check uniqueness of userName
+check validity of userEmail
+check minimum requirements of userPassword
+
+store user, group, vocabulary and players in database (type Member is only used locally)

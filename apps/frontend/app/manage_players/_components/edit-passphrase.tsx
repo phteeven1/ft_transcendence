@@ -1,4 +1,14 @@
 'use client';
+
+/*
+renders button 'Edit PassPhrase' button and modal for new phrase and answer.
+the phrase is prefilled on opening, but not the answer. States are:
+- isOpen, controls modal
+- passQuestion, passAnswer, controlled inputs
+- isActive, is derived from selectedPlayer !== null
+*/
+
+
 import { useState } from 'react';
 import { Player } from '../../types';
 
@@ -14,6 +24,8 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
 
   const isActive = selectedPlayer !== null;
 
+
+  // prefills passQuestion but clears passAnswer, then sets modal to open
   const handleOpen = () => {
     if (!selectedPlayer) return;
     setPassQuestion(selectedPlayer.playerPassQuestion);
@@ -21,6 +33,9 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
     setIsOpen(true);
   };
 
+  // guards against no player, and empty fields. POSTs both question and answer to backend
+  // on success, calls onUpdated(updated) with full updated player returned from backend,
+  // then resets and closes
   const handleSave = async () => {
     if (!selectedPlayer || !passQuestion.trim() || !passAnswer.trim()) return;
     try {
@@ -44,6 +59,7 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
     }
   };
 
+  // buttons have both active and inactive states. 'Cancel' doesn't reset fields, just closes modal
   return (
     <>
       <button

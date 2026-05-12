@@ -1,6 +1,17 @@
 'use client';
+
+/*
+display component of player list. no state and makes no fetch
+just renders what it receives, and reports clicks back up.
+- players: the array to render
+- selectedPlayer: used to highlight current player
+- isLoading: controls loading state
+- onSelected: callback to the parent when player is clicked
+*/
+
 import { Player } from '../../types';
 
+// onSelect passes the whole Player object up to parent
 type Props = {
   players: Player[];
   selectedPlayer: Player | null;
@@ -12,6 +23,7 @@ export default function PlayerList({ players, selectedPlayer, isLoading, onSelec
   if (isLoading) return <p className="text-gray-500 text-sm">Loading...</p>;
   if (players.length === 0) return <p className="text-gray-500 text-sm italic">No players yet.</p>;
 
+  // maps over players and renders each as a button, based on playerId
   return (
     <div className="space-y-2">
       {players.map(player => (

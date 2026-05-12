@@ -39,7 +39,7 @@ export default function DeletePlayer({ selectedPlayer, onDeleted }: Props) {
     }
   };
 
-  // renders button and 
+  // renders button and confirmation modal
   return (
     <>
       <button
