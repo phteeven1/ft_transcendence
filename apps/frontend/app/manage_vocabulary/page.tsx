@@ -37,6 +37,8 @@ export default function ManageVocabulary() {
     fetchVocabularies();
   }, []);
 
+  // guards against no group. fetches only the vocabularies belonging to current group
+  // displays eventual error, then closes state isLoading regardless of success or failure
   const fetchVocabularies = async () => {
     if (!group) return;
     try {

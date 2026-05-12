@@ -34,6 +34,8 @@ export default function ManagePlayers() {
     fetchPlayers();
   }, []);
 
+  // guards against no user or no group. fetches only the players belonging to current user in current group
+  // displays eventual error, then closes state isLoading regardless of success or failure
   const fetchPlayers = async () => {
     if (!user || !group) return;
     try {
@@ -50,26 +52,32 @@ export default function ManagePlayers() {
     }
   };
 
+  // toggle. If already selected -> null, if not selected 
   const handleSelect = (player: Player) => {
     setSelectedPlayer(prev =>
       prev?.playerId === player.playerId ? null : player
     );
   };
 
+  // appends new player to end of array 'players' using setPlayers
   const handleCreated = (player: Player) => {
     setPlayers(prev => [...prev, player]);
   };
 
+  // maps over array 'players' and for the player whose id matches, replaces with updated version
+  // also updates selectedPlayer to reflect new name immediatelly
   const handleRenamed = (updated: Player) => {
     setPlayers(prev => prev.map(p => p.playerId === updated.playerId ? updated : p));
     setSelectedPlayer(updated);
   };
 
+  // exactly the same as handleRenamed, but this is triggered by passphrase edit. To differentiate
   const handleUpdated = (updated: Player) => {
     setPlayers(prev => prev.map(p => p.playerId === updated.playerId ? updated : p));
     setSelectedPlayer(updated);
   };
 
+  // filetrs out the player whose id matches. Then clears selectedPlayer, since selected player is gone
   const handleDeleted = (playerId: number) => {
     setPlayers(prev => prev.filter(p => p.playerId !== playerId));
     setSelectedPlayer(null);

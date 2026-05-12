@@ -1,4 +1,11 @@
 'use client';
+
+/*
+creates button Delete Player and confirmation modal. states are:
+- isOpen, controls confirmation modal
+- isActive, derived from selectedPlayer, is null or not, used to enable/disable button
+*/
+
 import { useState } from 'react';
 import { Player } from '../../types';
 
@@ -12,6 +19,10 @@ export default function DeletePlayer({ selectedPlayer, onDeleted }: Props) {
 
   const isActive = selectedPlayer !== null;
 
+
+  // guards against no selectedPlayer, POSTs to backend with just player id
+  // on success, calls onDeleted(selectedPlayer.playerId) to remove player from parent's list
+  // on failure, logs error
   const handleDelete = async () => {
     if (!selectedPlayer) return;
     try {
@@ -28,6 +39,7 @@ export default function DeletePlayer({ selectedPlayer, onDeleted }: Props) {
     }
   };
 
+  // renders button and 
   return (
     <>
       <button

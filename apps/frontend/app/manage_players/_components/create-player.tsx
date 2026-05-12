@@ -1,4 +1,12 @@
 'use client';
+
+/*
+opens modal form, using the following states:
+- isOpen controls whether the modal is visible
+- playerName, passQuestion, passAnswer, controlled inputs, one per field
+- error, holds validation or server error to display
+*/
+
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { Player } from '../../types';
@@ -15,6 +23,9 @@ export default function CreatePlayer({ onCreated }: Props) {
   const [passAnswer, setPassAnswer] = useState('');
   const [error, setError] = useState('');
 
+  // guards against no user or group, then validates that all three form fields are non-empty
+  // POSTs to backend with player data, on success calls onCreated(created) to add new player to the parent's list
+  // then calls handleClose. On failure, sets error message
   const handleCreate = async () => {
     if (!user || !group) return;
     if (!playerName.trim() || !passQuestion.trim() || !passAnswer.trim()) {
@@ -43,6 +54,8 @@ export default function CreatePlayer({ onCreated }: Props) {
     }
   };
 
+  // resets all state back to empty and closes modal. Ensures that next time form
+  // is opened, it is not pre filled with old data
   const handleClose = () => {
     setIsOpen(false);
     setPlayerName('');
@@ -51,6 +64,7 @@ export default function CreatePlayer({ onCreated }: Props) {
     setError('');
   };
 
+  // renders two things. CreatePlayer button is always visible. modal is only rendered when isOpen === true
   return (
     <>
       <button
@@ -72,8 +86,8 @@ export default function CreatePlayer({ onCreated }: Props) {
                 onChange={e => setPlayerName(e.target.value)}
                 className="w-full p-2 border rounded"
                 placeholder="e.g. Adam"
-                autoComplete="new-password"
-              />
+                autoComplete="new-password" 
+              /> {/* autoComplete="new-password" stops browser from autofilling */}
             </div>
             <div>
               <label className="block mb-1">Secret Question</label>

@@ -1,4 +1,5 @@
 // type for parents as users. Can manage groups, vocabularies and player profiles. Not for playing
+// userId is unique across the plattform. Even is a user is later deleted, the id is never re-used
 export type User = {
   userId: number;
   userName: string;
@@ -10,6 +11,7 @@ export type User = {
 
 // users are members or admins of groups. Groups can have several of each, but at least one admin
 // users can be admins and/or members of several different groups
+// groupId is unique and never re-used. Even groups created by completely different users never have same. 
 export type Group = {
   groupId: number;
   groupName: string;
@@ -21,6 +23,7 @@ export type Group = {
 // logs in to a group or creates a new group. Stored in arrays of Member
 // /manage_group is refreshed every 5s to make sure that changes done by one user
 // are passed on to other users logged in at the same time
+// memberId is the userId of that member
 export type Member = {
   memberId: number;
   memberName: string;
@@ -32,6 +35,7 @@ export type Member = {
 // can manage that player profile
 // When the player wants to log in to play a game, they do so through shortcut
 // set up by user, and answers passQuestion (not password) to confirm identity
+// playerId is unique number and never re-used, even if created by different user in different group
 export type Player = {
   playerId: number;
   playerInGroup: number;
@@ -42,6 +46,7 @@ export type Player = {
 
 // vocabulary is a list of words used by dicteé to generate relevant crosswords and games
 // belongs to a specific group, and can only be managed by admin of that group
+// vocabularyId is unique number, and never re-used even if in different group
 export type Vocabulary = {
   vocabularyId: number;
   vocabularyInGroup: number;
