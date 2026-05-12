@@ -1,4 +1,12 @@
 'use client';
+
+/*
+layout structure for manage players. Fetches user and group on mount and builds players array
+child components report back via callbacks once their server request succeeds.
+Parent updates its own local copy without refetching full list from backend.
+players always belong to both a group and a user
+*/
+
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
@@ -17,6 +25,7 @@ export default function ManagePlayers() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // guard. if no group or user then back to landing page
   useEffect(() => {
     if (!user || !group) {
       router.push('/');
@@ -74,7 +83,7 @@ export default function ManagePlayers() {
         <h1 className="text-2xl font-bold mb-2 text-center">{group.groupName}</h1>
         <p className="text-sm text-gray-600 mb-6 text-center">Manage Players</p>
 
-        <div className="md:grid md:grid-cols-3 gap-6">
+        <div className="md:grid md:grid-cols-3 gap-6"> {/* overrides with pc layout if md */}
           {/* Player list */}
           <div className="col-span-1 mb-6 md:mb-0">
             <h2 className="text-lg font-semibold mb-2">Your Players</h2>
