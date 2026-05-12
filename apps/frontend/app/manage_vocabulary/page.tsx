@@ -1,4 +1,15 @@
 'use client';
+
+/*
+this is the layout structure to manage vocabularies. It fetches once on mount, then manages everything locally
+via callbacks. Optimistic UI pattern. Assumes that it is not so important or likely if two admins happen
+to work on the same vocabulary list at the same time. State will be updated at next call to manage_vocabulary.
+Child components handle their own modals/logic and report back via onXxx props. Three states:
+vocabularies: is the full list fetched from backend.
+selectedVocabulary: whichever the user has clicked or null.
+isLoading: shows loading state while fetching.
+*/
+
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
@@ -42,12 +53,14 @@ export default function ManageVocabulary() {
     }
   };
 
+  // toggle. If already selected -> null, if not selected -> select it
   const handleSelect = (vocabulary: Vocabulary) => {
     setSelectedVocabulary(prev =>
       prev?.vocabularyId === vocabulary.vocabularyId ? null : vocabulary
     );
   };
 
+  // sets isCurrent: true on the activated vocabulary and isCurrent: false on all others
   const handleActivated = (updated: Vocabulary) => {
     // Set all to inactive, then set the updated one to active
     setVocabularies(prev =>
@@ -59,10 +72,12 @@ export default function ManageVocabulary() {
     setSelectedVocabulary(updated);
   };
 
+  // appends a new vocabulary to the list
   const handleImported = (vocabulary: Vocabulary) => {
     setVocabularies(prev => [...prev, vocabulary]);
   };
 
+  // maps over list and replaces matching entry id, also updates selectedVocabulary
   const handleRenamed = (updated: Vocabulary) => {
     setVocabularies(prev =>
       prev.map(v => v.vocabularyId === updated.vocabularyId ? updated : v)
@@ -70,11 +85,13 @@ export default function ManageVocabulary() {
     setSelectedVocabulary(updated);
   };
 
+  // filters out deleted entry by id, then clears selection
   const handleDeleted = (vocabularyId: number) => {
     setVocabularies(prev => prev.filter(v => v.vocabularyId !== vocabularyId));
     setSelectedVocabulary(null);
   };
 
+  // maps over list and replaces matching entry id, also updates selectedVocabulary
   const handleEdited = (updated: Vocabulary) => {
     setVocabularies(prev =>
       prev.map(v => v.vocabularyId === updated.vocabularyId ? updated : v)
@@ -90,7 +107,7 @@ export default function ManageVocabulary() {
         <h1 className="text-2xl font-bold mb-2 text-center">{group.groupName}</h1>
         <p className="text-sm text-gray-600 mb-6 text-center">Manage Vocabulary</p>
 
-        <div className="md:grid md:grid-cols-3 gap-6">
+        <div className="md:grid md:grid-cols-3 gap-6"> {/* overrides with pc layout if md */}
           {/* Vocabulary list */}
           <div className="col-span-1 mb-6 md:mb-0">
             <h2 className="text-lg font-semibold mb-2">Vocabularies</h2>
