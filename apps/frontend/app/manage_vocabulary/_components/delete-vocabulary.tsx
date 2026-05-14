@@ -7,26 +7,29 @@ type Props = {
   onDeleted: (vocabularyId: number) => void;
 };
 
-export default function DeleteVocabulary({ selectedVocabulary, onDeleted }: Props) {
-	const [isOpen, setIsOpen] = useState(false);
+export default function DeleteVocabulary({
+  selectedVocabulary,
+  onDeleted,
+}: Props) {
+  const [isOpen, setIsOpen] = useState(false);
 
-	const isActive = selectedVocabulary !== null;
+  const isActive = selectedVocabulary !== null;
 
-	const handleDelete = async () => {
-		if (!selectedVocabulary) return;
-		try {
-			const res = await fetch('http://localhost:4000/vocabularies/remove', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ vocabularyId: selectedVocabulary.vocabularyId }),
-			});
-			if (!res.ok) throw new Error(`Server error: ${res.status}`);
-			onDeleted(selectedVocabulary.vocabularyId);
-			setIsOpen(false);
-		} catch (error) {
-			console.error('deleteVocabulary failed:', error);
-		}
-	};
+  const handleDelete = async () => {
+    if (!selectedVocabulary) return;
+    try {
+      const res = await fetch('http://localhost:4000/vocabularies/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vocabularyId: selectedVocabulary.id }),
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      onDeleted(selectedVocabulary.id);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('deleteVocabulary failed:', error);
+    }
+  };
 
   return (
     <>
@@ -45,9 +48,12 @@ export default function DeleteVocabulary({ selectedVocabulary, onDeleted }: Prop
       {isOpen && selectedVocabulary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Delete {selectedVocabulary.vocabularyName}?</h2>
+            <h2 className="text-xl font-bold">
+              Delete {selectedVocabulary.name}?
+            </h2>
             <p className="text-gray-600">
-              This will permanently delete this vocabulary list. This cannot be undone.
+              This will permanently delete this vocabulary list. This cannot be
+              undone.
             </p>
             <div className="flex gap-3">
               <button

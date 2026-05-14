@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async (): Promise<User | null> => {
     if (!user) return null;
     try {
-      const res = await fetch(`http://localhost:4000/users/${user.userId}`);
+      const res = await fetch(`http://localhost:4000/users/${user.id}`);
       if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
       const data: User = await res.json();
       setUser(data);
@@ -75,11 +75,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{
-      user, group, player,
-      login, logout, leaveGroup, syncGroup, refreshUser,
-      loginAsPlayer, logoutPlayer,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        group,
+        player,
+        login,
+        logout,
+        leaveGroup,
+        syncGroup,
+        refreshUser,
+        loginAsPlayer,
+        logoutPlayer,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -20,7 +20,13 @@
   5. already_member: is a terminal state. It offers a button to /manage_group
   6. error: is a terminal state. Offers retry button that goes back to 'confirm'  */
 
-import { useState, useEffect, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  ChangeEvent,
+  SyntheticEvent,
+  KeyboardEvent,
+} from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User } from '../types';
@@ -74,7 +80,9 @@ export default function AcceptInvitation() {
   // checks token against backend and fetches groups name. On success sets pageState to auth
   const validateToken = async () => {
     try {
-      const res = await fetch(`http://localhost:4000/invitations/validate/${token}`);
+      const res = await fetch(
+        `http://localhost:4000/invitations/validate/${token}`,
+      );
       if (!res.ok) throw new Error('Failed to validate token');
       const data = await res.json();
       if (!data.valid) {
@@ -87,7 +95,7 @@ export default function AcceptInvitation() {
       const groupRes = await fetch(`http://localhost:4000/groups/${gId}`);
       if (!groupRes.ok) throw new Error('Failed to fetch group');
       const group = await groupRes.json();
-      setGroupName(group.groupName);
+      setGroupName(group.name);
       setPageState('auth');
     } catch (error) {
       console.error('Token validation failed:', error);
@@ -98,7 +106,7 @@ export default function AcceptInvitation() {
   // updates formData on any change to input fields
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // prevents pressing Enter from submitting
@@ -115,13 +123,19 @@ export default function AcceptInvitation() {
   const handleAuth = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const url = authMode === 'signin'
-        ? 'http://localhost:4000/users/signin'
-        : 'http://localhost:4000/users/register';
+      const url =
+        authMode === 'signin'
+          ? 'http://localhost:4000/users/signin'
+          : 'http://localhost:4000/users/register';
 
-      const body = authMode === 'signin'
-        ? { userName: formData.userName, userPassword: formData.userPassword }
-        : { userName: formData.userName, userPassword: formData.userPassword, userEmail: formData.userEmail };
+      const body =
+        authMode === 'signin'
+          ? { userName: formData.userName, userPassword: formData.userPassword }
+          : {
+              userName: formData.userName,
+              userPassword: formData.userPassword,
+              userEmail: formData.userEmail,
+            };
 
       const res = await fetch(url, {
         method: 'POST',
@@ -138,7 +152,7 @@ export default function AcceptInvitation() {
       setErrorMessage(
         authMode === 'signin'
           ? 'Invalid username or password. Please try again.'
-          : 'Registration failed. Username may already be taken.'
+          : 'Registration failed. Username may already be taken.',
       );
     }
   };
@@ -160,8 +174,7 @@ export default function AcceptInvitation() {
       const groupData = await groupRes.json();
 
       const isAlreadyMember =
-        groupData.groupMembers.includes(currentUser.userId) ||
-        groupData.groupAdmins.includes(currentUser.userId);
+        groupData.members.includes(currentUser.id) || groupData.admins.includes(currentUser.id);
 
       if (isAlreadyMember) {
         await syncGroup(groupId);
@@ -172,7 +185,7 @@ export default function AcceptInvitation() {
       const memberRes = await fetch('http://localhost:4000/groups/addMember', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId, userId: currentUser.userId }),
+        body: JSON.stringify({ groupId, userId: currentUser.id }),
       });
       if (!memberRes.ok) throw new Error('Failed to join group');
 
@@ -187,7 +200,9 @@ export default function AcceptInvitation() {
       router.push('/manage_group');
     } catch (error) {
       console.error('Failed to join group:', error);
-      setErrorMessage('Something went wrong while joining the group. Please try again.');
+      setErrorMessage(
+        'Something went wrong while joining the group. Please try again.',
+      );
       setPageState('error');
     }
   };
@@ -202,38 +217,40 @@ export default function AcceptInvitation() {
 
   if (pageState === 'validating') return <InvitationValidating />;
   if (pageState === 'invalid') return <InvitationInvalid />;
-  if (pageState === 'auth') return (
-    <InvitationAuth
-      groupName={groupName}
-      authMode={authMode}
-      formData={formData}
-      errorMessage={errorMessage}
-      onAuthModeChange={handleAuthModeChange}
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
-      onSubmit={handleAuth}
-    />
-  );
-  if (pageState === 'confirm') return (
-    <InvitationConfirm
-      groupName={groupName}
-      onJoin={handleJoin}
-      onDecline={handleDecline}
-    />
-  );
-  if (pageState === 'joining') return <InvitationJoining groupName={groupName} />;
-  if (pageState === 'error') return (
-    <InvitationError
-      errorMessage={errorMessage}
-      onRetry={handleRetry}
-    />
-  );
-  if (pageState === 'already_member') return (
-    <InvitationAlreadyMember
-      groupName={groupName}
-      onGoToGroup={handleGoToGroup}
-    />
-  );
+  if (pageState === 'auth')
+    return (
+      <InvitationAuth
+        groupName={groupName}
+        authMode={authMode}
+        formData={formData}
+        errorMessage={errorMessage}
+        onAuthModeChange={handleAuthModeChange}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onSubmit={handleAuth}
+      />
+    );
+  if (pageState === 'confirm')
+    return (
+      <InvitationConfirm
+        groupName={groupName}
+        onJoin={handleJoin}
+        onDecline={handleDecline}
+      />
+    );
+  if (pageState === 'joining')
+    return <InvitationJoining groupName={groupName} />;
+  if (pageState === 'error')
+    return (
+      <InvitationError errorMessage={errorMessage} onRetry={handleRetry} />
+    );
+  if (pageState === 'already_member')
+    return (
+      <InvitationAlreadyMember
+        groupName={groupName}
+        onGoToGroup={handleGoToGroup}
+      />
+    );
 
   return null;
 }

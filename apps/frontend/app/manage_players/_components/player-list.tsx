@@ -19,24 +19,30 @@ type Props = {
   onSelect: (player: Player) => void;
 };
 
-export default function PlayerList({ players, selectedPlayer, isLoading, onSelect }: Props) {
+export default function PlayerList({
+  players,
+  selectedPlayer,
+  isLoading,
+  onSelect,
+}: Props) {
   if (isLoading) return <p className="text-gray-500 text-sm">Loading...</p>;
-  if (players.length === 0) return <p className="text-gray-500 text-sm italic">No players yet.</p>;
+  if (players.length === 0)
+    return <p className="text-gray-500 text-sm italic">No players yet.</p>;
 
   // maps over players and renders each as a button, based on playerId
   return (
     <div className="space-y-2">
-      {players.map(player => (
+      {players.map((player) => (
         <button
-          key={player.playerId}
+          key={player.id}
           onClick={() => onSelect(player)}
           className={`w-full text-left p-3 rounded border-2 transition-colors ${
-            selectedPlayer?.playerId === player.playerId
+            selectedPlayer?.id === player.id
               ? 'border-blue-500 bg-blue-50'
               : 'border-gray-200 bg-white hover:border-blue-300'
           }`}
         >
-          {player.playerName}
+          {player.name}
         </button>
       ))}
     </div>

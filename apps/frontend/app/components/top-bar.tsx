@@ -12,9 +12,12 @@ export default function TopBar() {
         <span className="font-bold text-lg">Dictee</span>
         {user && (
           <span className="text-sm text-gray-600">
-            Signed in as <strong>{user.userName}</strong>
+            Signed in as <strong>{user.name}</strong>
             {group && (
-              <span> in group <strong>{group.groupName}</strong></span>
+              <span>
+                {' '}
+                in group <strong>{group.name}</strong>
+              </span>
             )}
           </span>
         )}

@@ -8,7 +8,6 @@ the phrase is prefilled on opening, but not the answer. States are:
 - isActive, is derived from selectedPlayer !== null
 */
 
-
 import { useState } from 'react';
 import { Player } from '../../types';
 
@@ -24,11 +23,10 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
 
   const isActive = selectedPlayer !== null;
 
-
   // prefills passQuestion but clears passAnswer, then sets modal to open
   const handleOpen = () => {
     if (!selectedPlayer) return;
-    setPassQuestion(selectedPlayer.playerPassQuestion);
+    setPassQuestion(selectedPlayer.passQuestion);
     setPassAnswer('');
     setIsOpen(true);
   };
@@ -39,15 +37,18 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
   const handleSave = async () => {
     if (!selectedPlayer || !passQuestion.trim() || !passAnswer.trim()) return;
     try {
-      const res = await fetch('http://localhost:4000/players/updatePassPhrase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerId: selectedPlayer.playerId,
-          playerPassQuestion: passQuestion.trim(),
-          playerPassAnswer: passAnswer.trim(),
-        }),
-      });
+      const res = await fetch(
+        'http://localhost:4000/players/updatePassPhrase',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playerId: selectedPlayer.id,
+            playerPassQuestion: passQuestion.trim(),
+            playerPassAnswer: passAnswer.trim(),
+          }),
+        },
+      );
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const updated: Player = await res.json();
       onUpdated(updated);
@@ -77,13 +78,15 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
       {isOpen && selectedPlayer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Edit PassPhrase for {selectedPlayer.playerName}</h2>
+            <h2 className="text-xl font-bold">
+              Edit PassPhrase for {selectedPlayer.name}
+            </h2>
             <div>
               <label className="block mb-1">Secret Question</label>
               <input
                 type="text"
                 value={passQuestion}
-                onChange={e => setPassQuestion(e.target.value)}
+                onChange={(e) => setPassQuestion(e.target.value)}
                 className="w-full p-2 border rounded"
                 autoComplete="new-password"
               />
@@ -93,7 +96,7 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
               <input
                 type="text"
                 value={passAnswer}
-                onChange={e => setPassAnswer(e.target.value)}
+                onChange={(e) => setPassAnswer(e.target.value)}
                 className="w-full p-2 border rounded"
                 placeholder="New answer"
                 autoComplete="new-password"

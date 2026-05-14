@@ -25,12 +25,12 @@ export default function CreateGroup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           groupName: groupName,
-          creatorId: user.userId,
+          creatorId: user.id,
         }),
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
-      const result = await syncGroup(data.groupId);
+      const result = await syncGroup(data.id);
       if (result) router.push('/manage_group');
     } catch (error) {
       console.error('Failed to create group:', error);
@@ -43,18 +43,20 @@ export default function CreateGroup() {
     <div className="min-h-screen bg-emerald-200">
       <div className="bg-emerald-200 max-w-md mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Create New Group</h1>
-        <p className="mb-6 text-gray-600">
-          Choose a name for your new group.
-        </p>
+        <p className="mb-6 text-gray-600">Choose a name for your new group.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="groupName" className="block mb-1">Group Name</label>
+            <label htmlFor="groupName" className="block mb-1">
+              Group Name
+            </label>
             <input
               type="text"
               id="groupName"
               name="groupName"
               value={groupName}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setGroupName(e.target.value)
+              }
               className="w-full p-2 border rounded"
               placeholder="Enter a group name"
               required

@@ -3,7 +3,7 @@
 // Expel Member button drives a three step modal flow.
 // 1. showModal: Shows all group members - admins greyed out - and allows user to select.
 //    'Expel' button stays disabled until a selection is made. Clicking 'Expel' closes modal.
-// 2. showConfirm: Asks user to confirm expelling the selected members. 
+// 2. showConfirm: Asks user to confirm expelling the selected members.
 //    'Back' returns to showModal, 'Expel' calls handleConfirmExpel, which POSTs to /groups/expel
 //    with id's of group and selected members. On success, it calls syncAndRefresh to update.
 // 3. showResult: shows either successful result or error message. 'OK' button to close.
@@ -18,7 +18,10 @@ type Props = {
   syncAndRefresh: () => Promise<void>;
 };
 
-export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Props) {
+export default function ExpelMember({
+  currentGroupMembers,
+  syncAndRefresh,
+}: Props) {
   const { group } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -29,10 +32,11 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
   // Guard. Returns null if no group
   if (!group) return null;
 
-  const nonAdmins = currentGroupMembers.filter(m => !m.isAdmin);
-  const admins = currentGroupMembers.filter(m => m.isAdmin);
+  const nonAdmins = currentGroupMembers.filter((m) => !m.isAdmin);
+  const admins = currentGroupMembers.filter((m) => m.isAdmin);
 
-  const selectedMember = currentGroupMembers.find(m => m.memberId === selectedId) ?? null;
+  const selectedMember =
+    currentGroupMembers.find((m) => m.id === selectedId) ?? null;
 
   // resets selectedId to null and opens selection modal.
   const handleOpen = () => {
@@ -54,7 +58,7 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
 
   // toggles the selection of a member. Already selected -> unselected -> selected
   const handleSelect = (memberId: number) => {
-    setSelectedId(prev => prev === memberId ? null : memberId);
+    setSelectedId((prev) => (prev === memberId ? null : memberId));
   };
 
   // guards against no selection, then closes selection modal and opens confirmation modal
@@ -65,20 +69,22 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
   };
 
   // is called when 'Expel' is clicked in confirmation modal. Guards against no selected group or member
-  // POSTS to /groups/expel with group id and 
+  // POSTS to /groups/expel with group id and
   const handleConfirmExpel = async () => {
     if (!selectedId || !selectedMember) return;
     try {
       const res = await fetch('http://localhost:4000/groups/expel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.groupId, userId: selectedId }),
+        body: JSON.stringify({ groupId: group.id, userId: selectedId }),
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       await syncAndRefresh();
       setShowConfirm(false);
       setSelectedId(null);
-      setResultMessage(`${selectedMember.memberName} has been expelled from ${group.groupName}.`);
+      setResultMessage(
+        `${selectedMember.name} has been expelled from ${group.name}.`,
+      );
       setShowResult(true);
     } catch (error) {
       console.error('Expel failed:', error);
@@ -103,31 +109,33 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[80vh]">
             <div className="p-6 pb-2">
               <h2 className="text-xl font-bold mb-1">Expel Member</h2>
-              <p className="text-sm text-gray-600 mb-4">Select a member to expel.</p>
+              <p className="text-sm text-gray-600 mb-4">
+                Select a member to expel.
+              </p>
             </div>
             <div className="overflow-y-auto flex-1 px-6">
               <ul>
-                {admins.map(member => (
+                {admins.map((member) => (
                   <li
-                    key={member.memberId}
+                    key={member.id}
                     className="flex items-center justify-between py-2 border-b border-gray-100"
                   >
-                    <span className="text-gray-400">{member.memberName}</span>
+                    <span className="text-gray-400">{member.name}</span>
                     <span className="text-xs text-gray-400">Admin</span>
                   </li>
                 ))}
-                {nonAdmins.map(member => (
+                {nonAdmins.map((member) => (
                   <li
-                    key={member.memberId}
+                    key={member.id}
                     className="flex items-center justify-between py-2 border-b border-gray-100 cursor-pointer"
-                    onClick={() => handleSelect(member.memberId)}
+                    onClick={() => handleSelect(member.id)}
                   >
-                    <span>{member.memberName}</span>
+                    <span>{member.name}</span>
                     <input
                       type="radio"
-                      checked={selectedId === member.memberId}
+                      checked={selectedId === member.id}
                       onChange={() => {}}
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       readOnly
                       className="w-4 h-4 accent-red-500 pointer-events-none"
                     />
@@ -164,12 +172,17 @@ export default function ExpelMember({ currentGroupMembers, syncAndRefresh }: Pro
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 className="text-xl font-bold mb-3">Are you sure?</h2>
             <p className="text-gray-700 mb-6">
-              This will expel <span className="font-semibold">{selectedMember.memberName}</span> from{' '}
-              <span className="font-semibold">{group.groupName}</span>. This cannot be undone.
+              This will expel{' '}
+              <span className="font-semibold">{selectedMember.name}</span> from{' '}
+              <span className="font-semibold">{group.name}</span>. This cannot
+              be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setShowConfirm(false); setShowModal(true); }}
+                onClick={() => {
+                  setShowConfirm(false);
+                  setShowModal(true);
+                }}
                 className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
               >
                 Back

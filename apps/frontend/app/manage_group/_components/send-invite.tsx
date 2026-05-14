@@ -11,13 +11,15 @@ export default function SendInvite() {
   const [showModal, setShowModal] = useState(false);
   const [inviteText, setInviteText] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [inviteStatus, setInviteStatus] = useState<
+    'idle' | 'sending' | 'success' | 'error'
+  >('idle');
   const [inviteError, setInviteError] = useState('');
 
   if (!group) return null;
 
   const handleOpen = () => {
-    setInviteText(DEFAULT_INVITE_TEXT(group.groupName));
+    setInviteText(DEFAULT_INVITE_TEXT(group.name));
     setInviteEmail('');
     setInviteStatus('idle');
     setInviteError('');
@@ -38,8 +40,8 @@ export default function SendInvite() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          groupId: group.groupId,
-          groupName: group.groupName,
+          groupId: group.id,
+          groupName: group.name,
           toEmail: inviteEmail,
           invitationText: inviteText,
         }),
@@ -85,20 +87,24 @@ export default function SendInvite() {
             ) : (
               <div className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Invitation</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Invitation
+                  </label>
                   <textarea
                     value={inviteText}
-                    onChange={e => setInviteText(e.target.value)}
+                    onChange={(e) => setInviteText(e.target.value)}
                     rows={6}
                     className="w-full p-2 border border-gray-300 rounded resize-y text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={inviteEmail}
-                    onChange={e => setInviteEmail(e.target.value)}
+                    onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="recipient@example.com"
                     className="w-full p-2 border border-gray-300 rounded text-sm"
                   />

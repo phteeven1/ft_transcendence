@@ -31,9 +31,9 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
 
   if (!user || !group) return null;
 
-  const totalMembers = group.groupMembers.length + group.groupAdmins.length;
+  const totalMembers = group.members.length + group.admins.length;
   const isOnlyAdmin =
-    group.groupAdmins.includes(user.userId) && group.groupAdmins.length === 1;
+    group.admins.includes(user.id) && group.admins.length === 1;
   const isLastMember = totalMembers === 1;
 
   // opens initial confirmation modal
@@ -64,7 +64,7 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
       const res = await fetch('http://localhost:4000/groups/leave', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.groupId, userId: user.userId }),
+        body: JSON.stringify({ groupId: group.id, userId: user.id }),
       });
       if (!res.ok) throw new Error(`Failed to leave group: ${res.status}`);
       await refreshUser();
@@ -91,7 +91,7 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 className="text-xl font-bold mb-3">Leave Group?</h2>
             <p className="text-gray-700 mb-6">
-              Are you sure you want to permanently leave {group.groupName}?
+              Are you sure you want to permanently leave {group.name}?
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -137,8 +137,8 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 className="text-xl font-bold mb-3">Group will be deleted</h2>
             <p className="text-gray-700 mb-6">
-              You are the last member of {group.groupName}. If you leave, the
-              group will be permanently removed.
+              You are the last member of {group.name}. If you leave, the group
+              will be permanently removed.
             </p>
             <div className="flex gap-3 justify-end">
               <button

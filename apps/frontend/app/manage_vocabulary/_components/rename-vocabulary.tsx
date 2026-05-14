@@ -7,7 +7,10 @@ type Props = {
   onRenamed: (vocabulary: Vocabulary) => void;
 };
 
-export default function RenameVocabulary({ selectedVocabulary, onRenamed }: Props) {
+export default function RenameVocabulary({
+  selectedVocabulary,
+  onRenamed,
+}: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [newName, setNewName] = useState('');
 
@@ -20,7 +23,7 @@ export default function RenameVocabulary({ selectedVocabulary, onRenamed }: Prop
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          vocabularyId: selectedVocabulary.vocabularyId,
+          vocabularyId: selectedVocabulary.id,
           vocabularyName: newName.trim(),
         }),
       });
@@ -51,11 +54,13 @@ export default function RenameVocabulary({ selectedVocabulary, onRenamed }: Prop
       {isOpen && selectedVocabulary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
-            <h2 className="text-xl font-bold">Rename {selectedVocabulary.vocabularyName}</h2>
+            <h2 className="text-xl font-bold">
+              Rename {selectedVocabulary.name}
+            </h2>
             <input
               type="text"
               value={newName}
-              onChange={e => setNewName(e.target.value)}
+              onChange={(e) => setNewName(e.target.value)}
               className="w-full p-2 border rounded"
               placeholder="New name"
               autoComplete="off"
@@ -73,7 +78,10 @@ export default function RenameVocabulary({ selectedVocabulary, onRenamed }: Prop
                 Rename
               </button>
               <button
-                onClick={() => { setIsOpen(false); setNewName(''); }}
+                onClick={() => {
+                  setIsOpen(false);
+                  setNewName('');
+                }}
                 className="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
               >
                 Cancel

@@ -37,8 +37,8 @@ export default function CreatePlayer({ onCreated }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          playerInGroup: group.groupId,
-          playerParent: user.userId,
+          playerInGroup: group.id,
+          playerParent: user.id,
           playerName: playerName.trim(),
           playerPassQuestion: passQuestion.trim(),
           playerPassAnswer: passAnswer.trim(),
@@ -83,18 +83,19 @@ export default function CreatePlayer({ onCreated }: Props) {
               <input
                 type="text"
                 value={playerName}
-                onChange={e => setPlayerName(e.target.value)}
+                onChange={(e) => setPlayerName(e.target.value)}
                 className="w-full p-2 border rounded"
                 placeholder="e.g. Adam"
-                autoComplete="new-password" 
-              /> {/* autoComplete="new-password" stops browser from autofilling */}
+                autoComplete="new-password"
+              />{' '}
+              {/* autoComplete="new-password" stops browser from autofilling */}
             </div>
             <div>
               <label className="block mb-1">Secret Question</label>
               <input
                 type="text"
                 value={passQuestion}
-                onChange={e => setPassQuestion(e.target.value)}
+                onChange={(e) => setPassQuestion(e.target.value)}
                 className="w-full p-2 border rounded"
                 placeholder="e.g. What is your dog's name?"
                 autoComplete="new-password"
@@ -105,7 +106,7 @@ export default function CreatePlayer({ onCreated }: Props) {
               <input
                 type="text"
                 value={passAnswer}
-                onChange={e => setPassAnswer(e.target.value)}
+                onChange={(e) => setPassAnswer(e.target.value)}
                 className="w-full p-2 border rounded"
                 placeholder="e.g. Rex"
                 autoComplete="new-password"

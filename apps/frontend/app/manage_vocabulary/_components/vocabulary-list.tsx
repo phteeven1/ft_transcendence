@@ -20,18 +20,18 @@ export default function VocabularyList({
 
   return (
     <div className="space-y-2">
-      {vocabularies.map(vocabulary => (
+      {vocabularies.map((vocabulary) => (
         <button
-          key={vocabulary.vocabularyId}
+          key={vocabulary.id}
           onClick={() => onSelect(vocabulary)}
           className={`w-full text-left p-3 rounded border-2 transition-colors ${
-            selectedVocabulary?.vocabularyId === vocabulary.vocabularyId
+            selectedVocabulary?.id === vocabulary.id
               ? 'border-blue-500 bg-blue-50'
               : 'border-gray-200 bg-white hover:border-blue-300'
           }`}
         >
-          <span>{vocabulary.vocabularyName}</span>
-          {vocabulary.isCurrent && (
+          <span>{vocabulary.name}</span>
+          {vocabulary.isActive && (
             <span className="ml-2 text-xs font-semibold text-emerald-600">
               Active
             </span>

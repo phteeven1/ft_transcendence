@@ -40,7 +40,7 @@ export default function ManagePlayers() {
     if (!user || !group) return;
     try {
       const res = await fetch(
-        `http://localhost:4000/players/parent/${user.userId}/group/${group.groupId}`
+        `http://localhost:4000/players/parent/${user.id}/group/${group.id}`,
       );
       if (!res.ok) throw new Error(`Failed to fetch players: ${res.status}`);
       const data: Player[] = await res.json();
@@ -52,34 +52,32 @@ export default function ManagePlayers() {
     }
   };
 
-  // toggle. If already selected -> null, if not selected 
+  // toggle. If already selected -> null, if not selected
   const handleSelect = (player: Player) => {
-    setSelectedPlayer(prev =>
-      prev?.playerId === player.playerId ? null : player
-    );
+    setSelectedPlayer((prev) => (prev?.id === player.id ? null : player));
   };
 
   // appends new player to end of array 'players' using setPlayers
   const handleCreated = (player: Player) => {
-    setPlayers(prev => [...prev, player]);
+    setPlayers((prev) => [...prev, player]);
   };
 
   // maps over array 'players' and for the player whose id matches, replaces with updated version
   // also updates selectedPlayer to reflect new name immediatelly
   const handleRenamed = (updated: Player) => {
-    setPlayers(prev => prev.map(p => p.playerId === updated.playerId ? updated : p));
+    setPlayers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setSelectedPlayer(updated);
   };
 
   // exactly the same as handleRenamed, but this is triggered by passphrase edit. To differentiate
   const handleUpdated = (updated: Player) => {
-    setPlayers(prev => prev.map(p => p.playerId === updated.playerId ? updated : p));
+    setPlayers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setSelectedPlayer(updated);
   };
 
   // filetrs out the player whose id matches. Then clears selectedPlayer, since selected player is gone
   const handleDeleted = (playerId: number) => {
-    setPlayers(prev => prev.filter(p => p.playerId !== playerId));
+    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
     setSelectedPlayer(null);
   };
 
@@ -88,10 +86,12 @@ export default function ManagePlayers() {
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2 text-center">{group.groupName}</h1>
+        <h1 className="text-2xl font-bold mb-2 text-center">{group.name}</h1>
         <p className="text-sm text-gray-600 mb-6 text-center">Manage Players</p>
 
-        <div className="md:grid md:grid-cols-3 gap-6"> {/* overrides with pc layout if md */}
+        <div className="md:grid md:grid-cols-3 gap-6">
+          {' '}
+          {/* overrides with pc layout if md */}
           {/* Player list */}
           <div className="col-span-1 mb-6 md:mb-0">
             <h2 className="text-lg font-semibold mb-2">Your Players</h2>
@@ -102,13 +102,21 @@ export default function ManagePlayers() {
               onSelect={handleSelect}
             />
           </div>
-
           {/* Action buttons */}
           <div className="col-span-2 grid grid-cols-2 gap-3 content-start">
             <CreatePlayer onCreated={handleCreated} />
-            <RenamePlayer selectedPlayer={selectedPlayer} onRenamed={handleRenamed} />
-            <EditPassphrase selectedPlayer={selectedPlayer} onUpdated={handleUpdated} />
-            <DeletePlayer selectedPlayer={selectedPlayer} onDeleted={handleDeleted} />
+            <RenamePlayer
+              selectedPlayer={selectedPlayer}
+              onRenamed={handleRenamed}
+            />
+            <EditPassphrase
+              selectedPlayer={selectedPlayer}
+              onUpdated={handleUpdated}
+            />
+            <DeletePlayer
+              selectedPlayer={selectedPlayer}
+              onDeleted={handleDeleted}
+            />
             <InviteToPlay selectedPlayer={selectedPlayer} />
             <button
               onClick={() => router.push('/manage_group')}

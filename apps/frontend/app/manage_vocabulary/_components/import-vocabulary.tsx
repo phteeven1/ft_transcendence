@@ -48,8 +48,8 @@ export default function ImportVocabulary({ onImported }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          vocabularyInGroup: group.groupId,
-          vocabularyAuthor: user.userId,
+          vocabularyInGroup: group.id,
+          byUser: user.id,
           vocabularyName: 'French Test List',
           vocabularyWords: DUMMY_WORDS,
           vocabularyMeanings: DUMMY_MEANINGS,

@@ -19,7 +19,10 @@ type Props = {
   syncAndRefresh: () => Promise<void>;
 };
 
-export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: Props) {
+export default function PromoteToAdmin({
+  currentGroupMembers,
+  syncAndRefresh,
+}: Props) {
   const { group } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -28,8 +31,8 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
 
   if (!group) return null;
 
-  const nonAdmins = currentGroupMembers.filter(m => !m.isAdmin);
-  const admins = currentGroupMembers.filter(m => m.isAdmin);
+  const nonAdmins = currentGroupMembers.filter((m) => !m.isAdmin);
+  const admins = currentGroupMembers.filter((m) => m.isAdmin);
 
   const handleOpen = () => {
     setSelectedIds([]);
@@ -47,10 +50,10 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
   };
 
   const toggleSelect = (memberId: number) => {
-    setSelectedIds(prev =>
+    setSelectedIds((prev) =>
       prev.includes(memberId)
-        ? prev.filter(id => id !== memberId)
-        : [...prev, memberId]
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId],
     );
   };
 
@@ -65,24 +68,27 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
     // POSTs all requests at once using Promise.all
     try {
       await Promise.all(
-        selectedIds.map(userId =>
+        selectedIds.map((userId) =>
           fetch('http://localhost:4000/groups/promote', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ groupId: group.groupId, userId }),
-          })
-        )
+            body: JSON.stringify({ groupId: group.id, userId }),
+          }),
+        ),
       );
 
       // finds names of every one who was promoted
       const promotedNames = currentGroupMembers
-        .filter(m => selectedIds.includes(m.memberId))
-        .map(m => m.memberName);
+        .filter((m) => selectedIds.includes(m.id))
+        .map((m) => m.name);
 
       // formats to differentiate between one and several promotions
-      const namesString = promotedNames.length === 1
-        ? promotedNames[0]
-        : promotedNames.slice(0, -1).join(', ') + ' and ' + promotedNames[promotedNames.length - 1];
+      const namesString =
+        promotedNames.length === 1
+          ? promotedNames[0]
+          : promotedNames.slice(0, -1).join(', ') +
+            ' and ' +
+            promotedNames[promotedNames.length - 1];
 
       const wasWere = promotedNames.length === 1 ? 'was' : 'were';
       const adminText = promotedNames.length === 1 ? 'an admin' : 'admins';
@@ -90,7 +96,9 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
       // update state and show result
       await syncAndRefresh();
       setShowModal(false);
-      setResultMessage(`${namesString} ${wasWere} promoted to ${adminText} in group ${group.groupName}.`);
+      setResultMessage(
+        `${namesString} ${wasWere} promoted to ${adminText} in group ${group.name}.`,
+      );
       setShowResult(true);
     } catch (error) {
       console.error('Promotion failed:', error);
@@ -115,32 +123,34 @@ export default function PromoteToAdmin({ currentGroupMembers, syncAndRefresh }: 
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[80vh]">
             <div className="p-6 pb-2">
               <h2 className="text-xl font-bold mb-1">Promote to Admin</h2>
-              <p className="text-sm text-gray-600 mb-4">Select members to promote.</p>
+              <p className="text-sm text-gray-600 mb-4">
+                Select members to promote.
+              </p>
             </div>
 
             <div className="overflow-y-auto flex-1 px-6">
               <ul>
-                {admins.map(member => (
+                {admins.map((member) => (
                   <li
-                    key={member.memberId}
+                    key={member.id}
                     className="flex items-center justify-between py-2 border-b border-gray-100"
                   >
-                    <span className="text-gray-400">{member.memberName}</span>
+                    <span className="text-gray-400">{member.name}</span>
                     <span className="text-xs text-gray-400">Admin</span>
                   </li>
                 ))}
-                {nonAdmins.map(member => (
+                {nonAdmins.map((member) => (
                   <li
-                    key={member.memberId}
+                    key={member.id}
                     className="flex items-center justify-between py-2 border-b border-gray-100 cursor-pointer"
-                    onClick={() => toggleSelect(member.memberId)}
+                    onClick={() => toggleSelect(member.id)}
                   >
-                    <span>{member.memberName}</span>
+                    <span>{member.name}</span>
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(member.memberId)}
+                      checked={selectedIds.includes(member.id)}
                       onChange={() => {}}
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       readOnly
                       className="w-4 h-4 accent-purple-500 pointer-events-none"
                     />

@@ -25,7 +25,7 @@ export default function SelectGame() {
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-md mx-auto p-4">
         <h1 className="text-2xl font-bold mb-2 text-center">
-          Hi, {player.playerName}!
+          Hi, {player.name}!
         </h1>
         <p className="text-sm text-gray-600 mb-8 text-center">
           Choose a game to play

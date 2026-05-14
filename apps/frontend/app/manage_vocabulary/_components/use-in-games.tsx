@@ -10,7 +10,7 @@ type Props = {
 export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
   const { group } = useAuth();
 
-  const isActive = selectedVocabulary !== null && !selectedVocabulary.isCurrent;
+  const isActive = selectedVocabulary !== null && !selectedVocabulary.isActive;
 
   const handleClick = async () => {
     if (!selectedVocabulary || !group) return;
@@ -19,8 +19,8 @@ export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          vocabularyId: selectedVocabulary.vocabularyId,
-          vocabularyInGroup: group.groupId,
+          vocabularyId: selectedVocabulary.id,
+          vocabularyInGroup: group.id,
         }),
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);

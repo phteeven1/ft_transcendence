@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
 export type Vocabulary = {
-  vocabularyId: number;
-  vocabularyInGroup: number;
-  vocabularyAuthor: number;
-  vocabularyName: string;
+  id: number;
+  inGroup: number;
+  byUser: number;
+  name: string;
   isCurrent: boolean;
-  vocabularyWords: string[];
-  vocabularyMeanings: string[];
-  vocabularyCount: number;
+  words: string[];
+  meanings: string[];
+  wordCount: number;
 };
 
 @Injectable()
@@ -17,76 +17,76 @@ export class VocabulariesService {
   private nextId = 1;
 
   create(
-    vocabularyInGroup: number,
-    vocabularyAuthor: number,
-    vocabularyName: string,
-    vocabularyWords: string[] = [],
-    vocabularyMeanings: string[] = [],
+    inGroup: number,
+    byUser: number,
+    name: string,
+    words: string[] = [],
+    meanings: string[] = [],
     ): Vocabulary {
     const newVocabulary: Vocabulary = {
-        vocabularyId: this.nextId++,
-        vocabularyInGroup: Number(vocabularyInGroup),
-        vocabularyAuthor: Number(vocabularyAuthor),
-        vocabularyName,
+        id: this.nextId++,
+        inGroup: Number(inGroup),
+        byUser: Number(byUser),
+        name,
         isCurrent: false,
-        vocabularyWords,
-        vocabularyMeanings,
-        vocabularyCount: vocabularyWords.length,
+        words,
+        meanings,
+        wordCount: words.length,
     };
     this.vocabularies.push(newVocabulary);
     return newVocabulary;
     }
 
-  setActive(vocabularyId: number, vocabularyInGroup: number): Vocabulary | undefined {
+  setActive(vocabularyId: number, inGroup: number): Vocabulary | undefined {
     const vId = Number(vocabularyId);
-    const gId = Number(vocabularyInGroup);
+    const gId = Number(inGroup);
     // Set all vocabularies in group to inactive
     this.vocabularies
-      .filter(v => v.vocabularyInGroup === gId)
+      .filter(v => v.inGroup === gId)
       .forEach(v => { v.isCurrent = false; });
     // Set selected vocabulary to active
-    const vocabulary = this.vocabularies.find(v => v.vocabularyId === vId);
+    const vocabulary = this.vocabularies.find(v => v.id === vId);
     if (!vocabulary) return undefined;
     vocabulary.isCurrent = true;
     return vocabulary;
   }
 
-  rename(vocabularyId: number, vocabularyName: string): Vocabulary | undefined {
-    const vocabulary = this.vocabularies.find(v => v.vocabularyId === Number(vocabularyId));
+  rename(vocabularyId: number, name: string): Vocabulary | undefined {
+    const vocabulary = this.vocabularies.find(v => v.id === Number(vocabularyId));
     if (!vocabulary) return undefined;
-    vocabulary.vocabularyName = vocabularyName;
+    vocabulary.name = name;
     return vocabulary;
   }
 
-  updateEntries(vocabularyId: number, vocabularyWords: string[], vocabularyMeanings: string[]): Vocabulary | undefined {
-    const vocabulary = this.vocabularies.find(v => v.vocabularyId === Number(vocabularyId));
+  updateEntries(vocabularyId: number, words: string[], meanings: string[]): Vocabulary | undefined {
+    const vocabulary = this.vocabularies.find(v => v.id === Number(vocabularyId));
     if (!vocabulary) return undefined;
-    vocabulary.vocabularyWords = vocabularyWords;
-    vocabulary.vocabularyMeanings = vocabularyMeanings;
-    vocabulary.vocabularyCount = vocabularyWords.length;
+    vocabulary.words = words;
+    vocabulary.meanings = meanings;
+    vocabulary.wordCount = words.length;
     return vocabulary;
   }
 
   remove(vocabularyId: number): boolean {
-    const index = this.vocabularies.findIndex(v => v.vocabularyId === Number(vocabularyId));
+    const index = this.vocabularies.findIndex(v => v.id === Number(vocabularyId));
     if (index === -1) return false;
     this.vocabularies.splice(index, 1);
     return true;
   }
 
-  removeByGroup(vocabularyInGroup: number): void {
+  removeByGroup(inGroup: number): void {
     this.vocabularies = this.vocabularies.filter(
-      v => v.vocabularyInGroup !== Number(vocabularyInGroup)
+      v => v.inGroup !== Number(inGroup)
     );
   }
 
   findById(vocabularyId: number): Vocabulary | undefined {
-    return this.vocabularies.find(v => v.vocabularyId === Number(vocabularyId));
+    return this.vocabularies.find(v => v.id === Number(vocabularyId));
   }
 
-  findByGroup(vocabularyInGroup: number): Vocabulary[] {
+  findByGroup(inGroup: number): Vocabulary[] {
     return this.vocabularies.filter(
-      v => v.vocabularyInGroup === Number(vocabularyInGroup)
+      v => v.inGroup === Number(inGroup)
     );
   }
 }

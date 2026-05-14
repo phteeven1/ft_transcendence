@@ -19,15 +19,14 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
 
   // true if user is the only admin in the group
   const isOnlyAdmin =
-    group.groupAdmins.includes(user.userId) &&
-    group.groupAdmins.length === 1;
+    group.admins.includes(user.id) && group.admins.length === 1;
 
-  // on clicking Delete Group. Checks conditional. 
+  // on clicking Delete Group. Checks conditional.
   const handleClick = () => {
     if (!isOnlyAdmin) {
       setResultMessage(
-        `You cannot delete ${group.groupName} while there are other admins. ` +
-        `Please demote all other admins first.`
+        `You cannot delete ${group.name} while there are other admins. ` +
+          `Please demote all other admins first.`,
       );
       setShowResult(true);
       return;
@@ -41,7 +40,7 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
       const res = await fetch('http://localhost:4000/groups/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.groupId }),
+        body: JSON.stringify({ groupId: group.id }),
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       leaveGroup();
@@ -67,7 +66,7 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-3">Delete {group.groupName}?</h2>
+            <h2 className="text-xl font-bold mb-3">Delete {group.name}?</h2>
             <p className="text-gray-700 mb-6">
               This will permanently delete the group and all player profiles
               belonging to it. This cannot be undone.

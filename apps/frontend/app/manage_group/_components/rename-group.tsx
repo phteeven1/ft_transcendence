@@ -16,7 +16,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
   if (!group) return null;
 
   const handleOpen = () => {
-    setNewName(group.groupName);
+    setNewName(group.name);
     setShowModal(true);
   };
 
@@ -27,7 +27,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
 
   const handleRename = async () => {
     if (!newName.trim()) return;
-    if (newName.trim() === group.groupName) {
+    if (newName.trim() === group.name) {
       setShowModal(false);
       setResultMessage('The group name was not changed.');
       setShowResult(true);
@@ -38,7 +38,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
       const res = await fetch('http://localhost:4000/groups/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.groupId, groupName: newName.trim() }),
+        body: JSON.stringify({ groupId: group.id, groupName: newName.trim() }),
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       await syncAndRefresh();
@@ -73,11 +73,13 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 className="text-xl font-bold mb-4">Rename Group</h2>
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-1">New Group Name</label>
+              <label className="block text-sm font-medium mb-1">
+                New Group Name
+              </label>
               <input
                 type="text"
                 value={newName}
-                onChange={e => setNewName(e.target.value)}
+                onChange={(e) => setNewName(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded"
                 placeholder="Enter new group name"
                 autoFocus

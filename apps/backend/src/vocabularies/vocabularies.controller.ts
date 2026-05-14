@@ -9,7 +9,7 @@ export class VocabulariesController {
   create(
     @Body() body: {
       vocabularyInGroup: number;
-      vocabularyAuthor: number;
+      byUser: number;
       vocabularyName: string;
       vocabularyWords?: string[];
       vocabularyMeanings?: string[];
@@ -17,7 +17,7 @@ export class VocabulariesController {
   ) {
     return this.vocabulariesService.create(
       body.vocabularyInGroup,
-      body.vocabularyAuthor,
+      body.byUser,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],

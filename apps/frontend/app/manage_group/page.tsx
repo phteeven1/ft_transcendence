@@ -45,7 +45,9 @@ export default function ManageGroup() {
   const fetchMembers = async () => {
     if (!group) return;
     try {
-      const res = await fetch(`http://localhost:4000/groups/${group.groupId}/members`);
+      const res = await fetch(
+        `http://localhost:4000/groups/${group.id}/members`,
+      );
       if (!res.ok) throw new Error(`Failed to fetch members: ${res.status}`);
       const members: Member[] = await res.json();
       setCurrentGroupMembers(members);
@@ -60,12 +62,12 @@ export default function ManageGroup() {
   // and redirects to /dashboard, otherwise, it calls fetchMember to refresh member list
   const syncAndRefresh = async () => {
     if (!group || !user) return;
-    const updatedGroup = await syncGroup(group.groupId);
+    const updatedGroup = await syncGroup(group.id);
     if (!updatedGroup) return;
 
     const isStillMember =
-      updatedGroup.groupMembers.includes(user.userId) ||
-      updatedGroup.groupAdmins.includes(user.userId);
+      updatedGroup.members.includes(user.id) ||
+      updatedGroup.admins.includes(user.id);
 
     if (!isStillMember) {
       leaveGroup();
@@ -78,7 +80,7 @@ export default function ManageGroup() {
 
   if (!user || !group) return null;
 
-  const isAdmin = group.groupAdmins.includes(user.userId);
+  const isAdmin = group.admins.includes(user.id);
 
   const buttons = (
     <>
@@ -88,9 +90,19 @@ export default function ManageGroup() {
       {isAdmin && <SendInvite />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <LeaveGroup syncAndRefresh={syncAndRefresh} />
-      {isAdmin && <PromoteToAdmin currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && (
+        <PromoteToAdmin
+          currentGroupMembers={currentGroupMembers}
+          syncAndRefresh={syncAndRefresh}
+        />
+      )}
       {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <ExpelMember currentGroupMembers={currentGroupMembers} syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && (
+        <ExpelMember
+          currentGroupMembers={currentGroupMembers}
+          syncAndRefresh={syncAndRefresh}
+        />
+      )}
       {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
       <BackToDashboard />
     </>
@@ -100,7 +112,7 @@ export default function ManageGroup() {
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2 text-center">{group.groupName}</h1>
+        <h1 className="text-2xl font-bold mb-2 text-center">{group.name}</h1>
         <p className="text-sm text-gray-600 mb-6 text-center">
           You are {isAdmin ? 'an admin' : 'a member'} of this group.
         </p>
@@ -111,9 +123,7 @@ export default function ManageGroup() {
             <h2 className="text-lg font-semibold mb-2">Members</h2>
             <MemberList members={currentGroupMembers} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {buttons}
-          </div>
+          <div className="grid grid-cols-2 gap-3">{buttons}</div>
         </div>
 
         {/* Desktop: three column layout */}

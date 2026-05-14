@@ -7,7 +7,6 @@ renders button and one input field. Three states:
 - isActive, derived from selectedPlayer !== null
 */
 
-
 import { useState } from 'react';
 import { Player } from '../../types';
 
@@ -32,7 +31,7 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          playerId: selectedPlayer.playerId,
+          playerId: selectedPlayer.id,
           playerName: renameName.trim(),
         }),
       });
@@ -64,11 +63,11 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
       {isOpen && selectedPlayer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Rename {selectedPlayer.playerName}</h2>
+            <h2 className="text-xl font-bold">Rename {selectedPlayer.name}</h2>
             <input
               type="text"
               value={renameName}
-              onChange={e => setRenameName(e.target.value)}
+              onChange={(e) => setRenameName(e.target.value)}
               className="w-full p-2 border rounded"
               placeholder="New name"
               autoComplete="new-password"
@@ -86,7 +85,10 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
                 Rename
               </button>
               <button
-                onClick={() => { setIsOpen(false); setRenameName(''); }}
+                onClick={() => {
+                  setIsOpen(false);
+                  setRenameName('');
+                }}
                 className="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
               >
                 Cancel

@@ -4,15 +4,15 @@ import { PlayersService } from '../players/players.service';
 import { VocabulariesService } from '../vocabularies/vocabularies.service';
 
 export type Group = {
-  groupId: number;
-  groupName: string;
-  groupAdmins: number[];
-  groupMembers: number[];
+  id: number;
+  name: string;
+  admins: number[];
+  members: number[];
 };
 
 export type Member = {
-  memberId: number;
-  memberName: string;
+  id: number;
+  name: string;
   isAdmin: boolean;
 };
 
@@ -30,13 +30,13 @@ export class GroupsService {
   create(groupName: string, creatorId: number): Group {
     const id = Number(creatorId);
     const newGroup: Group = {
-      groupId: this.nextId++,
-      groupName,
-      groupAdmins: [id],
-      groupMembers: [],
+      id: this.nextId++,
+      name: groupName,
+      admins: [id],
+      members: [],
     };
     this.groups.push(newGroup);
-    this.usersService.addAdminGroup(creatorId, newGroup.groupId);
+    this.usersService.addAdminGroup(creatorId, newGroup.id);
     return newGroup;
   }
 
@@ -44,10 +44,10 @@ export class GroupsService {
     const gId = Number(groupId);
     const uId = Number(userId);
     const group = this.findById(gId);
-    const isAlreadyMember = group?.groupMembers.includes(uId);
-    const isAlreadyAdmin = group?.groupAdmins.includes(uId);
+    const isAlreadyMember = group?.members.includes(uId);
+    const isAlreadyAdmin = group?.admins.includes(uId);
     if (group && !isAlreadyMember && !isAlreadyAdmin) {
-      group.groupMembers.push(uId);
+      group.members.push(uId);
       this.usersService.addMemberGroup(uId, gId);
     }
     return group;
@@ -57,9 +57,9 @@ export class GroupsService {
     const gId = Number(groupId);
     const uId = Number(userId);
     const group = this.findById(gId);
-    if (group && group.groupMembers.includes(uId)) {
-      group.groupMembers = group.groupMembers.filter(id => id !== uId);
-      group.groupAdmins.push(uId);
+    if (group && group.members.includes(uId)) {
+      group.members = group.members.filter((id) => id !== uId);
+      group.admins.push(uId);
       this.usersService.removeMemberGroup(uId, gId);
       this.usersService.addAdminGroup(uId, gId);
     }
@@ -70,9 +70,9 @@ export class GroupsService {
     const gId = Number(groupId);
     const uId = Number(userId);
     const group = this.findById(gId);
-    if (group && group.groupAdmins.includes(uId)) {
-      group.groupAdmins = group.groupAdmins.filter(id => id !== uId);
-      group.groupMembers.push(uId);
+    if (group && group.admins.includes(uId)) {
+      group.admins = group.admins.filter((id) => id !== uId);
+      group.members.push(uId);
       this.usersService.removeAdminGroup(uId, gId);
       this.usersService.addMemberGroup(uId, gId);
     }
@@ -85,20 +85,20 @@ export class GroupsService {
     const group = this.findById(gId);
     if (!group) return undefined;
 
-    const isAdmin = group.groupAdmins.includes(uId);
-    const isMember = group.groupMembers.includes(uId);
+    const isAdmin = group.admins.includes(uId);
+    const isMember = group.members.includes(uId);
 
     if (isAdmin) {
-      group.groupAdmins = group.groupAdmins.filter(id => id !== uId);
+      group.admins = group.admins.filter((id) => id !== uId);
       this.usersService.removeAdminGroup(uId, gId);
     } else if (isMember) {
-      group.groupMembers = group.groupMembers.filter(id => id !== uId);
+      group.members = group.members.filter((id) => id !== uId);
       this.usersService.removeMemberGroup(uId, gId);
     }
 
-    const totalMembers = group.groupAdmins.length + group.groupMembers.length;
+    const totalMembers = group.admins.length + group.members.length;
     if (totalMembers === 0) {
-      this.groups = this.groups.filter(g => g.groupId !== gId);
+      this.groups = this.groups.filter((g) => g.id !== gId);
     }
 
     return group;
@@ -108,7 +108,7 @@ export class GroupsService {
     const gId = Number(groupId);
     const group = this.findById(gId);
     if (!group) return undefined;
-    group.groupName = groupName;
+    group.name = groupName;
     return group;
   }
 
@@ -117,8 +117,8 @@ export class GroupsService {
     const uId = Number(userId);
     const group = this.findById(gId);
     if (!group) return undefined;
-    if (!group.groupMembers.includes(uId)) return undefined;
-    group.groupMembers = group.groupMembers.filter(id => id !== uId);
+    if (!group.members.includes(uId)) return undefined;
+    group.members = group.members.filter((id) => id !== uId);
     this.usersService.removeMemberGroup(uId, gId);
     return group;
   }
@@ -129,12 +129,12 @@ export class GroupsService {
     if (!group) return false;
 
     // Remove group from all admins' isAdminOf
-    group.groupAdmins.forEach(uId => {
+    group.admins.forEach((uId) => {
       this.usersService.removeAdminGroup(uId, gId);
     });
 
     // Remove group from all members' isMemberOf
-    group.groupMembers.forEach(uId => {
+    group.members.forEach((uId) => {
       this.usersService.removeMemberGroup(uId, gId);
     });
 
@@ -145,7 +145,7 @@ export class GroupsService {
     this.vocabulariesService.removeByGroup(gId);
 
     // Delete the group itself
-    this.groups = this.groups.filter(g => g.groupId !== gId);
+    this.groups = this.groups.filter((g) => g.id !== gId);
 
     return true;
   }
@@ -154,24 +154,24 @@ export class GroupsService {
     const gId = Number(groupId);
     const group = this.findById(gId);
     if (!group) return [];
-    const admins: Member[] = group.groupAdmins
-      .map(id => this.usersService.findById(id))
+    const admins: Member[] = group.admins
+      .map((id) => this.usersService.findById(id))
       .filter((u): u is NonNullable<typeof u> => u !== undefined)
-      .map(u => ({ memberId: u.userId, memberName: u.userName, isAdmin: true }));
-    const members: Member[] = group.groupMembers
-      .map(id => this.usersService.findById(id))
+      .map((u) => ({ id: u.id, name: u.name, isAdmin: true }));
+    const members: Member[] = group.members
+      .map((id) => this.usersService.findById(id))
       .filter((u): u is NonNullable<typeof u> => u !== undefined)
-      .map(u => ({ memberId: u.userId, memberName: u.userName, isAdmin: false }));
+      .map((u) => ({ id: u.id, name: u.name, isAdmin: false }));
     return [...admins, ...members];
   }
 
   findById(groupId: number): Group | undefined {
     const gId = Number(groupId);
-    return this.groups.find(g => g.groupId === gId);
+    return this.groups.find((g) => g.id === gId);
   }
 
   findByName(groupName: string): Group | undefined {
-    return this.groups.find(g => g.groupName === groupName);
+    return this.groups.find((g) => g.name === groupName);
   }
 
   findAll(): Group[] {

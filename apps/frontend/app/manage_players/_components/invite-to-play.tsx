@@ -47,7 +47,9 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
       {isOpen && selectedPlayer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Invite {selectedPlayer.playerName} to Play</h2>
+            <h2 className="text-xl font-bold">
+              Invite {selectedPlayer.name} to Play
+            </h2>
             <div className="space-y-3">
               <button
                 onClick={handlePlayNow}

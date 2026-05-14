@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 export type User = {
-  userId: number;
-  userName: string;
-  userPassword: string;
-  userEmail: string;
+  id: number;
+  name: string;
+  password: string;
+  email: string;
   isMemberOf: number[];
   isAdminOf: number[];
   currentGroup?: number;
@@ -15,12 +15,12 @@ export class UsersService {
   private users: User[] = [];
   private nextId = 1;
 
-  register(userName: string, userPassword: string, userEmail: string): User {
+  register(name: string, password: string, email: string): User {
     const newUser: User = {
-      userId: this.nextId++,
-      userName,
-      userPassword,
-      userEmail,
+      id: this.nextId++,
+      name: name,
+      password: password,
+      email: email,
       isMemberOf: [],
       isAdminOf: [],
     };
@@ -29,15 +29,17 @@ export class UsersService {
   }
 
   findById(userId: number): User | undefined {
-    return this.users.find(u => u.userId === userId);
+    return this.users.find((u) => u.id === userId);
   }
 
-  findByName(userName: string): User | undefined {
-    return this.users.find(u => u.userName === userName);
+  findByName(name: string): User | undefined {
+    return this.users.find((u) => u.name === name);
   }
 
-  findByCredentials(userName: string, userPassword: string): User | undefined {
-    return this.users.find(u => u.userName === userName && u.userPassword === userPassword);
+  findByCredentials(name: string, password: string): User | undefined {
+    return this.users.find(
+      (u) => u.name === name && u.password === password,
+    );
   }
 
   findAll(): User[] {
@@ -52,19 +54,16 @@ export class UsersService {
 
   addAdminGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
-    if (user && !user.isAdminOf.includes(groupId))
-      user.isAdminOf.push(groupId);
+    if (user && !user.isAdminOf.includes(groupId)) user.isAdminOf.push(groupId);
   }
 
   removeMemberGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
-    if (user)
-      user.isMemberOf = user.isMemberOf.filter(id => id !== groupId);
+    if (user) user.isMemberOf = user.isMemberOf.filter((id) => id !== groupId);
   }
 
   removeAdminGroup(userId: number, groupId: number): void {
     const user = this.findById(userId);
-    if (user)
-      user.isAdminOf = user.isAdminOf.filter(id => id !== groupId);
+    if (user) user.isAdminOf = user.isAdminOf.filter((id) => id !== groupId);
   }
 }
