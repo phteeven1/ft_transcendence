@@ -7,6 +7,7 @@ export type Player = {
   name: string;
   passQuestion: string;
   passAnswer: string;
+  currentGameId: number | null;
 };
 
 @Injectable()
@@ -28,6 +29,7 @@ export class PlayersService {
       name: name,
       passQuestion: passQuestion,
       passAnswer: passAnswer,
+      currentGameId: null,
     };
     this.players.push(newPlayer);
     const { passAnswer: _, ...safePlayer } = newPlayer;
@@ -88,5 +90,15 @@ export class PlayersService {
     return this.players
       .filter(p => p.inGroup === Number(inGroup))
       .map(({ passAnswer: _, ...safePlayer }) => safePlayer);
+  }
+
+  setCurrentGame(playerId: number, gameId: number): void {
+    const player = this.players.find((p) => p.id === Number(playerId));
+    if (player) player.currentGameId = Number(gameId);
+  }
+
+  clearCurrentGame(playerId: number): void {
+    const player = this.players.find((p) => p.id === Number(playerId));
+    if (player) player.currentGameId = null;
   }
 }

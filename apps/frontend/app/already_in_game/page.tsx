@@ -1,0 +1,22 @@
+'use client';
+
+// This page is shown when a player tries to open a second tab while already in a game.
+// It is intentionally a dead end — the player cannot navigate anywhere from here.
+//
+// TODO: replace the polling guard in select_game/page.tsx with a proper session token
+// system. When a player enters play_game, the backend should issue a unique token for
+// that player+game. A second tab loading play_game invalidates the first tab's token,
+// which then kicks itself out via polling. That prevents two active tabs in the same game.
+
+export default function AlreadyInGame() {
+  return (
+    <div className="min-h-screen bg-emerald-200 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-8 text-center">
+        <h1 className="text-xl font-bold mb-3">Already in a game</h1>
+        <p className="text-gray-600 text-sm">
+          You are already playing a game in another tab. Please go back to that tab to continue.
+        </p>
+      </div>
+    </div>
+  );
+}

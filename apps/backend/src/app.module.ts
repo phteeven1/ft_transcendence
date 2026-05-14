@@ -8,6 +8,7 @@ import { MailModule } from './mail/mail.module';
 import { InvitationsModule } from './invitations/invitations.module';
 import { PlayersModule } from './players/players.module';
 import { VocabulariesModule } from './vocabularies/vocabularies.module';
+import { GamesModule } from './games/games.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { VocabulariesModule } from './vocabularies/vocabularies.module';
     InvitationsModule,
     PlayersModule,
     VocabulariesModule,
+    GamesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

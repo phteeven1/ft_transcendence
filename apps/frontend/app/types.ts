@@ -42,6 +42,7 @@ export type Player = {
   ofParent: number;
   name: string;
   passQuestion: string;
+  currentGameId: number | null;
 };
 
 // vocabulary is a list of words used by dicteé to generate relevant crosswords and games
@@ -55,4 +56,22 @@ export type Vocabulary = {
   words: string[];
   meanings: string[];
   wordCount: number;
+};
+
+// Represents a pending or active game session within a group.
+// waitingFor: 0 = open to anyone who joins within 5 mins; 1/2/3 = waiting for that many more players
+// players: array of player ids who have joined
+// isActive: true once the game has started (enough players joined or time forced it)
+// startedTime: null while pending, set when game starts
+export type Game = {
+  id: number;
+  name: string;
+  inGroup: number;
+  initiatedBy: number;
+  initiatedTime: string; // ISO string from backend Date
+  startedTime: string | null;
+  waitingFor: number;
+  players: number[];
+  isActive: boolean;
+  isFinished: boolean;
 };
