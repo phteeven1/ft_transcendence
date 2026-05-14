@@ -1,4 +1,10 @@
 'use client';
+
+/*
+Layout for manage group
+Will sync and refresh the group and the attached members and admins arrays every 5 s.
+*/
+
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

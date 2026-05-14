@@ -1,5 +1,24 @@
 'use client';
 
+/*
+game lobby where players can initiate new games and join pending games initiated by others
+polls every 3 s makes sure to sync game status between players
+modal based workflow, and only games in the player's group, are displayed
+session management prevents duplicate game tabs by redirecting to /already_in_game
+error handling logs errors for failed API calls
+Workflow example:
+player A clicks 'New Word Building', which opens InitiateGameModal
+player A sets waitingFor: 2, handleCreateGame creates a new pending game
+player B sees the pending game and clicks it, opening JoinGameModal
+player B confirms, and handleJoinGame adds them to the game
+if the game now has enough players (waitingFor) it becomes active, and both players
+are redirected to /play_game
+Also, they are removed from all other pendning games that they have joined, 
+but which are still waiting either for enough players, or for counter to finish.
+If all players leave a game before it starts, it is destroyed
+*/
+
+
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -9,11 +28,20 @@ import JoinGameModal from './_components/join-game-modal';
 import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
 
+// modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
+// join = 'Join Game' modal is open
 type ModalState =
   | { kind: 'none' }
   | { kind: 'initiate'; gameName: string }
   | { kind: 'join'; game: Game };
 
+
+// POSTs to /games/create to create new game, with the following:
+// name = name of the game, e.g. "Word Building"
+// inGroup = groupId the game belongs to
+// initiatedBy = playerId of the player that initiated the game
+// waitingFor = number of players required to start
+// fucntion returns a new Game object, or throws an error  
 async function postCreateGame(
   name: string,
   inGroup: number,
@@ -29,6 +57,10 @@ async function postCreateGame(
   return res.json();
 }
 
+// POSTs to /games/join ta add player to existing game, with the following:
+// gameId = the id of the game to join
+// playerId = the id of the joining player
+// function returns an updated Game object, or throws an error
 async function postJoinGame(gameId: number, playerId: number): Promise<Game | null> {
   const res = await fetch('http://localhost:4000/games/join', {
     method: 'POST',
@@ -39,14 +71,18 @@ async function postJoinGame(gameId: number, playerId: number): Promise<Game | nu
   return res.json();
 }
 
+// manages list of pending games and modal states
+// pendingGames stores list of pending not yet active games
+// modal tracks modal state
 export default function SelectGame() {
   const { player, logoutPlayer } = useAuth();
   const router = useRouter();
   useSessionGuard();
-  
+
   const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
 
+  // guards against no player
   useEffect(() => {
     if (!player) {
       router.push('/');
@@ -61,6 +97,9 @@ export default function SelectGame() {
     }
   }, []);
 
+  // fetches all games in the players group
+  // filters out active or finished games, keeping only pending ones
+  // if player is already in active game, redirects to /play_game
   const syncGames = useCallback(async () => {
     if (!player) return;
     try {
@@ -83,12 +122,15 @@ export default function SelectGame() {
     }
   }, [player, router]);
 
+  // polls for updates every 3 s
   useEffect(() => {
     syncGames();
     const interval = setInterval(syncGames, 3000);
     return () => clearInterval(interval);
   }, [syncGames]);
 
+  // calls postCreateGame with gameName and waitingFor
+  // adds new game to pendingGames and closes modal
   const handleCreateGame = async (gameName: string, waitingFor: number) => {
     if (!player) return;
     try {
@@ -100,6 +142,9 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
+  // calls postJoinGame to add current player to selected game
+  // if the game then becomes active, it redirects to /play_game
+  // otherwise, updates pendingGames list
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
@@ -118,6 +163,7 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
+  // logs the player out and redirects to /register
   const handleFinishGame = () => {
     logoutPlayer();
     router.push('/register');
@@ -125,6 +171,11 @@ export default function SelectGame() {
 
   if (!player) return null;
 
+  // layout. a greting for the player, then a grid of buttons:
+  // 'New Word Building' and 'New Word Soup' opens initiateGameModal to create new game
+  // one pending game button for each game in pendingGames
+  // clicking button opens JoinGameModal, if player isn't already in game
+  // then a 'Finish Game' button to log out
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">

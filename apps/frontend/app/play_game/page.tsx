@@ -1,17 +1,32 @@
 'use client';
 
+/*
+this is a placeholder page for playing a game. The games should be built to fit
+in this page. When a player has started a game, the user and the group have been logged out.
+That means, if the player quits or returns in any way, they will return to the landing page.
+All important data are fetched here, the current player and game. The game has access
+to which group it was started in, which gives access to the vocabulary list.
+On leaving game or finishing game, player is sent back to /select_game
+where new game can be initiated or joined.
+Function for fecthing vocabulary needs to be created
+Games will use web sockets for multiplayer interactivity. For the time being,
+sync is handled by a poll every 3 s. This can be replaced by web sockets later
+*/
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Game } from '../types';
 import { Player } from '../types';
 import { useSessionGuard } from '../hooks/use-session-guard';
 
+// fetches a single game by its gameId from backend. Returns null on failure
 async function fetchGame(gameId: number): Promise<Game | null> {
   const res = await fetch(`http://localhost:4000/games/${gameId}`);
   if (!res.ok) return null;
   return res.json();
 }
 
+// fetches a single player by its playerId. Handles empty responses and parses JSON
 async function fetchPlayer(playerId: number): Promise<Player | null> {
   const res = await fetch(`http://localhost:4000/players/${playerId}`);
   if (!res.ok) return null;
@@ -20,11 +35,14 @@ async function fetchPlayer(playerId: number): Promise<Player | null> {
   return JSON.parse(text);
 }
 
+// Takes an array of playerIds, fetches all players in parallel using Promise.all, 
+// and filters out any null results (failed fetches).
 async function fetchPlayersByIds(playerIds: number[]): Promise<Player[]> {
   const results = await Promise.all(playerIds.map((id) => fetchPlayer(id)));
   return results.filter((p): p is Player => p !== null);
 }
 
+// manages game state and player interactions
 export default function PlayGame() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -33,10 +51,12 @@ export default function PlayGame() {
   const gameId = Number(searchParams.get('gameId'));
   const playerId = Number(searchParams.get('playerId'));
 
-  const [game, setGame] = useState<Game | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [game, setGame] = useState<Game | null>(null);  // stores the fetched game data
+  const [players, setPlayers] = useState<Player[]>([]); // stores the list of fetched players
+  const [loading, setLoading] = useState(true); // tracks whether the data is being loaded
 
+  // guards against no game and no player
+  // loads game and players, then sets isLoading to false
   useEffect(() => {
     if (!gameId || !playerId) {
       router.push('/');
@@ -56,6 +76,8 @@ export default function PlayGame() {
     load();
   }, []);
 
+  // polling effect. Checks every 3 s for game updates. If game is finished
+  // or doesn't exist, it redirects to /select_game
   useEffect(() => {
     if (!gameId) return;
     const interval = setInterval(async () => {
@@ -67,6 +89,8 @@ export default function PlayGame() {
     return () => clearInterval(interval);
   }, [gameId, router]);
 
+  // sends POST request to /games/leave that the player is leaving game, 
+  // then redirects to /select_game
   const handleLeave = async () => {
     await fetch('http://localhost:4000/games/leave', {
       method: 'POST',
@@ -76,6 +100,8 @@ export default function PlayGame() {
     router.push('/select_game');
   };
 
+  // sends a POST request to /games/finish that the game is finished
+  // then redirects to /select_game
   const handleGameOver = async () => {
     await fetch('http://localhost:4000/games/finish', {
       method: 'POST',
@@ -85,6 +111,7 @@ export default function PlayGame() {
     router.push('/select_game');
   };
 
+  // shows loading message while loading
   if (loading || !game) {
     return (
       <div className="min-h-screen bg-emerald-200 flex items-center justify-center">

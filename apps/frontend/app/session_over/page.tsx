@@ -1,5 +1,10 @@
 'use client';
 
+/*
+this is where a player is redirected, when leaving a game, or when the game ends,
+if session has run out. It is a dead end that requires new log in by parent
+*/
+
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/auth-context';
