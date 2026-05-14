@@ -7,6 +7,7 @@ import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
 import PendingGameButton from './_components/pending-game-button';
+import { useSessionGuard } from '../hooks/use-session-guard';
 
 type ModalState =
   | { kind: 'none' }
@@ -41,7 +42,8 @@ async function postJoinGame(gameId: number, playerId: number): Promise<Game | nu
 export default function SelectGame() {
   const { player, logoutPlayer } = useAuth();
   const router = useRouter();
-
+  useSessionGuard();
+  
   const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
 

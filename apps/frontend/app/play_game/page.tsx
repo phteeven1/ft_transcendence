@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Game } from '../types';
 import { Player } from '../types';
+import { useSessionGuard } from '../hooks/use-session-guard';
 
 async function fetchGame(gameId: number): Promise<Game | null> {
   const res = await fetch(`http://localhost:4000/games/${gameId}`);
@@ -27,6 +28,7 @@ async function fetchPlayersByIds(playerIds: number[]): Promise<Player[]> {
 export default function PlayGame() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  useSessionGuard();
 
   const gameId = Number(searchParams.get('gameId'));
   const playerId = Number(searchParams.get('playerId'));

@@ -13,6 +13,8 @@ type AuthContextType = {
   refreshUser: () => Promise<User | null>;
   loginAsPlayer: (playerData: Player) => void;
   logoutPlayer: () => void;
+  sessionExpiresAt: number | null;
+  setSessionTimer: (minutes: number) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +23,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
+
+  const setSessionTimer = (minutes: number) => {
+    setSessionExpiresAt(Date.now() + minutes * 60 * 1000);
+  };
 
   const loginAsPlayer = (playerData: Player) => {
     setUser(null);
@@ -30,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutPlayer = () => {
     setPlayer(null);
+    setSessionExpiresAt(null);
   };
 
   const login = (userData: User) => {
@@ -87,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         loginAsPlayer,
         logoutPlayer,
+        sessionExpiresAt,
+        setSessionTimer,
       }}
     >
       {children}
