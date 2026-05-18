@@ -27,13 +27,15 @@ import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
 import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
+import ForceStartModal from './_components/force-start-modal';
 
 // modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
 // join = 'Join Game' modal is open
 type ModalState =
   | { kind: 'none' }
   | { kind: 'initiate'; gameName: string }
-  | { kind: 'join'; game: Game };
+  | { kind: 'join'; game: Game }
+  | { kind: 'forceStart'; game: Game };
 
 
 // POSTs to /games/create to create new game, with the following:
@@ -163,6 +165,22 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
+  // POSTs /games/start with whichever players have currently joined
+  // this bypasses waiting until 5 mins has passed or until enough players have joined
+  const handleForceStart = async (game: Game) => {
+    try {
+      const res = await fetch('http://localhost:4000/games/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: game.id }),
+      });
+      if (!res.ok) throw new Error(`Failed to force-start game: ${res.status}`);
+    } catch (error) {
+      console.error('handleForceStart failed:', error);
+    }
+    setModal({ kind: 'none' });
+  };
+
   // logs the player out and redirects to /register
   const handleFinishGame = () => {
     logoutPlayer();
@@ -209,6 +227,7 @@ export default function SelectGame() {
                   setModal({ kind: 'join', game });
                 }
               }}
+              onForceStart={() => setModal({ kind: 'forceStart', game })}
             />
           ))}
 
@@ -237,6 +256,14 @@ export default function SelectGame() {
           game={modal.game}
           onCancel={() => setModal({ kind: 'none' })}
           onJoin={() => handleJoinGame(modal.game)}
+        />
+      )}
+
+      {modal.kind === 'forceStart' && (
+        <ForceStartModal
+          game={modal.game}
+          onCancel={() => setModal({ kind: 'none' })}
+          onConfirm={() => handleForceStart(modal.game)}
         />
       )}
     </div>

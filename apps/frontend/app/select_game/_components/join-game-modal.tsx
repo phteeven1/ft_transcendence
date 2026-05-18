@@ -1,5 +1,11 @@
 'use client';
 
+/*
+shows confirmation modal, asking if player wants to join pending game
+It shows game type and how many players/how long time remains before game starts
+modal only updates on render, so state goes stale if modal is open for a while
+*/
+
 import { Game } from '../../types';
 
 type Props = {
@@ -8,6 +14,7 @@ type Props = {
   onJoin: () => void;
 };
 
+// calculates the human readable string telling the player what they are waiting for
 function getJoinDescription(game: Game): string {
   if (game.waitingFor === 0) {
     const initiatedTime = new Date(game.initiatedTime);

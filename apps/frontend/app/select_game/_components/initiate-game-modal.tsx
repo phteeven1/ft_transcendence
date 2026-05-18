@@ -1,10 +1,20 @@
 'use client';
 
+/*
+This modal is shown when a player wants to initiate a new game. 
+It asks them how many players to wait for, alternatively
+if they want to keep it open for any number of players and start in 5 mins.
+This modal is shown to the player initiating the game
+join-game-modal is shown to the other players (and this player) afterwards
+*/
+
 type WaitingOption = {
   label: string;
   value: number;
 };
 
+// static array with four labels. 0=wait for 5 mins
+// value becomes waitingFor in the Game object
 const WAITING_OPTIONS: WaitingOption[] = [
   { label: 'Play with anyone who joins within 5 minutes.', value: 0 },
   { label: 'Wait for one more player.', value: 1 },
