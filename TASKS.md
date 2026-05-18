@@ -59,3 +59,6 @@ turn dicteé icon into clickable button that always navigates back to dashboard 
 
 ### manage_group/notifications
 option for selecting what kind of notifications to receive (for each group). message in chat, group action, game initiated
+
+### manage_vocabulary/share-vocabulary
+way to email a vocabulary object to someone else, by way of a unique token, that let's the receiver import the correct vocabulary object from the backend. So, player A share voc -> email to B. B clicks link in email, is asked to sign in, then new browser tab opens with import-vocabulary and the shared voc, or if easier, opens tab with new page receive-vocabulary.
