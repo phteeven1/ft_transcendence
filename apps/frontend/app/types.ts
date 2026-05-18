@@ -56,6 +56,7 @@ export type Vocabulary = {
   words: string[];
   meanings: string[];
   wordCount: number;
+  language: string; // must be valid BCP 47 tag
 };
 
 // Represents a pending or active game session within a group.
