@@ -164,6 +164,7 @@ becomes
 "der Arm"
 "das Bein"
 The crossword algorithm checks if it can build a crossword which fits inside a 24x24 grid from the list. If not, it automatically divides the list in two and tries again. It prompts the user to name each list and saves them.
+While importing a vocabulary, the user is asked what language the vocabulary words are. This question can be based on a guess, but doesn't have to. Knowing which language is important for randomly selected noise letters in the games. A language API can be used to produce a dropdown menu for valid BCP 47 tags.
 
 ### *Group Chat*
 Chat window appears below the function buttons in manage_group. There is no chat in dashboard, since all chats are group specific. Chat has two main functions: 
@@ -193,7 +194,7 @@ select the button "Write Message" then select from modal to whom. Another modal 
 The chat entries should be saved not as strings but as an array of objects, with at least time, originator, type, target (can be null) and content (can be null). This way, names will remain correct even after rename events. 
 
 ## *Games*
-Dictee is conceived such, that many Games can be added to the website later. It needs at least one Game.
+Dicteé is conceived such, that many Games can be added to the website later. It needs at least one Game. Probably use SVG text elements for the grid of letters, since this frees us from having to import hundreds of letter-images, and still allows styling. Then animate player elements in separate div with position: absolute.
 
 ### *Word Building*
 A crossword is automatically generated that fits on a maximum 24x24 grid. On the tile in front of every word, an arrow is indicating the start of the word. All letters making up the entire list are randomly placed over the grid. The players can direct little trucks around the playing field. They can pick up letters and put them down in other (empty) squares. If they drive over an arrow, the word is read out in audio, and the squares where the word should fit are progressively lit up so that the players can see how long it is. Any square in the word that contains the correct letter lights up in green, empty squares light up in blue, and squares containing the wrong letter light up in red. The players continue building together until the crossword is complete. In the end, each player gets one point per letter that they placed correctly. You can get maximum one point per letter, even if it is removed and replaced several times. The player that first placed it correctly gets the point.
