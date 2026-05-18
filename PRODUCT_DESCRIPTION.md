@@ -1,5 +1,5 @@
 # Dictee
-A web based app for helping school children with their language homework by generating simple crossword games based on their uploaded vocabulary lists. It uses Next.js for frontend and NodeJS for backend. It uses ORM for the database.
+A web based app for helping school children with their language homework by generating simple crossword games based on their uploaded vocabulary lists. It uses Next.js for frontend and NestJS for backend. It uses ORM for the database.
 
 <details>
   <summary>Modules (3 Points)</summary>
@@ -22,10 +22,10 @@ A web based app for helping school children with their language homework by gene
     - [Word soup (optional)](#word-soup-optional)
 
 ## Users
-There are two types of users, Users(Parents) and Players. Users can belong to Groups. Users can be Admin for a Group. Only Users can start using Dictee without being invited. When someone visits Dictee for the first time, they are asked to register a User profile, or if they want to play the games, to ask one of their parents to register a Profile first. Technically, of course, a person could first register a User(Parent) profile and then create a Player profile for themselves. This is not a problem since the purpose of separating Users and Players is not to stop parents from playing, but to allow parents extra control over who their children play the online games with. Since one can only join a Group by invitation, only people who know each other will be in the same Groups. If a child created their own User Profile to invite other children to play, they could only do this over their own email and social media accounts, and only children who are allowed to use email and social media will be able to do this.
+There are two types of users, Users(Parents) and Players(their children). Users can be Member of Groups, or they can be Admin for a Group. Only Users can start using Dictee without being invited. When someone visits Dictee for the first time, they are asked to register a User profile, or if they want to play the games, to ask one of their parents to register a Profile first. Technically, of course, a person could first register a User(Parent) profile and then create a Player profile for themselves. This is not a problem since the purpose of separating Users and Players is not to stop parents from playing, but to allow parents extra control over who their children play the online games with. Since one can only join a Group by invitation, only people who know each other will be in the same Group. If a child created their own User Profile to invite other children to play, they could only do this over their own email and social media accounts, and only children who are allowed to use email and social media will be able to do this.
 
 ### Profiles
-When registering a Profile, users are asked to pick a Username and a Password. Uniqueness is cheroup invitations, *and to opt in or out of browser push Notifications*.
+When registering a Profile, users are asked to pick a Username and a Password. Uniqueness is checked. They are also asked for their Email, to enable sending group invitations, *and to opt in or out of browser push Notifications*.
 
 <details>
   <summary>Modules (6 Points)</summary>
@@ -41,10 +41,10 @@ When registering a Profile, users are asked to pick a Username and a Password. U
 Users (Parents) can either join a Group by clicking an Invite Link sent to them on email or social media, or create a new Group. If they created the Group, they are automatically Group Admin, and are asked to name the Group.
 
 Group Admins can:
-- Create unique Invite Links to send to other parents.
+- Create unique Invite Links to email to other parents.
 - Expel a Group Member.
 - Rename the Group.
-- Make other Parents in the Group into Group Admins.
+- Make other Users in the Group into Group Admins.
 - Import a Vocabulary List.
 - Rename Vocabulary Lists.
 - Make a Vocabulary List the default list for current Games.
@@ -57,84 +57,91 @@ Group Admins can:
 
 All Parents who are Members or Admins of a Group can:
 - Set up a Profile for one or more Players.
-- Create a Login Shortcut for their own Players' Profiles, if they want.
+- *Create a Login Shortcut for their own Players' Profiles*.
 - *View game Statistics regarding their own Players (only)*.
 - Terminate the Profiles of their own Players.
 - Leave the Group.
 - *Receive Notifications when a Player from one of the Groups they are members of, Initiates a game.*
 - *Toggle Notifications on/off, per Group.*
 - *Read the Group Chat. This is where actions affecting the Group are logged, and Group Messages appear*.
-- *Write Group Messages*.
+- *Write Messages to the Group Admins*.
 
 The User dashboard of a parent will show:
+- Create New Group, which allows them to create a new group.
 - All Groups which they are members of. Highlights indicate if they are Admin or not, *and if Notifications are on or off*.
-- The option to create a New Group.
-- *Profile Settings, to change Username, Password, Email etc.*
+- *Profile Settings, to change Username, Password, Email, notifications etc.*
 
 Only if they select a Group, can they see, and choose all the options relating to that Group, including it's Player Profiles and Vocabulary Lists.
 
-
-
 <details>
   <summary>Full Action Icon Tree for Parents</summary>
-  <b>  Boldface designates actions only available to Admins</b>
-
-  - Requests (pending Requests are displayed as pop up windows)
-  - <details>
-      <summary>Groups (each Group the user is a member of)</summary>
-      <ul>
-        <li><details>
-          <summary>Players (can be several, each has an icon)</summary>
-          <ul>
-            <li>Create Player</li>
-            <li>Invite to Play</li>
-            <li>Edit PassPhrase</li>
-            <li>Rename Player</li>
-            <li>Delete Player</li>
-          </ul>
-        </details></li>
-        <li>Create New Player</li>
-        <li><details>
-          <summary>Group Settings</summary>
-          <ul>
-            <li>*Notifications On/Off*</li>
-            <li>Leave Group</li>
-            <li><b>Send Invite via Email</b></li>
-            <li><b>Expel Member</b></li>
-            <li><b>Rename Group</b></li>
-            <li><b>Promote to Admin (sends a Request to another Group member)</b></li>
-            <li><b>Delete Group (only if you are the last Admin)</b></li>
-            <li><b>Resign as Admin (revokes own Admin status, but only if Group has other Admins)</b></li>
-          </ul>
-        </details></li>
-        <li><details>
-          <summary><b>Vocabulary</b></summary>
-          <ul>
-            <li><b>Import Vocabulary</b></li>
-            <li><b>Rename Vocabulary</b></li>
-            <li><b>Remove Vocabulary</b></li>
-            <li><b>Edit Vocabulary</b></li>
-            <li><b>*Share Vocabulary*</b></li>
-            <li><b>Use Vocabulary in Games</b></li>
-          </ul>
-        </details></li>
-      </ul> 
-    </details> 
-  - Create New Group
-  - <details>
-      <summary>*Profile Settings*</summary>
-      <ul>
-        <li>Change Username</li>
-        <li>Change Password</li>
-        <li>Change Email</li>
-        <li>Notifications on/off</li>
-      </ul>  
-    </details>
+  <b>Boldface designates actions only available to Admins</b>
+  <ul>
+    <li>Create New Player</li>
+    <li>
+      <details>
+        <summary>Groups</summary>
+        <ul>
+          <li>
+            <details>
+              <summary>Manage Players</summary>
+              <ul>
+                <li>Create Player</li>
+                <li>Rename Player</li>
+                <li>Edit PassPhrase</li>
+                <li>Delete Player</li>
+                <li>
+                  <details>
+                    <summary>Invite to Play</summary>
+                    <ul>
+                      <li>Play Now</li>
+                      <li>Create Magic Link  --  MISSING</li>
+                      <li>Email Temporary Link  --  MISSING</li>
+                    </ul>
+                  </details>
+                </li>
+              </ul>
+            </details>
+          </li>
+          <li>
+            <details>
+              <summary><b>Manage Vocabulary</b></summary>
+              <ul>
+                <li><b>Import Vocabulary</b></li>
+                <li><b>Use in Games</b></li>
+                <li><b>Rename Vocabulary</b></li>
+                <li><b>Edit Vocabulary</b></li>
+                <li><b>Share Vocabulary  --  MISSING</b></li>
+                <li><b>Delete Vocabulary</b></li>
+              </ul>
+            </details>
+          </li>
+          <li><b>Send Invite</b></li>
+          <li><b>Rename Group</b></li>
+          <li>Leave Group</li>
+          <li><b>Promote to Admin</b></li>
+          <li><b>Resign as Admin</b></li>
+          <li><b>Expel Member</b></li>
+          <li><b>Delete Group</b></li>
+        </ul>
+      </details>
+    </li>
+    <li>
+      <details>
+        <summary>User Settings  --  MISSING</summary>
+        <ul>
+          <li>Change Username  --  MISSING</li>
+          <li>Change Password  --  MISSING</li>
+          <li>Change Email  --  MISSING</li>
+          <li>Notifications On/Off  --  MISSING</li>
+        </ul>
+      </details>
+    </li>
+  </ul>
 </details>
 
 
-
-### *Players*
+### Players
 Players can access their own Profile, either by clicking their own unique Login Shortcut, or by visiting the website and entering username and answering the passphrase question.
 Players can:
 - See which Games are being played by other Players from the same Group right now. also, how many players are playing it (but not which players), when the game was started, and how many percent of the game is finished.
@@ -145,7 +152,7 @@ Players can:
 - When a Player joins a pending Game, or initiates a new pending Game, a popup window appears, informing them that they are waiting for X more players to join before the Game starts, but that they can press Esc to stop waiting. The mouse is disabled during the wait, but they can still see which other games are being played, are pending etc. This is to stop Players from initiating several games at the same time. If all waiting Players leave a pending Game, it is removed.
 
 
-## *Vocabulary Lists*
+### Vocabulary Lists
 The Vocabulary Lists are the basis of all games. They can be extracted from any of a number of common text file formats. Once a file has been uploaded, the text is shown in a separate window, and the user is asked to select the text to be included into the vocabulary list. This way, the user can exclude headers and explanations like "List 5" or "English vocabulary for Friday". After each selection, the user is asked if they want to finish the list or add another section. After selection is finished, the text is then automatically divided into a list separated by any of the following chars ",.;:\n" but not by simple spaces. The list is presented to the user, as a simple list separated by linebreak only, with all non letter characters apart from spaces removed. The user can now toggle up or down and correct, so that for example 
 "der"
 "Arm"
@@ -157,6 +164,33 @@ becomes
 "der Arm"
 "das Bein"
 The crossword algorithm checks if it can build a crossword which fits inside a 24x24 grid from the list. If not, it automatically divides the list in two and tries again. It prompts the user to name each list and saves them.
+
+### *Group Chat*
+Chat window appears below the function buttons in manage_group. There is no chat in dashboard, since all chats are group specific. Chat has two main functions: 
+
+## *Messaging*
+It allows short messages to be written between Admins->Admins, Admins->Members and Members->Admins. No messaging directly to individual Users and no messaging from Members to Members (to avoid the Dicteé chat becomming a general messaging service. It is there for Dicteé related info).
+
+## *Log*
+It is a log of all important activity in the group. Hence, it can be scrolled back endlessly until the start of the Group. Most group events initiated by Admins, will trigger a short entry into the chat log, like this
+DD-MM-YYYY HH:MM UserName " promoted to Admin " UserName or
+DD-MM-YYYY HH:MM UserName " renamed Group " GroupName
+Manage Player events won't trigger log entries, and only the most important Manage Vocabulary events will.
+
+## *Chat visibility filter*
+A number of colored clickable buttons appear under the chat window. Selecting and deselecting them (any combination is possible) will filter what you see in the chat. All messages in the chat are color coded in the same way. Also, all events triggered by and all messages written by oneself, appear in boldface.
+
+### *Chat visibility options*
+A->A   messages from Admins to other Admins
+A->M   messages from Admins to Members
+M->A   messages from Members to Admins
+Group  all Group events
+
+### *Writing chat messages*
+select the button "Write Message" then select from modal to whom. Another modal opens that allows a message to be written, reviewed, and finally posted. The modals should appear in the upper half of the screen, so that it is fairly easy to keep the chat window visible at the same time.
+
+### *Data structure of chat*
+The chat entries should be saved not as strings but as an array of objects, with at least time, originator, type, target (can be null) and content (can be null). This way, names will remain correct even after rename events. 
 
 ## *Games*
 Dictee is conceived such, that many Games can be added to the website later. It needs at least one Game.
@@ -174,7 +208,7 @@ A crossword is automatically generated that fits on a maximum 24x24 grid. On the
 </details>
 
 ### *Word soup (optional)*
-First, the list of words is displayed for a brief while (1 sec per word). Then, a word soup is generated (a grid of 24x24 squares where the words are hidden among other randon letters. Words can cross each other. Words can be displayed horizontally from left to right and vertically from up to down. The player can navigate an arrow across the grid. If they place it on the square where a word begins, points it in the right direction, and inputs the correct number of letters, the word light up and changes color. The Game can be played by several players simultaneously. Each Player has their own color, which shows which words were claimed by which player. The Players gets one point per correct word.
+First, the list of words is displayed for a brief while (1 sec per word). Then, a word soup is generated (a grid of 24x24 squares where the words are hidden among other randon letters. Words can cross each other. Words can be displayed horizontally from left to right and vertically from up to down. The player can use the mouse (or finger on mobile) to mark a word, by starting at its beginning, holding the mouse button, and selecting the word. If they correctly mark the word, it light up and changes color. It only lights up, as the mouse button/finger is released, so that one has to commit to a guess before finding out if it is correct. If you mark the wrong boxes, you are frozen for 5 s. This is to stop players from randomly swiping all over the grid. The Game can be played by several players simultaneously. Each Player has their own color, which shows which words were claimed by which player. The Players gets one point per correct word. You see the guesses of the other players appear as colored swipes.
 
 <details>
   <summary>Modules (2 Points)</summary>
