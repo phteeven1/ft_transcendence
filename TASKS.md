@@ -11,9 +11,6 @@ set up regular weekly meetings
 ### backend: database
 implement database for all stored objects and data
 
-### select_game
-dashboard where players can initiate games, join games, see which games are being played
-
 ### import_vocabulary
 a mechanism for intelligently reading vocabulary lists in any number of formats, and turning them into double array of Words and Meanings
 
