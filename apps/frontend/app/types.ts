@@ -72,7 +72,6 @@ export type Game = {
   initiatedBy: number;
   initiatedTime: string; // ISO string from backend Date
   startedTime: string | null;
-  waitingFor: number;
   players: number[];
   isActive: boolean;
   isFinished: boolean;

@@ -12,14 +12,12 @@ export class GamesController {
       name: string;
       inGroup: number;
       initiatedBy: number;
-      waitingFor: number;
     },
   ) {
     return this.gamesService.create(
       body.name,
       body.inGroup,
       body.initiatedBy,
-      body.waitingFor,
     );
   }
 

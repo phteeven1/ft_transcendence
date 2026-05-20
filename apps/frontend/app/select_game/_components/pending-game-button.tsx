@@ -19,11 +19,10 @@ type Props = {
   onForceStart: () => void;
 };
 
-function formatCountdown(initiatedTime: string, now: number): string {
-  const expiresAt = new Date(initiatedTime).getTime() + 5 * 60 * 1000;
-  const secondsLeft = Math.max(0, Math.floor((expiresAt - now) / 1000));
-  const mins = Math.floor(secondsLeft / 60);
-  const secs = secondsLeft % 60;
+function formatElapsed(initiatedTime: string, now: number): string {
+  const secondsElapsed = Math.max(0, Math.floor((now - new Date(initiatedTime).getTime()) / 1000));
+  const mins = Math.floor(secondsElapsed / 60);
+  const secs = secondsElapsed % 60;
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
@@ -37,9 +36,7 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
 
   const isInitiator = game.initiatedBy === currentPlayerId;
   const alreadyJoined = game.players.includes(currentPlayerId);
-  const isCountdown = game.waitingFor === 0;
 
-  // Middle line: "Waiting..." / "Click to Start" / "Click to Join"
   let middleLabel: string;
   if (isInitiator) {
     middleLabel = 'Click to Start';
@@ -49,15 +46,8 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
     middleLabel = 'Click to Join';
   }
 
-  // Bottom line: player count and/or countdown
-  let bottomLabel: string;
-  if (isCountdown) {
-    const countdown = formatCountdown(game.initiatedTime, now);
-    bottomLabel = `${game.players.length} player${game.players.length !== 1 ? 's' : ''}, ${countdown}`;
-  } else {
-    const totalNeeded = game.waitingFor + 1;
-    bottomLabel = `${game.players.length}/${totalNeeded} players`;
-  }
+  const elapsed = formatElapsed(game.initiatedTime, now);
+  const bottomLabel = `${game.players.length} player${game.players.length !== 1 ? 's' : ''}, ${elapsed}`;
 
   // Initiator always gets a clickable button that force-starts.
   // Non-initiator who already joined: disabled.

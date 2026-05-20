@@ -136,10 +136,10 @@ export default function SelectGame() {
 
   // calls postCreateGame with gameName and waitingFor
   // adds new game to pendingGames and closes modal
-  const handleCreateGame = async (gameName: string, waitingFor: number) => {
+  const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      const newGame = await postCreateGame(gameName, player.inGroup, player.id, waitingFor);
+      const newGame = await postCreateGame(gameName, player.inGroup, player.id, 0);
       setPendingGames((prev) => [...prev, newGame]);
     } catch (error) {
       console.error('handleCreateGame failed:', error);
@@ -252,7 +252,7 @@ export default function SelectGame() {
         <InitiateGameModal
           gameName={modal.gameName}
           onCancel={() => setModal({ kind: 'none' })}
-          onCreate={(waitingFor) => handleCreateGame(modal.gameName, waitingFor)}
+          onCreate={() => handleCreateGame(modal.gameName)}
         />
       )}
 
