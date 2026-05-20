@@ -84,6 +84,9 @@ export default function SelectGame() {
   const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
 
+  const hasInitiated = (gameName: string): boolean =>
+    pendingGames.some((g) => g.name === gameName && g.initiatedBy === player?.id);
+
   // guards against no player
   useEffect(() => {
     if (!player) {
@@ -205,14 +208,16 @@ export default function SelectGame() {
 
           <button
             onClick={() => setModal({ kind: 'initiate', gameName: 'Word Building' })}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-4 px-4 rounded transition-colors"
+            disabled={hasInitiated('Word Building')}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             New Word Building
           </button>
 
           <button
             onClick={() => setModal({ kind: 'initiate', gameName: 'Word Soup' })}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-4 px-4 rounded transition-colors"
+            disabled={hasInitiated('Word Soup')}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             New Word Soup
           </button>
@@ -269,3 +274,6 @@ export default function SelectGame() {
     </div>
   );
 }
+
+
+

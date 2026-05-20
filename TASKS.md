@@ -6,7 +6,7 @@ book meeting for git instructions by smanthey, and code review of tsternbe code,
 get git names from all group members, pass to smanthey
 set up regular weekly meetings
 
-##Large Tasks
+## Large Tasks
 
 ### backend: database
 implement database for all stored objects and data
@@ -26,7 +26,7 @@ make the game Word Building
 ### Word Soup
 make the game Word Soup
 
-### visual design
+### visual design (and sound)
 add a design concept to the entire app
 
 
