@@ -1,5 +1,5 @@
 # to do
-
+from tsternbe
 ## context backend
 I have implemented react contexts in the frontend. 
 ### langauge-context
@@ -13,3 +13,31 @@ if counter on the landing page doesn't serve a purpose, it can be removed
 # questions
 ## tailwind
 We currently use two styling schemas. I suggest we switch to, and stick with, only tailwind. I suggest we use a very simple aestetic for now, and work more on it later.
+
+
+tsternbe: To enable sending email invites from our app, I set up the following:
+
+@nestjs-modules/mailer with Nodemailer transport and Gmail SMTP
+
+I ran this inside apps/backend
+
+npm install @nestjs-modules/mailer nodemailer
+npm install --save-dev @types/nodemailer
+npm install @nestjs/config
+
+
+Gmail account for personal use, Tobias (no last name) my birth date.
+dictee.app@gmail.com
+gmail password: gek/329-BEX*586?
+2 step verification to 0176 7862 1094 (my mobile phone)
+
+App passwords on
+name: Dictee
+app password: ciyvrpoqnssxqlhy
+
+Things to do:
+check uniqueness of userName
+check validity of userEmail
+check minimum requirements of userPassword
+
+store user, group, vocabulary and players in database (type Member is only used locally)

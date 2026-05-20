@@ -1,104 +1,128 @@
 'use client';
-
 import { useState, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { User } from '../types';
 
 export default function SignIn() {
   const [formData, setFormData] = useState({
     userName: '',
     userPassword: '',
   });
+  const [showError, setShowError] = useState(false);
 
-  const { login } = useAuth(); // Access the login function from auth context
-  const router = useRouter(); // For redirecting
+  const { login } = useAuth();
+  const router = useRouter();
 
+  // updates formData on any change to any of the two fields
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // prevents Enter at the end of an input from submitting
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
     }
   };
 
-  // Simulated backend call (placeholder for smanthey)
+  // prevents browser default of reloading page, then
+  // POSTs formData to /users/signin and stores returned User object in auth context
+  // then navigates to dashboard
   const handleSubmit = async (e: SyntheticEvent) => {
-  e.preventDefault();
+    e.preventDefault();
+    try {
+      const res = await fetch('http://localhost:4000/users/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userName: formData.userName,
+          userPassword: formData.userPassword,
+        }),
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data: User = await res.json();
+      login(data);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Sign in failed:', error);
+      setShowError(true);
+    }
+  };
 
-  // Placeholder: Check if fields are non-empty
-  if (!formData.userName || !formData.userPassword) {
-    alert("Please enter both username and password.");
-    return;
-  }
-
-  // Simulate a delay (optional)
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  // Update auth state (with placeholder email if needed)
-  login({
-    userName: formData.userName,
-    userEmail: "", // Or remove this if you update the `login` function
-  });
-
-  // Redirect to dashboard
-  router.push('/dashboard');
-  
-};
-
+  // layout with two input fields and one Submit button. On Password field, 
+  // type is set to "password" to prevent browser from suggesting old passwords
   return (
     <div className="min-h-screen bg-emerald-200">
-    <div className="bg-emerald-200 max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Sign In</h1>
-      <p className="mb-6 text-gray-600">
-        Welcome back! Please sign in to continue.
-      </p>
+      <div className="bg-emerald-200 max-w-md mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Sign In</h1>
+        <p className="mb-6 text-gray-600">
+          Welcome back! Please sign in to continue.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="userName" className="block mb-1">Username</label>
+            <input
+              type="text"
+              id="userName"
+              name="userName"
+              value={formData.userName}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              className="w-full p-2 border rounded"
+              placeholder="Enter your username"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="userPassword" className="block mb-1">Password</label>
+            <input
+              type="password"
+              id="userPassword"
+              name="userPassword"
+              value={formData.userPassword}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              className="w-full p-2 border rounded"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Sign In
+          </button>
+        </form>
+        <p className="mt-4 text-center text-gray-600">
+          Don't have an account?{' '}
+          <Link href="/register" className="text-blue-500 hover:text-blue-600 underline">
+            Register here
+          </Link>
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="userName" className="block mb-1">
-            Username
-          </label>
-          <input
-            type="text"
-            id="userName"
-            name="userName"
-            value={formData.userName}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            className="w-full p-2 border rounded"
-            placeholder="Enter your username"
-            required
-          />
+      {/* Error modal */}
+      {showError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <p className="mb-6 text-gray-700">
+              Invalid username or password. Please try again.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowError(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div>
-          <label htmlFor="userPassword" className="block mb-1">
-            Password
-          </label>
-          <input
-            type="password" // Changed to password type for security
-            id="userPassword"
-            name="userPassword"
-            value={formData.userPassword}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            className="w-full p-2 border rounded"
-            placeholder="Enter your password"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-        >
-          Sign In
-        </button>
-      </form>
-    </div>
+      )}
     </div>
   );
 }
