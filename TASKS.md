@@ -11,6 +11,9 @@ set up regular weekly meetings
 ### backend: database
 implement database for all stored objects and data
 
+### backend: web sockets for select_game and for the games
+implement web sockets to sync all actions between players once they are in select_game and beyond. This means, after user has handed over app to player.
+
 ### import_vocabulary
 a mechanism for intelligently reading vocabulary lists in any number of formats, and turning them into double array of Words and Meanings
 
@@ -47,6 +50,10 @@ implement check that all usernames are unique, and all emails valid
 
 ### notifications
 system to register and send notifications to users, according to their settings
+
+### log out guard in games
+add guards for one player suddenly leaving by signing out, closing tab, or closing browser.
+if player that initiated pending game leaves, while other players are waiting for it to start, the first waiting player in players array get's promoted to initiatedBy.
 
 
 ## Small Tasks
