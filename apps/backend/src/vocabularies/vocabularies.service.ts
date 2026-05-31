@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { toApiVocabulary } from '../common/mappers';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type Vocabulary = {
   id: number;
@@ -13,80 +15,102 @@ export type Vocabulary = {
 
 @Injectable()
 export class VocabulariesService {
-  private vocabularies: Vocabulary[] = [];
-  private nextId = 1;
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(
+  async create(
     inGroup: number,
     byUser: number,
     name: string,
     words: string[] = [],
     meanings: string[] = [],
-    ): Vocabulary {
-    const newVocabulary: Vocabulary = {
-        id: this.nextId++,
-        inGroup: Number(inGroup),
-        byUser: Number(byUser),
+  ): Promise<Vocabulary> {
+    const vocabulary = await this.prisma.vocabulary.create({
+      data: {
+        inGroupId: inGroup,
+        byUserId: byUser,
         name,
-        isCurrent: false,
         words,
         meanings,
         wordCount: words.length,
-    };
-    this.vocabularies.push(newVocabulary);
-    return newVocabulary;
+      },
+    });
+    return toApiVocabulary(vocabulary);
+  }
+
+  async setActive(
+    vocabularyId: number,
+    inGroup: number,
+  ): Promise<Vocabulary | undefined> {
+    await this.prisma.vocabulary.updateMany({
+      where: { inGroupId: inGroup },
+      data: { isCurrent: false },
+    });
+    try {
+      const vocabulary = await this.prisma.vocabulary.update({
+        where: { id: vocabularyId },
+        data: { isCurrent: true },
+      });
+      return toApiVocabulary(vocabulary);
+    } catch {
+      return undefined;
     }
-
-  setActive(vocabularyId: number, inGroup: number): Vocabulary | undefined {
-    const vId = Number(vocabularyId);
-    const gId = Number(inGroup);
-    // Set all vocabularies in group to inactive
-    this.vocabularies
-      .filter(v => v.inGroup === gId)
-      .forEach(v => { v.isCurrent = false; });
-    // Set selected vocabulary to active
-    const vocabulary = this.vocabularies.find(v => v.id === vId);
-    if (!vocabulary) return undefined;
-    vocabulary.isCurrent = true;
-    return vocabulary;
   }
 
-  rename(vocabularyId: number, name: string): Vocabulary | undefined {
-    const vocabulary = this.vocabularies.find(v => v.id === Number(vocabularyId));
-    if (!vocabulary) return undefined;
-    vocabulary.name = name;
-    return vocabulary;
+  async rename(
+    vocabularyId: number,
+    name: string,
+  ): Promise<Vocabulary | undefined> {
+    try {
+      const vocabulary = await this.prisma.vocabulary.update({
+        where: { id: vocabularyId },
+        data: { name },
+      });
+      return toApiVocabulary(vocabulary);
+    } catch {
+      return undefined;
+    }
   }
 
-  updateEntries(vocabularyId: number, words: string[], meanings: string[]): Vocabulary | undefined {
-    const vocabulary = this.vocabularies.find(v => v.id === Number(vocabularyId));
-    if (!vocabulary) return undefined;
-    vocabulary.words = words;
-    vocabulary.meanings = meanings;
-    vocabulary.wordCount = words.length;
-    return vocabulary;
+  async updateEntries(
+    vocabularyId: number,
+    words: string[],
+    meanings: string[],
+  ): Promise<Vocabulary | undefined> {
+    try {
+      const vocabulary = await this.prisma.vocabulary.update({
+        where: { id: vocabularyId },
+        data: { words, meanings, wordCount: words.length },
+      });
+      return toApiVocabulary(vocabulary);
+    } catch {
+      return undefined;
+    }
   }
 
-  remove(vocabularyId: number): boolean {
-    const index = this.vocabularies.findIndex(v => v.id === Number(vocabularyId));
-    if (index === -1) return false;
-    this.vocabularies.splice(index, 1);
-    return true;
+  async remove(vocabularyId: number): Promise<boolean> {
+    try {
+      await this.prisma.vocabulary.delete({ where: { id: vocabularyId } });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  removeByGroup(inGroup: number): void {
-    this.vocabularies = this.vocabularies.filter(
-      v => v.inGroup !== Number(inGroup)
-    );
+  async removeByGroup(inGroup: number): Promise<void> {
+    await this.prisma.vocabulary.deleteMany({ where: { inGroupId: inGroup } });
   }
 
-  findById(vocabularyId: number): Vocabulary | undefined {
-    return this.vocabularies.find(v => v.id === Number(vocabularyId));
+  async findById(vocabularyId: number): Promise<Vocabulary | undefined> {
+    const vocabulary = await this.prisma.vocabulary.findUnique({
+      where: { id: vocabularyId },
+    });
+    return vocabulary ? toApiVocabulary(vocabulary) : undefined;
   }
 
-  findByGroup(inGroup: number): Vocabulary[] {
-    return this.vocabularies.filter(
-      v => v.inGroup === Number(inGroup)
-    );
+  async findByGroup(inGroup: number): Promise<Vocabulary[]> {
+    const vocabularies = await this.prisma.vocabulary.findMany({
+      where: { inGroupId: inGroup },
+    });
+    return vocabularies.map(toApiVocabulary);
   }
 }

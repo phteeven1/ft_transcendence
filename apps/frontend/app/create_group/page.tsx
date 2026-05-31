@@ -2,6 +2,7 @@
 import { useState, ChangeEvent, SyntheticEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { groupsApi } from '@/lib/api';
 
 export default function CreateGroup() {
   const { user, syncGroup } = useAuth();
@@ -20,16 +21,10 @@ export default function CreateGroup() {
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:4000/groups/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupName: groupName,
-          creatorId: user.id,
-        }),
+      const data = await groupsApi.create({
+        groupName,
+        creatorId: user.id,
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
       const result = await syncGroup(data.id);
       if (result) router.push('/manage_group');
     } catch (error) {

@@ -13,6 +13,7 @@ isLoading: shows loading state while fetching.
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../types';
 import VocabularyList from './_components/vocabulary-list';
 import ImportVocabulary from './_components/import-vocabulary';
@@ -43,12 +44,7 @@ export default function ManageVocabulary() {
   const fetchVocabularies = async () => {
     if (!group) return;
     try {
-      const res = await fetch(
-        `http://localhost:4000/vocabularies/group/${group.id}`,
-      );
-      if (!res.ok)
-        throw new Error(`Failed to fetch vocabularies: ${res.status}`);
-      const data: Vocabulary[] = await res.json();
+      const data = await vocabulariesApi.findByGroup(group.id);
       setVocabularies(data);
     } catch (error) {
       console.error('fetchVocabularies failed:', error);

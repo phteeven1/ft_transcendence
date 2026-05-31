@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 
 type Props = {
@@ -18,12 +19,7 @@ export default function DeleteVocabulary({
   const handleDelete = async () => {
     if (!selectedVocabulary) return;
     try {
-      const res = await fetch('http://localhost:4000/vocabularies/remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vocabularyId: selectedVocabulary.id }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      await vocabulariesApi.remove(selectedVocabulary.id);
       onDeleted(selectedVocabulary.id);
       setIsOpen(false);
     } catch (error) {

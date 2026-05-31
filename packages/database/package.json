@@ -1,20 +1,24 @@
 {
-  "name": "database",
+  "name": "@ft-transcendence/database",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Prisma schema, migrations, and generated client for ft_transcendence",
+  "main": "./generated/prisma/index.js",
+  "types": "./generated/prisma/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^7.4.1",
-    "prisma": "^7.4.1"
+    "@prisma/client": "^7.4.1"
   },
   "devDependencies": {
-    "@types/node": "^25.3.1"
+    "@types/node": "^25.3.1",
+    "dotenv": "^16.4.7",
+    "prisma": "^7.4.1",
+    "typescript": "^5.7.3"
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 
 type Props = {
@@ -19,16 +20,11 @@ export default function RenameVocabulary({
   const handleRename = async () => {
     if (!selectedVocabulary || !newName.trim()) return;
     try {
-      const res = await fetch('http://localhost:4000/vocabularies/rename', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vocabularyId: selectedVocabulary.id,
-          vocabularyName: newName.trim(),
-        }),
+      const updated = await vocabulariesApi.rename({
+        vocabularyId: selectedVocabulary.id,
+        vocabularyName: newName.trim(),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const updated: Vocabulary = await res.json();
+      if (!updated) throw new Error('Failed to rename vocabulary');
       onRenamed(updated);
       setIsOpen(false);
       setNewName('');

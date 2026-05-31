@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { toSafePlayer } from '../common/mappers';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type Player = {
   id: number;
@@ -12,93 +14,109 @@ export type Player = {
 
 @Injectable()
 export class PlayersService {
-  private players: Player[] = [];
-  private nextId = 1;
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(
+  async create(
     inGroup: number,
     ofUser: number,
     name: string,
     passQuestion: string,
     passAnswer: string,
-  ): Omit<Player, 'passAnswer'> {
-    const newPlayer: Player = {
-      id: this.nextId++,
-      inGroup: Number(inGroup),
-      ofUser: Number(ofUser),
-      name: name,
-      passQuestion: passQuestion,
-      passAnswer: passAnswer,
-      currentGameId: null,
-    };
-    this.players.push(newPlayer);
-    const { passAnswer: _, ...safePlayer } = newPlayer;
-    return safePlayer;
+  ): Promise<Omit<Player, 'passAnswer'>> {
+    const player = await this.prisma.player.create({
+      data: {
+        inGroupId: inGroup,
+        ofUserId: ofUser,
+        name,
+        passQuestion,
+        passAnswer,
+      },
+    });
+    return toSafePlayer(player);
   }
 
-  rename(playerId: number, name: string): Omit<Player, 'passAnswer'> | undefined {
-    const player = this.players.find(p => p.id === Number(playerId));
-    if (!player) return undefined;
-    player.name = name;
-    const { passAnswer: _, ...safePlayer } = player;
-    return safePlayer;
+  async rename(
+    playerId: number,
+    name: string,
+  ): Promise<Omit<Player, 'passAnswer'> | undefined> {
+    try {
+      const player = await this.prisma.player.update({
+        where: { id: playerId },
+        data: { name },
+      });
+      return toSafePlayer(player);
+    } catch {
+      return undefined;
+    }
   }
 
-  updatePassPhrase(
+  async updatePassPhrase(
     playerId: number,
     passQuestion: string,
     passAnswer: string,
-  ): Omit<Player, 'passAnswer'> | undefined {
-    const player = this.players.find(p => p.id === Number(playerId));
-    if (!player) return undefined;
-    player.passQuestion = passQuestion;
-    player.passAnswer = passAnswer;
-    const { passAnswer: _, ...safePlayer } = player;
-    return safePlayer;
+  ): Promise<Omit<Player, 'passAnswer'> | undefined> {
+    try {
+      const player = await this.prisma.player.update({
+        where: { id: playerId },
+        data: { passQuestion, passAnswer },
+      });
+      return toSafePlayer(player);
+    } catch {
+      return undefined;
+    }
   }
 
-  remove(playerId: number): boolean {
-    const index = this.players.findIndex(p => p.id === Number(playerId));
-    if (index === -1) return false;
-    this.players.splice(index, 1);
-    return true;
+  async remove(playerId: number): Promise<boolean> {
+    try {
+      await this.prisma.player.delete({ where: { id: playerId } });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  removeByGroup(inGroup: number): void {
-    this.players = this.players.filter(
-      p => p.inGroup !== Number(inGroup)
-    );
+  async removeByGroup(inGroup: number): Promise<void> {
+    await this.prisma.player.deleteMany({ where: { inGroupId: inGroup } });
   }
 
-  findById(playerId: number): Omit<Player, 'passAnswer'> | undefined {
-    const player = this.players.find(p => p.id === Number(playerId));
-    if (!player) return undefined;
-    const { passAnswer: _, ...safePlayer } = player;
-    return safePlayer;
+  async findById(
+    playerId: number,
+  ): Promise<Omit<Player, 'passAnswer'> | undefined> {
+    const player = await this.prisma.player.findUnique({
+      where: { id: playerId },
+    });
+    return player ? toSafePlayer(player) : undefined;
   }
 
-  findByParentInGroup(ofUser: number, inGroup: number): Omit<Player, 'passAnswer'>[] {
-    return this.players
-      .filter(p =>
-        p.ofUser === Number(ofUser) &&
-        p.inGroup === Number(inGroup),
-      )
-      .map(({ passAnswer: _, ...safePlayer }) => safePlayer);
+  async findByParentInGroup(
+    ofUser: number,
+    inGroup: number,
+  ): Promise<Omit<Player, 'passAnswer'>[]> {
+    const players = await this.prisma.player.findMany({
+      where: { ofUserId: ofUser, inGroupId: inGroup },
+    });
+    return players.map((p) => toSafePlayer(p));
   }
 
-  findByGroup(inGroup: number): Omit<Player, 'passAnswer'>[] {
-    return this.players
-      .filter(p => p.inGroup === Number(inGroup))
-      .map(({ passAnswer: _, ...safePlayer }) => safePlayer);
+  async findByGroup(inGroup: number): Promise<Omit<Player, 'passAnswer'>[]> {
+    const players = await this.prisma.player.findMany({
+      where: { inGroupId: inGroup },
+    });
+    return players.map((p) => toSafePlayer(p));
   }
 
-  setCurrentGame(playerId: number, gameId: number): void {
-    const player = this.players.find((p) => p.id === Number(playerId));
-    if (player) player.currentGameId = Number(gameId);
+  async setCurrentGame(playerId: number, gameId: number): Promise<void> {
+    await this.prisma.player.update({
+      where: { id: playerId },
+      data: { currentGameId: gameId },
+    });
   }
 
-  clearCurrentGame(playerId: number): void {
-    const player = this.players.find((p) => p.id === Number(playerId));
-    if (player) player.currentGameId = null;
+  async clearCurrentGame(playerId: number): Promise<void> {
+    await this.prisma.player.update({
+      where: { id: playerId },
+      data: { currentGameId: null },
+    });
   }
+
 }

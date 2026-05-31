@@ -31,7 +31,7 @@ export default function VocabularyList({
           }`}
         >
           <span>{vocabulary.name}</span>
-          {vocabulary.isActive && (
+          {vocabulary.isCurrent && (
             <span className="ml-2 text-xs font-semibold text-emerald-600">
               Active
             </span>

@@ -10,6 +10,7 @@ players always belong to both a group and a user
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { playersApi } from '@/lib/api';
 import { Player } from '../types';
 import PlayerList from './_components/player-list';
 import CreatePlayer from './_components/create-player';
@@ -39,11 +40,7 @@ export default function ManagePlayers() {
   const fetchPlayers = async () => {
     if (!user || !group) return;
     try {
-      const res = await fetch(
-        `http://localhost:4000/players/parent/${user.id}/group/${group.id}`,
-      );
-      if (!res.ok) throw new Error(`Failed to fetch players: ${res.status}`);
-      const data: Player[] = await res.json();
+      const data = await playersApi.findByParentInGroup(user.id, group.id);
       setPlayers(data);
     } catch (error) {
       console.error('fetchPlayers failed:', error);

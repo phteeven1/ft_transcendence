@@ -1,14 +1,126 @@
+// Domain schema aligned with in-memory backend types (apps/backend/src/**).
+// Change models here, then run: npm run db:migrate (from packages/database).
+
 generator client {
- provider = "prisma-client-js"
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
- provider = "postgresql"
+  provider = "postgresql"
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
 }
 
 model User {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  email          String   @unique
+  password       String
+  currentGroupId Int?
+  createdAt      DateTime @default(now())
+
+  currentGroup Group?            @relation("UserCurrentGroup", fields: [currentGroupId], references: [id], onDelete: SetNull)
+  memberships  GroupMembership[]
+  players      Player[]
+  vocabularies Vocabulary[]
+}
+
+model Group {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
+  name      String
   createdAt DateTime @default(now())
+
+  memberships  GroupMembership[]
+  players      Player[]
+  vocabularies Vocabulary[]
+  games        Game[]
+  invitations  Invitation[]
+  currentUsers User[] @relation("UserCurrentGroup")
+}
+
+/// Replaces parallel admins[] / members[] on Group and isAdminOf / isMemberOf on User.
+model GroupMembership {
+  id      Int       @id @default(autoincrement())
+  userId  Int
+  groupId Int
+  role    GroupRole @default(MEMBER)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+}
+
+model Player {
+  id            Int     @id @default(autoincrement())
+  inGroupId     Int
+  ofUserId      Int
+  name          String
+  passQuestion  String
+  passAnswer    String
+  currentGameId Int?
+
+  group          Group        @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [ofUserId], references: [id], onDelete: Cascade)
+  currentGame    Game?        @relation("PlayerCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  gamePlayers    GamePlayer[]
+  initiatedGames Game[]       @relation("GameInitiator")
+}
+
+model Vocabulary {
+  id        Int      @id @default(autoincrement())
+  inGroupId Int
+  byUserId  Int
+  name      String
+  isCurrent Boolean  @default(false)
+  words     String[]
+  meanings  String[]
+  wordCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [byUserId], references: [id], onDelete: Cascade)
+
+  @@index([inGroupId])
+}
+
+model Game {
+  id            Int       @id @default(autoincrement())
+  name          String
+  inGroupId     Int
+  initiatedById Int
+  initiatedTime DateTime  @default(now())
+  startedTime   DateTime?
+  isActive      Boolean   @default(false)
+  isFinished    Boolean   @default(false)
+
+  group           Group        @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  initiatedBy     Player       @relation("GameInitiator", fields: [initiatedById], references: [id])
+  gamePlayers     GamePlayer[]
+  currentPlayers  Player[]     @relation("PlayerCurrentGame")
+}
+
+model GamePlayer {
+  gameId   Int
+  playerId Int
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, playerId])
+}
+
+model Invitation {
+  token     String   @id @default(uuid())
+  groupId   Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }

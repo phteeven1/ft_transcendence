@@ -7,6 +7,7 @@ creates button Delete Player and confirmation modal. states are:
 */
 
 import { useState } from 'react';
+import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 
 type Props = {
@@ -25,12 +26,7 @@ export default function DeletePlayer({ selectedPlayer, onDeleted }: Props) {
   const handleDelete = async () => {
     if (!selectedPlayer) return;
     try {
-      const res = await fetch('http://localhost:4000/players/remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId: selectedPlayer.id }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      await playersApi.remove(selectedPlayer.id);
       onDeleted(selectedPlayer.id);
       setIsOpen(false);
     } catch (error) {

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   frontend:
@@ -15,14 +13,18 @@ services:
 
   backend:
 
-    build: ./apps/backend
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
 
     ports:
       - "4000:4000"
 
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
     environment:
 
@@ -51,6 +53,12 @@ services:
     volumes:
 
       - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d transcendence"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 
   redis:

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 
 type Props = {
@@ -44,19 +45,13 @@ export default function ImportVocabulary({ onImported }: Props) {
   const handleImport = async () => {
     if (!user || !group) return;
     try {
-      const res = await fetch('http://localhost:4000/vocabularies/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vocabularyInGroup: group.id,
-          byUser: user.id,
-          vocabularyName: 'French Test List',
-          vocabularyWords: DUMMY_WORDS,
-          vocabularyMeanings: DUMMY_MEANINGS,
-        }),
+      const created = await vocabulariesApi.create({
+        vocabularyInGroup: group.id,
+        byUser: user.id,
+        vocabularyName: 'French Test List',
+        vocabularyWords: DUMMY_WORDS,
+        vocabularyMeanings: DUMMY_MEANINGS,
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const created: Vocabulary = await res.json();
       onImported(created);
       setShowConfirm(true);
     } catch (error) {

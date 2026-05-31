@@ -10,6 +10,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
 
 // defines shape of props that ExpelMember must receive from parent
@@ -73,12 +74,7 @@ export default function ExpelMember({
   const handleConfirmExpel = async () => {
     if (!selectedId || !selectedMember) return;
     try {
-      const res = await fetch('http://localhost:4000/groups/expel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.id, userId: selectedId }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      await groupsApi.expel({ groupId: group.id, userId: selectedId });
       await syncAndRefresh();
       setShowConfirm(false);
       setSelectedId(null);
