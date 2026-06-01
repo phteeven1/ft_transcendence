@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 type Props = {
@@ -37,12 +38,7 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
   // deletes the group by POSTing delete to backend with groupId.
   const handleConfirm = async () => {
     try {
-      const res = await fetch('http://localhost:4000/groups/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.id }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      await groupsApi.delete(group.id);
       leaveGroup();
       router.push('/dashboard');
     } catch (error) {

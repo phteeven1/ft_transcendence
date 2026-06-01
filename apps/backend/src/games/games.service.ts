@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { gameWithPlayers, toApiGame } from '../common/mappers';
+import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
 
 export type Game = {
@@ -8,130 +10,170 @@ export type Game = {
   initiatedBy: number;
   initiatedTime: Date;
   startedTime: Date | null;
-  players: number[];  // array of player ids
+  players: number[];
   isActive: boolean;
   isFinished: boolean;
 };
 
 @Injectable()
 export class GamesService {
-  private games: Game[] = [];
-  private nextId = 1;
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly playersService: PlayersService,
+  ) {}
 
-  constructor(private readonly playersService: PlayersService) {}
-
-  create(
+  async create(
     name: string,
     inGroup: number,
     initiatedBy: number,
-  ): Game {
-    const newGame: Game = {
-      id: this.nextId++,
-      name,
-      inGroup: Number(inGroup),
-      initiatedBy: Number(initiatedBy),
-      initiatedTime: new Date(),
-      startedTime: null,
-      players: [Number(initiatedBy)],
-      isActive: false,
-      isFinished: false,
-    };
-    this.games.push(newGame);
-    this.playersService.setCurrentGame(Number(initiatedBy), newGame.id);
-    return newGame;
+  ): Promise<Game> {
+    const game = await this.prisma.game.create({
+      data: {
+        name,
+        inGroupId: inGroup,
+        initiatedById: initiatedBy,
+        gamePlayers: { create: { playerId: initiatedBy } },
+      },
+      ...gameWithPlayers,
+    });
+    await this.playersService.setCurrentGame(initiatedBy, game.id);
+    return toApiGame(game);
   }
 
-  join(gameId: number, playerId: number): Game | undefined {
-    const game = this.findById(gameId);
+  async join(gameId: number, playerId: number): Promise<Game | undefined> {
+    const game = await this.findById(gameId);
     if (!game || game.isActive) return undefined;
-    const pId = Number(playerId);
-    if (!game.players.includes(pId)) {
-      game.players.push(pId);
-      this.playersService.setCurrentGame(pId, game.id);
+
+    if (!game.players.includes(playerId)) {
+      await this.prisma.gamePlayer.create({
+        data: { gameId, playerId },
+      });
+      await this.playersService.setCurrentGame(playerId, gameId);
     }
-    return game;
+    return this.findById(gameId);
   }
 
-  start(gameId: number): Game | undefined {
-    const game = this.findById(gameId);
+  async start(gameId: number): Promise<Game | undefined> {
+    const game = await this.findById(gameId);
     if (!game) return undefined;
-    this.startGame(game);
-    return game;
+    await this.startGame(game);
+    return this.findById(gameId);
   }
 
-  // A single player leaves. If the last player leaves, the game is destroyed.
-  // Returns the updated game, or null if it was destroyed.
-  leave(gameId: number, playerId: number): Game | null | undefined {
-    const game = this.findById(gameId);
+  async leave(
+    gameId: number,
+    playerId: number,
+  ): Promise<Game | null | undefined> {
+    const game = await this.findById(gameId);
     if (!game) return undefined;
-    const pId = Number(playerId);
-    game.players = game.players.filter((id) => id !== pId);
-    this.playersService.clearCurrentGame(pId);
-    if (game.players.length === 0) {
-      this.games = this.games.filter((g) => g.id !== Number(gameId));
+
+    await this.prisma.gamePlayer.deleteMany({
+      where: { gameId, playerId },
+    });
+    await this.playersService.clearCurrentGame(playerId);
+
+    const updated = await this.findById(gameId);
+    if (!updated || updated.players.length === 0) {
+      await this.prisma.game.delete({ where: { id: gameId } }).catch(() => {});
       return null;
     }
-    return game;
+    return updated;
   }
 
-  // Game over: mark finished, clear currentGameId for all players
-  finish(gameId: number): Game | undefined {
-    const game = this.findById(gameId);
+  async finish(gameId: number): Promise<Game | undefined> {
+    const game = await this.findById(gameId);
     if (!game) return undefined;
-    game.isFinished = true;
-    game.isActive = false;
-    game.players.forEach((pId) => {
-      this.playersService.clearCurrentGame(pId);
+
+    await this.prisma.game.update({
+      where: { id: gameId },
+      data: { isFinished: true, isActive: false },
     });
-    return game;
+    for (const pId of game.players) {
+      await this.playersService.clearCurrentGame(pId);
+    }
+    return this.findById(gameId);
   }
 
-  findById(gameId: number): Game | undefined {
-    return this.games.find((g) => g.id === Number(gameId));
+  async findById(gameId: number): Promise<Game | undefined> {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      ...gameWithPlayers,
+    });
+    return game ? toApiGame(game) : undefined;
   }
 
-  findByGroup(groupId: number): Game[] {
-    return this.games.filter((g) => g.inGroup === Number(groupId));
+  async findByGroup(groupId: number): Promise<Game[]> {
+    const games = await this.prisma.game.findMany({
+      where: { inGroupId: groupId },
+      ...gameWithPlayers,
+    });
+    return games.map(toApiGame);
   }
 
-  findAll(): Game[] {
-    return this.games;
+  async findAll(): Promise<Game[]> {
+    const games = await this.prisma.game.findMany(gameWithPlayers);
+    return games.map(toApiGame);
   }
 
-  cleanupExpired(): void {
+  async cleanupExpired(): Promise<void> {
     const now = new Date();
     const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 
-    this.games = this.games.filter((game) => {
-      if (game.isActive || game.isFinished) return true;
+    const pending = await this.prisma.game.findMany({
+      where: { isActive: false, isFinished: false },
+      ...gameWithPlayers,
+    });
+
+    for (const game of pending) {
       const age = now.getTime() - game.initiatedTime.getTime();
       if (age > THIRTY_MINUTES_MS) {
-        this.startGame(game);
+        await this.startGame(toApiGame(game));
       }
-      return true;
-    });
+    }
   }
 
-  private startGame(game: Game): void {
-    game.isActive = true;
-    game.startedTime = new Date();
-    // Remove all players from any other pending games they were waiting in.
-    // If that empties a pending game, destroy it immediately.
-    game.players.forEach((pId) => {
-      this.playersService.clearCurrentGame(pId);
-      this.games.forEach((otherGame) => {
-        if (otherGame.id !== game.id && !otherGame.isActive && otherGame.players.includes(pId)) {
-          otherGame.players = otherGame.players.filter((id) => id !== pId);
-        }
+  private async startGame(game: Game): Promise<void> {
+    await this.prisma.game.update({
+      where: { id: game.id },
+      data: { isActive: true, startedTime: new Date() },
+    });
+
+    for (const pId of game.players) {
+      await this.playersService.clearCurrentGame(pId);
+
+      const otherPending = await this.prisma.game.findMany({
+        where: {
+          isActive: false,
+          isFinished: false,
+          id: { not: game.id },
+          gamePlayers: { some: { playerId: pId } },
+        },
+        include: { gamePlayers: true },
       });
+
+      for (const other of otherPending) {
+        await this.prisma.gamePlayer.deleteMany({
+          where: { gameId: other.id, playerId: pId },
+        });
+        const count = await this.prisma.gamePlayer.count({
+          where: { gameId: other.id },
+        });
+        if (count === 0) {
+          await this.prisma.game.delete({ where: { id: other.id } });
+        }
+      }
+    }
+
+    for (const pId of game.players) {
+      await this.playersService.setCurrentGame(pId, game.id);
+    }
+
+    await this.prisma.game.deleteMany({
+      where: {
+        isActive: false,
+        isFinished: false,
+        gamePlayers: { none: {} },
+      },
     });
-    // Re-set currentGameId for players in THIS game (clearCurrentGame above wiped it)
-    game.players.forEach((pId) => {
-      this.playersService.setCurrentGame(pId, game.id);
-    });
-    // Destroy any pending games that are now empty
-    this.games = this.games.filter(
-      (g) => g.isActive || g.isFinished || g.players.length > 0,
-    );
   }
 }

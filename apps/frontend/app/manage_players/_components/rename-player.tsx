@@ -8,6 +8,7 @@ renders button and one input field. Three states:
 */
 
 import { useState } from 'react';
+import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 
 type Props = {
@@ -27,16 +28,10 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
   const handleRename = async () => {
     if (!selectedPlayer || !renameName.trim()) return;
     try {
-      const res = await fetch('http://localhost:4000/players/rename', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerId: selectedPlayer.id,
-          playerName: renameName.trim(),
-        }),
+      const updated = await playersApi.rename({
+        playerId: selectedPlayer.id,
+        playerName: renameName.trim(),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const updated: Player = await res.json();
       onRenamed(updated);
       setIsOpen(false);
       setRenameName('');

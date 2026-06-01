@@ -9,6 +9,7 @@ the phrase is prefilled on opening, but not the answer. States are:
 */
 
 import { useState } from 'react';
+import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 
 type Props = {
@@ -37,20 +38,11 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
   const handleSave = async () => {
     if (!selectedPlayer || !passQuestion.trim() || !passAnswer.trim()) return;
     try {
-      const res = await fetch(
-        'http://localhost:4000/players/updatePassPhrase',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            playerId: selectedPlayer.id,
-            playerPassQuestion: passQuestion.trim(),
-            playerPassAnswer: passAnswer.trim(),
-          }),
-        },
-      );
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const updated: Player = await res.json();
+      const updated = await playersApi.updatePassPhrase({
+        playerId: selectedPlayer.id,
+        playerPassQuestion: passQuestion.trim(),
+        playerPassAnswer: passAnswer.trim(),
+      });
       onUpdated(updated);
       setIsOpen(false);
       setPassQuestion('');

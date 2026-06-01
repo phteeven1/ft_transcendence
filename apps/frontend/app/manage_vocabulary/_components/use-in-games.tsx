@@ -1,5 +1,6 @@
 'use client';
 import { useAuth } from '../../context/auth-context';
+import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 
 type Props = {
@@ -10,21 +11,17 @@ type Props = {
 export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
   const { group } = useAuth();
 
-  const isActive = selectedVocabulary !== null && !selectedVocabulary.isActive;
+  const isActive =
+    selectedVocabulary !== null && !selectedVocabulary.isCurrent;
 
   const handleClick = async () => {
     if (!selectedVocabulary || !group) return;
     try {
-      const res = await fetch('http://localhost:4000/vocabularies/setActive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vocabularyId: selectedVocabulary.id,
-          vocabularyInGroup: group.id,
-        }),
+      const updated = await vocabulariesApi.setActive({
+        vocabularyId: selectedVocabulary.id,
+        vocabularyInGroup: group.id,
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const updated: Vocabulary = await res.json();
+      if (!updated) throw new Error('Failed to activate vocabulary');
       onActivated(updated);
     } catch (error) {
       console.error('useInGames failed:', error);

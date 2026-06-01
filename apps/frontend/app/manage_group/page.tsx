@@ -8,6 +8,7 @@ Will sync and refresh the group and the attached members and admins arrays every
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { groupsApi } from '@/lib/api';
 import { Member } from '../types';
 
 // All buttons are extracted to manage_group/_components, and imported here
@@ -51,11 +52,7 @@ export default function ManageGroup() {
   const fetchMembers = async () => {
     if (!group) return;
     try {
-      const res = await fetch(
-        `http://localhost:4000/groups/${group.id}/members`,
-      );
-      if (!res.ok) throw new Error(`Failed to fetch members: ${res.status}`);
-      const members: Member[] = await res.json();
+      const members = await groupsApi.getMembers(group.id);
       setCurrentGroupMembers(members);
     } catch (error) {
       console.error('fetchMembers failed:', error);

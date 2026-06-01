@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { MailService } from '../mail/mail.service';
-
-console.log('MAIL_USER:', process.env.MAIL_USER);
-console.log('MAIL_PASS:', process.env.MAIL_PASS ? 'loaded' : 'MISSING');
+import { PrismaService } from '../prisma/prisma.service';
 
 export type Invitation = {
   token: string;
@@ -15,9 +12,10 @@ export type Invitation = {
 
 @Injectable()
 export class InvitationsService {
-  private invitations: Invitation[] = [];
-
-  constructor(private readonly mailService: MailService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async sendInvitation(
     groupId: number,
@@ -25,19 +23,14 @@ export class InvitationsService {
     toEmail: string,
     invitationText: string,
   ): Promise<{ success: boolean }> {
-    const token = randomUUID();
     const createdAt = new Date();
     const expiresAt = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    this.invitations.push({
-      token,
-      groupId,
-      createdAt,
-      expiresAt,
-      used: false,
+    const invitation = await this.prisma.invitation.create({
+      data: { groupId, expiresAt },
     });
 
-    const inviteLink = `${process.env.APP_URL}/accept_invitation?token=${token}`;
+    const inviteLink = `${process.env.APP_URL}/accept_invitation?token=${invitation.token}`;
 
     await this.mailService.sendInvitation(
       toEmail,
@@ -49,16 +42,22 @@ export class InvitationsService {
     return { success: true };
   }
 
-  validateToken(token: string): { valid: boolean; groupId?: number } {
-    const invitation = this.invitations.find(i => i.token === token);
+  async validateToken(
+    token: string,
+  ): Promise<{ valid: boolean; groupId?: number }> {
+    const invitation = await this.prisma.invitation.findUnique({
+      where: { token },
+    });
     if (!invitation) return { valid: false };
     if (invitation.used) return { valid: false };
     if (new Date() > invitation.expiresAt) return { valid: false };
     return { valid: true, groupId: invitation.groupId };
   }
 
-  markAsUsed(token: string): void {
-    const invitation = this.invitations.find(i => i.token === token);
-    if (invitation) invitation.used = true;
+  async markAsUsed(token: string): Promise<void> {
+    await this.prisma.invitation.updateMany({
+      where: { token },
+      data: { used: true },
+    });
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { invitationsApi } from '@/lib/api';
 
 const DEFAULT_INVITE_TEXT = (groupName: string) =>
   `Hi, I want to invite you to join the Dictée App, where your child can learn vocabulary lists in a fun and interactive way. Click the link below to join the learning group ${groupName} which I am also part of.`;
@@ -36,20 +37,12 @@ export default function SendInvite() {
     setInviteStatus('sending');
     setInviteError('');
     try {
-      const res = await fetch('http://localhost:4000/invitations/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId: group.id,
-          groupName: group.name,
-          toEmail: inviteEmail,
-          invitationText: inviteText,
-        }),
+      await invitationsApi.send({
+        groupId: group.id,
+        groupName: group.name,
+        toEmail: inviteEmail,
+        invitationText: inviteText,
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message ?? `Server error: ${res.status}`);
-      }
       setInviteStatus('success');
     } catch (error) {
       console.error('Failed to send invitation:', error);

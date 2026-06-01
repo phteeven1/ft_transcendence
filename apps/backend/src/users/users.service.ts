@@ -1,4 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { GroupRole } from '@ft-transcendence/database';
+import {
+  groupWithMemberships,
+  toApiUser,
+  userWithMemberships,
+} from '../common/mappers';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type User = {
   id: number;
@@ -12,58 +19,73 @@ export type User = {
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
-  private nextId = 1;
+  constructor(private readonly prisma: PrismaService) {}
 
-  register(name: string, password: string, email: string): User {
-    const newUser: User = {
-      id: this.nextId++,
-      name: name,
-      password: password,
-      email: email,
-      isMemberOf: [],
-      isAdminOf: [],
-    };
-    this.users.push(newUser);
-    return newUser;
+  async register(name: string, password: string, email: string): Promise<User> {
+    const user = await this.prisma.user.create({
+      data: { name, password, email },
+      ...userWithMemberships,
+    });
+    return toApiUser(user);
   }
 
-  findById(userId: number): User | undefined {
-    return this.users.find((u) => u.id === userId);
+  async findById(userId: number): Promise<User | undefined> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      ...userWithMemberships,
+    });
+    return user ? toApiUser(user) : undefined;
   }
 
-  findByName(name: string): User | undefined {
-    return this.users.find((u) => u.name === name);
+  async findByName(name: string): Promise<User | undefined> {
+    const user = await this.prisma.user.findUnique({
+      where: { name },
+      ...userWithMemberships,
+    });
+    return user ? toApiUser(user) : undefined;
   }
 
-  findByCredentials(name: string, password: string): User | undefined {
-    return this.users.find(
-      (u) => u.name === name && u.password === password,
-    );
+  async findByCredentials(
+    name: string,
+    password: string,
+  ): Promise<User | undefined> {
+    const user = await this.prisma.user.findFirst({
+      where: { name, password },
+      ...userWithMemberships,
+    });
+    return user ? toApiUser(user) : undefined;
   }
 
-  findAll(): User[] {
-    return this.users;
+  async findAll(): Promise<User[]> {
+    const users = await this.prisma.user.findMany(userWithMemberships);
+    return users.map(toApiUser);
   }
 
-  addMemberGroup(userId: number, groupId: number): void {
-    const user = this.findById(userId);
-    if (user && !user.isMemberOf.includes(groupId))
-      user.isMemberOf.push(groupId);
+  async addMemberGroup(userId: number, groupId: number): Promise<void> {
+    await this.prisma.groupMembership.upsert({
+      where: { userId_groupId: { userId, groupId } },
+      create: { userId, groupId, role: GroupRole.MEMBER },
+      update: { role: GroupRole.MEMBER },
+    });
   }
 
-  addAdminGroup(userId: number, groupId: number): void {
-    const user = this.findById(userId);
-    if (user && !user.isAdminOf.includes(groupId)) user.isAdminOf.push(groupId);
+  async addAdminGroup(userId: number, groupId: number): Promise<void> {
+    await this.prisma.groupMembership.upsert({
+      where: { userId_groupId: { userId, groupId } },
+      create: { userId, groupId, role: GroupRole.ADMIN },
+      update: { role: GroupRole.ADMIN },
+    });
   }
 
-  removeMemberGroup(userId: number, groupId: number): void {
-    const user = this.findById(userId);
-    if (user) user.isMemberOf = user.isMemberOf.filter((id) => id !== groupId);
+  async removeMemberGroup(userId: number, groupId: number): Promise<void> {
+    await this.prisma.groupMembership.deleteMany({
+      where: { userId, groupId, role: GroupRole.MEMBER },
+    });
   }
 
-  removeAdminGroup(userId: number, groupId: number): void {
-    const user = this.findById(userId);
-    if (user) user.isAdminOf = user.isAdminOf.filter((id) => id !== groupId);
+  async removeAdminGroup(userId: number, groupId: number): Promise<void> {
+    await this.prisma.groupMembership.deleteMany({
+      where: { userId, groupId, role: GroupRole.ADMIN },
+    });
   }
 }

@@ -2,6 +2,7 @@
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { groupsApi } from '@/lib/api';
 import { Group } from '../types';
 
 export default function Dashboard() {
@@ -17,14 +18,10 @@ export default function Dashboard() {
     const freshUser = await refreshUser();
     if (!freshUser) return;
     const adminResults = await Promise.all(
-      freshUser.isAdminOf.map((id: number) =>
-        fetch(`http://localhost:4000/groups/${id}`).then((res) => res.json()),
-      ),
+      freshUser.isAdminOf.map((id) => groupsApi.getById(id)),
     );
     const memberResults = await Promise.all(
-      freshUser.isMemberOf.map((id: number) =>
-        fetch(`http://localhost:4000/groups/${id}`).then((res) => res.json()),
-      ),
+      freshUser.isMemberOf.map((id) => groupsApi.getById(id)),
     );
     setAdminGroups(adminResults);
     setMemberGroups(memberResults);

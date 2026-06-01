@@ -11,6 +11,7 @@
 */
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 type Props = {
@@ -61,12 +62,7 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
   const executeLeave = async () => {
     if (!user || !group) return;
     try {
-      const res = await fetch('http://localhost:4000/groups/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.id, userId: user.id }),
-      });
-      if (!res.ok) throw new Error(`Failed to leave group: ${res.status}`);
+      await groupsApi.leave({ groupId: group.id, userId: user.id });
       await refreshUser();
       leaveGroup();
       router.push('/dashboard');

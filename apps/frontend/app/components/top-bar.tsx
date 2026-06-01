@@ -2,6 +2,7 @@
 import FlagMenu from './flag-menu';
 import AuthButton from './auth-button';
 import { useAuth } from '../context/auth-context';
+import { groupsApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 export default function TopBar() {
@@ -16,9 +17,7 @@ export default function TopBar() {
     }
     const fetchGroupName = async () => {
       try {
-        const res = await fetch(`http://localhost:4000/groups/${player.inGroup}`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await groupsApi.getById(player.inGroup);
         setPlayerGroupName(data.name);
       } catch (error) {
         console.error('TopBar: failed to fetch player group name:', error);

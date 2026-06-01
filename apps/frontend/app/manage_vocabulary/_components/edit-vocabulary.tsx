@@ -1,5 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
+import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 
 type Props = {
@@ -71,20 +72,12 @@ export default function EditVocabulary({
     const updatedWords = entries.map((e) => e.word);
     const updatedMeanings = entries.map((e) => e.meaning);
     try {
-      const res = await fetch(
-        'http://localhost:4000/vocabularies/update-entries',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            vocabularyId: selectedVocabulary.id,
-            vocabularyWords: updatedWords,
-            vocabularyMeanings: updatedMeanings,
-          }),
-        },
-      );
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const updated: Vocabulary = await res.json();
+      const updated = await vocabulariesApi.updateEntries({
+        vocabularyId: selectedVocabulary.id,
+        vocabularyWords: updatedWords,
+        vocabularyMeanings: updatedMeanings,
+      });
+      if (!updated) throw new Error('Failed to update vocabulary');
       onEdited(updated);
       setIsOpen(false);
     } catch (error) {

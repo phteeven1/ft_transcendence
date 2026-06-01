@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { groupsApi } from '@/lib/api';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -30,12 +31,7 @@ export default function ResignAdmin({ syncAndRefresh }: Props) {
     if (!confirmed) return;
 
     try {
-      const res = await fetch('http://localhost:4000/groups/demote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.id, userId: user.id }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      await groupsApi.demote({ groupId: group.id, userId: user.id });
       await syncAndRefresh();
       setResultMessage(
         `You have successfully resigned as admin of ${group.name}. You are now a regular member.`,

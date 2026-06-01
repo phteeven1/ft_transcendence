@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { GroupRole } from '@ft-transcendence/database';
+import {
+  groupWithMemberships,
+  toApiGroup,
+  userWithMemberships,
+} from '../common/mappers';
+import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
-import { PlayersService } from '../players/players.service';
-import { VocabulariesService } from '../vocabularies/vocabularies.service';
 
 export type Group = {
   id: number;
@@ -18,163 +23,164 @@ export type Member = {
 
 @Injectable()
 export class GroupsService {
-  private groups: Group[] = [];
-  private nextId = 1;
-
   constructor(
+    private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
-    private readonly playersService: PlayersService,
-    private readonly vocabulariesService: VocabulariesService,
   ) {}
 
-  create(groupName: string, creatorId: number): Group {
-    const id = Number(creatorId);
-    const newGroup: Group = {
-      id: this.nextId++,
-      name: groupName,
-      admins: [id],
-      members: [],
-    };
-    this.groups.push(newGroup);
-    this.usersService.addAdminGroup(creatorId, newGroup.id);
-    return newGroup;
+  async create(groupName: string, creatorId: number): Promise<Group> {
+    const group = await this.prisma.group.create({
+      data: {
+        name: groupName,
+        memberships: {
+          create: { userId: creatorId, role: GroupRole.ADMIN },
+        },
+      },
+      ...groupWithMemberships,
+    });
+    await this.usersService.addAdminGroup(creatorId, group.id);
+    return toApiGroup(group);
   }
 
-  addMember(groupId: number, userId: number): Group | undefined {
-    const gId = Number(groupId);
-    const uId = Number(userId);
-    const group = this.findById(gId);
-    const isAlreadyMember = group?.members.includes(uId);
-    const isAlreadyAdmin = group?.admins.includes(uId);
-    if (group && !isAlreadyMember && !isAlreadyAdmin) {
-      group.members.push(uId);
-      this.usersService.addMemberGroup(uId, gId);
-    }
-    return group;
-  }
-
-  promote(groupId: number, userId: number): Group | undefined {
-    const gId = Number(groupId);
-    const uId = Number(userId);
-    const group = this.findById(gId);
-    if (group && group.members.includes(uId)) {
-      group.members = group.members.filter((id) => id !== uId);
-      group.admins.push(uId);
-      this.usersService.removeMemberGroup(uId, gId);
-      this.usersService.addAdminGroup(uId, gId);
-    }
-    return group;
-  }
-
-  demote(groupId: number, userId: number): Group | undefined {
-    const gId = Number(groupId);
-    const uId = Number(userId);
-    const group = this.findById(gId);
-    if (group && group.admins.includes(uId)) {
-      group.admins = group.admins.filter((id) => id !== uId);
-      group.members.push(uId);
-      this.usersService.removeAdminGroup(uId, gId);
-      this.usersService.addMemberGroup(uId, gId);
-    }
-    return group;
-  }
-
-  leave(groupId: number, userId: number): Group | undefined {
-    const gId = Number(groupId);
-    const uId = Number(userId);
-    const group = this.findById(gId);
+  async addMember(groupId: number, userId: number): Promise<Group | undefined> {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      ...groupWithMemberships,
+    });
     if (!group) return undefined;
 
-    const isAdmin = group.admins.includes(uId);
-    const isMember = group.members.includes(uId);
+    const existing = group.memberships.find((m) => m.userId === userId);
+    if (existing) return toApiGroup(group);
 
-    if (isAdmin) {
-      group.admins = group.admins.filter((id) => id !== uId);
-      this.usersService.removeAdminGroup(uId, gId);
-    } else if (isMember) {
-      group.members = group.members.filter((id) => id !== uId);
-      this.usersService.removeMemberGroup(uId, gId);
+    await this.prisma.groupMembership.create({
+      data: { groupId, userId, role: GroupRole.MEMBER },
+    });
+    await this.usersService.addMemberGroup(userId, groupId);
+    return this.findById(groupId);
+  }
+
+  async promote(groupId: number, userId: number): Promise<Group | undefined> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership || membership.role !== GroupRole.MEMBER) {
+      return this.findById(groupId);
     }
+    await this.prisma.groupMembership.update({
+      where: { userId_groupId: { userId, groupId } },
+      data: { role: GroupRole.ADMIN },
+    });
+    await this.usersService.removeMemberGroup(userId, groupId);
+    await this.usersService.addAdminGroup(userId, groupId);
+    return this.findById(groupId);
+  }
 
-    const totalMembers = group.admins.length + group.members.length;
-    if (totalMembers === 0) {
-      this.groups = this.groups.filter((g) => g.id !== gId);
+  async demote(groupId: number, userId: number): Promise<Group | undefined> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership || membership.role !== GroupRole.ADMIN) {
+      return this.findById(groupId);
     }
-
-    return group;
+    await this.prisma.groupMembership.update({
+      where: { userId_groupId: { userId, groupId } },
+      data: { role: GroupRole.MEMBER },
+    });
+    await this.usersService.removeAdminGroup(userId, groupId);
+    await this.usersService.addMemberGroup(userId, groupId);
+    return this.findById(groupId);
   }
 
-  rename(groupId: number, groupName: string): Group | undefined {
-    const gId = Number(groupId);
-    const group = this.findById(gId);
-    if (!group) return undefined;
-    group.name = groupName;
-    return group;
+  async leave(groupId: number, userId: number): Promise<Group | undefined> {
+    const deleted = await this.prisma.groupMembership.deleteMany({
+      where: { userId, groupId },
+    });
+    if (deleted.count === 0) return this.findById(groupId);
+
+    await this.usersService.removeAdminGroup(userId, groupId);
+    await this.usersService.removeMemberGroup(userId, groupId);
+
+    const remaining = await this.prisma.groupMembership.count({
+      where: { groupId },
+    });
+    if (remaining === 0) {
+      await this.delete(groupId);
+      return undefined;
+    }
+    return this.findById(groupId);
   }
 
-  expel(groupId: number, userId: number): Group | undefined {
-    const gId = Number(groupId);
-    const uId = Number(userId);
-    const group = this.findById(gId);
-    if (!group) return undefined;
-    if (!group.members.includes(uId)) return undefined;
-    group.members = group.members.filter((id) => id !== uId);
-    this.usersService.removeMemberGroup(uId, gId);
-    return group;
+  async rename(groupId: number, groupName: string): Promise<Group | undefined> {
+    try {
+      const group = await this.prisma.group.update({
+        where: { id: groupId },
+        data: { name: groupName },
+        ...groupWithMemberships,
+      });
+      return toApiGroup(group);
+    } catch {
+      return undefined;
+    }
   }
 
-  delete(groupId: number): boolean {
-    const gId = Number(groupId);
-    const group = this.findById(gId);
+  async expel(groupId: number, userId: number): Promise<Group | undefined> {
+    const deleted = await this.prisma.groupMembership.deleteMany({
+      where: { userId, groupId, role: GroupRole.MEMBER },
+    });
+    if (deleted.count === 0) return this.findById(groupId);
+    await this.usersService.removeMemberGroup(userId, groupId);
+    return this.findById(groupId);
+  }
+
+  async delete(groupId: number): Promise<boolean> {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      ...groupWithMemberships,
+    });
     if (!group) return false;
 
-    // Remove group from all admins' isAdminOf
-    group.admins.forEach((uId) => {
-      this.usersService.removeAdminGroup(uId, gId);
-    });
+    for (const m of group.memberships) {
+      if (m.role === GroupRole.ADMIN) {
+        await this.usersService.removeAdminGroup(m.userId, groupId);
+      } else {
+        await this.usersService.removeMemberGroup(m.userId, groupId);
+      }
+    }
 
-    // Remove group from all members' isMemberOf
-    group.members.forEach((uId) => {
-      this.usersService.removeMemberGroup(uId, gId);
-    });
-
-    // Delete all player profiles belonging to this group
-    this.playersService.removeByGroup(gId);
-
-    // Delete all vocabularies belonging to this group
-    this.vocabulariesService.removeByGroup(gId);
-
-    // Delete the group itself
-    this.groups = this.groups.filter((g) => g.id !== gId);
-
+    await this.prisma.group.delete({ where: { id: groupId } });
     return true;
   }
 
-  findMembers(groupId: number): Member[] {
-    const gId = Number(groupId);
-    const group = this.findById(gId);
-    if (!group) return [];
-    const admins: Member[] = group.admins
-      .map((id) => this.usersService.findById(id))
-      .filter((u): u is NonNullable<typeof u> => u !== undefined)
-      .map((u) => ({ id: u.id, name: u.name, isAdmin: true }));
-    const members: Member[] = group.members
-      .map((id) => this.usersService.findById(id))
-      .filter((u): u is NonNullable<typeof u> => u !== undefined)
-      .map((u) => ({ id: u.id, name: u.name, isAdmin: false }));
-    return [...admins, ...members];
+  async findMembers(groupId: number): Promise<Member[]> {
+    const memberships = await this.prisma.groupMembership.findMany({
+      where: { groupId },
+      include: { user: true },
+    });
+    return memberships.map((m) => ({
+      id: m.user.id,
+      name: m.user.name,
+      isAdmin: m.role === GroupRole.ADMIN,
+    }));
   }
 
-  findById(groupId: number): Group | undefined {
-    const gId = Number(groupId);
-    return this.groups.find((g) => g.id === gId);
+  async findById(groupId: number): Promise<Group | undefined> {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      ...groupWithMemberships,
+    });
+    return group ? toApiGroup(group) : undefined;
   }
 
-  findByName(groupName: string): Group | undefined {
-    return this.groups.find((g) => g.name === groupName);
+  async findByName(groupName: string): Promise<Group | undefined> {
+    const group = await this.prisma.group.findFirst({
+      where: { name: groupName },
+      ...groupWithMemberships,
+    });
+    return group ? toApiGroup(group) : undefined;
   }
 
-  findAll(): Group[] {
-    return this.groups;
+  async findAll(): Promise<Group[]> {
+    const groups = await this.prisma.group.findMany(groupWithMemberships);
+    return groups.map(toApiGroup);
   }
 }

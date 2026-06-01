@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { groupsApi } from '@/lib/api';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -35,12 +36,10 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
     }
 
     try {
-      const res = await fetch('http://localhost:4000/groups/rename', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: group.id, groupName: newName.trim() }),
+      await groupsApi.rename({
+        groupId: group.id,
+        groupName: newName.trim(),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
       await syncAndRefresh();
       setShowModal(false);
       setResultMessage(`Group successfully renamed to ${newName.trim()}.`);

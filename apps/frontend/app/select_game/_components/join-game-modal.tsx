@@ -16,7 +16,7 @@ type Props = {
 
 // calculates the human readable string telling the player what they are waiting for
 function getJoinDescription(game: Game): string {
-  if (game.waitingFor === 0) {
+  if ((game.waitingFor ?? 0) === 0) {
     const initiatedTime = new Date(game.initiatedTime);
     const expiresAt = new Date(initiatedTime.getTime() + 5 * 60 * 1000);
     const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
@@ -25,7 +25,8 @@ function getJoinDescription(game: Game): string {
     return `in ${mins}m ${secs}s`;
   }
 
-  const playersStillNeeded = game.waitingFor + 1 - game.players.length;
+  const waitingFor = game.waitingFor ?? 0;
+  const playersStillNeeded = waitingFor + 1 - game.players.length;
   if (playersStillNeeded <= 0) return 'soon';
   if (playersStillNeeded === 1) return 'when one more player joins';
   return `when ${playersStillNeeded} more players join`;

@@ -2,9 +2,8 @@
 import { useState, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { User } from '../types';
+import { usersApi, ApiError } from '@/lib/api';
 
-//
 export default function Register() {
   const [formData, setFormData] = useState({
     userName: '',
@@ -16,47 +15,36 @@ export default function Register() {
   const { login } = useAuth();
   const router = useRouter();
 
-  // updates formData on any change to any of the three fields
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // prevents Enter while filling out form. Only Submit button will return form data
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
     }
   };
 
-  // when Submit button is clicked. Browser default of reloading page is stopped. 
-  // POSTs the three fields of form to /users/register on backend, which returns User object.
-  // Passes User to login which stores it in auth context.
-  // Navigates to dashboard
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:4000/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userName: formData.userName,
-          userPassword: formData.userPassword,
-          userEmail: formData.userEmail,
-        }),
+      const user = await usersApi.register({
+        userName: formData.userName,
+        userPassword: formData.userPassword,
+        userEmail: formData.userEmail,
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data: User = await res.json();
-      login(data);
+      login(user);
       router.push('/dashboard');
     } catch (error) {
       console.error('Registration failed:', error);
       setShowError(true);
+      if (error instanceof ApiError) {
+        console.error('API status:', error.status);
+      }
     }
   };
 
-  // layout of three input fields and one Submit button. Password field of type "password" to prevent
-  // browser to suggest input
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="bg-emerald-200 max-w-md mx-auto p-4">
@@ -123,7 +111,6 @@ export default function Register() {
         </form>
       </div>
 
-      {/* Error modal */}
       {showError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">

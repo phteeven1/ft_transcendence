@@ -9,6 +9,7 @@ import { InvitationsModule } from './invitations/invitations.module';
 import { PlayersModule } from './players/players.module';
 import { VocabulariesModule } from './vocabularies/vocabularies.module';
 import { GamesModule } from './games/games.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { GamesModule } from './games/games.module';
       envFilePath: '.env',
       isGlobal: true,
     }),
+    PrismaModule,
     UsersModule,
     GroupsModule,
     MailModule,

@@ -12,6 +12,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
 
 type Props = {
@@ -69,11 +70,7 @@ export default function PromoteToAdmin({
     try {
       await Promise.all(
         selectedIds.map((userId) =>
-          fetch('http://localhost:4000/groups/promote', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ groupId: group.id, userId }),
-          }),
+          groupsApi.promote({ groupId: group.id, userId }),
         ),
       );
 

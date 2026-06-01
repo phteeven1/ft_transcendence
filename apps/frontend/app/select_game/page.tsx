@@ -22,6 +22,7 @@ If all players leave a game before it starts, it is destroyed
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
+import { gamesApi } from '@/lib/api';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
@@ -37,41 +38,6 @@ type ModalState =
   | { kind: 'join'; game: Game }
   | { kind: 'forceStart'; game: Game };
 
-
-// POSTs to /games/create to create new game, with the following:
-// name = name of the game, e.g. "Word Building"
-// inGroup = groupId the game belongs to
-// initiatedBy = playerId of the player that initiated the game
-// waitingFor = number of players required to start
-// fucntion returns a new Game object, or throws an error  
-async function postCreateGame(
-  name: string,
-  inGroup: number,
-  initiatedBy: number,
-  waitingFor: number,
-): Promise<Game> {
-  const res = await fetch('http://localhost:4000/games/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, inGroup, initiatedBy, waitingFor }),
-  });
-  if (!res.ok) throw new Error(`Failed to create game: ${res.status}`);
-  return res.json();
-}
-
-// POSTs to /games/join ta add player to existing game, with the following:
-// gameId = the id of the game to join
-// playerId = the id of the joining player
-// function returns an updated Game object, or throws an error
-async function postJoinGame(gameId: number, playerId: number): Promise<Game | null> {
-  const res = await fetch('http://localhost:4000/games/join', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ gameId, playerId }),
-  });
-  if (!res.ok) throw new Error(`Failed to join game: ${res.status}`);
-  return res.json();
-}
 
 // manages list of pending games and modal states
 // pendingGames stores list of pending not yet active games
@@ -108,9 +74,7 @@ export default function SelectGame() {
   const syncGames = useCallback(async () => {
     if (!player) return;
     try {
-      const allGroupGames: Game[] = await fetch(
-        `http://localhost:4000/games/group/${player.inGroup}`,
-      ).then((r) => r.json());
+      const allGroupGames = await gamesApi.findByGroup(player.inGroup);
 
       // If a game this player joined has become active, navigate to it
       const startedGame = allGroupGames.find(
@@ -139,7 +103,11 @@ export default function SelectGame() {
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      const newGame = await postCreateGame(gameName, player.inGroup, player.id, 0);
+      const newGame = await gamesApi.create({
+        name: gameName,
+        inGroup: player.inGroup,
+        initiatedBy: player.id,
+      });
       setPendingGames((prev) => [...prev, newGame]);
     } catch (error) {
       console.error('handleCreateGame failed:', error);
@@ -153,7 +121,10 @@ export default function SelectGame() {
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
-      const updatedGame = await postJoinGame(game.id, player.id);
+      const updatedGame = await gamesApi.join({
+        gameId: game.id,
+        playerId: player.id,
+      });
       if (!updatedGame) return;
       if (updatedGame.isActive) {
         router.push(`/play_game?gameId=${updatedGame.id}&playerId=${player.id}`);
@@ -172,12 +143,7 @@ export default function SelectGame() {
   // this bypasses waiting until 5 mins has passed or until enough players have joined
   const handleForceStart = async (game: Game) => {
     try {
-      const res = await fetch('http://localhost:4000/games/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId: game.id }),
-      });
-      if (!res.ok) throw new Error(`Failed to force-start game: ${res.status}`);
+      await gamesApi.start({ gameId: game.id });
     } catch (error) {
       console.error('handleForceStart failed:', error);
     }

@@ -1,6 +1,11 @@
 'use client';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { User, Group, Player } from '../types';
+import { groupsApi, usersApi, type UserDto } from '@/lib/api';
+import type { GroupDto } from '@/lib/api/groups/types';
+import { Player } from '../types';
+
+type User = UserDto;
+type Group = GroupDto;
 
 type AuthContextType = {
   user: User | null;
@@ -56,9 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const syncGroup = async (groupId: number): Promise<Group | null> => {
     try {
-      const res = await fetch(`http://localhost:4000/groups/${groupId}`);
-      if (!res.ok) throw new Error(`Failed to fetch group: ${res.status}`);
-      const updatedGroup: Group = await res.json();
+      const updatedGroup = await groupsApi.getById(groupId);
       setGroup(updatedGroup);
       if (user) setUser({ ...user, currentGroup: groupId });
       return updatedGroup;
@@ -71,9 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async (): Promise<User | null> => {
     if (!user) return null;
     try {
-      const res = await fetch(`http://localhost:4000/users/${user.id}`);
-      if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
-      const data: User = await res.json();
+      const data = await usersApi.getById(user.id);
       setUser(data);
       return data;
     } catch (error) {

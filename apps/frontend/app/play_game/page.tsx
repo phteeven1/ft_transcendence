@@ -15,30 +15,16 @@ sync is handled by a poll every 3 s. This can be replaced by web sockets later
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Game } from '../types';
-import { Player } from '../types';
+import { gamesApi, playersApi } from '@/lib/api';
+import { Game, Player } from '../types';
 import { useSessionGuard } from '../hooks/use-session-guard';
 
-// fetches a single game by its gameId from backend. Returns null on failure
-async function fetchGame(gameId: number): Promise<Game | null> {
-  const res = await fetch(`http://localhost:4000/games/${gameId}`);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-// fetches a single player by its playerId. Handles empty responses and parses JSON
-async function fetchPlayer(playerId: number): Promise<Player | null> {
-  const res = await fetch(`http://localhost:4000/players/${playerId}`);
-  if (!res.ok) return null;
-  const text = await res.text();
-  if (!text) return null;
-  return JSON.parse(text);
-}
-
-// Takes an array of playerIds, fetches all players in parallel using Promise.all, 
-// and filters out any null results (failed fetches).
-async function fetchPlayersByIds(playerIds: number[]): Promise<Player[]> {
-  const results = await Promise.all(playerIds.map((id) => fetchPlayer(id)));
+async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
+  const results = await Promise.all(
+    playerIds.map((id) =>
+      playersApi.getById(id).catch(() => null),
+    ),
+  );
   return results.filter((p): p is Player => p !== null);
 }
 
@@ -63,13 +49,13 @@ export default function PlayGame() {
       return;
     }
     const load = async () => {
-      const loadedGame = await fetchGame(gameId);
+      const loadedGame = await gamesApi.getById(gameId).catch(() => null);
       if (!loadedGame) {
         router.push('/');
         return;
       }
       setGame(loadedGame);
-      const loadedPlayers = await fetchPlayersByIds(loadedGame.players);
+      const loadedPlayers = await loadPlayersByIds(loadedGame.players);
       setPlayers(loadedPlayers);
       setLoading(false);
     };
@@ -81,7 +67,7 @@ export default function PlayGame() {
   useEffect(() => {
     if (!gameId) return;
     const interval = setInterval(async () => {
-      const updatedGame = await fetchGame(gameId);
+      const updatedGame = await gamesApi.getById(gameId).catch(() => null);
       if (!updatedGame || updatedGame.isFinished) {
         router.push('/select_game');
       }
@@ -92,22 +78,14 @@ export default function PlayGame() {
   // sends POST request to /games/leave that the player is leaving game, 
   // then redirects to /select_game
   const handleLeave = async () => {
-    await fetch('http://localhost:4000/games/leave', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId, playerId }),
-    });
+    await gamesApi.leave({ gameId, playerId });
     router.push('/select_game');
   };
 
   // sends a POST request to /games/finish that the game is finished
   // then redirects to /select_game
   const handleGameOver = async () => {
-    await fetch('http://localhost:4000/games/finish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId }),
-    });
+    await gamesApi.finish({ gameId });
     router.push('/select_game');
   };
 

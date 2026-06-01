@@ -29,7 +29,8 @@ import {
 } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User } from '../types';
+import { groupsApi, invitationsApi, usersApi } from '@/lib/api';
+import type { UserDto } from '@/lib/api/users/types';
 import InvitationValidating from './_components/invitation-validating';
 import InvitationInvalid from './_components/invitation-invalid';
 import InvitationAuth from './_components/invitation-auth';
@@ -66,7 +67,7 @@ export default function AcceptInvitation() {
     userPassword: '',
     userEmail: '',
   });
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
 
   // pageState = validating. If no token exists, then returns invalid
   useEffect(() => {
@@ -80,21 +81,15 @@ export default function AcceptInvitation() {
   // checks token against backend and fetches groups name. On success sets pageState to auth
   const validateToken = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:4000/invitations/validate/${token}`,
-      );
-      if (!res.ok) throw new Error('Failed to validate token');
-      const data = await res.json();
-      if (!data.valid) {
+      const data = await invitationsApi.validateToken(token!);
+      if (!data.valid || data.groupId == null) {
         setPageState('invalid');
         return;
       }
       const gId = data.groupId;
       setGroupId(gId);
 
-      const groupRes = await fetch(`http://localhost:4000/groups/${gId}`);
-      if (!groupRes.ok) throw new Error('Failed to fetch group');
-      const group = await groupRes.json();
+      const group = await groupsApi.getById(gId);
       setGroupName(group.name);
       setPageState('auth');
     } catch (error) {
@@ -123,27 +118,17 @@ export default function AcceptInvitation() {
   const handleAuth = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const url =
+      const data =
         authMode === 'signin'
-          ? 'http://localhost:4000/users/signin'
-          : 'http://localhost:4000/users/register';
-
-      const body =
-        authMode === 'signin'
-          ? { userName: formData.userName, userPassword: formData.userPassword }
-          : {
+          ? await usersApi.signIn({
+              userName: formData.userName,
+              userPassword: formData.userPassword,
+            })
+          : await usersApi.register({
               userName: formData.userName,
               userPassword: formData.userPassword,
               userEmail: formData.userEmail,
-            };
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data: User = await res.json();
+            });
       login(data);
       setCurrentUser(data);
       setPageState('confirm');
@@ -169,9 +154,7 @@ export default function AcceptInvitation() {
     if (!currentUser || !groupId || !token) return;
     setPageState('joining');
     try {
-      const groupRes = await fetch(`http://localhost:4000/groups/${groupId}`);
-      if (!groupRes.ok) throw new Error('Failed to fetch group');
-      const groupData = await groupRes.json();
+      const groupData = await groupsApi.getById(groupId);
 
       const isAlreadyMember =
         groupData.members.includes(currentUser.id) || groupData.admins.includes(currentUser.id);
@@ -182,18 +165,8 @@ export default function AcceptInvitation() {
         return;
       }
 
-      const memberRes = await fetch('http://localhost:4000/groups/addMember', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId, userId: currentUser.id }),
-      });
-      if (!memberRes.ok) throw new Error('Failed to join group');
-
-      await fetch('http://localhost:4000/invitations/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
+      await groupsApi.addMember({ groupId, userId: currentUser.id });
+      await invitationsApi.accept({ token });
 
       await refreshUser();
       await syncGroup(groupId);

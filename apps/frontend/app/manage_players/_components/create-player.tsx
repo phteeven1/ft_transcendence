@@ -9,6 +9,7 @@ opens modal form, using the following states:
 
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
+import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 
 type Props = {
@@ -33,19 +34,13 @@ export default function CreatePlayer({ onCreated }: Props) {
       return;
     }
     try {
-      const res = await fetch('http://localhost:4000/players/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerInGroup: group.id,
-          playerParent: user.id,
-          playerName: playerName.trim(),
-          playerPassQuestion: passQuestion.trim(),
-          playerPassAnswer: passAnswer.trim(),
-        }),
+      const created = await playersApi.create({
+        playerInGroup: group.id,
+        playerParent: user.id,
+        playerName: playerName.trim(),
+        playerPassQuestion: passQuestion.trim(),
+        playerPassAnswer: passAnswer.trim(),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const created: Player = await res.json();
       onCreated(created);
       handleClose();
     } catch (error) {
