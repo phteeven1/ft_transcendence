@@ -1,11 +1,10 @@
 'use client';
 
 /*
-Game lobby where players can initiate new games and join pending games initiated by others
+game lobby where players can initiate new games and join pending games initiated by others
 uses WebSockets to sync game status between players in real time
-REST is used only for mutations (create, join, start) — the backend
-then emits WebSocket events to all group members, which drives UI updates.
-Session management prevents duplicate game tabs by redirecting to /already_in_game
+modal based workflow, and only games in the player's group, are displayed
+session management prevents duplicate game tabs by redirecting to /already_in_game
 error handling logs errors for failed API calls
 Workflow example:
 player A clicks 'New Word Building', which opens InitiateGameModal
@@ -15,7 +14,8 @@ player B sees the pending game appear and clicks it, opening JoinGameModal
 player B confirms, handleJoinGame adds them to the game via REST
 backend emits game:started to all players in the group once game goes active
 both players are redirected to /play_game
-Also, they are removed from all other pending games that they have joined.
+Also, they are removed from all other pending games that they have joined,
+but which are still waiting either for enough players, or for counter to finish.
 If all players leave a game before it starts, it is destroyed
 */
 
@@ -41,8 +41,6 @@ type ModalState =
   | { kind: 'join'; game: Game }
   | { kind: 'forceStart'; game: Game };
 
-// manages list of pending games and modal states via WebSocket
-// pendingGames is kept in sync by lobby:update events pushed from the backend
 // manages list of pending games and modal states via WebSocket
 // pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
@@ -92,12 +90,12 @@ export default function SelectGame() {
   const hasInitiated = (gameName: string): boolean =>
     pendingGames.some((g) => g.name === gameName && g.initiatedBy === player?.id);
 
-  // calls gamesApi.create via REST — UI does not update directly;
-  // the backend emits lobby:update which triggers the WebSocket state update
+  // calls gamesApi.create via REST
+  // backend handles the DB write and emits lobby:update to all group members
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      const newGame = await gamesApi.create({
+      await gamesApi.create({
         name: gameName,
         inGroup: player.inGroup,
         initiatedBy: player.id,
@@ -108,13 +106,12 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
-  // calls postJoinGame to add current player to selected game
-  // if the game then becomes active, it redirects to /play_game
-  // otherwise, updates pendingGames list
+  // calls gamesApi.join via REST
+  // backend handles the DB write and emits lobby:update (or game:started if now active)
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
-      const updatedGame = await gamesApi.join({
+      await gamesApi.join({
         gameId: game.id,
         playerId: player.id,
       });
