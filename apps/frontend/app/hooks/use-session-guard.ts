@@ -5,7 +5,8 @@
 // If it has, navigates to /session_over.
 // The actual redirect to /session_over only happens between games (on select_game
 // or play_game mount/navigation), never mid-game, since the hook only fires
-// when the component mounts or its interval ticks.
+// when the component mounts or its interval ticks. User sets expiry time in
+// Play Now
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
