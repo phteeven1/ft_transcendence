@@ -2,26 +2,26 @@
 
 /*
 game lobby where players can initiate new games and join pending games initiated by others
-polls every 3 s makes sure to sync game status between players
+uses WebSockets to sync game status between players in real time
 modal based workflow, and only games in the player's group, are displayed
 session management prevents duplicate game tabs by redirecting to /already_in_game
 error handling logs errors for failed API calls
 Workflow example:
 player A clicks 'New Word Building', which opens InitiateGameModal
-player A sets waitingFor: 2, handleCreateGame creates a new pending game
-player B sees the pending game and clicks it, opening JoinGameModal
-player B confirms, and handleJoinGame adds them to the game
-if the game now has enough players (waitingFor) it becomes active, and both players
-are redirected to /play_game
-Also, they are removed from all other pendning games that they have joined, 
+player A confirms, handleCreateGame creates a new pending game via REST
+backend emits lobby:update to all players in the group
+player B sees the pending game appear and clicks it, opening JoinGameModal
+player B confirms, handleJoinGame adds them to the game via REST
+backend emits game:started to all players in the group once game goes active
+both players are redirected to /play_game
+Also, they are removed from all other pending games that they have joined,
 but which are still waiting either for enough players, or for counter to finish.
 If all players leave a game before it starts, it is destroyed
 */
 
-
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { gamesApi } from '@/lib/api';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
@@ -29,6 +29,7 @@ import JoinGameModal from './_components/join-game-modal';
 import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
 import ForceStartModal from './_components/force-start-modal';
+import { useGroupSocket } from '../hooks/use-group-socket';
 
 // modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
 // join = 'Join Game' modal is open
@@ -38,20 +39,15 @@ type ModalState =
   | { kind: 'join'; game: Game }
   | { kind: 'forceStart'; game: Game };
 
-
-// manages list of pending games and modal states
-// pendingGames stores list of pending not yet active games
+// manages list of pending games and modal states via WebSocket
+// pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
 export default function SelectGame() {
   const { player, logoutPlayer } = useAuth();
   const router = useRouter();
   useSessionGuard();
 
-  const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
-
-  const hasInitiated = (gameName: string): boolean =>
-    pendingGames.some((g) => g.name === gameName && g.initiatedBy === player?.id);
 
   // guards against no player
   useEffect(() => {
@@ -68,71 +64,49 @@ export default function SelectGame() {
     }
   }, []);
 
-  // fetches all games in the players group
-  // filters out active or finished games, keeping only pending ones
-  // if player is already in active game, redirects to /play_game
-  const syncGames = useCallback(async () => {
-    if (!player) return;
-    try {
-      const allGroupGames = await gamesApi.findByGroup(player.inGroup);
+  // connect to the group's WebSocket room
+  // pendingGames is updated automatically when the backend emits lobby:update
+  // startedGame is set when the backend emits game:started for a game this player is in
+  const { pendingGames, startedGame } = useGroupSocket(
+    player?.inGroup ?? 0,
+    player?.id ?? 0,
+  );
 
-      // If a game this player joined has become active, navigate to it
-      const startedGame = allGroupGames.find(
-        (g) => g.isActive && !g.isFinished && g.players.includes(player.id),
-      );
-      if (startedGame) {
-        router.push(`/play_game?gameId=${startedGame.id}&playerId=${player.id}`);
-        return;
-      }
-
-      setPendingGames(allGroupGames.filter((g) => !g.isActive && !g.isFinished));
-    } catch (error) {
-      console.error('syncGames failed:', error);
-    }
-  }, [player, router]);
-
-  // polls for updates every 3 s
+  // navigate to play_game as soon as the backend tells us our game has started
   useEffect(() => {
-    syncGames();
-    const interval = setInterval(syncGames, 3000);
-    return () => clearInterval(interval);
-  }, [syncGames]);
+    if (startedGame && player) {
+      router.push(`/play_game?gameId=${startedGame.id}&playerId=${player.id}`);
+    }
+  }, [startedGame, player, router]);
 
-  // calls postCreateGame with gameName and waitingFor
-  // adds new game to pendingGames and closes modal
+  const hasInitiated = (gameName: string): boolean =>
+    pendingGames.some((g) => g.name === gameName && g.initiatedBy === player?.id);
+
+  // calls gamesApi.create via REST
+  // backend handles the DB write and emits lobby:update to all group members
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      const newGame = await gamesApi.create({
+      await gamesApi.create({
         name: gameName,
         inGroup: player.inGroup,
         initiatedBy: player.id,
       });
-      setPendingGames((prev) => [...prev, newGame]);
     } catch (error) {
       console.error('handleCreateGame failed:', error);
     }
     setModal({ kind: 'none' });
   };
 
-  // calls postJoinGame to add current player to selected game
-  // if the game then becomes active, it redirects to /play_game
-  // otherwise, updates pendingGames list
+  // calls gamesApi.join via REST
+  // backend handles the DB write and emits lobby:update (or game:started if now active)
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
-      const updatedGame = await gamesApi.join({
+      await gamesApi.join({
         gameId: game.id,
         playerId: player.id,
       });
-      if (!updatedGame) return;
-      if (updatedGame.isActive) {
-        router.push(`/play_game?gameId=${updatedGame.id}&playerId=${player.id}`);
-        return;
-      }
-      setPendingGames((prev) =>
-        prev.map((g) => (g.id === updatedGame.id ? updatedGame : g)),
-      );
     } catch (error) {
       console.error('handleJoinGame failed:', error);
     }
@@ -158,7 +132,7 @@ export default function SelectGame() {
 
   if (!player) return null;
 
-  // layout. a greting for the player, then a grid of buttons:
+  // layout. a greeting for the player, then a grid of buttons:
   // 'New Word Building' and 'New Word Soup' opens initiateGameModal to create new game
   // one pending game button for each game in pendingGames
   // clicking button opens JoinGameModal, if player isn't already in game
@@ -240,6 +214,3 @@ export default function SelectGame() {
     </div>
   );
 }
-
-
-
