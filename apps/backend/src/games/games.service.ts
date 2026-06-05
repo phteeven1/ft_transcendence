@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { gameWithPlayers, toApiGame } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
+import { GameGateway } from './game.gateway';
 
 export type Game = {
   id: number;
@@ -20,6 +21,8 @@ export class GamesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly playersService: PlayersService,
+    @Inject(forwardRef(() => GameGateway))
+    private readonly gateway: GameGateway,
   ) {}
 
   async create(
@@ -37,7 +40,9 @@ export class GamesService {
       ...gameWithPlayers,
     });
     await this.playersService.setCurrentGame(initiatedBy, game.id);
-    return toApiGame(game);
+    const result = toApiGame(game);
+    await this.emitLobbyUpdate(inGroup);
+    return result;
   }
 
   async join(gameId: number, playerId: number): Promise<Game | undefined> {
@@ -50,7 +55,9 @@ export class GamesService {
       });
       await this.playersService.setCurrentGame(playerId, gameId);
     }
-    return this.findById(gameId);
+    const result = await this.findById(gameId);
+    if (result) await this.emitLobbyUpdate(game.inGroup);
+    return result;
   }
 
   async start(gameId: number): Promise<Game | undefined> {
@@ -75,9 +82,20 @@ export class GamesService {
     const updated = await this.findById(gameId);
     if (!updated || updated.players.length === 0) {
       await this.prisma.game.delete({ where: { id: gameId } }).catch(() => {});
+      await this.emitLobbyUpdate(game.inGroup);
       return null;
     }
-    return updated;
+
+    // if the initiator left and others remain, promote the first remaining player
+    if (game.initiatedBy === playerId && updated.players.length > 0) {
+      await this.prisma.game.update({
+        where: { id: gameId },
+        data: { initiatedById: updated.players[0] },
+      });
+    }
+
+    await this.emitLobbyUpdate(game.inGroup);
+    return this.findById(gameId);
   }
 
   async finish(gameId: number): Promise<Game | undefined> {
@@ -91,7 +109,9 @@ export class GamesService {
     for (const pId of game.players) {
       await this.playersService.clearCurrentGame(pId);
     }
-    return this.findById(gameId);
+    const result = await this.findById(gameId);
+    await this.emitLobbyUpdate(game.inGroup);
+    return result;
   }
 
   async findById(gameId: number): Promise<Game | undefined> {
@@ -155,11 +175,26 @@ export class GamesService {
         await this.prisma.gamePlayer.deleteMany({
           where: { gameId: other.id, playerId: pId },
         });
+
         const count = await this.prisma.gamePlayer.count({
           where: { gameId: other.id },
         });
+
         if (count === 0) {
           await this.prisma.game.delete({ where: { id: other.id } });
+        } else {
+          // if the leaving player was the initiator, promote the first remaining player
+          if (other.initiatedById === pId) {
+            const firstRemaining = await this.prisma.gamePlayer.findFirst({
+              where: { gameId: other.id },
+            });
+            if (firstRemaining) {
+              await this.prisma.game.update({
+                where: { id: other.id },
+                data: { initiatedById: firstRemaining.playerId },
+              });
+            }
+          }
         }
       }
     }
@@ -175,5 +210,17 @@ export class GamesService {
         gamePlayers: { none: {} },
       },
     });
+
+    // Emit after all DB work is done
+    const started = await this.findById(game.id);
+    if (started) {
+      this.gateway.emitGameStarted(game.inGroup, started);
+      await this.emitLobbyUpdate(game.inGroup);
+    }
+  }
+
+  private async emitLobbyUpdate(groupId: number): Promise<void> {
+    const games = await this.findByGroup(groupId);
+    this.gateway.emitLobbyUpdate(groupId, games);
   }
 }

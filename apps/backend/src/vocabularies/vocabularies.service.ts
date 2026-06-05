@@ -7,7 +7,6 @@ export type Vocabulary = {
   inGroup: number;
   byUser: number;
   name: string;
-  isCurrent: boolean;
   words: string[];
   meanings: string[];
   wordCount: number;
@@ -37,18 +36,15 @@ export class VocabulariesService {
     return toApiVocabulary(vocabulary);
   }
 
-  async setActive(
-    vocabularyId: number,
-    inGroup: number,
-  ): Promise<Vocabulary | undefined> {
-    await this.prisma.vocabulary.updateMany({
-      where: { inGroupId: inGroup },
-      data: { isCurrent: false },
-    });
+  async setActive(vocabularyId: number, inGroup: number): Promise<Vocabulary | undefined> {
     try {
-      const vocabulary = await this.prisma.vocabulary.update({
+      const vocabulary = await this.prisma.vocabulary.findUnique({
         where: { id: vocabularyId },
-        data: { isCurrent: true },
+      });
+      if (!vocabulary) return undefined;
+      await this.prisma.group.update({
+        where: { id: inGroup },
+        data: { currentVocabularyId: vocabularyId },
       });
       return toApiVocabulary(vocabulary);
     } catch {

@@ -4,6 +4,7 @@ import { Vocabulary } from '../../types';
 type Props = {
   vocabularies: Vocabulary[];
   selectedVocabulary: Vocabulary | null;
+  currentVocabulary: number | undefined;
   isLoading: boolean;
   onSelect: (vocabulary: Vocabulary) => void;
 };
@@ -11,6 +12,7 @@ type Props = {
 export default function VocabularyList({
   vocabularies,
   selectedVocabulary,
+  currentVocabulary,
   isLoading,
   onSelect,
 }: Props) {
@@ -31,7 +33,7 @@ export default function VocabularyList({
           }`}
         >
           <span>{vocabulary.name}</span>
-          {vocabulary.isCurrent && (
+          {vocabulary.id === currentVocabulary && (
             <span className="ml-2 text-xs font-semibold text-emerald-600">
               Active
             </span>

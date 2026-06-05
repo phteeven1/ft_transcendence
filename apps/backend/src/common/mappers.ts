@@ -46,7 +46,15 @@ export function toApiGroup(group: GroupWithMemberships): Group {
     if (m.role === GroupRole.ADMIN) admins.push(m.userId);
     else members.push(m.userId);
   }
-  return { id: group.id, name: group.name, admins, members };
+  return {
+    id: group.id,
+    name: group.name,
+    admins,
+    members,
+    ...(group.currentVocabularyId != null
+      ? { currentVocabulary: group.currentVocabularyId }
+      : {}),
+  };
 }
 
 export function toSafePlayer(player: DbPlayer): Omit<Player, 'passAnswer'> {
@@ -64,7 +72,6 @@ export function toApiVocabulary(vocabulary: DbVocabulary): Vocabulary {
     inGroup: vocabulary.inGroupId,
     byUser: vocabulary.byUserId,
     name: vocabulary.name,
-    isCurrent: vocabulary.isCurrent,
     words: vocabulary.words,
     meanings: vocabulary.meanings,
     wordCount: vocabulary.wordCount,

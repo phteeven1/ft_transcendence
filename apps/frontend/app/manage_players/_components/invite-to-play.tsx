@@ -15,12 +15,12 @@ type Props = {
 const SESSION_SHORTCUTS = [30, 45, 60];
 
 export default function InviteToPlay({ selectedPlayer }: Props) {
-  const { logout, loginAsPlayer, setSessionTimer } = useAuth();
+  const { logout, loginAsPlayer, setSessionTimer, group } = useAuth();
   const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isSessionOpen, setIsSessionOpen] = useState(false);
   const [sessionMinutes, setSessionMinutes] = useState('');
-  const isActive = selectedPlayer !== null;
+  const isActive = selectedPlayer !== null && !!group?.currentVocabulary;
 
   const handlePlayNow = () => {
     setIsInviteOpen(false);

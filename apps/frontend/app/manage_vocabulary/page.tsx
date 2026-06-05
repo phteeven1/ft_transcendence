@@ -24,7 +24,7 @@ import DeleteVocabulary from './_components/delete-vocabulary';
 import UseInGames from './_components/use-in-games';
 
 export default function ManageVocabulary() {
-  const { user, group } = useAuth();
+  const { user, group, syncGroup } = useAuth();
   const router = useRouter();
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
   const [selectedVocabulary, setSelectedVocabulary] =
@@ -60,15 +60,9 @@ export default function ManageVocabulary() {
     );
   };
 
-  // sets isCurrent: true on the activated vocabulary and isCurrent: false on all others
+  // updates currentVocabulary on group
   const handleActivated = (updated: Vocabulary) => {
-    // Set all to inactive, then set the updated one to active
-    setVocabularies((prev) =>
-      prev.map((v) => ({
-        ...v,
-        isCurrent: v.id === updated.id,
-      })),
-    );
+    if (group) syncGroup(group.id);
     setSelectedVocabulary(updated);
   };
 
@@ -89,6 +83,7 @@ export default function ManageVocabulary() {
   const handleDeleted = (vocabularyId: number) => {
     setVocabularies((prev) => prev.filter((v) => v.id !== vocabularyId));
     setSelectedVocabulary(null);
+    if (group && vocabularyId === group.currentVocabulary) syncGroup(group.id);
   };
 
   // maps over list and replaces matching entry id, also updates selectedVocabulary
@@ -118,6 +113,7 @@ export default function ManageVocabulary() {
             <VocabularyList
               vocabularies={vocabularies}
               selectedVocabulary={selectedVocabulary}
+              currentVocabulary={group.currentVocabulary}
               isLoading={isLoading}
               onSelect={handleSelect}
             />
