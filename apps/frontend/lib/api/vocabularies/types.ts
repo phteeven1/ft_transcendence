@@ -1,10 +1,8 @@
-/** Matches backend JSON (`isCurrent`, not `isActive`). */
 export type VocabularyDto = {
   id: number;
   inGroup: number;
   byUser: number;
   name: string;
-  isCurrent: boolean;
   words: string[];
   meanings: string[];
   wordCount: number;

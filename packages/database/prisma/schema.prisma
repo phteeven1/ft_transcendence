@@ -36,6 +36,8 @@ model Group {
   memberships  GroupMembership[]
   players      Player[]
   vocabularies Vocabulary[]
+  currentVocabularyId Int? @unique
+  currentVocabulary   Vocabulary? @relation("GroupCurrentVocabulary", fields: [currentVocabularyId], references: [id], onDelete: SetNull)
   games        Game[]
   invitations  Invitation[]
   currentUsers User[] @relation("UserCurrentGroup")
@@ -76,7 +78,6 @@ model Vocabulary {
   inGroupId Int
   byUserId  Int
   name      String
-  isCurrent Boolean  @default(false)
   words     String[]
   meanings  String[]
   wordCount Int      @default(0)
@@ -84,6 +85,7 @@ model Vocabulary {
 
   group Group @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [byUserId], references: [id], onDelete: Cascade)
+  currentForGroup Group? @relation("GroupCurrentVocabulary")
 
   @@index([inGroupId])
 }

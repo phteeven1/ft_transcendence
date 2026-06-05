@@ -11,8 +11,7 @@ type Props = {
 export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
   const { group } = useAuth();
 
-  const isActive =
-    selectedVocabulary !== null && !selectedVocabulary.isCurrent;
+  const isActive = selectedVocabulary !== null && selectedVocabulary.id !== group?.currentVocabulary;
 
   const handleClick = async () => {
     if (!selectedVocabulary || !group) return;

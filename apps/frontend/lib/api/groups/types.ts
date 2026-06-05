@@ -3,6 +3,7 @@ export type GroupDto = {
   name: string;
   admins: number[];
   members: number[];
+  currentVocabulary?: number;
 };
 
 export type MemberDto = {

@@ -13,6 +13,7 @@ export type Group = {
   name: string;
   admins: number[];
   members: number[];
+  currentVocabulary?: number;
 };
 
 export type Member = {
