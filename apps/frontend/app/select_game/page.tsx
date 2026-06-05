@@ -30,6 +30,7 @@ import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
+import PuzzleWindow from './_components/puzzle-window';
 
 // modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
 // join = 'Join Game' modal is open
@@ -178,12 +179,16 @@ export default function SelectGame() {
 
         </div>
 
-        <div className="mt-10 text-center">
+        <div className="mt-6">
+          <PuzzleWindow />
+        </div>
+
+        <div className="mt-6 text-center">
           <button
             onClick={handleFinishGame}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-6 rounded transition-colors"
           >
-            Finish Game
+            Exit Games
           </button>
         </div>
       </div>
