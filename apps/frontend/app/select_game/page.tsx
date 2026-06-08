@@ -23,6 +23,7 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { gamesApi } from '@/lib/api';
+import { playersApi } from '@/lib/api';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
@@ -50,20 +51,26 @@ export default function SelectGame() {
 
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
 
-  // guards against no player
+
+  // THIS NEEDS TO BE REPLACED WITH A SESSION TOKEN SYSTEM
+  // Guards against no player, and then checks fresh DB state to avoid stale auth context
+  // redirects a player who is already in an active game (in another device or tab) according to DB
   useEffect(() => {
-    if (!player) {
+    if (!player) {  // guard against no player
       router.push('/');
       return;
     }
-    // If this player is already in an active game, block this tab.
-    // We do NOT redirect to play_game here — that would give them two active game tabs.
-    // Instead we send them to a dead-end page.
-    // TODO: replace with a session token system (see already_in_game/page.tsx for details).
-    if (player.currentGameId !== null && player.currentGameId !== undefined) {
-      router.push('/already_in_game');
-    }
-  }, []);
+    (async () => {
+      try {
+        const fresh = await playersApi.getById(player.id);
+        if (fresh?.currentGameId !== null && fresh?.currentGameId !== undefined) {
+          router.push('/already_in_game');
+        }
+      } catch {
+        router.push('/already_in_game'); // fail safe
+      }
+    })();
+  }, []); // runs exactly once at mount
 
   // connect to the group's WebSocket room
   // pendingGames is updated automatically when the backend emits lobby:update

@@ -46,6 +46,11 @@ export class PlayersController {
     return this.playersService.remove(body.playerId);
   }
 
+  @Post('clearSession')
+  clearSession(@Body() body: { playerId: number }) {
+    return this.playersService.clearCurrentGame(body.playerId);
+  }
+
 
   @Get(':id')
   findById(@Param('id') id: string) {

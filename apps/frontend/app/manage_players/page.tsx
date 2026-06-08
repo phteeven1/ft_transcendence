@@ -18,6 +18,7 @@ import RenamePlayer from './_components/rename-player';
 import EditPassphrase from './_components/edit-passphrase';
 import DeletePlayer from './_components/delete-player';
 import InviteToPlay from './_components/invite-to-play';
+import EndGameSession from './_components/end-game-session';
 
 export default function ManagePlayers() {
   const { user, group } = useAuth();
@@ -72,10 +73,16 @@ export default function ManagePlayers() {
     setSelectedPlayer(updated);
   };
 
-  // filetrs out the player whose id matches. Then clears selectedPlayer, since selected player is gone
+  // filters out the player whose id matches. Then clears selectedPlayer, since selected player is gone
   const handleDeleted = (playerId: number) => {
     setPlayers((prev) => prev.filter((p) => p.id !== playerId));
     setSelectedPlayer(null);
+  };
+
+  // exactly the same as handleRenamed, but this is triggered on End Game Session
+  const handleCleared = (updated: Player) => {
+    setPlayers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setSelectedPlayer(updated);
   };
 
   if (!user || !group) return null;
@@ -115,6 +122,10 @@ export default function ManagePlayers() {
               onDeleted={handleDeleted}
             />
             <InviteToPlay selectedPlayer={selectedPlayer} />
+            <EndGameSession
+              selectedPlayer={selectedPlayer}
+              onCleared={handleCleared}
+            />
             <button
               onClick={() => router.push('/manage_group')}
               className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"

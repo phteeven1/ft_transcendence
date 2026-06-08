@@ -36,6 +36,7 @@ function buildTiles(word: string): Tile[] {
 }
 
 // shuffles the array of Tiles using Fisher-Yates shuffle
+// This is a generic function that could be used by other pages
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -45,6 +46,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// the wrapper that calls shuffle on the array of Tile
 function scramble(tiles: Tile[]): Tile[] {
   const slots = tiles.map((_, i) => i);
   const shuffledSlots = shuffle(slots);
@@ -74,29 +76,36 @@ function pickEntry(vocabulary: VocabularyDto): [string, string] | null {
 const TILE_SIZE = 48; // px, base tile width/height
 const TILE_GAP = 4;   // px between tiles
 
+// components sho
 export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
   const entry = useRef<[string, string] | null>(null);
+  // states that will all trigger re-rendering on change
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [meaning, setMeaning] = useState('');
   const [word, setWord] = useState('');
-  // wordRef keeps word accessible inside pointer-event closures without stale capture
-  const wordRef = useRef('');
   const [success, setSuccess] = useState(false);
   const [blinking, setBlinking] = useState(false);
+  // wordRef keeps word accessible inside pointer-event closures without stale capture
+  const wordRef = useRef('');
 
   // dragging state — kept in refs to avoid re-renders during drag
+  // it's a mutable container that handlers read and write directly with no render cost
   const dragging = useRef<{
     tileId: number;
     startX: number;
     currentX: number;
     originSlot: number;
   } | null>(null);
+  // is state because renderer needs to know, which tile is being moved and what is offset
+  // minimum information needed to allow smooth drag animation
   const [dragState, setDragState] = useState<{
     tileId: number;
     offsetX: number;
   } | null>(null);
 
-  // Skip immediately if no valid entry
+  // Runs once on mount. Picks random entry and skips immediately if no valid one
+  // Then initializes all. Uppcases word, sets both word and ref (for checking later)
+  // empty dependency array at end is on purpose - should only run on mount
   useEffect(() => {
     const picked = pickEntry(vocabulary);
     if (!picked) {
@@ -113,14 +122,20 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     setTiles(scramble(base));
   }, []);
 
+  // sets blinking to true, blinks for 900ms then turns off
+  // sets success to true
   const triggerSuccess = useCallback(() => {
     setBlinking(true);
     setTimeout(() => setBlinking(false), 900);
     setTimeout(() => setSuccess(true), 900);
   }, []);
 
+
+  // tells browser that this element owns all future pointer events.
+  // records the drag start position and the tile's slot at the start (originSlot)
+  // setDragState triggers the one re-render needed to switch tile to "grabbed" visual state
   const handlePointerDown = (e: React.PointerEvent, tileId: number) => {
-    if (success) return;
+    if (success) return;  // guards against dragging after success
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const tile = tiles.find((t) => t.id === tileId)!;
     dragging.current = {
@@ -132,52 +147,63 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     setDragState({ tileId, offsetX: 0 });
   };
 
+  // Runs every frame while a tile is being dragged. Figures out how far the tile has moved,
+  // clamps the movement to x axis, snaps to nearest slot, and shuffles other tiles away
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;
-    const d = dragging.current;
-    const rawOffset = e.clientX - d.startX;
+    if (!dragging.current) return;  // guards against nothing being dragged
+    const d = dragging.current; // shorthand that holds relevant info
+    const rawOffset = e.clientX - d.startX; // e.clientX is current mouse/finger X position, d,startX is start of drag
     const tileCount = tiles.length;
-    const step = TILE_SIZE + TILE_GAP;
+    const step = TILE_SIZE + TILE_GAP;  // one 'unit' of movement
 
     // Clamp offset so tile can't go past first or last slot
     const minOffset = (0 - d.originSlot) * step;
     const maxOffset = (tileCount - 1 - d.originSlot) * step;
     const clampedOffset = Math.max(minOffset, Math.min(maxOffset, rawOffset));
 
-    d.currentX = d.startX + clampedOffset;
+    d.currentX = d.startX + clampedOffset;  // updates ref with tile's current x position
 
-    // Which slot is the dragged tile's center currently over?
-    const floatSlot = d.originSlot + clampedOffset / step;
-    const targetSlot = Math.round(floatSlot);
+    // Which slot is the dragged tile's center currently over? Converts pixels back into slot numbers
+    const floatSlot = d.originSlot + clampedOffset / step;  // gives fractional slot count
+    const targetSlot = Math.round(floatSlot); // rounds to nearest whole, so 'snaps' in place
 
     setTiles((prev) => {
+      // if tile hasn't crossed into new slot yet, just update visual offset. No reshuffle
       const draggedTile = prev.find((t) => t.id === d.tileId)!;
       const currentSlot = draggedTile.slot;
       if (currentSlot === targetSlot) {
         setDragState({ tileId: d.tileId, offsetX: clampedOffset });
         return prev;
       }
-      const direction = targetSlot > currentSlot ? 1 : -1;
+      
+      const direction = targetSlot > currentSlot ? 1 : -1;  // are we moving right or left?
+      // shuffle logic. Three cases for each tile
       const updated = prev.map((tile) => {
+        // It's the dragged tile -> move it straight to targetSlot
         if (tile.id === d.tileId) return { ...tile, slot: targetSlot };
+        // moving right, and this tile is in it's path -> shift it one step left to make room
         if (direction === 1 && tile.slot > currentSlot && tile.slot <= targetSlot)
           return { ...tile, slot: tile.slot - 1 };
+        // moving left, and this tile is in it's path ->& tile.slot >= targetSlot)
         if (direction === -1 && tile.slot < currentSlot && tile.slot >= targetSlot)
           return { ...tile, slot: tile.slot + 1 };
+        // anyone else -> don't touch
         return tile;
       });
+      // update visual drag offset and update new slot arrangement
       setDragState({ tileId: d.tileId, offsetX: clampedOffset });
       return updated;
     });
   };
 
+  // runs when user releases the tile
   const handlePointerUp = () => {
-    if (!dragging.current) return;
-    dragging.current = null;
-    setDragState(null);
+    if (!dragging.current) return;  // guards against phantom event
+    dragging.current = null;  // clear drag ref
+    setDragState(null); // clears visual drag offset
     // Read word from ref — closure-safe, always current
     setTiles((prev) => {
-      if (isCorrect(prev, wordRef.current)) triggerSuccess();
+      if (isCorrect(prev, wordRef.current)) triggerSuccess(); // checks if word is now spelled correctly
       return prev;
     });
   };
@@ -205,9 +231,8 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
 
             const visualX = tile.slot * step;
 
-            // Sub-slot offset: keeps the tile tracking the finger exactly
-            // between snap points, by measuring how far the finger has moved
-            // beyond the last snapped slot position
+            // Sub-slot offset: keeps the tile tracking the finger exactly between snap points, 
+            // by measuring how far the finger has moved beyond the last snapped slot position.
             const dragOffset =
               isDragging && dragging.current
                 ? dragging.current.currentX -

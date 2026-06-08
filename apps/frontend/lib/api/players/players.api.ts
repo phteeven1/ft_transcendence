@@ -44,4 +44,11 @@ export const playersApi = {
       body: JSON.stringify({ playerId }),
     });
   },
+
+  clearSession(playerId: number): Promise<void> {
+    return apiRequest<void>('/players/clearSession', {
+      method: 'POST',
+      body: JSON.stringify({ playerId }),
+    });
+  },
 };

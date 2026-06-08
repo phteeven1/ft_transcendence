@@ -53,10 +53,22 @@ export default function PuzzleWindow() {
     })();
   }, []);
 
-  const handleSkip = useCallback(() => {
+  const handleSkip = useCallback(async () => {
+    if (!player) return;
+    try {
+      const freshGroup = await groupsApi.getById(player.inGroup);
+      if (freshGroup.currentVocabulary) {
+        const vocab = await vocabulariesApi.getById(freshGroup.currentVocabulary);
+        setVocabulary(vocab);
+      } else {
+        setVocabulary(null);
+      }
+    } catch (error) {
+      console.error('PuzzleWindow: failed to refresh vocabulary on skip', error);
+    }
     setKey((k) => k + 1);
     setPuzzleIndex(randomPuzzleIndex());
-  }, []);
+  }, [player]);
 
   const renderPuzzle = () => {
     if (loading) {
@@ -80,12 +92,12 @@ export default function PuzzleWindow() {
       );
     }
 
-    const props = { key, vocabulary, onSkip: handleSkip };
+    const props = { vocabulary, onSkip: handleSkip };
     switch (puzzleIndex) {
-      case 0: return <ScramblePuzzle {...props} />;
-      case 1: return <MeansWhatPuzzle {...props} />;
-      case 2: return <CorrectionPuzzle {...props} />;
-      default: return <ScramblePuzzle {...props} />;
+      case 0: return <ScramblePuzzle key={key} {...props} />;
+      case 1: return <MeansWhatPuzzle key={key} {...props} />;
+      case 2: return <CorrectionPuzzle key={key} {...props} />;
+      default: return <ScramblePuzzle key={key} {...props} />;
     }
   };
 
