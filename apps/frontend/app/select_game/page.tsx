@@ -23,6 +23,7 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { gamesApi } from '@/lib/api';
+import { playersApi } from '@/lib/api';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
@@ -30,6 +31,7 @@ import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
+import PuzzleWindow from './_components/puzzle-window';
 
 // modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
 // join = 'Join Game' modal is open
@@ -41,6 +43,8 @@ type ModalState =
 
 // manages list of pending games and modal states via WebSocket
 // pendingGames is kept in sync by lobby:update events pushed from the backend
+// manages list of pending games and modal states via WebSocket
+// pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
 export default function SelectGame() {
   const { player, logoutPlayer } = useAuth();
@@ -49,20 +53,26 @@ export default function SelectGame() {
 
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
 
-  // guards against no player
+
+  // THIS NEEDS TO BE REPLACED WITH A SESSION TOKEN SYSTEM
+  // Guards against no player, and then checks fresh DB state to avoid stale auth context
+  // redirects a player who is already in an active game (in another device or tab) according to DB
   useEffect(() => {
-    if (!player) {
+    if (!player) {  // guard against no player
       router.push('/');
       return;
     }
-    // If this player is already in an active game, block this tab.
-    // We do NOT redirect to play_game here — that would give them two active game tabs.
-    // Instead we send them to a dead-end page.
-    // TODO: replace with a session token system (see already_in_game/page.tsx for details).
-    if (player.currentGameId !== null && player.currentGameId !== undefined) {
-      router.push('/already_in_game');
-    }
-  }, []);
+    (async () => {
+      try {
+        const fresh = await playersApi.getById(player.id);
+        if (fresh?.currentGameId !== null && fresh?.currentGameId !== undefined) {
+          router.push('/already_in_game');
+        }
+      } catch {
+        router.push('/already_in_game'); // fail safe
+      }
+    })();
+  }, []); // runs exactly once at mount
 
   // connect to the group's WebSocket room
   // pendingGames is updated automatically when the backend emits lobby:update
@@ -87,7 +97,7 @@ export default function SelectGame() {
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      await gamesApi.create({
+      const newGame = await gamesApi.create({
         name: gameName,
         inGroup: player.inGroup,
         initiatedBy: player.id,
@@ -98,12 +108,13 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
-  // calls gamesApi.join via REST — backend emits lobby:update or game:started
-  // depending on whether the game is now full
+  // calls postJoinGame to add current player to selected game
+  // if the game then becomes active, it redirects to /play_game
+  // otherwise, updates pendingGames list
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
-      await gamesApi.join({
+      const updatedGame = await gamesApi.join({
         gameId: game.id,
         playerId: player.id,
       });
@@ -178,12 +189,16 @@ export default function SelectGame() {
 
         </div>
 
-        <div className="mt-10 text-center">
+        <div className="mt-6">
+          <PuzzleWindow />
+        </div>
+
+        <div className="mt-6 text-center">
           <button
             onClick={handleFinishGame}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-6 rounded transition-colors"
           >
-            Finish Game
+            Exit Games
           </button>
         </div>
       </div>

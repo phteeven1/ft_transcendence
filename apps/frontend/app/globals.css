@@ -19,6 +19,14 @@
   }
 }
 
+@keyframes blink-orange {
+  0%, 100% { background-color: white; }
+  50% { background-color: #fb923c; color: white; }
+}
+.animate-blink-orange {
+  animation: blink-orange 0.3s ease-in-out 3;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

@@ -2,10 +2,14 @@
 /*
 this is the bridge between parent session and player session
 only prop is selectedPlayer, with no callback, since it doesn't modify players
+Play Now checks fresh player state before proceeding — if the player already has
+an active game session, user is warned and must end it before starting a new one.
+Create Play Button and Send Invite to Play are not yet implemented.
 */
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 
 type Props = {
@@ -19,13 +23,32 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
   const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isSessionOpen, setIsSessionOpen] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
   const [sessionMinutes, setSessionMinutes] = useState('');
+
   const isActive = selectedPlayer !== null && !!group?.currentVocabulary;
 
-  const handlePlayNow = () => {
-    setIsInviteOpen(false);
-    setSessionMinutes('');
-    setIsSessionOpen(true);
+  // Fetch fresh player state before proceeding to session length screen.
+  // If player already has an active session, show warning instead.
+  const handlePlayNow = async () => {
+    if (!selectedPlayer) return;
+    setIsChecking(true);
+    setHasActiveSession(false);
+    try {
+      const fresh = await playersApi.getById(selectedPlayer.id);
+      if (fresh.currentGameId !== null && fresh.currentGameId !== undefined) {
+        setHasActiveSession(true);
+        return;
+      }
+      setIsInviteOpen(false);
+      setSessionMinutes('');
+      setIsSessionOpen(true);
+    } catch {
+      setHasActiveSession(true); // fail safe — don't proceed if we can't verify
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   const handleSessionStart = () => {
@@ -59,12 +82,22 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
             <h2 className="text-xl font-bold">
               Invite {selectedPlayer.name} to Play
             </h2>
+
+            {/* Warning shown if player already has an active session */}
+            {hasActiveSession && (
+              <p className="text-red-500 text-sm">
+                {selectedPlayer.name} is already in an active game session.
+                Please end their session first using the End Game Session button.
+              </p>
+            )}
+
             <div className="space-y-3">
               <button
                 onClick={handlePlayNow}
-                className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                disabled={isChecking}
+                className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Play Now
+                {isChecking ? 'Checking…' : 'Play Now'}
               </button>
               <button
                 disabled
@@ -79,7 +112,10 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
                 Send Invite to Play
               </button>
               <button
-                onClick={() => setIsInviteOpen(false)}
+                onClick={() => {
+                  setIsInviteOpen(false);
+                  setHasActiveSession(false);
+                }}
                 className="w-full bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
               >
                 Cancel
