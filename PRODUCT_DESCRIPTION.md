@@ -71,7 +71,7 @@ The User dashboard of a parent will show:
 - All Groups which they are members of. Highlights indicate if they are Admin or not, *and if Notifications are on or off*.
 - *Profile Settings, to change Username, Password, Email, notifications etc.*
 
-Only if they select a Group, can they see, and choose all the options relating to that Group, including it's Player Profiles and Vocabulary Lists.
+Only if they select a Group, can they see, and choose all the options relating to that Group, including it's Player Profiles and Vocabulary Lists. In the Group Dashboard, next to the buttons, is a list with all members of the group also noting if they are admin or just members. *Clicking one of the names, will display the profile of that user below the buttons.*
 
 <details>
   <summary>Full Action Icon Tree for Parents</summary>
@@ -209,7 +209,7 @@ A crossword is automatically generated that fits on a maximum 24x24 grid. On the
 </details>
 
 ### *Word soup (optional)*
-First, the list of words is displayed for a brief while (1 sec per word). Then, a word soup is generated (a grid of 24x24 squares where the words are hidden among other randon letters. Words can cross each other. Words can be displayed horizontally from left to right and vertically from up to down. The player can use the mouse (or finger on mobile) to mark a word, by starting at its beginning, holding the mouse button, and selecting the word. If they correctly mark the word, it light up and changes color. It only lights up, as the mouse button/finger is released, so that one has to commit to a guess before finding out if it is correct. If you mark the wrong boxes, you are frozen for 5 s. This is to stop players from randomly swiping all over the grid. The Game can be played by several players simultaneously. Each Player has their own color, which shows which words were claimed by which player. The Players gets one point per correct word. You see the guesses of the other players appear as colored swipes.
+First, the list of words is displayed for a brief while (1 sec per word). Then, a word soup is generated (a grid of 24x24 squares where the words are hidden among other random letters. Words can cross each other. Words can be displayed horizontally from left to right and vertically from up to down. The player can use the mouse (or finger on mobile) to mark a word, by starting at its beginning, holding the mouse button, and selecting the word. If they correctly mark the word, it light up and changes color. It only lights up, as the mouse button/finger is released, so that one has to commit to a guess before finding out if it is correct. If you mark the wrong boxes, you are frozen for 5 s. This is to stop players from randomly swiping all over the grid. The Game can be played by several players simultaneously. Each Player has their own color, which shows which words were claimed by which player. The Players gets one point per correct word. You see the guesses of the other players appear as colored swipes.
 
 <details>
   <summary>Modules (2 Points)</summary>

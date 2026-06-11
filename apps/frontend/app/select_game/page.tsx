@@ -13,6 +13,8 @@ player A confirms, handleCreateGame creates a new pending game via REST
 backend emits lobby:update to all players in the group
 player B sees the pending game appear and clicks it, opening JoinGameModal
 player B confirms, handleJoinGame adds them to the game via REST
+player A sees this and clicks 'Start Word Building', which opens ForceStartModal
+player A confirms, handleForceStart starts the game via REST
 backend emits game:started to all players in the group once game goes active
 both players are redirected to /play_game
 Also, they are removed from all other pending games that they have joined.
