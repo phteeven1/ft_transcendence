@@ -43,6 +43,13 @@ export const gamesApi = {
     });
   },
 
+  abandonPlay(input: GameIdPlayerIdInput): Promise<void> {
+    return apiRequest<void>('/games/abandonPlay', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
   finish(input: GameIdInput): Promise<GameDto> {
     return apiRequest<GameDto>('/games/finish', {
       method: 'POST',

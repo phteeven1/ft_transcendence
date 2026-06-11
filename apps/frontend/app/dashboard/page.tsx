@@ -15,16 +15,20 @@ export default function Dashboard() {
   // and all groups they are member of, and stores in state.
   const loadDashboard = async () => {
     if (!user) return;
-    const freshUser = await refreshUser();
-    if (!freshUser) return;
-    const adminResults = await Promise.all(
-      freshUser.isAdminOf.map((id) => groupsApi.getById(id)),
-    );
-    const memberResults = await Promise.all(
-      freshUser.isMemberOf.map((id) => groupsApi.getById(id)),
-    );
-    setAdminGroups(adminResults);
-    setMemberGroups(memberResults);
+    try {
+      const freshUser = await refreshUser();
+      if (!freshUser) return;
+      const adminResults = await Promise.all(
+        freshUser.isAdminOf.map((id) => groupsApi.getById(id)),
+      );
+      const memberResults = await Promise.all(
+        freshUser.isMemberOf.map((id) => groupsApi.getById(id)),
+      );
+      setAdminGroups(adminResults);
+      setMemberGroups(memberResults);
+    } catch (error) {
+      console.error('loadDashboard failed:', error);
+    }
   };
 
   // if no user, return to landing page

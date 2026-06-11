@@ -98,6 +98,11 @@ export class GamesService {
     return this.findById(gameId);
   }
 
+  async abandonPlay(gameId: number, playerId: number): Promise<void> {
+    await this.leave(gameId, playerId);
+    await this.playersService.clearSession(playerId);
+  }
+
   async finish(gameId: number): Promise<Game | undefined> {
     const game = await this.findById(gameId);
     if (!game) return undefined;

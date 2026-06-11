@@ -66,11 +66,24 @@ model Player {
   passAnswer    String
   currentGameId Int?
 
-  group          Group        @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [ofUserId], references: [id], onDelete: Cascade)
-  currentGame    Game?        @relation("PlayerCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  group          Group          @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [ofUserId], references: [id], onDelete: Cascade)
+  currentGame    Game?          @relation("PlayerCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
   gamePlayers    GamePlayer[]
-  initiatedGames Game[]       @relation("GameInitiator")
+  initiatedGames Game[]         @relation("GameInitiator")
+  session        PlayerSession?
+}
+
+/// One active browser session per player (Play Now). Orphaned tokens expire via expiresAt.
+model PlayerSession {
+  token     String   @id @default(uuid())
+  playerId  Int      @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 model Vocabulary {

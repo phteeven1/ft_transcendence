@@ -65,20 +65,24 @@ export default function ManageGroup() {
   // and redirects to /dashboard, otherwise, it calls fetchMember to refresh member list
   const syncAndRefresh = async () => {
     if (!group || !user) return;
-    const updatedGroup = await syncGroup(group.id);
-    if (!updatedGroup) return;
+    try {
+      const updatedGroup = await syncGroup(group.id);
+      if (!updatedGroup) return;
 
-    const isStillMember =
-      updatedGroup.members.includes(user.id) ||
-      updatedGroup.admins.includes(user.id);
+      const isStillMember =
+        updatedGroup.members.includes(user.id) ||
+        updatedGroup.admins.includes(user.id);
 
-    if (!isStillMember) {
-      leaveGroup();
-      router.push('/dashboard');
-      return;
+      if (!isStillMember) {
+        leaveGroup();
+        router.push('/dashboard');
+        return;
+      }
+
+      await fetchMembers();
+    } catch (error) {
+      console.error('syncAndRefresh failed:', error);
     }
-
-    await fetchMembers();
   };
 
   if (!user || !group) return null;

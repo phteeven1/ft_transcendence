@@ -1,4 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { toSafePlayer } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -12,9 +19,31 @@ export type Player = {
   currentGameId: number | null;
 };
 
+export type PlayerSessionDto = {
+  token: string;
+  playerId: number;
+  expiresAt: string;
+  createdAt: string;
+};
+
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
 @Injectable()
-export class PlayersService {
+export class PlayersService implements OnModuleInit, OnModuleDestroy {
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(private readonly prisma: PrismaService) {}
+
+  onModuleInit() {
+    void this.cleanupExpiredSessions();
+    this.cleanupTimer = setInterval(() => {
+      void this.cleanupExpiredSessions();
+    }, CLEANUP_INTERVAL_MS);
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+  }
 
   async create(
     inGroup: number,
@@ -119,4 +148,104 @@ export class PlayersService {
     });
   }
 
+  async hasActiveSession(playerId: number): Promise<boolean> {
+    await this.cleanupExpiredSessions();
+    const session = await this.prisma.playerSession.findUnique({
+      where: { playerId },
+    });
+    return session !== null && session.expiresAt > new Date();
+  }
+
+  async getActiveSession(playerId: number): Promise<PlayerSessionDto | null> {
+    await this.cleanupExpiredSessions();
+    const session = await this.prisma.playerSession.findUnique({
+      where: { playerId },
+    });
+    if (!session || session.expiresAt <= new Date()) return null;
+    return this.toSessionDto(session);
+  }
+
+  async startSession(
+    playerId: number,
+    minutes: number,
+  ): Promise<PlayerSessionDto> {
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      throw new ConflictException('Session length must be a positive number of minutes');
+    }
+
+    const player = await this.prisma.player.findUnique({
+      where: { id: playerId },
+    });
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
+
+    await this.cleanupExpiredSessions();
+
+    const existing = await this.prisma.playerSession.findUnique({
+      where: { playerId },
+    });
+    if (existing && existing.expiresAt > new Date()) {
+      throw new ConflictException('Player already has an active session');
+    }
+
+    if (existing) {
+      await this.prisma.playerSession.delete({ where: { playerId } });
+    }
+
+    const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
+    const session = await this.prisma.playerSession.create({
+      data: { playerId, expiresAt },
+    });
+
+    return this.toSessionDto(session);
+  }
+
+  async validateSession(
+    playerId: number,
+    token: string,
+  ): Promise<{ valid: true; expiresAt: string }> {
+    await this.cleanupExpiredSessions();
+
+    const session = await this.prisma.playerSession.findUnique({
+      where: { playerId },
+    });
+
+    if (!session || session.token !== token) {
+      throw new UnauthorizedException('Invalid session token');
+    }
+
+    if (session.expiresAt <= new Date()) {
+      await this.prisma.playerSession.delete({ where: { playerId } });
+      throw new UnauthorizedException('Session has expired');
+    }
+
+    return { valid: true, expiresAt: session.expiresAt.toISOString() };
+  }
+
+  async clearSession(playerId: number): Promise<void> {
+    await this.prisma.playerSession.deleteMany({ where: { playerId } });
+    await this.clearCurrentGame(playerId);
+  }
+
+  async cleanupExpiredSessions(): Promise<number> {
+    const result = await this.prisma.playerSession.deleteMany({
+      where: { expiresAt: { lte: new Date() } },
+    });
+    return result.count;
+  }
+
+  private toSessionDto(session: {
+    token: string;
+    playerId: number;
+    expiresAt: Date;
+    createdAt: Date;
+  }): PlayerSessionDto {
+    return {
+      token: session.token,
+      playerId: session.playerId,
+      expiresAt: session.expiresAt.toISOString(),
+      createdAt: session.createdAt.toISOString(),
+    };
+  }
 }

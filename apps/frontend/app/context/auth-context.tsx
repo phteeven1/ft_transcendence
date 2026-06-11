@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { groupsApi, usersApi, type UserDto } from '@/lib/api';
 import type { GroupDto } from '@/lib/api/groups/types';
+import { clearPlayerSession } from '@/lib/player-session';
 import { Player } from '../types';
 
 type User = UserDto;
@@ -19,7 +20,7 @@ type AuthContextType = {
   loginAsPlayer: (playerData: Player) => void;
   logoutPlayer: () => void;
   sessionExpiresAt: number | null;
-  setSessionTimer: (minutes: number) => void;
+  setSessionExpiresAt: (expiresAt: number) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,8 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [player, setPlayer] = useState<Player | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
 
-  const setSessionTimer = (minutes: number) => {
-    setSessionExpiresAt(Date.now() + minutes * 60 * 1000);
+  const setSessionExpiry = (expiresAt: number) => {
+    setSessionExpiresAt(expiresAt);
   };
 
   const loginAsPlayer = (playerData: Player) => {
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logoutPlayer = () => {
+    clearPlayerSession();
     setPlayer(null);
     setSessionExpiresAt(null);
   };
@@ -97,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginAsPlayer,
         logoutPlayer,
         sessionExpiresAt,
-        setSessionTimer,
+        setSessionExpiresAt: setSessionExpiry,
       }}
     >
       {children}

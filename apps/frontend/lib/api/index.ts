@@ -19,9 +19,13 @@ export type {
 } from './groups';
 export type {
   PlayerDto,
+  PlayerSessionDto,
   CreatePlayerInput,
   RenamePlayerInput,
   UpdatePassPhraseInput,
+  StartSessionInput,
+  ValidateSessionInput,
+  ValidateSessionResult,
 } from './players';
 export type {
   VocabularyDto,

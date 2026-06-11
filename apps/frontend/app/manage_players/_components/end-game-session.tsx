@@ -1,10 +1,9 @@
 'use client';
 /*
-Allows a parent to force-clear a player's active game session.
-Only active when a player is selected AND that player has an ongoing session (currentGameId is set).
+Allows a parent to force-clear a player's active browser session and game state.
 On confirm, calls clearSession on the backend and reports back via onCleared.
 */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 
@@ -17,9 +16,32 @@ export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPlayer) {
+      setHasActiveSession(false);
+      return;
+    }
+
+    let active = true;
+    playersApi
+      .getActiveSession(selectedPlayer.id)
+      .then((session) => {
+        if (active) setHasActiveSession(session !== null);
+      })
+      .catch(() => {
+        if (active) setHasActiveSession(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedPlayer]);
 
   const isActive =
-    selectedPlayer !== null && selectedPlayer.currentGameId !== null;
+    selectedPlayer !== null &&
+    (selectedPlayer.currentGameId !== null || hasActiveSession);
 
   const handleConfirm = async () => {
     if (!selectedPlayer) return;
@@ -28,6 +50,7 @@ export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
     try {
       await playersApi.clearSession(selectedPlayer.id);
       const updated = await playersApi.getById(selectedPlayer.id);
+      setHasActiveSession(false);
       setIsConfirmOpen(false);
       onCleared(updated);
     } catch {
@@ -57,7 +80,7 @@ export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
             <h2 className="text-xl font-bold">End Game Session</h2>
             <p className="text-gray-600 text-sm">
               Are you sure you want to end {selectedPlayer.name}&apos;s current
-              game session? They will be logged out immediately.
+              play session? They will be logged out immediately.
             </p>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <div className="flex gap-3 pt-2">

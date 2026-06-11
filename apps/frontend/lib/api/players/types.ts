@@ -25,3 +25,25 @@ export type UpdatePassPhraseInput = {
   playerPassQuestion: string;
   playerPassAnswer: string;
 };
+
+export type PlayerSessionDto = {
+  token: string;
+  playerId: number;
+  expiresAt: string;
+  createdAt: string;
+};
+
+export type StartSessionInput = {
+  playerId: number;
+  minutes: number;
+};
+
+export type ValidateSessionInput = {
+  playerId: number;
+  token: string;
+};
+
+export type ValidateSessionResult = {
+  valid: true;
+  expiresAt: string;
+};
