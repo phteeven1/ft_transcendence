@@ -134,8 +134,13 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
-  // logs the player out and redirects to /register
-  const handleFinishGame = () => {
+  // clears the backend session then logs the player out and redirects to /register
+  const handleFinishGame = async () => {
+    try {
+      await playersApi.clearSession(player!.id);
+    } catch (error) {
+      console.error('clearSession failed on exit:', error);
+    }
     logoutPlayer();
     router.push('/register');
   };
@@ -143,10 +148,10 @@ export default function SelectGame() {
   if (!player) return null;
 
   // layout. a greeting for the player, then a grid of buttons:
-  // 'New Word Building' and 'New Word Soup' opens initiateGameModal to create new game
+  // 'Word Building' and 'Word Soup' buttons open initiateGameModal to create new game
   // one pending game button for each game in pendingGames
   // clicking button opens JoinGameModal, if player isn't already in game
-  // then a 'Finish Game' button to log out
+  // then a 'Exit Games' button to log out
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
@@ -159,17 +164,19 @@ export default function SelectGame() {
           <button
             onClick={() => setModal({ kind: 'initiate', gameName: 'Word Building' })}
             disabled={hasInitiated('Word Building')}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
-            New Word Building
+            <span className="text-lg font-bold">Word Building</span>
+            <span className="text-xs font-normal opacity-90">Create new game</span>
           </button>
 
           <button
             onClick={() => setModal({ kind: 'initiate', gameName: 'Word Soup' })}
             disabled={hasInitiated('Word Soup')}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
-            New Word Soup
+            <span className="text-lg font-bold">Word Soup</span>
+            <span className="text-xs font-normal opacity-90">Create new game</span>
           </button>
 
           {pendingGames.map((game) => (
