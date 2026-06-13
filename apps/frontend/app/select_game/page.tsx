@@ -45,6 +45,8 @@ type ModalState =
 
 // manages list of pending games and modal states via WebSocket
 // pendingGames is kept in sync by lobby:update events pushed from the backend
+// manages list of pending games and modal states via WebSocket
+// pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
 export default function SelectGame() {
   const { player, logoutPlayer } = useAuth();
@@ -97,7 +99,7 @@ export default function SelectGame() {
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      await gamesApi.create({
+      const newGame = await gamesApi.create({
         name: gameName,
         inGroup: player.inGroup,
         initiatedBy: player.id,
@@ -108,12 +110,13 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
-  // calls gamesApi.join via REST — backend emits lobby:update or game:started
-  // depending on whether the game is now full
+  // calls postJoinGame to add current player to selected game
+  // if the game then becomes active, it redirects to /play_game
+  // otherwise, updates pendingGames list
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
-      await gamesApi.join({
+      const updatedGame = await gamesApi.join({
         gameId: game.id,
         playerId: player.id,
       });
