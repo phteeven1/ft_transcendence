@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { PlayersService } from './players.service';
 
 @Controller('players')
@@ -46,11 +46,25 @@ export class PlayersController {
     return this.playersService.remove(body.playerId);
   }
 
-  @Post('clearSession')
-  clearSession(@Body() body: { playerId: number }) {
-    return this.playersService.clearCurrentGame(body.playerId);
+  @Post('startSession')
+  startSession(@Body() body: { playerId: number; minutes: number }) {
+    return this.playersService.startSession(body.playerId, body.minutes);
   }
 
+  @Post('validateSession')
+  validateSession(@Body() body: { playerId: number; token: string }) {
+    return this.playersService.validateSession(body.playerId, body.token);
+  }
+
+  @Post('clearSession')
+  clearSession(@Body() body: { playerId: number }) {
+    return this.playersService.clearSession(body.playerId);
+  }
+
+  @Get(':id/activeSession')
+  getActiveSession(@Param('id') id: string) {
+    return this.playersService.getActiveSession(Number(id));
+  }
 
   @Get(':id')
   findById(@Param('id') id: string) {

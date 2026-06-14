@@ -36,6 +36,11 @@ export class GamesController {
     return this.gamesService.leave(body.gameId, body.playerId);
   }
 
+  @Post('abandonPlay')
+  abandonPlay(@Body() body: { gameId: number; playerId: number }) {
+    return this.gamesService.abandonPlay(body.gameId, body.playerId);
+  }
+
   @Post('finish')
   finish(@Body() body: { gameId: number }) {
     return this.gamesService.finish(body.gameId);

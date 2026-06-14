@@ -24,13 +24,18 @@ If all players leave a game before it starts, it is destroyed
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { gamesApi } from '@/lib/api';
-import { playersApi } from '@/lib/api';
+import { gamesApi, playersApi } from '@/lib/api';
+import {
+  clearPlayerSession,
+  getPlayerSession,
+  isSessionExpired,
+} from '@/lib/player-session';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
 import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
+import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guard';
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
 import PuzzleWindow from './_components/puzzle-window';
@@ -49,32 +54,55 @@ type ModalState =
 // pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
 export default function SelectGame() {
-  const { player, logoutPlayer } = useAuth();
+  const { player, logoutPlayer, setSessionExpiresAt } = useAuth();
   const router = useRouter();
   useSessionGuard();
 
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
+  const [sessionReady, setSessionReady] = useState(false);
 
+  const { markIntentionalExit } = usePlayerSessionExitGuard({
+    enabled: sessionReady && player !== null,
+    playerId: player?.id ?? 0,
+    onIntentionalExit: () => {
+      clearPlayerSession();
+      logoutPlayer();
+    },
+  });
 
-  // THIS NEEDS TO BE REPLACED WITH A SESSION TOKEN SYSTEM
-  // Guards against no player, and then checks fresh DB state to avoid stale auth context
-  // redirects a player who is already in an active game (in another device or tab) according to DB
   useEffect(() => {
-    if (!player) {  // guard against no player
+    if (!player) {
       router.push('/');
       return;
     }
+
+    const stored = getPlayerSession();
+    if (
+      !stored ||
+      stored.playerId !== player.id ||
+      isSessionExpired(stored.expiresAt)
+    ) {
+      clearPlayerSession();
+      logoutPlayer();
+      router.push('/');
+      return;
+    }
+
     (async () => {
       try {
-        const fresh = await playersApi.getById(player.id);
-        if (fresh?.currentGameId !== null && fresh?.currentGameId !== undefined) {
-          router.push('/already_in_game');
-        }
+        const result = await playersApi.validateSession({
+          playerId: player.id,
+          token: stored.token,
+        });
+        setSessionExpiresAt(new Date(result.expiresAt).getTime());
+        setSessionReady(true);
       } catch {
-        router.push('/already_in_game'); // fail safe
+        clearPlayerSession();
+        logoutPlayer();
+        router.push('/');
       }
     })();
-  }, []); // runs exactly once at mount
+  }, [player, logoutPlayer, router, setSessionExpiresAt]);
 
   // connect to the group's WebSocket room
   // pendingGames is updated automatically when the backend emits lobby:update
@@ -137,18 +165,19 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
-  // clears the backend session then logs the player out and redirects to /register
   const handleFinishGame = async () => {
+    if (!player) return;
+    markIntentionalExit();
     try {
-      await playersApi.clearSession(player!.id);
+      await playersApi.clearSession(player.id);
     } catch (error) {
-      console.error('clearSession failed on exit:', error);
+      console.error('handleFinishGame clearSession failed:', error);
     }
     logoutPlayer();
     router.push('/register');
   };
 
-  if (!player) return null;
+  if (!player || !sessionReady) return null;
 
   // layout. a greeting for the player, then a grid of buttons:
   // 'Word Building' and 'Word Soup' buttons open initiateGameModal to create new game

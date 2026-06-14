@@ -2,8 +2,12 @@ import { apiRequest } from '../http';
 import type {
   CreatePlayerInput,
   PlayerDto,
+  PlayerSessionDto,
   RenamePlayerInput,
+  StartSessionInput,
   UpdatePassPhraseInput,
+  ValidateSessionInput,
+  ValidateSessionResult,
 } from './types';
 
 export const playersApi = {
@@ -50,5 +54,25 @@ export const playersApi = {
       method: 'POST',
       body: JSON.stringify({ playerId }),
     });
+  },
+
+  startSession(input: StartSessionInput): Promise<PlayerSessionDto> {
+    return apiRequest<PlayerSessionDto>('/players/startSession', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  validateSession(input: ValidateSessionInput): Promise<ValidateSessionResult> {
+    return apiRequest<ValidateSessionResult>('/players/validateSession', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  getActiveSession(playerId: number): Promise<PlayerSessionDto | null> {
+    return apiRequest<PlayerSessionDto | null>(
+      `/players/${playerId}/activeSession`,
+    );
   },
 };

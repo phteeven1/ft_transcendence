@@ -3,14 +3,14 @@
 // useSessionGuard — call this at the top of any player-facing page.
 // Checks on mount and every 30 seconds whether the session has expired.
 // If it has, navigates to /session_over.
-// The actual redirect to /session_over only happens between games (on select_game
-// or play_game mount/navigation), never mid-game, since the hook only fires
-// when the component mounts or its interval ticks. User sets expiry time in
-// Play Now
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/auth-context';
+import {
+  getPlayerSession,
+  isSessionExpired,
+} from '@/lib/player-session';
 
 export function useSessionGuard() {
   const { sessionExpiresAt } = useAuth();
@@ -18,11 +18,17 @@ export function useSessionGuard() {
 
   useEffect(() => {
     const check = () => {
-      if (sessionExpiresAt !== null && Date.now() > sessionExpiresAt) {
+      const stored = getPlayerSession();
+      const expiresAtMs = sessionExpiresAt ?? (
+        stored ? new Date(stored.expiresAt).getTime() : null
+      );
+
+      if (expiresAtMs !== null && Date.now() > expiresAtMs) {
         router.push('/session_over');
       }
     };
-    check(); // check immediately on mount
+
+    check();
     const interval = setInterval(check, 30000);
     return () => clearInterval(interval);
   }, [sessionExpiresAt, router]);

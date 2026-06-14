@@ -17,7 +17,15 @@ export async function apiRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const res = await fetch(url, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(url, { ...options, headers });
+  } catch {
+    throw new ApiError(
+      0,
+      `Cannot reach the API at ${url}. Is the backend running on port 4000?`,
+    );
+  }
 
   if (!res.ok) {
     throw new ApiError(res.status);
