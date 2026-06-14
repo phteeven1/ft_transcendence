@@ -37,7 +37,7 @@ add a design concept to the entire app
 ## Medium Tasks
 
 ### invite_to_play/magic_link
-create a magic link for the desktop, which brings player to personalized session after giving correct passPhrase
+create a magic link for the desktop, which brings player to personalized session after giving correct passPhrase. 
 
 ### invite_to_play/email_invite
 send personalized invite link via email, that let's player directly access a game session, after giving correct passPhrase
