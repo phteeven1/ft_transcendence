@@ -3,6 +3,10 @@
 /*
 Layout for manage group
 Will sync and refresh the group and the attached members and admins arrays every 5 s.
+Three responsive tiers:
+  - Mobile portrait (below md): single column stack
+  - Landscape mobile (md to lg, landscape): three column, compact inline header
+  - Desktop (lg+): three column, large centered header
 */
 
 import { useAuth } from '../context/auth-context';
@@ -12,7 +16,7 @@ import { groupsApi } from '@/lib/api';
 import { Member } from '../types';
 
 import MemberList from './_components/member-list';
-import MemberProfile from './_components/member-profile';
+import ActionWindow from './_components/action-window';
 import BackToDashboard from './_components/back-to-dashboard';
 import LeaveGroup from './_components/leave-group';
 import SendInvite from './_components/send-invite';
@@ -82,15 +86,6 @@ export default function ManageGroup() {
 
   const isAdmin = group.admins.includes(user.id);
 
-  const groupHeader = (
-    <>
-      <h1 className="text-lg font-semibold">{group.name}</h1>
-      <p className="text-sm text-gray-600">
-        You are {isAdmin ? 'an admin' : 'a member'} of this group.
-      </p>
-    </>
-  );
-
   const buttons = (
     <>
       <ManagePlayers />
@@ -120,45 +115,51 @@ export default function ManageGroup() {
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
 
-        {/* Desktop: large centered header above everything */}
-        <div className="hidden md:block text-center mb-6">
-          <h1 className="text-2xl font-bold">{group.name}</h1>
-          <p className="text-sm text-gray-600">
-            You are {isAdmin ? 'an admin' : 'a member'} of this group.
-          </p>
-        </div>
-
-        {/* Mobile portrait: single column, small header above member list */}
-        <div className="md:hidden flex flex-col gap-4">
+        {/* Mobile portrait (below md): single column stack */}
+        <div className="flex flex-col gap-4 md:hidden">
           <div>
-            <div className="mb-2">{groupHeader}</div>
-            <h2 className="text-lg font-semibold mb-2">Members</h2>
             <MemberList
               members={currentGroupMembers}
               selectedMember={selectedMember}
               onSelect={setSelectedMember}
             />
           </div>
+          <ActionWindow selectedMember={selectedMember} />
           <div className="grid grid-cols-2 gap-3">{buttons}</div>
-          {selectedMember && <MemberProfile member={selectedMember} />}
         </div>
 
-        {/* Desktop / landscape: three column layout */}
-        <div className="hidden md:flex md:flex-col md:gap-6">
+        {/* md and above: three column layout shared by landscape mobile and desktop */}
+        <div className="hidden md:flex flex-col gap-6">
+
+          {/* Desktop header: large centered, only shown at lg and above */}
+          <div className="hidden lg:block text-center">
+            <h1 className="text-2xl font-bold">{group.name}</h1>
+            <p className="text-sm text-gray-600">
+              You are {isAdmin ? 'an admin' : 'a member'} of this group.
+            </p>
+          </div>
+
           <div className="grid grid-cols-3 gap-6">
+
+            {/* Left column: Members label + list */}
             <div className="col-span-1 flex flex-col">
-              <h2 className="text-lg font-semibold mb-2">Members</h2>
               <MemberList
                 members={currentGroupMembers}
                 selectedMember={selectedMember}
                 onSelect={setSelectedMember}
               />
             </div>
-            <div className="col-span-2 grid grid-cols-2 gap-3 content-start pt-9">
-              {buttons}
+
+            {/* Right column: landscape mobile header (hidden on desktop) + buttons */}
+            <div className="col-span-2 flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3 content-start">
+                {buttons}
+              </div>
             </div>
+
           </div>
-          {selectedMember && <MemberProfile member={selectedMember} />}
+
+          <ActionWindow selectedMember={selectedMember} />
         </div>
 
       </div>

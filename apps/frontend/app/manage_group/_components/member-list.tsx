@@ -1,4 +1,5 @@
 'use client';
+
 import { Member } from '../../types';
 
 type Props = {
@@ -10,6 +11,9 @@ type Props = {
 export default function MemberList({ members, selectedMember, onSelect }: Props) {
   return (
     <ul className="overflow-y-auto max-h-64 md:max-h-full md:h-full border border-emerald-300 rounded">
+      <li className="border-b border-emerald-300 bg-white px-3 py-2">
+        <span className="text-lg font-semibold">Members</span>
+      </li>
       {members.map((member) => (
         <li key={member.id} className="border-b border-emerald-300 last:border-b-0">
           <button
