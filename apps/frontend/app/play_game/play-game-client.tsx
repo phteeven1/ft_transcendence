@@ -9,6 +9,7 @@ import { useGameExitGuard } from '../hooks/use-game-exit-guard';
 import { useAuth } from '../context/auth-context';
 import { clearPlayerSession } from '@/lib/player-session';
 import AbandonPlayModal from './_components/abandon-play-modal';
+import CrosswordBoard from './_components/CrosswordBoard';
 
 async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
   const results = await Promise.all(
@@ -142,6 +143,12 @@ export default function PlayGameClient() {
             </ul>
           </div>
         </div>
+
+        {game.name === 'Word Building' && (
+          <div className="bg-white rounded-lg shadow p-5 mb-8">
+            <CrosswordBoard gameId={gameId} playerId={playerId} />
+          </div>
+        )}
 
         <div className="space-y-3">
           <button
