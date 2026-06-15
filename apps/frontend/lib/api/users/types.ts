@@ -1,5 +1,4 @@
 /** API contract for user endpoints — mirrors backend JSON, not the database. */
-
 export type UserDto = {
   id: number;
   name: string;
@@ -7,6 +6,11 @@ export type UserDto = {
   isMemberOf: number[];
   isAdminOf: number[];
   currentGroup?: number;
+  realName?: string;
+  relationshipComment?: string;
+  showEmail: boolean;
+  showRealName: boolean;
+  showRelationshipComment: boolean;
 };
 
 export type RegisterUserInput = {
@@ -18,4 +22,19 @@ export type RegisterUserInput = {
 export type SignInUserInput = {
   userName: string;
   userPassword: string;
+};
+
+export type UpdateUserInput = {
+  userId: number;
+  realName?: string;
+  relationshipComment?: string;
+  showEmail: boolean;
+  showRealName: boolean;
+  showRelationshipComment: boolean;
+};
+
+export type ChangePasswordInput = {
+  userId: number;
+  oldPassword: string;
+  newPassword: string;
 };
