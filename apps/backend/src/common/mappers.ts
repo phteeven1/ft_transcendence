@@ -33,6 +33,11 @@ export function toApiUser(user: UserWithMemberships): User {
     email: user.email,
     isMemberOf,
     isAdminOf,
+    realName: user.realName ?? undefined,
+    relationshipComment: user.relationshipComment ?? undefined,
+    showRealName: user.showRealName,
+    showEmail: user.showEmail,
+    showRelationshipComment: user.showRelationshipComment,
     ...(user.currentGroupId != null
       ? { currentGroup: user.currentGroupId }
       : {}),

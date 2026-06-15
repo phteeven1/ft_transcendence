@@ -22,6 +22,11 @@ model User {
   password       String
   currentGroupId Int?
   createdAt      DateTime @default(now())
+  realName                 String?
+  relationshipComment      String?
+  showRealName             Boolean  @default(false)
+  showEmail                Boolean  @default(false)
+  showRelationshipComment  Boolean  @default(false)
 
   currentGroup Group?            @relation("UserCurrentGroup", fields: [currentGroupId], references: [id], onDelete: SetNull)
   memberships  GroupMembership[]

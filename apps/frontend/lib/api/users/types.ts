@@ -26,6 +26,7 @@ export type SignInUserInput = {
 
 export type UpdateUserInput = {
   userId: number;
+  userName?: string;
   realName?: string;
   relationshipComment?: string;
   showEmail: boolean;

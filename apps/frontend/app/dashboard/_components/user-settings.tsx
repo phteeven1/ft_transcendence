@@ -23,6 +23,8 @@ export default function UserSettings() {
 
   // main modal
   const [showModal, setShowModal] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [originalUserName, setOriginalUserName] = useState('');
   const [realName, setRealName] = useState('');
   const [email, setEmail] = useState('');
   const [relationshipComment, setRelationshipComment] = useState('');
@@ -41,10 +43,15 @@ export default function UserSettings() {
   const [showResult, setShowResult] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
 
+  // result modal for username change reminder
+  const [showUsernameReminder, setShowUsernameReminder] = useState(false);
+
   if (!user) return null;
 
   // populate local state from current user when opening
   const handleOpen = () => {
+    setUserName(user.name);
+    setOriginalUserName(user.name);
     setRealName(user.realName ?? '');
     setEmail(user.email ?? '');
     setRelationshipComment(user.relationshipComment ?? '');
@@ -62,6 +69,7 @@ export default function UserSettings() {
     try {
       await usersApi.update({
         userId: user.id,
+        userName,
         realName,
         relationshipComment,
         showEmail,
@@ -70,6 +78,9 @@ export default function UserSettings() {
       });
       await refreshUser();
       setShowModal(false);
+      if (userName !== originalUserName) {
+        setShowUsernameReminder(true);
+      }
     } catch (error) {
       console.error('Failed to save user settings:', error);
     }
@@ -138,12 +149,17 @@ export default function UserSettings() {
 
             <div className="overflow-y-auto flex-1 px-6 py-2 flex flex-col gap-5">
 
-              {/* Username — read only */}
+              {/* Username */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Username
                 </label>
-                <p className="text-gray-900">{user.name}</p>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
               </div>
 
               {/* Real name */}
@@ -335,6 +351,25 @@ export default function UserSettings() {
             <div className="flex justify-end">
               <button
                 onClick={handleCloseResult}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Username change reminder */}
+      {showUsernameReminder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <p className="mb-6 text-gray-700">
+              Your username has been changed to <span className="font-semibold">{userName}</span>. Remember to use it next time you sign in.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowUsernameReminder(false)}
                 className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
               >
                 OK
