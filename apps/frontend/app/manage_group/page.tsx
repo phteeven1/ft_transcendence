@@ -90,9 +90,8 @@ export default function ManageGroup() {
     <>
       <ManagePlayers />
       {isAdmin && <ManageVocabulary />}
-      {isAdmin && <SendInvite />}
-      {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
-      <LeaveGroup syncAndRefresh={syncAndRefresh} />
+      
+      
       {isAdmin && (
         <PromoteToAdmin
           currentGroupMembers={currentGroupMembers}
@@ -100,12 +99,15 @@ export default function ManageGroup() {
         />
       )}
       {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <SendInvite />}
       {isAdmin && (
         <ExpelMember
           currentGroupMembers={currentGroupMembers}
           syncAndRefresh={syncAndRefresh}
         />
       )}
+      {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
+      <LeaveGroup syncAndRefresh={syncAndRefresh} />
       {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
       <BackToDashboard />
     </>

@@ -14,7 +14,7 @@ export default function BackToDashboard() {
   return (
     <button
       onClick={handleBackToDashboard}
-      className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded transition-colors"
+      className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-3 px-4 rounded transition-colors"
     >
       Back to Dashboard
     </button>

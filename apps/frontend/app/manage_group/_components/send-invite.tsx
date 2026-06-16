@@ -55,7 +55,7 @@ export default function SendInvite() {
     <>
       <button
         onClick={handleOpen}
-        className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        className="bg-yellow-500 hover:bg-yelow-600 text-white font-medium py-3 px-4 rounded transition-colors"
       >
         Send Invite
       </button>
