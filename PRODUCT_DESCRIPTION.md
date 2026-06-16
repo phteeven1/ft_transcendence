@@ -61,17 +61,19 @@ All Parents who are Members or Admins of a Group can:
 - *View game Statistics regarding their own Players (only)*.
 - Terminate the Profiles of their own Players.
 - Leave the Group.
-- *Receive Notifications when a Player from one of the Groups they are members of, Initiates a game.*
-- *Toggle Notifications on/off, per Group.*
+- *Select other player's in the same group as TeamMates.*
+- *Get notified when TeamMates enter a game session*
 - *Read the Group Chat. This is where actions affecting the Group are logged, and Group Messages appear*.
 - *Write Messages to the Group Admins*.
 
 The User dashboard of a parent will show:
 - Create New Group, which allows them to create a new group.
 - All Groups which they are members of. Highlights indicate if they are Admin or not, *and if Notifications are on or off*.
-- *Profile Settings, to change Username, Password, Email, notifications etc.*
+- Profile Settings, to change Username, Password, Email, notifications etc.
 
-Only if they select a Group, can they see, and choose all the options relating to that Group, including it's Player Profiles and Vocabulary Lists. In the Group Dashboard, next to the buttons, is a list with all members of the group also noting if they are admin or just members. *Clicking one of the names, will display the profile of that user below the buttons.*
+Only if they select a Group, can they see, and choose all the options relating to that Group, including it's Player Profiles and Vocabulary Lists. In the Group Dashboard, next to the buttons, is a list with all members of the group also noting if they are admin or just members. 
+
+Also in the Dashboard is an action-window with two tabs. It can display either the Profile of the member currently selected from the member-list, or the group chat.
 
 <details>
   <summary>Full Action Icon Tree for Parents</summary>
@@ -128,12 +130,13 @@ Only if they select a Group, can they see, and choose all the options relating t
     </li>
     <li>
       <details>
-        <summary>User Settings  --  MISSING</summary>
+        <summary>User Settings</summary>
         <ul>
-          <li>Change Username  --  MISSING</li>
-          <li>Change Password  --  MISSING</li>
-          <li>Change Email  --  MISSING</li>
-          <li>Notifications On/Off  --  MISSING</li>
+          <li>Change Username</li>
+          <li>Change Real Name</li>
+          <li>Change Password</li>
+          <li>Change Email</li>
+          <li>Change Relationship Info (for example "Dana's Mum")</li>
         </ul>
       </details>
     </li>
