@@ -117,31 +117,41 @@ export default function ManageGroup() {
 
         {/* Mobile portrait (below md): single column stack */}
         <div className="flex flex-col gap-4 md:hidden">
-          <div>
+          <MemberList
+            members={currentGroupMembers}
+            selectedMember={selectedMember}
+            onSelect={setSelectedMember}
+          />
+          <ActionWindow selectedMember={selectedMember} />
+          <div className="grid grid-cols-2 gap-3">{buttons}</div>
+        </div>
+
+        {/* Landscape mobile (md to lg): three columns side by side, no header */}
+        <div className="hidden md:grid lg:hidden grid-cols-3 gap-3 items-start">
+          <div className="col-span-1">
             <MemberList
               members={currentGroupMembers}
               selectedMember={selectedMember}
               onSelect={setSelectedMember}
             />
           </div>
-          <ActionWindow selectedMember={selectedMember} />
-          <div className="grid grid-cols-2 gap-3">{buttons}</div>
+          <div className="col-span-1">
+            <ActionWindow selectedMember={selectedMember} />
+          </div>
+          <div className="col-span-1 grid grid-cols-2 gap-2 [&_button]:py-1 [&_button]:text-s">
+            {buttons}
+          </div>
         </div>
 
-        {/* md and above: three column layout shared by landscape mobile and desktop */}
-        <div className="hidden md:flex flex-col gap-6">
-
-          {/* Desktop header: large centered, only shown at lg and above */}
+        {/* Desktop (lg+): member list + buttons side by side, action window below */}
+        <div className="hidden lg:flex flex-col gap-6">
           <div className="hidden lg:block text-center">
             <h1 className="text-2xl font-bold">{group.name}</h1>
             <p className="text-sm text-gray-600">
               You are {isAdmin ? 'an admin' : 'a member'} of this group.
             </p>
           </div>
-
           <div className="grid grid-cols-3 gap-6">
-
-            {/* Left column: Members label + list */}
             <div className="col-span-1 flex flex-col">
               <MemberList
                 members={currentGroupMembers}
@@ -149,16 +159,12 @@ export default function ManageGroup() {
                 onSelect={setSelectedMember}
               />
             </div>
-
-            {/* Right column: landscape mobile header (hidden on desktop) + buttons */}
             <div className="col-span-2 flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3 content-start">
                 {buttons}
               </div>
             </div>
-
           </div>
-
           <ActionWindow selectedMember={selectedMember} />
         </div>
 
