@@ -5,6 +5,7 @@ import {
   GroupRole,
   Invitation as DbInvitation,
   Player as DbPlayer,
+  PlayerSession as DbPlayerSession,
   User as DbUser,
   Vocabulary as DbVocabulary,
 } from '@ft-transcendence/database';
@@ -18,6 +19,7 @@ import type { Vocabulary } from '../vocabularies/vocabularies.service';
 type UserWithMemberships = DbUser & { memberships: GroupMembership[] };
 type GroupWithMemberships = DbGroup & { memberships: GroupMembership[] };
 type GameWithPlayers = DbGame & { gamePlayers: { playerId: number }[] };
+type PlayerWithSession = DbPlayer & { session: DbPlayerSession | null };
 
 export function toApiUser(user: UserWithMemberships): User {
   const isMemberOf: number[] = [];
@@ -62,12 +64,14 @@ export function toApiGroup(group: GroupWithMemberships): Group {
   };
 }
 
-export function toSafePlayer(player: DbPlayer): Omit<Player, 'passAnswer'> {
-  const { passAnswer: _, inGroupId, ofUserId, ...rest } = player;
+export function toSafePlayer(player: PlayerWithSession): Omit<Player, 'passAnswer'> {
+  const { passAnswer: _, inGroupId, ofUserId, session, ...rest } = player;
   return {
     ...rest,
     inGroup: inGroupId,
     ofUser: ofUserId,
+    lastSignout: player.lastSignout.toISOString(),
+    sessionExpiresAt: session?.expiresAt.toISOString() ?? null,
   };
 }
 
@@ -117,4 +121,8 @@ export const userWithMemberships = {
 
 export const gameWithPlayers = {
   include: { gamePlayers: true },
+} as const;
+
+export const playerWithSession = {
+  include: { session: true },
 } as const;

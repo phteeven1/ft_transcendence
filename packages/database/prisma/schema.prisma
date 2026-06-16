@@ -70,7 +70,8 @@ model Player {
   passQuestion  String
   passAnswer    String
   currentGameId Int?
-
+  lastSignout   DateTime @default(now())
+  
   group          Group          @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [ofUserId], references: [id], onDelete: Cascade)
   currentGame    Game?          @relation("PlayerCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
