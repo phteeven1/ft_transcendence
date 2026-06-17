@@ -12,8 +12,9 @@ import { useState } from 'react';
 import { Member } from '../../types';
 import MemberProfile from './member-profile';
 import GroupChat from './group-chat';
+import GameSessionOverview from './game-session-overview';
 
-type Tab = 'profile' | 'chat';
+type Tab = 'profile' | 'chat' | 'games';
 
 type Props = {
   selectedMember: Member | null;
@@ -25,6 +26,7 @@ export default function ActionWindow({ selectedMember }: Props) {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'profile', label: 'Member Profile' },
     { id: 'chat', label: 'Group Chat' },
+    { id: 'games', label: 'Game Session' },
   ];
 
   return (
@@ -55,6 +57,7 @@ export default function ActionWindow({ selectedMember }: Props) {
             : <p className="text-sm text-gray-400 italic">Select a member to view their profile.</p>
         )}
         {activeTab === 'chat' && <GroupChat />}
+        {activeTab === 'games' && <GameSessionOverview />}
       </div>
 
     </div>
