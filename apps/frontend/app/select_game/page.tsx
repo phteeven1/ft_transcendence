@@ -16,7 +16,7 @@ player B confirms, handleJoinGame adds them to the game via REST
 player A sees this and clicks 'Start Word Building', which opens ForceStartModal
 player A confirms, handleForceStart starts the game via REST
 backend emits game:started to all players in the group once game goes active
-both players are redirected to /play_game
+both players are redirected to the matching game page
 Also, they are removed from all other pending games that they have joined.
 If all players leave a game before it starts, it is destroyed
 */
@@ -39,6 +39,22 @@ import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guar
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
 import PuzzleWindow from './_components/puzzle-window';
+
+function getStartedGameRoute(
+  gameName: string,
+): '/play_game' | '/word-building' | '/word-soup' {
+  const normalizedName = gameName.trim().toLowerCase();
+
+  if (normalizedName === 'word building') {
+    return '/word-building';
+  }
+
+  if (normalizedName === 'word soup') {
+    return '/word-soup';
+  }
+
+  return '/play_game';
+}
 
 // modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
 // join = 'Join Game' modal is open
@@ -112,15 +128,18 @@ export default function SelectGame() {
     player?.id ?? 0,
   );
 
-  // navigate to play_game as soon as the backend tells us our game has started
+  // navigate to the matching game page as soon as the backend tells us our game has started
   useEffect(() => {
     if (startedGame && player) {
-      router.push(`/play_game?gameId=${startedGame.id}&playerId=${player.id}`);
+      const route = getStartedGameRoute(startedGame.name);
+      router.push(`${route}?gameId=${startedGame.id}&playerId=${player.id}`);
     }
   }, [startedGame, player, router]);
 
   const hasInitiated = (gameName: string): boolean =>
-    pendingGames.some((g) => g.name === gameName && g.initiatedBy === player?.id);
+    pendingGames.some(
+      (g) => g.name === gameName && g.initiatedBy === player?.id,
+    );
 
   // calls gamesApi.create via REST — UI does not update directly;
   // the backend emits lobby:update which triggers the WebSocket state update
@@ -139,7 +158,7 @@ export default function SelectGame() {
   };
 
   // calls postJoinGame to add current player to selected game
-  // if the game then becomes active, it redirects to /play_game
+  // if the game then becomes active, it redirects to the matching game page
   // otherwise, updates pendingGames list
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
@@ -187,28 +206,38 @@ export default function SelectGame() {
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
-
-        <h1 className="text-2xl font-bold mb-2 text-center">Hi, {player.name}!</h1>
-        <p className="text-sm text-gray-600 mb-8 text-center">Choose a game to play</p>
+        <h1 className="text-2xl font-bold mb-2 text-center">
+          Hi, {player.name}!
+        </h1>
+        <p className="text-sm text-gray-600 mb-8 text-center">
+          Choose a game to play
+        </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
           <button
-            onClick={() => setModal({ kind: 'initiate', gameName: 'Word Building' })}
+            onClick={() =>
+              setModal({ kind: 'initiate', gameName: 'Word Building' })
+            }
             disabled={hasInitiated('Word Building')}
             className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
             <span className="text-lg font-bold">Word Building</span>
-            <span className="text-xs font-normal opacity-90">Create new game</span>
+            <span className="text-xs font-normal opacity-90">
+              Create new game
+            </span>
           </button>
 
           <button
-            onClick={() => setModal({ kind: 'initiate', gameName: 'Word Soup' })}
+            onClick={() =>
+              setModal({ kind: 'initiate', gameName: 'Word Soup' })
+            }
             disabled={hasInitiated('Word Soup')}
             className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
             <span className="text-lg font-bold">Word Soup</span>
-            <span className="text-xs font-normal opacity-90">Create new game</span>
+            <span className="text-xs font-normal opacity-90">
+              Create new game
+            </span>
           </button>
 
           {pendingGames.map((game) => (
@@ -224,7 +253,6 @@ export default function SelectGame() {
               onForceStart={() => setModal({ kind: 'forceStart', game })}
             />
           ))}
-
         </div>
 
         <div className="mt-6">
