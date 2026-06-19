@@ -13,7 +13,7 @@
   - Redirects to /select_game when backend emits game:finished
 */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { gamesApi, groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
 import type { Game, Player } from '../../types';
@@ -66,34 +66,6 @@ export default function WordBuildingGame() {
   const [trueCourt, setTrueCourt] = useState<CourtCell[][]>(createEmptyCourt);
   const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(createEmptyCourt);
 
-  // --- Scaffold handles ---
-
-  // Fills trueCourt with vocabulary words laid out left-to-right, top-to-bottom.
-  // Words are separated by a single space. When the end of the grid is reached,
-  // it wraps back to [0][0] and continues until every cell is filled.
-  const fillTrueCourtFromVocabulary = useCallback((vocab: VocabularyDto) => {
-    const text = vocab.words.join(' ');
-    const totalCells = COURT_SIZE * COURT_SIZE;
-    const newCourt = createEmptyCourt();
-
-    for (let cellIndex = 0; cellIndex < totalCells; cellIndex++) {
-      const char = text[cellIndex % text.length]?.toUpperCase() ?? '';
-      const row = Math.floor(cellIndex / COURT_SIZE);
-      const col = cellIndex % COURT_SIZE;
-      newCourt[row][col] = { char };
-    }
-
-    setTrueCourt(newCourt);
-  }, []);
-
-  // Fills every cell of visibleCourt with 'X'.
-  const fillVisibleCourtWithX = useCallback(() => {
-    setVisibleCourt(
-      Array.from({ length: COURT_SIZE }, () =>
-        Array.from({ length: COURT_SIZE }, () => ({ char: 'X' })),
-      ),
-    );
-  }, []);
 
   // --- WebSocket ---
 
@@ -122,12 +94,9 @@ export default function WordBuildingGame() {
 
   // --- Tile click handler ---
 
-  const handleTileClick = useCallback(
-    (row: number, col: number) => {
-      emitTileClick(row, col);
-    },
-    [emitTileClick],
-  );
+  const handleTileClick = (row: number, col: number) => {
+    emitTileClick(row, col);
+  };
 
   // --- Data fetching ---
 
@@ -166,12 +135,7 @@ export default function WordBuildingGame() {
           return;
         }
         const loaded = await vocabulariesApi.getById(freshGroup.currentVocabulary);
-        if (isMounted) {
-          setVocabulary(loaded);
-          // Scaffold: populate trueCourt and visibleCourt as soon as vocabulary is available.
-          fillTrueCourtFromVocabulary(loaded);
-          fillVisibleCourtWithX();
-        }
+        if (isMounted) setVocabulary(loaded);
       } catch (error) {
         console.error('WordBuildingGame: failed to load vocabulary', error);
         if (isMounted) setVocabulary(null);
@@ -180,12 +144,25 @@ export default function WordBuildingGame() {
       }
     };
 
+    const loadCourt = async () => {
+      try {
+        const { trueCourt, visibleCourt } = await gamesApi.initWordBuildingCourt(game.id);
+        if (isMounted) {
+          setTrueCourt(trueCourt);
+          setVisibleCourt(visibleCourt);
+        }
+      } catch (error) {
+        console.error('WordBuildingGame: failed to init court', error);
+      }
+    };
+
     loadVocabulary();
+    loadCourt();
 
     return () => {
       isMounted = false;
     };
-  }, [game, fillTrueCourtFromVocabulary, fillVisibleCourtWithX]);
+  }, [game]);
 
   // --- Game controls ---
 

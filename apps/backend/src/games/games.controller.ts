@@ -52,6 +52,11 @@ export class GamesController {
     return { ok: true };
   }
 
+  @Post(':id/initCourt')
+  initCourt(@Param('id') id: string) {
+    return this.gamesService.initWordBuildingCourt(Number(id));
+  }
+
   @Get()
   findAll() {
     return this.gamesService.findAll();
