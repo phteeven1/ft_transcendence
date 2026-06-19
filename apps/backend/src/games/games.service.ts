@@ -103,22 +103,6 @@ export class GamesService {
     await this.playersService.clearSession(playerId);
   }
 
-  async finish(gameId: number): Promise<Game | undefined> {
-    const game = await this.findById(gameId);
-    if (!game) return undefined;
-
-    await this.prisma.game.update({
-      where: { id: gameId },
-      data: { isFinished: true, isActive: false },
-    });
-    for (const pId of game.players) {
-      await this.playersService.clearCurrentGame(pId);
-    }
-    const result = await this.findById(gameId);
-    await this.emitLobbyUpdate(game.inGroup);
-    return result;
-  }
-
   async findById(gameId: number): Promise<Game | undefined> {
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
@@ -227,5 +211,23 @@ export class GamesService {
   private async emitLobbyUpdate(groupId: number): Promise<void> {
     const games = await this.findByGroup(groupId);
     this.gateway.emitLobbyUpdate(groupId, games);
+  }
+
+  async finish(gameId: number): Promise<Game | undefined> {
+    const game = await this.findById(gameId);
+    if (!game) return undefined;
+
+    await this.prisma.game.update({
+      where: { id: gameId },
+      data: { isFinished: true, isActive: false },
+    });
+    for (const pId of game.players) {
+      await this.playersService.clearCurrentGame(pId);
+    }
+    const result = await this.findById(gameId);
+    await this.emitLobbyUpdate(game.inGroup);
+    // Notify all players inside the game room that the game has ended.
+    this.gateway.emitGameFinished(gameId);
+    return result;
   }
 }

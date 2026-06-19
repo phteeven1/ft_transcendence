@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import WordBuildingPlaceholderClient from './_components/game-placeholder-client';
+import WordBuildingPlaceholderClient from './_components/word-building-game';
 
 function WordBuildingLoading() {
   return (

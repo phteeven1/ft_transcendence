@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import WordSoupPlaceholderClient from './_components/game-placeholder-client';
+import WordSoupPlaceholderClient from './_components/word-soup-game';
 
 function WordSoupLoading() {
   return (
