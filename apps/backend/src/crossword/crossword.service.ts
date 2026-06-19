@@ -8,9 +8,8 @@ import {
   CrosswordPuzzlePublic,
   CrosswordUpdate,
 } from './crossword.types';
-import { LegacyEngine } from './engines/legacy.engine';
 import { HybridEngine } from './engines/hybrid.engine';
-import { CrosswordEngine } from './engines/crossword-engine.interface';
+import { ICrosswordEngine } from './engines/crossword-engine.interface';
 import {
   WordDifficulty,
   DIFFICULTY_CONFIG,
@@ -18,8 +17,6 @@ import {
   getWordsFromEntries,
 } from './words/crossword-words';
 
-// crossword-logic Addition: Use hybrid engine for better puzzle quality
-const USE_HYBRID_ENGINE = true;
 const DEFAULT_DIFFICULTY: WordDifficulty = 'easy';
 
 @Injectable()
@@ -35,12 +32,9 @@ export class CrosswordService {
    * crossword-logic Addition: Create engine instance based on difficulty
    * This ensures each puzzle generation uses the correct grid size and constraints
    */
-  private createEngine(difficulty: WordDifficulty): CrosswordEngine {
-    if (USE_HYBRID_ENGINE) {
-      const config = DIFFICULTY_CONFIG[difficulty];
-      return new HybridEngine(config.gridSize, config.maxAttempts, config.wordCount);
-    }
-    return new LegacyEngine();
+  private createEngine(difficulty: WordDifficulty): ICrosswordEngine {
+    const config = DIFFICULTY_CONFIG[difficulty];
+    return new HybridEngine(config.gridSize, config.maxAttempts, config.wordCount);
   }
 
   /**

@@ -1,6 +1,22 @@
-import { CrosswordCell } from '../crossword.types';
-import { CrosswordEngine, EngineResult } from './crossword-engine.interface';
+/**
+ * @fileoverview HybridEngine: Advanced crossword engine with intersection-based placement.
+ * 
+ * Uses a greedy algorithm with seeded randomness to generate different puzzles each time.
+ * 
+ * Key features:
+ * 1. Normalizes and filters input words, tracking all rejected words for feedback.
+ * 2. Sorts words by length and common letter frequency to optimize placement order.
+ * 3. Places the longest word in the center as an anchor.
+ * 4. Iteratively finds valid placements for remaining words based on intersections with placed words.
+ * 5. Scores placements using a heuristic that considers future intersection potential, center proximity, and letter matches.
+ * 6. Randomly selects among top-scoring candidates to add variability.
+ * 7. Trims empty grid borders and assigns clue numbers in final output.
+ */
 
+import { CrosswordCell } from '../crossword.types';
+import { ICrosswordEngine, IEngineResult } from './crossword-engine.interface';
+
+// --- Types (PascalCase) ---
 type Direction = 'across' | 'down';
 
 type CandidatePlacement = {
@@ -9,121 +25,182 @@ type CandidatePlacement = {
   row: number;
   col: number;
   direction: Direction;
-  score?: number; // crossword-logic Addition: Placement quality score for smart greedy selection
+  score?: number;
 };
 
+// Context object to reduce parameter counts and group related state
+type PlacementContext = {
+  grid: CrosswordCell[][];
+  letterIndex: Map<string, { r: number; c: number }[]>;
+  placedWordsSet: Set<string>;
+  gridSize: number;
+};
+
+// --- Constants ---
+// * Linear Congruential Generator (LCG) multiplier for seeding random number generation.
+const LCG_MULTIPLIER = 1664525;
+const LCG_INCREMENT = 1013904223;
+const LCG_MODULUS = 4294967296;
+const TOP_CANDIDATE_RATIO = 0.3; // Only consider the top 30% of candidates by score for random selection
+const FUTURE_INTERSECTION_WEIGHT = 10; // Score weight for future intersection potential per detected intersection
+const MAX_CENTER_BONUS = 10; // Maximum bonus score achievable for placing words near grid center
+const LETTER_MATCH_WEIGHT = 5; // Score weight for matching letters with existing placed words
+const MIN_WORD_LENGTH = 2; // Minimum word length to consider valid (shorter words not kid-friendly)
+
 /**
- * crossword-logic Addition: Advanced crossword engine with intersection-based placement
- * Uses greedy algorithm with seeded randomness to generate different puzzles each time
+ * Advanced crossword engine with intersection-based placement.
+ * Uses a greedy algorithm with seeded randomness and strategic sorting.
  */
-export class HybridEngine implements CrosswordEngine {
+export class HybridEngine implements ICrosswordEngine {
   private readonly GRID_SIZE: number;
   private readonly MAX_ATTEMPTS: number;
   private readonly TARGET_WORDS: number;
   private seed: number;
 
-  constructor(
-    gridSize = 20,
-    maxAttempts = 80,
-    targetWords = 8,
-  ) {
+  constructor(gridSize = 20, maxAttempts = 80, targetWords = 8, seed?: number) {
     this.GRID_SIZE = gridSize;
     this.MAX_ATTEMPTS = maxAttempts;
     this.TARGET_WORDS = targetWords;
-    // Initialize seed with current timestamp for different puzzles each time
-    this.seed = Date.now();
+    this.seed = seed ?? Date.now();
   }
 
-  /**
-   * crossword-logic Addition: Seeded random number generator
-   * Uses Linear Congruential Generator (LCG) algorithm for reproducible randomness
-   */
+  /** Generates a pseudo-random number between 0 and 1 using the current seed value. */
   private seededRandom(): number {
-    // LCG formula: seed = (a * seed + c) % m
-    this.seed = (this.seed * 1664525 + 1013904223) % 4294967296;
-    return this.seed / 4294967296;
+    this.seed = (this.seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+    return this.seed / LCG_MODULUS;
   }
 
   /**
-   * crossword-logic Addition: Main puzzle generation algorithm
-   * 1. Places first word in center horizontally
-   * 2. Iteratively finds intersections with existing words
-   * 3. Places new words at valid intersection points
-   * 4. Falls back to non-intersecting placement if needed
+   * MAIN ENTRY POINT: Orchestrates the puzzle generation pipeline.
+   * Decomposed into single-responsibility helper methods.
    */
-  generate(rawEntries: Array<{ word: string; clue: string }>): EngineResult {
-    // Normalize and shuffle words with seeded randomness
-    const entries = this.normaliseAndShuffle(rawEntries);
+  generate(rawEntries: Array<{ word: string; clue: string }>): IEngineResult & { unplacedWords: string[] } {
+    const { sortedEntries, rejectedWords } = this.prepareEntries(rawEntries);
     
-    // Return empty result if no valid words provided
-    if (entries.length === 0) {
-      return { rows: 0, cols: 0, solution: [], placements: [] };
+    if (sortedEntries.length === 0) {
+      return { rows: 0, cols: 0, solution: [], placements: [], unplacedWords: rejectedWords };
     }
 
-    // Initialize empty grid
-    let grid = this.createEmptyGrid(this.GRID_SIZE);
-    const placed: CandidatePlacement[] = [];
+    const context = this.createPlacementContext();
+    const placed = this.placeAnchorWord(context, sortedEntries);
+    
+    this.runPlacementLoop(context, sortedEntries, placed);
+    
+    return this.buildResult(context, placed, sortedEntries, rejectedWords);
+  }
 
-    // Place first word horizontally in center of grid
+  /**
+   * VALIDATION & NORMALIZATION: Single pass to clean, validate, and sort words.
+   * Tracks ALL rejected words (including oversized) consistently.
+   */
+  private prepareEntries(rawEntries: Array<{ word: string; clue: string }>): {
+    sortedEntries: Array<{ word: string; clue: string }>;
+    rejectedWords: string[];
+  } {
+    const rejectedWords: string[] = [];
+    const seen = new Set<string>();
+    const validEntries: Array<{ word: string; clue: string }> = [];
+
+    for (const entry of rawEntries) {
+      const normalized = entry.word.toUpperCase().replace(/[^\p{L}]/gu, '');
+      
+      if (normalized.length < MIN_WORD_LENGTH || normalized.length > this.GRID_SIZE) {
+        rejectedWords.push(normalized);
+        continue;
+      }
+      if (seen.has(normalized)) continue; 
+      
+      seen.add(normalized);
+      validEntries.push({ word: normalized, clue: entry.clue });
+    }
+
+    return { sortedEntries: this.sortEntriesStrategically(validEntries), rejectedWords };
+  }
+
+  /** Sorts words by length (longest first) then by common letter frequency to optimize intersection potential. */
+  private sortEntriesStrategically(entries: Array<{ word: string; clue: string }>): Array<{ word: string; clue: string }> {
+    const letterFrequency = new Map<string, number>();
+    for (const entry of entries) {
+      for (const letter of entry.word) {
+        letterFrequency.set(letter, (letterFrequency.get(letter) || 0) + 1);
+      }
+    }
+
+    return entries.sort((a, b) => {
+      if (b.word.length !== a.word.length) return b.word.length - a.word.length;
+      const aCommon = a.word.split('').filter(l => (letterFrequency.get(l) || 0) >= 2).length;
+      const bCommon = b.word.split('').filter(l => (letterFrequency.get(l) || 0) >= 2).length;
+      return bCommon - aCommon;
+    });
+  }
+
+  /** Initializes an empty grid with tracking structures for the placement algorithm. */
+  private createPlacementContext(): PlacementContext {
+    return {
+      grid: Array.from({ length: this.GRID_SIZE }, () => Array.from({ length: this.GRID_SIZE }, () => null)),
+      letterIndex: new Map(),
+      placedWordsSet: new Set(),
+      gridSize: this.GRID_SIZE,
+    };
+  }
+
+  /** Places the first (longest) word horizontally in the center of the grid as the anchor. */
+  private placeAnchorWord(context: PlacementContext, entries: Array<{ word: string; clue: string }>): CandidatePlacement[] {
     const first = entries[0];
-    const startRow = Math.floor(this.GRID_SIZE / 2);
-    const startCol = Math.floor((this.GRID_SIZE - first.word.length) / 2);
-    grid = this.placeWord(grid, first.word, startRow, startCol, 'across');
-    placed.push({ ...first, row: startRow, col: startCol, direction: 'across' });
+    const candidate: CandidatePlacement = {
+      ...first,
+      row: Math.floor(context.gridSize / 2),
+      col: Math.floor((context.gridSize - first.word.length) / 2),
+      direction: 'across',
+    };
 
-    // Attempt to place remaining words with intersection constraints
-    for (
-      let attempt = 0;
-      attempt < this.MAX_ATTEMPTS && placed.length < this.TARGET_WORDS;
-      attempt++
-    ) {
+    context.grid = this.placeWordOnGrid(context.grid, candidate);
+    context.placedWordsSet.add(first.word);
+    context.letterIndex = this.buildLetterIndex(context.grid);
+
+    return [candidate];
+  }
+
+  /** Iteratively attempts to place remaining words by finding valid intersections with already-placed words. */
+  private runPlacementLoop(context: PlacementContext, entries: Array<{ word: string; clue: string }>, placed: CandidatePlacement[]): void {
+    for (let attempt = 0; attempt < this.MAX_ATTEMPTS && placed.length < this.TARGET_WORDS; attempt++) {
       let placedAny = false;
 
       for (let i = 1; i < entries.length && placed.length < this.TARGET_WORDS; i++) {
         const entry = entries[i];
-        // Skip if word already placed
-        if (placed.some((p) => p.word === entry.word)) continue;
+        if (context.placedWordsSet.has(entry.word)) continue;
 
-        // crossword-logic Addition: Pass all entries for smart scoring
-        // Find all valid placements with intersections and strategic scores
-        const candidates = this.findAllPlacements(grid, entry, entries);
+        const candidates = this.findAllPlacements(context, entry, entries);
         if (candidates.length === 0) continue;
 
-        // crossword-logic Addition: Pick from top-scored candidates (not purely random)
-        // Select from top 30% of candidates to balance quality with randomness
-        const topCandidates = candidates.slice(0, Math.max(1, Math.ceil(candidates.length * 0.3)));
+        const topCandidates = candidates.slice(0, Math.max(1, Math.ceil(candidates.length * TOP_CANDIDATE_RATIO)));
         const chosen = topCandidates[Math.floor(this.seededRandom() * topCandidates.length)];
         
-        grid = this.placeWord(grid, entry.word, chosen.row, chosen.col, chosen.direction);
+        context.grid = this.placeWordOnGrid(context.grid, chosen);
         placed.push(chosen);
+        context.placedWordsSet.add(chosen.word);
+        context.letterIndex = this.buildLetterIndex(context.grid);
         placedAny = true;
       }
 
       if (!placedAny) break;
     }
+  }
 
-    // Validate we have at least some words placed
-    if (placed.length < 2) {
-      // Fallback: place second word vertically below first if intersection-based placement failed
-      if (entries.length > 1 && placed.length === 1) {
-        const second = entries[1];
-        const firstPos = placed[0];
-        const vertRow = firstPos.row + 2;
-        const vertCol = firstPos.col;
-        if (this.canPlaceFallback(grid, second.word, vertRow, vertCol, 'down')) {
-          grid = this.placeWord(grid, second.word, vertRow, vertCol, 'down');
-          placed.push({ ...second, row: vertRow, col: vertCol, direction: 'down' });
-        }
-      }
-    }
+  /** Compiles the final result by trimming empty grid borders, adjusting coordinates, and assigning clue numbers. */
+  private buildResult(
+    context: PlacementContext, 
+    placed: CandidatePlacement[], 
+    validEntries: Array<{ word: string; clue: string }>, 
+    rejectedWords: string[]
+  ): IEngineResult & { unplacedWords: string[] } {
+    const unplacedWords = [
+      ...rejectedWords,
+      ...validEntries.filter(e => !context.placedWordsSet.has(e.word)).map(e => e.word)
+    ];
 
-    const { trimmed, offsetRow, offsetCol } = this.trimGrid(grid);
-    const adjustedPlacements = placed.map((p) => ({
-      ...p,
-      row: p.row - offsetRow,
-      col: p.col - offsetCol,
-    }));
-
+    const { trimmed, offsetRow, offsetCol } = this.trimGrid(context.grid);
+    const adjustedPlacements = placed.map((p) => ({ ...p, row: p.row - offsetRow, col: p.col - offsetCol }));
     const numberedPlacements = this.assignClueNumbers(adjustedPlacements);
 
     return {
@@ -131,77 +208,66 @@ export class HybridEngine implements CrosswordEngine {
       cols: trimmed[0]?.length ?? 0,
       solution: trimmed,
       placements: numberedPlacements,
+      unplacedWords,
     };
   }
 
   /**
-   * crossword-logic Addition: Find all valid placements for a word with intelligent scoring
-   * Scans grid for existing letters that match word letters
-   * Scores each placement based on strategic value (intersections, position, future potential)
-   * Returns array sorted by score descending (best placements first)
+   * CANDIDATE GENERATION: Uses context and candidate objects to maintain <= 3 parameters.
    */
   private findAllPlacements(
-    grid: CrosswordCell[][],
+    context: PlacementContext,
     entry: { word: string; clue: string },
-    allEntries?: Array<{ word: string; clue: string }>,
+    allEntries: Array<{ word: string; clue: string }>
   ): CandidatePlacement[] {
     const candidates: CandidatePlacement[] = [];
-    const size = grid.length;
+    const checkedStarts = new Set<string>();
 
-    // Scan entire grid for potential intersection points
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const cell = grid[r][c];
-        if (cell === null) continue;
-
-        // Check each letter position in the word for potential match
-        for (let i = 0; i < entry.word.length; i++) {
-          if (entry.word[i] !== cell) continue;
-
-          // Try placing word horizontally (across)
-          const acrossCol = c - i;
-          if (acrossCol >= 0 && this.canPlace(grid, entry.word, r, acrossCol, 'across')) {
-            candidates.push({ ...entry, row: r, col: acrossCol, direction: 'across' });
+    for (let i = 0; i < entry.word.length; i++) {
+      const letter = entry.word[i];
+      const positions = context.letterIndex.get(letter) || [];
+      
+      for (const pos of positions) {
+        const acrossCol = pos.c - i;
+        const acrossKey = `a-${pos.r}-${acrossCol}`;
+        if (acrossCol >= 0 && acrossCol + entry.word.length <= context.gridSize && !checkedStarts.has(acrossKey)) {
+          const candidate = { ...entry, row: pos.r, col: acrossCol, direction: 'across' as Direction };
+          if (this.canPlace(context, candidate)) {
+            candidates.push(candidate);
+            checkedStarts.add(acrossKey);
           }
+        }
 
-          // Try placing word vertically (down)
-          const downRow = r - i;
-          if (downRow >= 0 && this.canPlace(grid, entry.word, downRow, c, 'down')) {
-            candidates.push({ ...entry, row: downRow, col: c, direction: 'down' });
+        const downRow = pos.r - i;
+        const downKey = `d-${downRow}-${pos.c}`;
+        if (downRow >= 0 && downRow + entry.word.length <= context.gridSize && !checkedStarts.has(downKey)) {
+          const candidate = { ...entry, row: downRow, col: pos.c, direction: 'down' as Direction };
+          if (this.canPlace(context, candidate)) {
+            candidates.push(candidate);
+            checkedStarts.add(downKey);
           }
         }
       }
     }
 
-    // crossword-logic Addition: Score each candidate placement for smart greedy selection
-    // Higher scores indicate better strategic placements
-    if (allEntries) {
-      for (const candidate of candidates) {
-        candidate.score = this.scorePlacement(grid, candidate, allEntries);
-      }
-      // Sort by score descending - best placements first
-      candidates.sort((a, b) => (b.score || 0) - (a.score || 0));
+    for (const candidate of candidates) {
+      candidate.score = this.scorePlacement(context, candidate, allEntries);
     }
 
-    return candidates;
+    return candidates.sort((a, b) => (b.score || 0) - (a.score || 0));
   }
 
-  private canPlace(
-    grid: CrosswordCell[][],
-    word: string,
-    startRow: number,
-    startCol: number,
-    direction: Direction,
-  ): boolean {
-    const size = grid.length;
+  /** Validates whether a word can be legally placed at the specified position without violating crossword rules. */
+  private canPlace(context: PlacementContext, candidate: CandidatePlacement): boolean {
+    const { grid, gridSize } = context;
+    const { word, row: startRow, col: startCol, direction } = candidate;
     const isAcross = direction === 'across';
     const len = word.length;
 
-    // Boundary checks
     if (isAcross) {
-      if (startCol < 0 || startCol + len > size || startRow < 0 || startRow >= size) return false;
+      if (startCol < 0 || startCol + len > gridSize || startRow < 0 || startRow >= gridSize) return false;
     } else {
-      if (startRow < 0 || startRow + len > size || startCol < 0 || startCol >= size) return false;
+      if (startRow < 0 || startRow + len > gridSize || startCol < 0 || startCol >= gridSize) return false;
     }
 
     const preRow = isAcross ? startRow : startRow - 1;
@@ -210,7 +276,7 @@ export class HybridEngine implements CrosswordEngine {
 
     const postRow = isAcross ? startRow : startRow + len;
     const postCol = isAcross ? startCol + len : startCol;
-    if (postRow < size && postCol < size && grid[postRow][postCol] !== null) return false;
+    if (postRow < gridSize && postCol < gridSize && grid[postRow][postCol] !== null) return false;
 
     let hasIntersection = false;
 
@@ -220,12 +286,12 @@ export class HybridEngine implements CrosswordEngine {
       const cell = grid[r][c];
 
       if (cell === null) {
-        if (isAcross) {
+        if (isAcross) { 
           if (r > 0 && grid[r - 1][c] !== null) return false;
-          if (r < size - 1 && grid[r + 1][c] !== null) return false;
+          if (r < gridSize - 1 && grid[r + 1][c] !== null) return false;
         } else {
           if (c > 0 && grid[r][c - 1] !== null) return false;
-          if (c < size - 1 && grid[r][c + 1] !== null) return false;
+          if (c < gridSize - 1 && grid[r][c + 1] !== null) return false;
         }
       } else if (cell === word[i]) {
         hasIntersection = true;
@@ -237,180 +303,103 @@ export class HybridEngine implements CrosswordEngine {
     return hasIntersection;
   }
 
-  /**
-   * crossword-logic Addition: Score a placement based on strategic value
-   * Higher scores = better placements
-   * Factors: future intersection potential, center proximity, letter match count
-   */
+  /** Calculates a strategic score for a placement based on future potential, center proximity, and letter matches. */
   private scorePlacement(
-    grid: CrosswordCell[][],
+    context: PlacementContext,
     candidate: CandidatePlacement,
-    allEntries: Array<{ word: string; clue: string }>,
+    allEntries: Array<{ word: string; clue: string }>
   ): number {
     let score = 0;
+    
+    score += this.countFutureIntersections(context, candidate, allEntries) * FUTURE_INTERSECTION_WEIGHT;
 
-    // BONUS 1: Placements that enable more future intersections (10 points each)
-    // This helps create denser, more interconnected puzzles
-    const futureIntersections = this.countFutureIntersections(
-      grid,
-      candidate.word,
-      candidate.row,
-      candidate.col,
-      candidate.direction,
-      allEntries,
-    );
-    score += futureIntersections * 10;
-
-    // BONUS 2: Placements closer to center create more compact layouts (max 10 points)
-    // Distance from center: 0 (center) to sqrt(2)*GRID_SIZE/2 (corner)
     const distanceFromCenter = this.distanceFromCenter(candidate.row, candidate.col);
-    const maxDistance = (this.GRID_SIZE / 2) * Math.SQRT2;
-    const centerBonus = Math.max(0, 10 - (distanceFromCenter / maxDistance) * 10);
-    score += centerBonus;
+    const maxDistance = (context.gridSize / 2) * Math.SQRT2;
+    score += Math.max(0, MAX_CENTER_BONUS - (distanceFromCenter / maxDistance) * MAX_CENTER_BONUS);
 
-    // BONUS 3: More letter matches = more intersections with existing words (5 points each)
-    // This creates tighter, more professional-looking grids
-    const letterMatches = this.countLetterMatches(
-      grid,
-      candidate.word,
-      candidate.row,
-      candidate.col,
-      candidate.direction,
-    );
-    score += letterMatches * 5;
+    score += this.countLetterMatches(context, candidate) * LETTER_MATCH_WEIGHT;
 
     return score;
   }
 
   /**
-   * crossword-logic Addition: Count how many future words can intersect at this placement
-   * Looks at unplaced words and checks if they share letters with candidate word
-   * Higher count means this placement "unlocks" more future possibilities
+   * Estimates future intersections using a letter-presence heuristic.
+   *
+   * Counts a word as a potential future intersection if it shares at least one
+   * letter with the candidate and that letter exists in the temporary grid.
+   * It intentionally skips placement validation, making the estimate faster
+   * but potentially optimistic.
    */
   private countFutureIntersections(
-    grid: CrosswordCell[][],
-    word: string,
-    startRow: number,
-    startCol: number,
-    direction: Direction,
-    allEntries: Array<{ word: string; clue: string }>,
+    context: PlacementContext,
+    candidate: CandidatePlacement,
+    allEntries: Array<{ word: string; clue: string }>
   ): number {
     let count = 0;
+    const { word, row: startRow, col: startCol, direction } = candidate;
     const isAcross = direction === 'across';
-
-    // Create temporary grid with this word placed
-    const tempGrid = grid.map((row) => [...row]);
+    
+    const tempGrid = context.grid.map((row) => [...row]);
     for (let i = 0; i < word.length; i++) {
       const r = isAcross ? startRow : startRow + i;
       const c = isAcross ? startCol + i : startCol;
-      if (tempGrid[r][c] === null) {
-        tempGrid[r][c] = word[i];
-      }
+      if (tempGrid[r][c] === null) tempGrid[r][c] = word[i];
     }
 
-    // Check each unplaced word for potential intersections
+    const tempIndex = this.buildLetterIndex(tempGrid);
+
     for (const entry of allEntries) {
-      if (entry.word === word) continue; // Skip self
+      if (entry.word === word || context.placedWordsSet.has(entry.word)) continue;
 
-      // Quick check: do words share any letters?
-      const sharedLetters = new Set(
-        word.split('').filter((letter) => entry.word.includes(letter)),
-      );
-
-      // If they share letters, they could potentially intersect
-      if (sharedLetters.size > 0) {
-        // Count how many valid placements exist for this word on temp grid
-        const placements = this.findAllPlacements(tempGrid, entry);
-        if (placements.length > 0) {
-          count++;
-        }
+      const sharedLetters = new Set(word.split('').filter((letter) => entry.word.includes(letter)));
+      if (sharedLetters.size > 0 && Array.from(sharedLetters).some(letter => tempIndex.has(letter))) {
+        count++;
       }
     }
 
     return count;
   }
 
-  /**
-   * crossword-logic Addition: Calculate Euclidean distance from grid center
-   * Used to favor placements near center for compact, professional-looking layouts
-   */
+  /** Calculates the Euclidean distance from a grid position to the center point. */
   private distanceFromCenter(row: number, col: number): number {
-    const centerRow = this.GRID_SIZE / 2;
-    const centerCol = this.GRID_SIZE / 2;
-    const deltaRow = row - centerRow;
-    const deltaCol = col - centerCol;
-    return Math.sqrt(deltaRow * deltaRow + deltaCol * deltaCol);
+    const center = this.GRID_SIZE / 2;
+    return Math.sqrt(Math.pow(row - center, 2) + Math.pow(col - center, 2));
   }
 
-  /**
-   * crossword-logic Addition: Count number of letter matches with existing grid
-   * More matches = more intersections = denser puzzle
-   */
-  private countLetterMatches(
-    grid: CrosswordCell[][],
-    word: string,
-    startRow: number,
-    startCol: number,
-    direction: Direction,
-  ): number {
+  /** Counts how many letters in the candidate word match existing letters on the grid at the proposed position. */
+  private countLetterMatches(context: PlacementContext, candidate: CandidatePlacement): number {
     let matches = 0;
+    const { grid } = context;
+    const { word, row: startRow, col: startCol, direction } = candidate;
     const isAcross = direction === 'across';
-
+    
     for (let i = 0; i < word.length; i++) {
       const r = isAcross ? startRow : startRow + i;
       const c = isAcross ? startCol + i : startCol;
-      const cell = grid[r][c];
-
-      // Count cells where word letter matches existing grid letter
-      if (cell !== null && cell === word[i]) {
-        matches++;
-      }
+      if (grid[r][c] !== null && grid[r][c] === word[i]) matches++;
     }
-
     return matches;
   }
 
-  // Fallback placement for words that don't intersect via standard method
-  private canPlaceFallback(
-    grid: CrosswordCell[][],
-    word: string,
-    startRow: number,
-    startCol: number,
-    direction: Direction,
-  ): boolean {
-    const size = grid.length;
-    const isAcross = direction === 'across';
-    const len = word.length;
-
-    // Only allow if grid cell is empty
-    if (isAcross) {
-      if (startCol < 0 || startCol + len > size || startRow < 0 || startRow >= size) return false;
-    } else {
-      if (startRow < 0 || startRow + len > size || startCol < 0 || startCol >= size) return false;
+  /** Builds a spatial index mapping each letter to all grid positions where it appears for fast lookups. */
+  private buildLetterIndex(grid: CrosswordCell[][]): Map<string, { r: number; c: number }[]> {
+    const index = new Map<string, { r: number; c: number }[]>();
+    for (let r = 0; r < grid.length; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        const cell = grid[r][c];
+        if (cell !== null) {
+          if (!index.has(cell)) index.set(cell, []);
+          index.get(cell)!.push({ r, c });
+        }
+      }
     }
-
-    // Check all cells in path are empty
-    for (let i = 0; i < len; i++) {
-      const r = isAcross ? startRow : startRow + i;
-      const c = isAcross ? startCol + i : startCol;
-      if (grid[r][c] !== null) return false;
-    }
-
-    return true;
+    return index;
   }
 
-  private createEmptyGrid(size: number): CrosswordCell[][] {
-    return Array.from({ length: size }, () => Array.from({ length: size }, () => null));
-  }
-
-  private placeWord(
-    grid: CrosswordCell[][],
-    word: string,
-    row: number,
-    col: number,
-    direction: Direction,
-  ): CrosswordCell[][] {
+  /** Writes a word into the grid immutably and returns a new grid reference with the placement. */
+  private placeWordOnGrid(grid: CrosswordCell[][], candidate: CandidatePlacement): CrosswordCell[][] {
     const next = grid.map((r) => [...r]);
+    const { word, row, col, direction } = candidate;
     for (let i = 0; i < word.length; i++) {
       const r = direction === 'across' ? row : row + i;
       const c = direction === 'across' ? col + i : col;
@@ -419,14 +408,11 @@ export class HybridEngine implements CrosswordEngine {
     return next;
   }
 
-  private trimGrid(grid: CrosswordCell[][]): {
-    trimmed: CrosswordCell[][];
-    offsetRow: number;
-    offsetCol: number;
-  } {
+  /** Removes empty border rows and columns from the grid to minimize the final output size. */
+  private trimGrid(grid: CrosswordCell[][]): { trimmed: CrosswordCell[][]; offsetRow: number; offsetCol: number } {
     let minRow = grid.length, maxRow = -1;
     let minCol = grid[0]?.length ?? 0, maxCol = -1;
-
+    
     for (let r = 0; r < grid.length; r++) {
       for (let c = 0; c < grid[r].length; c++) {
         if (grid[r][c] !== null) {
@@ -447,21 +433,15 @@ export class HybridEngine implements CrosswordEngine {
     return { trimmed, offsetRow: minRow, offsetCol: minCol };
   }
 
-  private assignClueNumbers(
-    placements: CandidatePlacement[],
-  ): EngineResult['placements'] {
-    const sorted = [...placements].sort((a, b) =>
-      a.row !== b.row ? a.row - b.row : a.col - b.col,
-    );
-
+  /** Assigns sequential clue numbers (1, 2, 3...) to placements based on top-to-bottom, left-to-right order. */
+  private assignClueNumbers(placements: CandidatePlacement[]): IEngineResult['placements'] {
+    const sorted = [...placements].sort((a, b) => a.row !== b.row ? a.row - b.row : a.col - b.col);
     const cellNumberMap = new Map<string, number>();
     let next = 1;
 
     for (const p of sorted) {
       const key = `${p.row},${p.col}`;
-      if (!cellNumberMap.has(key)) {
-        cellNumberMap.set(key, next++);
-      }
+      if (!cellNumberMap.has(key)) cellNumberMap.set(key, next++);
     }
 
     return sorted.map((p) => ({
@@ -472,69 +452,5 @@ export class HybridEngine implements CrosswordEngine {
       direction: p.direction,
       number: cellNumberMap.get(`${p.row},${p.col}`)!,
     }));
-  }
-
-  /**
-   * crossword-logic Addition: Normalize and strategically order words with seeded randomness
-   * 1. Converts to uppercase and preserves Unicode letters (umlauts, accents)
-   * 2. Filters duplicates and single-letter words
-   * 3. Sorts by strategic criteria (length, common letters)
-   * 4. Shuffles with seeded random for different arrangements each time
-   * Supports multilingual: German (Ä, Ö, Ü, ß), French (é, è, ê, ç), etc.
-   */
-  private normaliseAndShuffle(
-    raw: Array<{ word: string; clue: string }>,
-  ): Array<{ word: string; clue: string }> {
-    const seen = new Set<string>();
-    
-    // Filter and normalize word entries
-    // Unicode regex \p{L} preserves letters from any language
-    let entries = raw
-      .map((e) => {
-        // Keep only Unicode letters (supports accents, umlauts)
-        const normalized = e.word.toUpperCase().replace(/[^\p{L}]/gu, '');
-        return { word: normalized, clue: e.clue };
-      })
-      .filter((e) => {
-        // Reject single letters and duplicates
-        if (e.word.length <= 1 || seen.has(e.word)) return false;
-        seen.add(e.word);
-        return true;
-      });
-
-    // crossword-logic Addition: Calculate letter frequency across all words
-    // Words with common letters are easier to intersect
-    const letterFrequency = new Map<string, number>();
-    for (const entry of entries) {
-      for (const letter of entry.word) {
-        letterFrequency.set(letter, (letterFrequency.get(letter) || 0) + 1);
-      }
-    }
-
-    // crossword-logic Addition: Strategic sorting for better puzzle generation
-    entries.sort((a, b) => {
-      // Priority 1: Longer words first (more placement flexibility)
-      if (b.word.length !== a.word.length) {
-        return b.word.length - a.word.length;
-      }
-
-      // Priority 2: Words with more common letters (easier to intersect)
-      const aCommonLetters = a.word
-        .split('')
-        .filter((letter) => (letterFrequency.get(letter) || 0) >= 2).length;
-      const bCommonLetters = b.word
-        .split('')
-        .filter((letter) => (letterFrequency.get(letter) || 0) >= 2).length;
-      
-      return bCommonLetters - aCommonLetters;
-    });
-
-    // Fisher-Yates shuffle with seeded random
-    for (let i = entries.length - 1; i > 0; i--) {
-      const j = Math.floor(this.seededRandom() * (i + 1));
-      [entries[i], entries[j]] = [entries[j], entries[i]];
-    }
-
-    return entries;
   }
 }

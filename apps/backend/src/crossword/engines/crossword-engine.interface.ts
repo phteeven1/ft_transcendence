@@ -1,12 +1,12 @@
 import { CrosswordCell, CrosswordPlacement } from '../crossword.types';
 
-export type EngineResult = {
+export type IEngineResult = {
   rows: number;
   cols: number;
   solution: CrosswordCell[][];
   placements: CrosswordPlacement[];
 };
 
-export interface CrosswordEngine {
-  generate(entries: Array<{ word: string; clue: string }>): EngineResult;
+export interface ICrosswordEngine {
+  generate(entries: Array<{ word: string; clue: string }>): IEngineResult;
 }
