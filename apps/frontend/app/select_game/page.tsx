@@ -42,15 +42,15 @@ import PuzzleWindow from './_components/puzzle-window';
 
 function getStartedGameRoute(
   gameName: string,
-): '/play_game' | '/word-building-scaffold' | '/word-soup-scaffold' {
+): '/play_game' | '/word_building_scaffold' | '/word_soup_scaffold' {
   const normalizedName = gameName.trim().toLowerCase();
 
   if (normalizedName === 'word building') {
-    return '/word-building-scaffold';
+    return '/word_building_scaffold';
   }
 
   if (normalizedName === 'word soup') {
-    return '/word-soup-scaffold';
+    return '/word_soup_scaffold';
   }
 
   return '/play_game';

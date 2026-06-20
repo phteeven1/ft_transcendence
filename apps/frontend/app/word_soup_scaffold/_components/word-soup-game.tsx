@@ -1,12 +1,12 @@
 'use client';
 
 /*
-  Orchestrator for the Word Building scaffold.
+  Orchestrator for the Word Soup scaffold.
   Responsibilities:
   - Reads gameId and playerId from URL params
-  - Fetches game, players, and vocabulary on mount
-  - Owns trueCourt and visibleCourt state
-  - Provides fillTrueCourtFromVocabulary() and fillVisibleCourtWithX() scaffold handles
+  - Fetches game and players on mount
+  - Owns trueCourt and visibleCourt state, both populated by the backend
+    via POST /games/:id/initCourt (see games.service.ts: initWordSoupCourt)
   - Wires tile clicks: client emits tile:click → server broadcasts game:tileRevealed
     → all clients copy trueCourt[row][col] into visibleCourt[row][col]
   - Handles Leave Game (one player leaves) and Game Over (ends game for all)
@@ -15,9 +15,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { gamesApi, groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
+import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
 import type { Game, Player } from '../../types';
-import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useAuth } from '../../context/auth-context';
 import { clearPlayerSession } from '@/lib/player-session';
@@ -28,12 +27,15 @@ import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
 import type { CourtCell } from './court-tile';
 
-const COURT_SIZE = 16;
+// ── Grid dimensions — must match COURT_COLS / COURT_ROWS in game-court.tsx ──
+const COURT_COLS = 18;
+const COURT_ROWS = 10;
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Creates a blank COURT_SIZE × COURT_SIZE grid of CourtCells.
+// Creates a blank COURT_ROWS × COURT_COLS grid of CourtCells.
 function createEmptyCourt(): CourtCell[][] {
-  return Array.from({ length: COURT_SIZE }, () =>
-    Array.from({ length: COURT_SIZE }, () => ({ char: '' })),
+  return Array.from({ length: COURT_ROWS }, () =>
+    Array.from({ length: COURT_COLS }, () => ({ char: '' })),
   );
 }
 
@@ -44,7 +46,7 @@ async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
   return results.filter((p): p is Player => p !== null);
 }
 
-export default function WordBuildingGame() {
+export default function WordSoupGame() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { logoutPlayer } = useAuth();
@@ -55,17 +57,14 @@ export default function WordBuildingGame() {
 
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [vocabulary, setVocabulary] = useState<VocabularyDto | null>(null);
   const [loadingGame, setLoadingGame] = useState(true);
-  const [loadingVocabulary, setLoadingVocabulary] = useState(true);
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
 
-  // trueCourt: the correct layout, filled by fillTrueCourtFromVocabulary().
+  // trueCourt: the correct layout, received from the backend on mount.
   // visibleCourt: what players see, updated tile by tile via WebSocket reveals.
   const [trueCourt, setTrueCourt] = useState<CourtCell[][]>(createEmptyCourt);
   const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(createEmptyCourt);
-
 
   // --- WebSocket ---
 
@@ -121,42 +120,27 @@ export default function WordBuildingGame() {
     load();
   }, [gameId, playerId, router]);
 
+  // Fetch both courts from the backend once the game is loaded.
+  // The backend runs initWordSoupCourt which populates trueCourt from
+  // the group's active vocabulary and fills visibleCourt with placeholder chars.
+  // Teammates replace those algorithms in games.service.ts without touching this file.
   useEffect(() => {
     if (!game) return;
 
     let isMounted = true;
 
-    const loadVocabulary = async () => {
-      setLoadingVocabulary(true);
-      try {
-        const freshGroup = await groupsApi.getById(game.inGroup);
-        if (!freshGroup.currentVocabulary) {
-          if (isMounted) setVocabulary(null);
-          return;
-        }
-        const loaded = await vocabulariesApi.getById(freshGroup.currentVocabulary);
-        if (isMounted) setVocabulary(loaded);
-      } catch (error) {
-        console.error('WordBuildingGame: failed to load vocabulary', error);
-        if (isMounted) setVocabulary(null);
-      } finally {
-        if (isMounted) setLoadingVocabulary(false);
-      }
-    };
-
     const loadCourt = async () => {
       try {
-        const { trueCourt, visibleCourt } = await gamesApi.initWordBuildingCourt(game.id);
+        const { trueCourt, visibleCourt } = await wordSoupApi.initCourt(game.id);
         if (isMounted) {
           setTrueCourt(trueCourt);
           setVisibleCourt(visibleCourt);
         }
       } catch (error) {
-        console.error('WordBuildingGame: failed to init court', error);
+        console.error('WordSoupGame: failed to init court', error);
       }
     };
 
-    loadVocabulary();
     loadCourt();
 
     return () => {
@@ -170,8 +154,8 @@ export default function WordBuildingGame() {
 
   const handleGameOver = async () => {
     await gamesApi.finish({ gameId });
-    // game:finished will be broadcast by the backend to all players,
-    // which triggers the gameFinished effect above for everyone.
+    // game:finished is broadcast by the backend to all players,
+    // which triggers the gameFinished effect above for everyone simultaneously.
   };
 
   const abandonPlay = async () => {
@@ -190,7 +174,7 @@ export default function WordBuildingGame() {
 
   // --- Render ---
 
-  if (loadingGame || !game || loadingVocabulary) {
+  if (loadingGame || !game) {
     return (
       <div className="min-h-screen bg-emerald-200 flex items-center justify-center">
         <p className="text-gray-600">Loading game...</p>
@@ -207,7 +191,6 @@ export default function WordBuildingGame() {
             game={game}
             players={players}
             playerId={playerId}
-            vocabulary={vocabulary}
           />
 
           <div className="flex">

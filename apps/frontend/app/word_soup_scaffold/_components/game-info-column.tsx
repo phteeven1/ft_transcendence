@@ -1,16 +1,14 @@
 'use client';
 
-import type { Game, Player } from '../../../types';
-import type { VocabularyDto } from '@/lib/api/vocabularies/types';
+import type { Game, Player } from '@/app/types';
 
 interface Props {
   game: Game;
   players: Player[];
   playerId: number;
-  vocabulary: VocabularyDto | null;
 }
 
-export default function GameInfoColumn({ game, players, playerId, vocabulary }: Props) {
+export default function GameInfoColumn({ game, players, playerId }: Props) {
   const initiatorPlayer = players.find((p) => p.id === game.initiatedBy);
   const startedTime = game.startedTime ? new Date(game.startedTime) : null;
 
@@ -47,15 +45,6 @@ export default function GameInfoColumn({ game, players, playerId, vocabulary }: 
             </li>
           ))}
         </ul>
-      </div>
-      <div>
-        <span className="text-xs text-gray-400 uppercase tracking-wide">Vocabulary</span>
-        <p className="text-gray-800 font-medium">
-          {vocabulary ? vocabulary.name : 'No active vocabulary'}
-        </p>
-        <p className="text-sm text-gray-500">
-          {vocabulary ? `${vocabulary.wordCount} words loaded` : 'Waiting for a group vocabulary'}
-        </p>
       </div>
     </div>
   );

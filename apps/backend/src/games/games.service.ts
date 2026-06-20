@@ -230,46 +230,4 @@ export class GamesService {
     this.gateway.emitGameFinished(gameId);
     return result;
   }
-
-  async initWordBuildingCourt(gameId: number): Promise<{
-    trueCourt: { char: string }[][];
-    visibleCourt: { char: string }[][];
-  }> {
-    const game = await this.findById(gameId);
-    if (!game) throw new Error(`Game ${gameId} not found`);
-
-    const group = await this.prisma.group.findUnique({
-      where: { id: game.inGroup },
-      include: { currentVocabulary: true },
-    });
-
-    const COURT_SIZE = 16;
-    const empty = () =>
-      Array.from({ length: COURT_SIZE }, () =>
-        Array.from({ length: COURT_SIZE }, () => ({ char: '' })),
-      );
-
-    const trueCourt = empty();
-    const visibleCourt = empty();
-
-    // Placeholder: teammate replaces this with the real crossword algorithm.
-    if (group?.currentVocabulary) {
-      const text = group.currentVocabulary.words.join(' ').toUpperCase();
-      const totalCells = COURT_SIZE * COURT_SIZE;
-      for (let i = 0; i < totalCells; i++) {
-        const row = Math.floor(i / COURT_SIZE);
-        const col = i % COURT_SIZE;
-        trueCourt[row][col] = { char: text[i % text.length] ?? '' };
-      }
-    }
-
-    // Placeholder: teammate replaces this with the real clutter algorithm.
-    for (let row = 0; row < COURT_SIZE; row++) {
-      for (let col = 0; col < COURT_SIZE; col++) {
-        visibleCourt[row][col] = { char: 'X' };
-      }
-    }
-
-    return { trueCourt, visibleCourt };
-  }
 }

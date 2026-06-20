@@ -5,36 +5,45 @@
   Size is local state: set once at mount based on screen width, then only
   changed by the player clicking S/M/L. Rotation and resize do not affect it.
   Each player has their own size — it is not shared via WebSocket.
+
+  Grid dimensions are controlled by two constants at the top of this file:
+  COURT_COLS and COURT_ROWS. Change these to resize the grid for this game.
+  The matching constants in word-building-game.tsx must be kept in sync.
 */
 
 import { useState, useEffect } from 'react';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
 
-const COURT_TILE_COUNT = 16;
+// ── Grid dimensions ──────────────────────────────────────────────────────────
+const COURT_COLS = 18;
+const COURT_ROWS = 10;
+// ─────────────────────────────────────────────────────────────────────────────
+
 const COURT_TILE_GAP = 4;
 
 type CourtSize = 'S' | 'M' | 'L';
 
 const SIZE_CONFIG: Record<CourtSize, { tileSize: number; padding: number; fontSize: number }> = {
-  S: { tileSize: 20, padding: 2 , fontSize: 16 },
-  M: { tileSize: 32, padding: 3 , fontSize: 16 },
-  L: { tileSize: 46, padding: 4 , fontSize: 22 },
+  S: { tileSize: 20, padding: 2, fontSize: 16 },
+  M: { tileSize: 32, padding: 3, fontSize: 16 },
+  L: { tileSize: 46, padding: 4, fontSize: 22 },
 };
 
-function computeGridSize(size: CourtSize): number {
+function computeGridWidth(size: CourtSize): number {
   const { tileSize, padding } = SIZE_CONFIG[size];
-  return (
-    COURT_TILE_COUNT * tileSize +
-    (COURT_TILE_COUNT - 1) * COURT_TILE_GAP +
-    padding * 2
-  );
+  return COURT_COLS * tileSize + (COURT_COLS - 1) * COURT_TILE_GAP + padding * 2;
 }
 
-// Detect default size once at mount. Below lg breakpoint (1024px) → M, else → L.
+function computeGridHeight(size: CourtSize): number {
+  const { tileSize, padding } = SIZE_CONFIG[size];
+  return COURT_ROWS * tileSize + (COURT_ROWS - 1) * COURT_TILE_GAP + padding * 2;
+}
+
+// Detect default size once at mount. Below lg breakpoint (1024px) → S, else → L.
 function getDefaultSize(): CourtSize {
   if (typeof window === 'undefined') return 'L';
-  return window.innerWidth < 1024 ? 'S' : 'L';
+  return window.innerWidth < 1024 ? 'M' : 'L';
 }
 
 interface Props {
@@ -51,7 +60,8 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
   }, []);
 
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
-  const gridSize = computeGridSize(courtSize);
+  const gridWidth = computeGridWidth(courtSize);
+  const gridHeight = computeGridHeight(courtSize);
 
   return (
     <div className="flex flex-col gap-2">
@@ -77,9 +87,9 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
       <div
         className="rounded-2xl bg-white shadow-xl"
         style={{
-          width: `${gridSize}px`,
-          minWidth: `${gridSize}px`,
-          height: `${gridSize}px`,
+          width: `${gridWidth}px`,
+          minWidth: `${gridWidth}px`,
+          height: `${gridHeight}px`,
           flexShrink: 0,
         }}
       >
@@ -88,8 +98,8 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
           style={{
             padding: `${padding}px`,
             gap: `${COURT_TILE_GAP}px`,
-            gridTemplateColumns: `repeat(${COURT_TILE_COUNT}, ${tileSize}px)`,
-            gridTemplateRows: `repeat(${COURT_TILE_COUNT}, ${tileSize}px)`,
+            gridTemplateColumns: `repeat(${COURT_COLS}, ${tileSize}px)`,
+            gridTemplateRows: `repeat(${COURT_ROWS}, ${tileSize}px)`,
             gridAutoFlow: 'row',
           }}
         >

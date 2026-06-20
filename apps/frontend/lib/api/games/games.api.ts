@@ -56,11 +56,4 @@ export const gamesApi = {
       body: JSON.stringify(input),
     });
   },
-
-  initWordBuildingCourt(gameId: number): Promise<{
-    trueCourt: { char: string }[][];
-    visibleCourt: { char: string }[][];
-  }> {
-    return apiRequest(`/games/${gameId}/initCourt`, { method: 'POST' });
-  },
 };
