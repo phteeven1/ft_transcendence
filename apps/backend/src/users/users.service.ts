@@ -15,6 +15,11 @@ export type User = {
   isMemberOf: number[];
   isAdminOf: number[];
   currentGroup?: number;
+  realName?: string;
+  relationshipComment?: string;
+  showRealName: boolean;
+  showEmail: boolean;
+  showRelationshipComment: boolean;
 };
 
 @Injectable()
@@ -87,5 +92,50 @@ export class UsersService {
     await this.prisma.groupMembership.deleteMany({
       where: { userId, groupId, role: GroupRole.ADMIN },
     });
+  }
+
+  async updateProfile(
+    userId: number,
+    data: {
+      userName?: string;
+      realName?: string;
+      relationshipComment?: string;
+      showRealName: boolean;
+      showEmail: boolean;
+      showRelationshipComment: boolean;
+    },
+  ): Promise<User> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.userName ? { name: data.userName } : {}),
+        realName: data.realName,
+        relationshipComment: data.relationshipComment,
+        showRealName: data.showRealName,
+        showEmail: data.showEmail,
+        showRelationshipComment: data.showRelationshipComment,
+      },
+      ...userWithMemberships,
+    });
+    return toApiUser(user);
+  }
+
+  async changePassword(
+    userId: number,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      ...userWithMemberships,
+    });
+    if (!user || user.password !== oldPassword) {
+      throw new Error('WRONG_PASSWORD');
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: newPassword },
+    });
+    return { success: true };
   }
 }

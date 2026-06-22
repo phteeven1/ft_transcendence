@@ -9,6 +9,8 @@ export { vocabulariesApi } from './vocabularies';
 export { gamesApi } from './games';
 export { invitationsApi } from './invitations';
 export { crosswordApi } from './crossword';
+export { wordBuildingApi } from './games/word-building.api';
+export { wordSoupApi } from './games/word-soup.api';
 
 export type { UserDto, RegisterUserInput, SignInUserInput } from './users';
 export type {
