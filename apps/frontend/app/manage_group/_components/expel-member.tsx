@@ -94,7 +94,7 @@ export default function ExpelMember({
     <>
       <button
         onClick={handleOpen}
-        className="bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-4 rounded transition-colors"
       >
         Expel Member
       </button>

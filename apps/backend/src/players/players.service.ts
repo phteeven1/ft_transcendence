@@ -6,7 +6,7 @@ import {
   OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
-import { toSafePlayer } from '../common/mappers';
+import { toSafePlayer, playerWithSession } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type Player = {
@@ -17,6 +17,8 @@ export type Player = {
   passQuestion: string;
   passAnswer: string;
   currentGameId: number | null;
+  lastSignout: string;
+  sessionExpiresAt: string | null;
 };
 
 export type PlayerSessionDto = {
@@ -60,6 +62,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
         passQuestion,
         passAnswer,
       },
+      ...playerWithSession,
     });
     return toSafePlayer(player);
   }
@@ -72,6 +75,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
       const player = await this.prisma.player.update({
         where: { id: playerId },
         data: { name },
+        ...playerWithSession,
       });
       return toSafePlayer(player);
     } catch {
@@ -88,6 +92,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
       const player = await this.prisma.player.update({
         where: { id: playerId },
         data: { passQuestion, passAnswer },
+        ...playerWithSession,
       });
       return toSafePlayer(player);
     } catch {
@@ -113,6 +118,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   ): Promise<Omit<Player, 'passAnswer'> | undefined> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
+      ...playerWithSession,
     });
     return player ? toSafePlayer(player) : undefined;
   }
@@ -123,6 +129,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   ): Promise<Omit<Player, 'passAnswer'>[]> {
     const players = await this.prisma.player.findMany({
       where: { ofUserId: ofUser, inGroupId: inGroup },
+      ...playerWithSession,
     });
     return players.map((p) => toSafePlayer(p));
   }
@@ -130,6 +137,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   async findByGroup(inGroup: number): Promise<Omit<Player, 'passAnswer'>[]> {
     const players = await this.prisma.player.findMany({
       where: { inGroupId: inGroup },
+      ...playerWithSession,
     });
     return players.map((p) => toSafePlayer(p));
   }
@@ -224,6 +232,10 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   }
 
   async clearSession(playerId: number): Promise<void> {
+    await this.prisma.player.update({
+      where: { id: playerId },
+      data: { lastSignout: new Date() },
+    });
     await this.prisma.playerSession.deleteMany({ where: { playerId } });
     await this.clearCurrentGame(playerId);
   }

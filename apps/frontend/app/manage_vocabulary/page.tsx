@@ -140,7 +140,7 @@ export default function ManageVocabulary() {
             />
             <button
               onClick={() => router.push('/manage_group')}
-              className="w-full bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
+              className="w-full bg-gray-400 text-white p-2 rounded hover:bg-gray-500"
             >
               Back to Group
             </button>
