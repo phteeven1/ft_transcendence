@@ -1,9 +1,15 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UseInterceptors, UploadedFile
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { VocabulariesService } from './vocabularies.service';
+import { ExtractionService } from './extraction.service';
 
 @Controller('vocabularies')
 export class VocabulariesController {
-  constructor(private readonly vocabulariesService: VocabulariesService) {}
+  constructor(
+		private readonly vocabulariesService: VocabulariesService,
+		private readonly extractionService: ExtractionService,
+	) {}
 
   @Post('create')
   create(
@@ -44,6 +50,12 @@ export class VocabulariesController {
     return this.vocabulariesService.remove(body.vocabularyId);
   }
 
+  @Post('extract')
+  @UseInterceptors(FileInterceptor('file'))
+  async extract(@UploadedFile() file:  Express.Multer.File) {
+    return this.extractionService.extractVocab(file);
+  }
+
   @Get('group/:groupId')
   findByGroup(@Param('groupId') groupId: string) {
     return this.vocabulariesService.findByGroup(Number(groupId));
@@ -53,4 +65,5 @@ export class VocabulariesController {
   findById(@Param('id') id: string) {
     return this.vocabulariesService.findById(Number(id));
   }
+
 }

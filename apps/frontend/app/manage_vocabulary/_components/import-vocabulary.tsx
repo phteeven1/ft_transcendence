@@ -60,32 +60,21 @@ export default function ImportVocabulary({ onImported }: Props) {
   };
 
   return (
-    <>
-      <button
-        onClick={handleImport}
-        className="w-full bg-emerald-500 text-white p-2 rounded hover:bg-emerald-600"
-      >
-        Import Vocabulary
-      </button>
-
-      {/* Confirmation popup */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">
-              You have saved a hard coded vocabulary list for testing.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+  <div className="space-y-4">
+  <input 
+    type="file" 
+    accept="image/*,.pdf" 
+    onChange={handleFileChange}
+    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+  />
+  
+  <button
+    onClick={handleAiExtract}
+    disabled={!selectedFile || isExtracting}
+    className="w-full bg-blue-600 text-white p-2 rounded disabled:bg-gray-400"
+  >
+    {isExtracting ? 'AI is reading...' : 'Extract with AI'}
+  </button>
+  </div>
   );
 }

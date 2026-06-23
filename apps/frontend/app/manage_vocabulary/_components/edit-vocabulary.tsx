@@ -109,10 +109,10 @@ export default function EditVocabulary({
             <div className="overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                 <div className="font-semibold text-gray-500 text-sm pb-1">
-                  Word
+                  French
                 </div>
                 <div className="font-semibold text-gray-500 text-sm pb-1">
-                  Meaning
+                  English
                 </div>
 
                 {entries.map((entry, index) => (

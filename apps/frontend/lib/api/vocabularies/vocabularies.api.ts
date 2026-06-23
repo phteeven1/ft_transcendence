@@ -50,4 +50,17 @@ export const vocabulariesApi = {
       body: JSON.stringify({ vocabularyId }),
     });
   },
+
+	async extract(file: File): Promise<{ words: string[], meanings: string[] }> {
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const response = await fetch(`${API_BASE_URL}/vocabularies/extract`, {
+			method: 'POST',
+			body: formData,
+		});
+
+		if (!response.ok) throw new Error('Failed to extract vocabulary');
+		return response.json();
+	}
 };
