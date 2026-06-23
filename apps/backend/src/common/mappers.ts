@@ -31,7 +31,7 @@ export function toApiUser(user: UserWithMemberships): User {
   return {
     id: user.id,
     name: user.name,
-    password: user.password,
+    // password: user.password,
     email: user.email,
     isMemberOf,
     isAdminOf,
