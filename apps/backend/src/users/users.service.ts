@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { GroupRole } from '@ft-transcendence/database';
+import { hash, compare } from 'bcryptjs';
 import {
   groupWithMemberships,
   toApiUser,
@@ -7,10 +8,11 @@ import {
 } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 
+const SALT_ROUNDS = 10;
 export type User = {
   id: number;
   name: string;
-  password: string;
+  //password: string;
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
@@ -27,8 +29,9 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async register(name: string, password: string, email: string): Promise<User> {
+    const hashedPassword = await hash(password, SALT_ROUNDS);
     const user = await this.prisma.user.create({
-      data: { name, password, email },
+      data: { name, password: hashedPassword, email },
       ...userWithMemberships,
     });
     return toApiUser(user);
@@ -54,11 +57,14 @@ export class UsersService {
     name: string,
     password: string,
   ): Promise<User | undefined> {
-    const user = await this.prisma.user.findFirst({
-      where: { name, password },
+    const user = await this.prisma.user.findUnique({
+      where: { name },
       ...userWithMemberships,
     });
-    return user ? toApiUser(user) : undefined;
+    if (!user) return undefined;
+
+    const passwordMatches = await compare(password, user.password);
+    return passwordMatches ? toApiUser(user) : undefined;
   }
 
   async findAll(): Promise<User[]> {
