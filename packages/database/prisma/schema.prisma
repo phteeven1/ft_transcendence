@@ -123,6 +123,22 @@ model Game {
   initiatedBy     Player       @relation("GameInitiator", fields: [initiatedById], references: [id])
   gamePlayers     GamePlayer[]
   currentPlayers  Player[]     @relation("PlayerCurrentGame")
+  crossword       Crossword?
+}
+
+model Crossword {
+  id         Int      @id @default(autoincrement())
+  gameId     Int      @unique
+  rows       Int
+  cols       Int
+  solution   Json
+  playerGrid Json
+  clues      Json
+  revision   Int      @default(0)
+  solved     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 }
 
 model GamePlayer {
