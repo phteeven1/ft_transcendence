@@ -1,5 +1,4 @@
 'use client';
-
 /*
   Action window displayed at the bottom of manage_group.
   Contains tabs for switching between different panels.
@@ -7,7 +6,6 @@
   Tabs are designed to accommodate additional panels in the future.
   The selected member is passed down to MemberProfile.
 */
-
 import { useState } from 'react';
 import { Member } from '../../types';
 import MemberProfile from './member-profile';
@@ -18,9 +16,11 @@ type Tab = 'profile' | 'chat' | 'games';
 
 type Props = {
   selectedMember: Member | null;
+  groupId: number;
+  members: Member[];
 };
 
-export default function ActionWindow({ selectedMember }: Props) {
+export default function ActionWindow({ selectedMember, groupId, members }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const tabs: { id: Tab; label: string }[] = [
@@ -31,7 +31,6 @@ export default function ActionWindow({ selectedMember }: Props) {
 
   return (
     <div className="border border-emerald-400 rounded-lg overflow-hidden">
-
       {/* Tab bar */}
       <div className="flex border-b border-emerald-400">
         {tabs.map((tab) => (
@@ -56,10 +55,11 @@ export default function ActionWindow({ selectedMember }: Props) {
             ? <MemberProfile member={selectedMember} />
             : <p className="text-sm text-gray-400 italic">Select a member to view their profile.</p>
         )}
-        {activeTab === 'chat' && <GroupChat />}
+        {activeTab === 'chat' && (
+          <GroupChat groupId={groupId} members={members} />
+        )}
         {activeTab === 'games' && <GameSessionOverview />}
       </div>
-
     </div>
   );
 }
