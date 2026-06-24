@@ -10,6 +10,8 @@ export { gamesApi } from './games';
 export { invitationsApi } from './invitations';
 export { wordBuildingApi } from './games/word-building.api';
 export { wordSoupApi } from './games/word-soup.api';
+export { chatApi } from './chat';
+export type { ChatEntryType, ChatEventKey, GroupChatEntryDto, PostChatMessageInput } from './chat';
 
 export type { UserDto, RegisterUserInput, SignInUserInput } from './users';
 export type {

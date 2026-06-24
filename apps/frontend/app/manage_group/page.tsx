@@ -124,7 +124,11 @@ export default function ManageGroup() {
             selectedMember={selectedMember}
             onSelect={setSelectedMember}
           />
-          <ActionWindow selectedMember={selectedMember} />
+          <ActionWindow
+            selectedMember={selectedMember}
+            groupId={group.id}
+            members={currentGroupMembers}
+          />
           <div className="grid grid-cols-2 gap-3">{buttons}</div>
         </div>
 
@@ -138,7 +142,11 @@ export default function ManageGroup() {
             />
           </div>
           <div className="col-span-1">
-            <ActionWindow selectedMember={selectedMember} />
+            <ActionWindow
+              selectedMember={selectedMember}
+              groupId={group.id}
+              members={currentGroupMembers}
+            />
           </div>
           <div className="col-span-1 grid grid-cols-2 gap-2 [&_button]:py-1 [&_button]:text-s">
             {buttons}
@@ -167,7 +175,11 @@ export default function ManageGroup() {
               </div>
             </div>
           </div>
-          <ActionWindow selectedMember={selectedMember} />
+          <ActionWindow
+            selectedMember={selectedMember}
+            groupId={group.id}
+            members={currentGroupMembers}
+          />
         </div>
 
       </div>
