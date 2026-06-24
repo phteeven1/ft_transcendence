@@ -16,8 +16,8 @@ export class GroupsController {
   }
 
   @Post('promote')
-  promote(@Body() body: { groupId: number; userId: number }) {
-    return this.groupsService.promote(body.groupId, body.userId);
+  promote(@Body() body: { groupId: number; userId: number; authorId: number }) {
+    return this.groupsService.promote(body.groupId, body.userId, body.authorId);
   }
 
   @Post('demote')

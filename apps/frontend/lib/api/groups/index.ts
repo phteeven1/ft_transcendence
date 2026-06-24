@@ -3,6 +3,6 @@ export type {
   GroupDto,
   MemberDto,
   CreateGroupInput,
-  GroupIdUserIdInput,
+  GroupMemberActionInput,
   RenameGroupInput,
 } from './types';

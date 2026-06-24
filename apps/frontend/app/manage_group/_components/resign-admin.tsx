@@ -31,7 +31,7 @@ export default function ResignAdmin({ syncAndRefresh }: Props) {
     if (!confirmed) return;
 
     try {
-      await groupsApi.demote({ groupId: group.id, userId: user.id });
+      await groupsApi.demote({ groupId: group.id, userId: user.id, authorId: user.id });
       await syncAndRefresh();
       setResultMessage(
         `You have successfully resigned as admin of ${group.name}. You are now a regular member.`,

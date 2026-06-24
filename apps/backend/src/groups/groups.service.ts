@@ -7,6 +7,7 @@ import {
 } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { ChatService } from '../chat/chat.service';
 
 export type Group = {
   id: number;
@@ -27,6 +28,7 @@ export class GroupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
+    private readonly chatService: ChatService,
   ) {}
 
   async create(groupName: string, creatorId: number): Promise<Group> {
@@ -60,7 +62,11 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async promote(groupId: number, userId: number): Promise<Group | undefined> {
+  async promote(
+    groupId:  number,
+    userId:   number,
+    authorId: number,   // the admin performing the promotion
+  ): Promise<Group | undefined> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
     });
@@ -73,6 +79,10 @@ export class GroupsService {
     });
     await this.usersService.removeMemberGroup(userId, groupId);
     await this.usersService.addAdminGroup(userId, groupId);
+
+    // Log the promotion event — targetId is the user being promoted
+    await this.chatService.logEvent(groupId, authorId, 'PROMOTE_ADMIN', userId);
+
     return this.findById(groupId);
   }
 

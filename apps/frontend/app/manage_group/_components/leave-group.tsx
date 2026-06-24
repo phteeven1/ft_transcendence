@@ -62,7 +62,7 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
   const executeLeave = async () => {
     if (!user || !group) return;
     try {
-      await groupsApi.leave({ groupId: group.id, userId: user.id });
+      await groupsApi.leave({ groupId: group.id, userId: user.id, authorId: user.id });
       await refreshUser();
       leaveGroup();
       router.push('/dashboard');
