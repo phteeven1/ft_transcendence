@@ -62,15 +62,36 @@ export default function EditVocabulary({
       if (nextIndex < entries.length) {
         wordRefs.current[nextIndex]?.focus();
       } else {
-        wordRefs.current[0]?.focus();
+        handleAddRow();
       }
     }
   };
 
+  const handleAddRow = () => {
+    setEntries((prev) => [...prev, { word: '', meaning: '' }]);
+    // Use timeout to focus the new row after it renders
+    setTimeout(() => {
+      wordRefs.current[entries.length]?.focus();
+    }, 0);
+  };
+
+  const handleDeleteRow = (index: number) => {
+    if (entries.length <= 5) return;
+    setEntries((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleCommit = async () => {
     if (!selectedVocabulary) return;
-    const updatedWords = entries.map((e) => e.word);
-    const updatedMeanings = entries.map((e) => e.meaning);
+    // Filter out empty rows
+    const validEntries = entries.filter(e => e.word.trim() !== '' || e.meaning.trim() !== '');
+    
+    if (validEntries.length < 5) {
+      alert("A vocabulary list must have at least 5 words.");
+      return;
+    }
+
+    const updatedWords = validEntries.map((e) => e.word.trim());
+    const updatedMeanings = validEntries.map((e) => e.meaning.trim());
     try {
       const updated = await vocabulariesApi.updateEntries({
         vocabularyId: selectedVocabulary.id,
@@ -107,13 +128,14 @@ export default function EditVocabulary({
             </h2>
 
             <div className="overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              <div className="grid grid-cols-[1fr_1fr_40px] gap-x-4 gap-y-2 items-center">
                 <div className="font-semibold text-gray-500 text-sm pb-1">
-                  French
+                  Word
                 </div>
                 <div className="font-semibold text-gray-500 text-sm pb-1">
-                  English
+                  Meaning
                 </div>
+                <div></div>
 
                 {entries.map((entry, index) => (
                   <React.Fragment key={index}>
@@ -126,7 +148,7 @@ export default function EditVocabulary({
                         handleChange(index, 'word', e.target.value)
                       }
                       onKeyDown={(e) => handleKeyDown(e, index, 'word')}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400"
+                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full"
                     />
                     <input
                       ref={(el) => {
@@ -137,11 +159,30 @@ export default function EditVocabulary({
                         handleChange(index, 'meaning', e.target.value)
                       }
                       onKeyDown={(e) => handleKeyDown(e, index, 'meaning')}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400"
+                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full"
                     />
+                    <button
+                      onClick={() => handleDeleteRow(index)}
+                      disabled={entries.length <= 5}
+                      title={entries.length <= 5 ? "Minimum 5 words required" : "Delete word"}
+                      className={`text-lg font-bold rounded-full w-8 h-8 flex items-center justify-center transition-colors ${
+                        entries.length <= 5
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-red-500 hover:bg-red-50'
+                      }`}
+                    >
+                      ×
+                    </button>
                   </React.Fragment>
                 ))}
               </div>
+
+              <button
+                onClick={handleAddRow}
+                className="mt-4 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                <span className="text-xl">+</span> Add Word Pair
+              </button>
             </div>
 
             <div className="flex gap-3 pt-2">

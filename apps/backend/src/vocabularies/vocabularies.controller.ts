@@ -57,10 +57,15 @@ export class VocabulariesController {
 
 	@Post('extract')
 	@UseInterceptors(FileInterceptor('file'))
-	async extract(@UploadedFile() file: Express.Multer.File) {
+	async extract(
+		@UploadedFile() file: Express.Multer.File,
+		@Body() body: { fromLanguage?: string; toLanguage?: string }
+	) {
 		try {
-			console.log('Received file for extraction:', file.originalname);
-			return await this.extractionService.extractVocab(file);
+			const fromLang = body.fromLanguage || 'fr';
+			const toLang = body.toLanguage || 'en';
+			console.log('Received file for extraction:', file.originalname, 'from:', fromLang, 'to:', toLang);
+			return await this.extractionService.extractVocab(file, fromLang, toLang);
 		} catch (error) {
 			console.error('Extraction Error:', error); // This will show the real error in your terminal
 			throw error;

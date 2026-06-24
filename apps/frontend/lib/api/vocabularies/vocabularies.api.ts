@@ -52,9 +52,11 @@ export const vocabulariesApi = {
     });
   },
 
-	async extract(file: File): Promise<{ words: string[], meanings: string[] }> {
+	async extract(file: File, fromLanguage: string, toLanguage: string): Promise<{ words: string[], meanings: string[] }> {
 		const formData = new FormData();
 		formData.append('file', file);
+		formData.append('fromLanguage', fromLanguage);
+		formData.append('toLanguage', toLanguage);
 
 		const response = await fetch(`${getApiBaseUrl()}/vocabularies/extract`, {
 			method: 'POST',

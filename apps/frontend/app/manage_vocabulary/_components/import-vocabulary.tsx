@@ -8,43 +8,26 @@ type Props = {
   onImported: (vocabulary: Vocabulary) => void;
 };
 
-const DUMMY_WORDS = [
-  'construire',
-  'élever',
-  'remplir',
-  'ressembler',
-  'le vivarium',
-  'la terre',
-  "l'insecte",
-  'le phasme',
-  'la brindille',
-  'la cour',
-  'jamais',
-  'dans',
-];
-
-const DUMMY_MEANINGS = [
-  'to build',
-  'to raise',
-  'to fill',
-  'to resemble',
-  'the vivarium',
-  'the earth / soil',
-  'the insect',
-  'the stick insect',
-  'the twig',
-  'the yard / courtyard',
-  'never',
-  'in / inside',
-];
-
 export default function ImportVocabulary({ onImported }: Props) {
   const { user, group } = useAuth();
 
 	// States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-	const [extractedData, setExtractedData] = useState<{words: string[], meanings: string[]} | null>(null);
+  const [fromLanguage, setFromLanguage] = useState('fr');
+  const [toLanguage, setToLanguage] = useState('en');
+
+  const LANGUAGES = [
+    { code: 'en', name: 'English' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+  ];
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files?.[0]) {
@@ -53,38 +36,62 @@ export default function ImportVocabulary({ onImported }: Props) {
 	};
 
 	const handleAiExtract = async () => {
-		if (!selectedFile) return;
+		if (!selectedFile || !user || !group) return;
 		setIsExtracting(true);
 		try {
-			const data = await vocabulariesApi.extract(selectedFile);
-			setExtractedData(data);
-		} catch (error) {
-			console.error("AI extraction failed", error);
-		} finally {
-			setIsExtracting(false);
-		}
-	};
-
-	const handleFinalSave = async () => {
-		if (!user  || !group || !extractedData) return;
-		try {
+      const fromLangName = LANGUAGES.find(l => l.code === fromLanguage)?.name || fromLanguage;
+      const toLangName = LANGUAGES.find(l => l.code === toLanguage)?.name || toLanguage;
+			const data = await vocabulariesApi.extract(selectedFile, fromLangName, toLangName);
+			
+			// Automatically save after extraction
 			const created = await vocabulariesApi.create({
 				vocabularyInGroup: group.id,
 				byUser: user.id,
 				vocabularyName: selectedFile?.name.split('.')[0] || 'AI Generated List',
-				vocabularyWords: extractedData.words,
-				vocabularyMeanings: extractedData.meanings,
+				vocabularyWords: data.words,
+				vocabularyMeanings: data.meanings,
 			});
+			
 			onImported(created);
-			setExtractedData(null);
-		} catch (error) {
-			console.error("Saving failed", error);
+			setSelectedFile(null);
+		} catch (error: any) {
+			console.error("AI extraction failed", error);
+			alert(error.message || "AI extraction failed. Please ensure the file has at least 5 words and try again.");
+		} finally {
+			setIsExtracting(false);
 		}
 	};
 
 	return (
 		<div className="space-y-4 p-4 border rounded-lg bg-white shadow-sm">
 			<h2 className="text-lg font-semibold text-emerald-800">AI Vocabulary Import</h2>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">From Language</label>
+          <select 
+            value={fromLanguage} 
+            onChange={(e) => setFromLanguage(e.target.value)}
+            className="w-full border rounded p-2 text-sm"
+          >
+            {LANGUAGES.map(lang => (
+              <option key={lang.code} value={lang.code}>{lang.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">To Language</label>
+          <select 
+            value={toLanguage} 
+            onChange={(e) => setToLanguage(e.target.value)}
+            className="w-full border rounded p-2 text-sm"
+          >
+            {LANGUAGES.map(lang => (
+              <option key={lang.code} value={lang.code}>{lang.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
 			{/* 1. The File Input */}
 			<input 
@@ -106,41 +113,8 @@ export default function ImportVocabulary({ onImported }: Props) {
 						<svg className="animate-spin h-5 w-5 mr-3 border-2 border-white border-t-transparent rounded-full" viewBox="0 0 24 24"></svg>
 						AI is reading your file...
 					</span>
-				) : 'Extract 20 Words with AI'}
+				) : 'Extract and Save with AI'}
 			</button>
-			{/* 3. The Review UI (Only shows when extractedData is not null) */}
-			{extractedData && (
-				<div className="mt-6 p-4 border-t border-gray-200 animate-in fade-in slide-in-from-top-4">
-					<h3 className="font-bold text-gray-700 mb-3">
-						Review Extracted Words ({extractedData.words.length})
-					</h3>
-
-					<div className="max-h-60 overflow-y-auto border rounded mb-4">
-						<table className="w-full text-left text-sm">
-							<thead className="bg-gray-50 sticky top-0">
-								<tr>
-									<th className="p-2 border-b">Word</th>
-									<th className="p-2 border-b">Meaning</th>
-								</tr>
-							</thead>
-							<tbody>
-								{extractedData.words.map((w, i) => (
-									<tr key={i} className="hover:bg-gray-50 border-b last:border-0">
-										<td className="p-2 font-medium">{w}</td>
-										<td className="p-2 text-gray-600">{extractedData.meanings[i]}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-					<button 
-						onClick={handleFinalSave} 
-						className="w-full bg-emerald-600 text-white py-2 px-4 rounded font-bold hover:bg-emerald-700 transition-colors"
-					>
-						Confirm and Save to Group
-					</button>
-				</div>
-			)}
 		</div>
 	);
 }
