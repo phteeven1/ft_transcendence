@@ -5,6 +5,8 @@ export type PlayerDto = {
   name: string;
   passQuestion: string;
   currentGameId: number | null;
+  lastSignout: string;
+  sessionExpiresAt: string | null;
 };
 
 export type CreatePlayerInput = {

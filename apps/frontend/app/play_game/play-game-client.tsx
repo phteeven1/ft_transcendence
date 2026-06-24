@@ -5,16 +5,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { gamesApi, playersApi } from '@/lib/api';
 import { Game, Player } from '../types';
 import { useSessionGuard } from '../hooks/use-session-guard';
-import { useGameExitGuard } from '../hooks/use-game-exit-guard';
 import { useAuth } from '../context/auth-context';
 import { clearPlayerSession } from '@/lib/player-session';
 import AbandonPlayModal from './_components/abandon-play-modal';
+import CrosswordBoard from './_components/CrosswordBoard';
 
 async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
   const results = await Promise.all(
-    playerIds.map((id) =>
-      playersApi.getById(id).catch(() => null),
-    ),
+    playerIds.map((id) => playersApi.getById(id).catch(() => null)),
   );
   return results.filter((p): p is Player => p !== null);
 }
@@ -33,16 +31,6 @@ export default function PlayGameClient() {
   const [loading, setLoading] = useState(true);
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
-
-  const { markIntentionalExit } = useGameExitGuard({
-    enabled: !loading && !!game && !!gameId && !!playerId,
-    gameId,
-    playerId,
-    onIntentionalExit: () => {
-      clearPlayerSession();
-      logoutPlayer();
-    },
-  });
 
   useEffect(() => {
     if (!gameId || !playerId) {
@@ -81,7 +69,8 @@ export default function PlayGameClient() {
     } catch (error) {
       console.error('abandonPlay failed:', error);
     } finally {
-      markIntentionalExit();
+      clearPlayerSession();
+      logoutPlayer();
       setShowAbandonModal(false);
       router.push('/session_over');
     }
@@ -111,26 +100,39 @@ export default function PlayGameClient() {
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-md mx-auto p-4">
         <h1 className="text-2xl font-bold mb-1 text-center">{game.name}</h1>
-        <p className="text-sm text-gray-500 text-center mb-8">Game #{game.id}</p>
+        <p className="text-sm text-gray-500 text-center mb-8">
+          Game #{game.id}
+        </p>
 
         <div className="bg-white rounded-lg shadow p-5 space-y-3 mb-8">
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Started</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              Started
+            </span>
             <p className="text-gray-800 font-medium">
               {startedTime ? startedTime.toLocaleTimeString() : '—'}
             </p>
           </div>
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Initiated by</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              Initiated by
+            </span>
             <p className="text-gray-800 font-medium">
-              {initiatorPlayer ? initiatorPlayer.name : `Player #${game.initiatedBy}`}
+              {initiatorPlayer
+                ? initiatorPlayer.name
+                : `Player #${game.initiatedBy}`}
             </p>
           </div>
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Players</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              Players
+            </span>
             <ul className="mt-1 space-y-1">
               {players.map((p) => (
-                <li key={p.id} className="text-gray-800 font-medium flex items-center gap-2">
+                <li
+                  key={p.id}
+                  className="text-gray-800 font-medium flex items-center gap-2"
+                >
                   {p.name}
                   {p.id === playerId && (
                     <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
@@ -142,6 +144,12 @@ export default function PlayGameClient() {
             </ul>
           </div>
         </div>
+
+        {game.name === 'Word Building' && (
+          <div className="bg-white rounded-lg shadow p-5 mb-8">
+            <CrosswordBoard gameId={gameId} playerId={playerId} />
+          </div>
+        )}
 
         <div className="space-y-3">
           <button

@@ -98,7 +98,6 @@ export default function ManagePlayers() {
           {/* overrides with pc layout if md */}
           {/* Player list */}
           <div className="col-span-1 mb-6 md:mb-0">
-            <h2 className="text-lg font-semibold mb-2">Your Players</h2>
             <PlayerList
               players={players}
               selectedPlayer={selectedPlayer}
@@ -128,7 +127,7 @@ export default function ManagePlayers() {
             />
             <button
               onClick={() => router.push('/manage_group')}
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+              className="w-full bg-gray-400 text-white p-2 rounded hover:bg-gray-500"
             >
               Back to Group
             </button>

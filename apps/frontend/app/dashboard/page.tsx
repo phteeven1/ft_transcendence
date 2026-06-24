@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../types';
+import UserSettings from './_components/user-settings';
 
 export default function Dashboard() {
   const { user, syncGroup, refreshUser } = useAuth();
@@ -68,13 +69,15 @@ export default function Dashboard() {
     router.push('/manage_group');
   };
 
-  // layout creates one button for Create New Croup, and one for each group the user is an admin or a member of.
+  // layout creates one button for User Settings, one for Create New Group,
+  // and one for each group the user is an admin or a member of.
   return (
     <div className="min-h-screen bg-emerald-200">
       <div className="max-w-4xl mx-auto p-4">
         <h1 className="text-2xl font-bold mb-2 text-center">Manage Groups</h1>
         <p className="mb-6 text-gray-600 text-center">Welcome, {user.name}!</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <UserSettings />
           <button
             onClick={() => router.push('/create_group')}
             className="bg-green-500 hover:bg-green-600 text-white font-medium py-4 px-4 rounded transition-colors"
