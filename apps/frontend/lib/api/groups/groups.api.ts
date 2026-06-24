@@ -2,7 +2,7 @@ import { apiRequest } from '../http';
 import type {
   CreateGroupInput,
   GroupDto,
-  GroupIdUserIdInput,
+  GroupMemberActionInput,
   MemberDto,
   RenameGroupInput,
 } from './types';
@@ -23,28 +23,28 @@ export const groupsApi = {
     return apiRequest<MemberDto[]>(`/groups/${groupId}/members`);
   },
 
-  addMember(input: GroupIdUserIdInput): Promise<GroupDto> {
+  addMember(input: GroupMemberActionInput): Promise<GroupDto> {
     return apiRequest<GroupDto>('/groups/addMember', {
       method: 'POST',
       body: JSON.stringify(input),
     });
   },
 
-  promote(input: GroupIdUserIdInput): Promise<GroupDto> {
+  promote(input: GroupMemberActionInput): Promise<GroupDto> {
     return apiRequest<GroupDto>('/groups/promote', {
       method: 'POST',
       body: JSON.stringify(input),
     });
   },
 
-  demote(input: GroupIdUserIdInput): Promise<GroupDto> {
+  demote(input: GroupMemberActionInput): Promise<GroupDto> {
     return apiRequest<GroupDto>('/groups/demote', {
       method: 'POST',
       body: JSON.stringify(input),
     });
   },
 
-  leave(input: GroupIdUserIdInput): Promise<GroupDto> {
+  leave(input: GroupMemberActionInput): Promise<GroupDto> {
     return apiRequest<GroupDto>('/groups/leave', {
       method: 'POST',
       body: JSON.stringify(input),
@@ -58,7 +58,7 @@ export const groupsApi = {
     });
   },
 
-  expel(input: GroupIdUserIdInput): Promise<GroupDto> {
+  expel(input: GroupMemberActionInput): Promise<GroupDto> {
     return apiRequest<GroupDto>('/groups/expel', {
       method: 'POST',
       body: JSON.stringify(input),
