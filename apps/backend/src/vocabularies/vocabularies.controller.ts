@@ -50,20 +50,26 @@ export class VocabulariesController {
     return this.vocabulariesService.remove(body.vocabularyId);
   }
 
-  @Post('extract')
-  @UseInterceptors(FileInterceptor('file'))
-  async extract(@UploadedFile() file:  Express.Multer.File) {
-    return this.extractionService.extractVocab(file);
-  }
-
   @Get('group/:groupId')
   findByGroup(@Param('groupId') groupId: string) {
     return this.vocabulariesService.findByGroup(Number(groupId));
   }
 
-  @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.vocabulariesService.findById(Number(id));
-  }
+	@Post('extract')
+	@UseInterceptors(FileInterceptor('file'))
+	async extract(@UploadedFile() file: Express.Multer.File) {
+		try {
+			console.log('Received file for extraction:', file.originalname);
+			return await this.extractionService.extractVocab(file);
+		} catch (error) {
+			console.error('Extraction Error:', error); // This will show the real error in your terminal
+			throw error;
+		}
+	}
+
+	@Get(':id')
+	findById(@Param('id') id: string) {
+		return this.vocabulariesService.findById(Number(id));
+	}
 
 }

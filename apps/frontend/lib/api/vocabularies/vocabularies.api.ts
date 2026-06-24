@@ -6,6 +6,7 @@ import type {
   UpdateVocabularyEntriesInput,
   VocabularyDto,
 } from './types';
+import { getApiBaseUrl } from '../config';
 
 export const vocabulariesApi = {
   create(input: CreateVocabularyInput): Promise<VocabularyDto> {
@@ -55,12 +56,16 @@ export const vocabulariesApi = {
 		const formData = new FormData();
 		formData.append('file', file);
 
-		const response = await fetch(`${API_BASE_URL}/vocabularies/extract`, {
+		const response = await fetch(`${getApiBaseUrl()}/vocabularies/extract`, {
 			method: 'POST',
 			body: formData,
 		});
 
-		if (!response.ok) throw new Error('Failed to extract vocabulary');
+		if (!response.ok) {
+			const errorData = await response.text();
+			console.error('Backend extraction error:', errorData);
+			throw new Error('Failed to extract vocabulary: ' + errorData);
+		}
 		return response.json();
 	}
 };

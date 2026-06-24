@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
- "scripts": {
+  "scripts": {
     "dev": "docker compose up",
     "dev:local": "bash scripts/dev-local.sh",
     "dev:stop": "bash scripts/dev-stop.sh",
@@ -25,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/phteeven1/ft_transcendence/issues"
   },
-  "homepage": "https://github.com/phteeven1/ft_transcendence#readme"
+  "homepage": "https://github.com/phteeven1/ft_transcendence#readme",
+  "devDependencies": {
+    "@types/pdf-parse": "^1.1.5"
+  }
 }
