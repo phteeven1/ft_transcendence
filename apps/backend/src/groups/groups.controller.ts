@@ -11,8 +11,8 @@ export class GroupsController {
   }
 
   @Post('addMember')
-  addMember(@Body() body: { groupId: number; userId: number }) {
-    return this.groupsService.addMember(body.groupId, body.userId);
+  addMember(@Body() body: { groupId: number; userId: number; authorId: number }) {
+    return this.groupsService.addMember(body.groupId, body.userId, body.authorId);
   }
 
   @Post('promote')
@@ -21,23 +21,23 @@ export class GroupsController {
   }
 
   @Post('demote')
-  demote(@Body() body: { groupId: number; userId: number }) {
-    return this.groupsService.demote(body.groupId, body.userId);
+  demote(@Body() body: { groupId: number; userId: number; authorId: number }) {
+    return this.groupsService.demote(body.groupId, body.userId, body.authorId);
   }
 
   @Post('leave')
-  leave(@Body() body: { groupId: number; userId: number }) {
-    return this.groupsService.leave(body.groupId, body.userId);
+  leave(@Body() body: { groupId: number; userId: number; authorId: number }) {
+    return this.groupsService.leave(body.groupId, body.userId, body.authorId);
   }
 
   @Post('rename')
-  rename(@Body() body: { groupId: number; groupName: string }) {
-    return this.groupsService.rename(body.groupId, body.groupName);
+  rename(@Body() body: { groupId: number; groupName: string; authorId: number }) {
+    return this.groupsService.rename(body.groupId, body.groupName, body.authorId);
   }
 
   @Post('expel')
-  expel(@Body() body: { groupId: number; userId: number }) {
-    return this.groupsService.expel(body.groupId, body.userId);
+  expel(@Body() body: { groupId: number; userId: number; authorId: number }) {
+    return this.groupsService.expel(body.groupId, body.userId, body.authorId);
   }
 
   @Post('delete')

@@ -27,12 +27,15 @@ import ManagePlayers from './_components/manage-players';
 import ExpelMember from './_components/expel-member';
 import DeleteGroup from './_components/delete-group';
 import ManageVocabulary from './_components/manage-vocabulary';
+import { chatApi } from '@/lib/api/chat';
+import type { GroupChatEntryDto } from '@/lib/api/chat';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
   const router = useRouter();
   const [currentGroupMembers, setCurrentGroupMembers] = useState<Member[]>([]);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [chatEntries, setChatEntries] = useState<GroupChatEntryDto[]>([]);
 
   useEffect(() => {
     if (!user || !group) {
@@ -55,8 +58,19 @@ export default function ManageGroup() {
       const members = await groupsApi.getMembers(group.id);
       setCurrentGroupMembers(members);
       setSelectedMember(prev => prev ?? members.find(m => m.id === user?.id) ?? null);
+      await fetchChatEntries(); // add this
     } catch (error) {
       console.error('fetchMembers failed:', error);
+    }
+  };
+
+  const fetchChatEntries = async () => {
+    if (!group) return;
+    try {
+      const entries = await chatApi.getEntries(group.id);
+      setChatEntries(entries);
+    } catch (error) {
+      console.error('fetchChatEntries failed:', error);
     }
   };
 
@@ -77,6 +91,7 @@ export default function ManageGroup() {
       }
 
       await fetchMembers();
+      await fetchChatEntries();
     } catch (error) {
       console.error('syncAndRefresh failed:', error);
     }
@@ -128,6 +143,7 @@ export default function ManageGroup() {
             selectedMember={selectedMember}
             groupId={group.id}
             members={currentGroupMembers}
+            chatEntries={chatEntries}
           />
           <div className="grid grid-cols-2 gap-3">{buttons}</div>
         </div>
@@ -146,6 +162,7 @@ export default function ManageGroup() {
               selectedMember={selectedMember}
               groupId={group.id}
               members={currentGroupMembers}
+              chatEntries={chatEntries}
             />
           </div>
           <div className="col-span-1 grid grid-cols-2 gap-2 [&_button]:py-1 [&_button]:text-s">
@@ -179,6 +196,7 @@ export default function ManageGroup() {
             selectedMember={selectedMember}
             groupId={group.id}
             members={currentGroupMembers}
+            chatEntries={chatEntries}
           />
         </div>
 

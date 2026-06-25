@@ -26,4 +26,5 @@ export type GroupMemberActionInput = {
 export type RenameGroupInput = {
   groupId: number;
   groupName: string;
+  authorId: number;
 };
