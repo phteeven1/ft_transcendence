@@ -23,7 +23,9 @@ export type GroupChatEntryDto = {
   createdAt:   string;           // ISO 8601
   type:        ChatEntryType;
   authorId:    number;
+  authorName:   string;           // at time of entry
   targetId?:   number;           // present for most LOG entries
+  targetName?:   string;          // at time of entry
   eventKey?:   ChatEventKey;     // present for LOG entries only
   content?:    string;           // present for ADM / GEN / MEM messages only
 };

@@ -180,7 +180,9 @@ model GroupChatEntry {
   createdAt   DateTime      @default(now())
   type        ChatEntryType
   authorId    Int           // always a User
+  authorName  String?       // stores author name at the time of entry
   targetId    Int?          // any domain object id, meaning given by eventKey
+  targetName  String?       // name of above at time of entry
   eventKey    ChatEventKey? // null for ADM / GEN / MEM messages
   content     String?       // null for LOG entries
 

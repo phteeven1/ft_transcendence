@@ -136,8 +136,10 @@ export function toApiChatEntry(entry: DbGroupChatEntry): GroupChatEntry {
     createdAt:   entry.createdAt.toISOString(),
     type:        entry.type,
     authorId:    entry.authorId,
-    targetId:    entry.targetId ?? undefined,
-    eventKey:    entry.eventKey ?? undefined,
-    content:     entry.content ?? undefined,
+    authorName:  entry.authorName ?? 'Unknown User',
+    targetId:    entry.targetId   ?? undefined,
+    targetName:  entry.targetName ?? undefined,
+    eventKey:    entry.eventKey   ?? undefined,
+    content:     entry.content    ?? undefined,
   };
 }

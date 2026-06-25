@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChatService } from '../chat/chat.service';
 
 export type Invitation = {
   token: string;
@@ -15,6 +16,7 @@ export class InvitationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly chatService: ChatService,
   ) {}
 
   async sendInvitation(
@@ -22,22 +24,22 @@ export class InvitationsService {
     groupName: string,
     toEmail: string,
     invitationText: string,
+    authorId: number,
   ): Promise<{ success: boolean }> {
     const createdAt = new Date();
     const expiresAt = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
-
     const invitation = await this.prisma.invitation.create({
       data: { groupId, expiresAt },
     });
-
     const inviteLink = `${process.env.APP_URL}/accept_invitation?token=${invitation.token}`;
-
     await this.mailService.sendInvitation(
       toEmail,
       invitationText,
       groupName,
       inviteLink,
     );
+
+    await this.chatService.logEvent(groupId, authorId, 'SEND_INVITE');
 
     return { success: true };
   }

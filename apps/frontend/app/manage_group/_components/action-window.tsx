@@ -11,6 +11,7 @@ import { Member } from '../../types';
 import MemberProfile from './member-profile';
 import GroupChat from './group-chat';
 import GameSessionOverview from './game-session-overview';
+import { GroupChatEntryDto } from '@/lib/api';
 
 type Tab = 'profile' | 'chat' | 'games';
 
@@ -18,9 +19,10 @@ type Props = {
   selectedMember: Member | null;
   groupId: number;
   members: Member[];
+  chatEntries: GroupChatEntryDto[];
 };
 
-export default function ActionWindow({ selectedMember, groupId, members }: Props) {
+export default function ActionWindow({ selectedMember, groupId, members, chatEntries }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const tabs: { id: Tab; label: string }[] = [
@@ -56,7 +58,7 @@ export default function ActionWindow({ selectedMember, groupId, members }: Props
             : <p className="text-sm text-gray-400 italic">Select a member to view their profile.</p>
         )}
         {activeTab === 'chat' && (
-          <GroupChat groupId={groupId} members={members} />
+          <GroupChat members={members} chatEntries={chatEntries} />
         )}
         {activeTab === 'games' && <GameSessionOverview />}
       </div>

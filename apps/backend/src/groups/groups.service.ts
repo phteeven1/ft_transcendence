@@ -45,20 +45,21 @@ export class GroupsService {
     return toApiGroup(group);
   }
 
-  async addMember(groupId: number, userId: number): Promise<Group | undefined> {
+  async addMember(groupId: number, userId: number, authorId: number): Promise<Group | undefined> {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
       ...groupWithMemberships,
     });
     if (!group) return undefined;
-
     const existing = group.memberships.find((m) => m.userId === userId);
     if (existing) return toApiGroup(group);
-
     await this.prisma.groupMembership.create({
       data: { groupId, userId, role: GroupRole.MEMBER },
     });
     await this.usersService.addMemberGroup(userId, groupId);
+
+    await this.chatService.logEvent(groupId, authorId, 'JOIN_GROUP');
+
     return this.findById(groupId);
   }
 
@@ -86,7 +87,7 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async demote(groupId: number, userId: number): Promise<Group | undefined> {
+  async demote(groupId: number, userId: number, authorId: number): Promise<Group | undefined> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
     });
@@ -99,17 +100,21 @@ export class GroupsService {
     });
     await this.usersService.removeAdminGroup(userId, groupId);
     await this.usersService.addMemberGroup(userId, groupId);
+
+    await this.chatService.logEvent(groupId, authorId, 'RESIGN_ADMIN', userId);
+
     return this.findById(groupId);
   }
 
-  async leave(groupId: number, userId: number): Promise<Group | undefined> {
+  async leave(groupId: number, userId: number, authorId: number): Promise<Group | undefined> {
     const deleted = await this.prisma.groupMembership.deleteMany({
       where: { userId, groupId },
     });
     if (deleted.count === 0) return this.findById(groupId);
-
     await this.usersService.removeAdminGroup(userId, groupId);
     await this.usersService.removeMemberGroup(userId, groupId);
+
+    await this.chatService.logEvent(groupId, authorId, 'LEAVE_GROUP');
 
     const remaining = await this.prisma.groupMembership.count({
       where: { groupId },
@@ -121,25 +126,31 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async rename(groupId: number, groupName: string): Promise<Group | undefined> {
+  async rename(groupId: number, groupName: string, authorId: number): Promise<Group | undefined> {
     try {
       const group = await this.prisma.group.update({
         where: { id: groupId },
         data: { name: groupName },
         ...groupWithMemberships,
       });
+
+      await this.chatService.logEvent(groupId, authorId, 'RENAME_GROUP', undefined, groupName);
+
       return toApiGroup(group);
     } catch {
       return undefined;
     }
   }
 
-  async expel(groupId: number, userId: number): Promise<Group | undefined> {
+  async expel(groupId: number, userId: number, authorId: number): Promise<Group | undefined> {
     const deleted = await this.prisma.groupMembership.deleteMany({
       where: { userId, groupId, role: GroupRole.MEMBER },
     });
     if (deleted.count === 0) return this.findById(groupId);
     await this.usersService.removeMemberGroup(userId, groupId);
+
+    await this.chatService.logEvent(groupId, authorId, 'EXPEL_MEMBER', userId);
+
     return this.findById(groupId);
   }
 

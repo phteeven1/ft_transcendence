@@ -7,7 +7,7 @@ const DEFAULT_INVITE_TEXT = (groupName: string) =>
   `Hi, I want to invite you to join the Dictée App, where your child can learn vocabulary lists in a fun and interactive way. Click the link below to join the learning group ${groupName} which I am also part of.`;
 
 export default function SendInvite() {
-  const { group } = useAuth();
+  const { group, user } = useAuth();
 
   const [showModal, setShowModal] = useState(false);
   const [inviteText, setInviteText] = useState('');
@@ -17,7 +17,7 @@ export default function SendInvite() {
   >('idle');
   const [inviteError, setInviteError] = useState('');
 
-  if (!group) return null;
+  if (!group || !user) return null;
 
   const handleOpen = () => {
     setInviteText(DEFAULT_INVITE_TEXT(group.name));
@@ -42,6 +42,7 @@ export default function SendInvite() {
         groupName: group.name,
         toEmail: inviteEmail,
         invitationText: inviteText,
+        authorId: user.id,
       });
       setInviteStatus('success');
     } catch (error) {
