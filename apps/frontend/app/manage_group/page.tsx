@@ -121,11 +121,11 @@ export default function ManageGroup() {
           syncAndRefresh={syncAndRefresh}
         />
       )}
-      {isAdmin && <AdminToAdmins />}
-      {isAdmin && <AdminToGroup />}  
+      {isAdmin && <AdminToAdmins syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <AdminToGroup syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <LeaveGroup syncAndRefresh={syncAndRefresh} />
-      {!isAdmin && <MemberToAdmin />}
+      {!isAdmin && <MemberToAdmin syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
       <BackToDashboard />
     </>
