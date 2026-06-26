@@ -17,12 +17,13 @@ type Tab = 'profile' | 'chat' | 'games';
 
 type Props = {
   selectedMember: Member | null;
-  groupId: number;
-  members: Member[];
-  chatEntries: GroupChatEntryDto[];
+  groupId:        number;
+  members:        Member[];
+  chatEntries:    GroupChatEntryDto[];
+  isAdmin:        boolean;
 };
 
-export default function ActionWindow({ selectedMember, groupId, members, chatEntries }: Props) {
+export default function ActionWindow({ selectedMember, groupId, members, chatEntries, isAdmin }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const tabs: { id: Tab; label: string }[] = [
@@ -58,7 +59,7 @@ export default function ActionWindow({ selectedMember, groupId, members, chatEnt
             : <p className="text-sm text-gray-400 italic">Select a member to view their profile.</p>
         )}
         {activeTab === 'chat' && (
-          <GroupChat members={members} chatEntries={chatEntries} />
+          <GroupChat members={members} chatEntries={chatEntries} isAdmin={isAdmin} />
         )}
         {activeTab === 'games' && <GameSessionOverview />}
       </div>

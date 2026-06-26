@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../types';
-
 import MemberList from './_components/member-list';
 import ActionWindow from './_components/action-window';
 import BackToDashboard from './_components/back-to-dashboard';
@@ -29,6 +28,9 @@ import DeleteGroup from './_components/delete-group';
 import ManageVocabulary from './_components/manage-vocabulary';
 import { chatApi } from '@/lib/api/chat';
 import type { GroupChatEntryDto } from '@/lib/api/chat';
+import AdminToAdmins from './_components/admin-to-admins';
+import AdminToGroup from './_components/admin-to-group';
+import MemberToAdmin from './_components/member-to-admin';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -105,8 +107,6 @@ export default function ManageGroup() {
     <>
       <ManagePlayers />
       {isAdmin && <ManageVocabulary />}
-      
-      
       {isAdmin && (
         <PromoteToAdmin
           currentGroupMembers={currentGroupMembers}
@@ -121,8 +121,11 @@ export default function ManageGroup() {
           syncAndRefresh={syncAndRefresh}
         />
       )}
+      {isAdmin && <AdminToAdmins />}
+      {isAdmin && <AdminToGroup />}  
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <LeaveGroup syncAndRefresh={syncAndRefresh} />
+      {!isAdmin && <MemberToAdmin />}
       {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
       <BackToDashboard />
     </>
@@ -144,6 +147,7 @@ export default function ManageGroup() {
             groupId={group.id}
             members={currentGroupMembers}
             chatEntries={chatEntries}
+            isAdmin={isAdmin}
           />
           <div className="grid grid-cols-2 gap-3">{buttons}</div>
         </div>
@@ -163,6 +167,7 @@ export default function ManageGroup() {
               groupId={group.id}
               members={currentGroupMembers}
               chatEntries={chatEntries}
+              isAdmin={isAdmin}
             />
           </div>
           <div className="col-span-1 grid grid-cols-2 gap-2 [&_button]:py-1 [&_button]:text-s">
@@ -197,6 +202,7 @@ export default function ManageGroup() {
             groupId={group.id}
             members={currentGroupMembers}
             chatEntries={chatEntries}
+            isAdmin={isAdmin}
           />
         </div>
 

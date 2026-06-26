@@ -16,6 +16,11 @@ export type GroupChatEntry = {
   content?:    string;
 };
 
+const USER_TARGET_EVENTS = new Set<ChatEventKey>([
+  'PROMOTE_ADMIN',
+  'EXPEL_MEMBER',
+]);
+
 @Injectable()
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,9 +52,11 @@ export class ChatService {
    * Append a LOG entry for a group event.
    * Called internally by other services (GroupsService, VocabulariesService, etc.)
    * when a significant action occurs.
-   * Names are resolved and stored at write time so they remain correct
-   * even after the user leaves the group.
+   * authorName is always resolved from the DB at write time.
+   * targetName is only resolved as a user name for events where the target is a user
+   * (PROMOTE_ADMIN, EXPEL_MEMBER). For vocabulary events, the name comes through content.
    */
+
   async logEvent(
     groupId:   number,
     authorId:  number,
@@ -57,8 +64,10 @@ export class ChatService {
     targetId?: number,
     content?:  string,
   ): Promise<GroupChatEntry> {
-    const authorName  = await this.resolveUserName(authorId);
-    const targetName  = targetId ? await this.resolveUserName(targetId) : undefined;
+    const authorName = await this.resolveUserName(authorId);
+    const targetName = targetId && USER_TARGET_EVENTS.has(eventKey)
+      ? await this.resolveUserName(targetId)
+      : undefined;
     return this.createEntry({
       groupId,
       authorId,

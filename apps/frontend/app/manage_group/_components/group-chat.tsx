@@ -12,6 +12,10 @@
   correct even after a user leaves the group. If the user is still a member,
   their name is rendered normally. If they have left, it is italicized.
 
+  Visibility rules:
+  - Admins see all four types (LOG, ADM, GEN, MEM) and all four filter buttons.
+  - Non-admins see only LOG and GEN entries and only those two filter buttons.
+
   Chat entries are fetched and refreshed by manage_group/page.tsx on its 5s polling
   cycle and passed down as a prop — no separate fetch or polling here.
 */
@@ -40,10 +44,10 @@ function renderLogSentence(
     case 'RENAME_GROUP':          return <>{authorEl} renamed the group to &quot;{entry.content ?? '?'}&quot;</>;
     case 'EXPEL_MEMBER':          return <>{authorEl} expelled {targetEl}</>;
     case 'DELETE_GROUP':          return <>{authorEl} deleted the group</>;
-    case 'UPLOAD_VOCABULARY':     return <>{authorEl} uploaded vocabulary &quot;{targetEl}&quot;</>;
-    case 'RENAME_VOCABULARY':     return <>{authorEl} renamed a vocabulary to &quot;{targetEl}&quot;</>;
-    case 'DELETE_VOCABULARY':     return <>{authorEl} deleted vocabulary &quot;{targetEl}&quot;</>;
-    case 'SET_ACTIVE_VOCABULARY': return <>{authorEl} set &quot;{targetEl}&quot; as the active vocabulary</>;
+    case 'UPLOAD_VOCABULARY':     return <>{authorEl} uploaded vocabulary &quot;{entry.content ?? '?'}&quot;</>;
+    case 'SET_ACTIVE_VOCABULARY': return <>{authorEl} set &quot;{entry.content ?? '?'}&quot; as the active vocabulary</>;
+    case 'RENAME_VOCABULARY':     return <>{authorEl} renamed a vocabulary to &quot;{entry.content ?? '?'}&quot;</>;
+    case 'DELETE_VOCABULARY':     return <>{authorEl} deleted vocabulary &quot;{entry.content ?? '?'}&quot;</>;
     case 'SEND_INVITE':           return <>{authorEl} sent an invitation</>;
     default:                      return <>{authorEl} performed an unknown action</>;
   }
@@ -77,6 +81,10 @@ const TYPE_COLOURS: Record<ChatEntryType, { active: string; inactive: string }> 
   MEM: { active: 'bg-blue-600 text-white',      inactive: 'bg-blue-50 text-blue-300' },
 };
 
+// Types visible to admins vs members
+const ADMIN_TYPES: ChatEntryType[] = ['LOG', 'ADM', 'GEN', 'MEM'];
+const MEMBER_TYPES: ChatEntryType[] = ['LOG', 'GEN'];
+
 // ─── Single chat entry row ────────────────────────────────────────────────────
 
 function ChatEntryRow({
@@ -86,8 +94,8 @@ function ChatEntryRow({
   entry: GroupChatEntryDto;
   memberIds: Set<number>;
 }) {
-  const colours  = TYPE_COLOURS[entry.type];
-  const isLog    = entry.type === 'LOG';
+  const colours = TYPE_COLOURS[entry.type];
+  const isLog   = entry.type === 'LOG';
 
   // Render a name — italic if the user is no longer a member
   function nameEl(id: number, name: string): React.ReactNode {
@@ -132,11 +140,14 @@ function ChatEntryRow({
 type Props = {
   members:     Member[];
   chatEntries: GroupChatEntryDto[];
+  isAdmin:     boolean;
 };
 
-export default function GroupChat({ members, chatEntries }: Props) {
+export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
+  const visibleTypes = isAdmin ? ADMIN_TYPES : MEMBER_TYPES;
+
   const [activeFilters, setFilters] = useState<Set<ChatEntryType>>(
-    new Set(['LOG', 'ADM', 'GEN', 'MEM']),
+    new Set(visibleTypes),
   );
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -157,15 +168,18 @@ export default function GroupChat({ members, chatEntries }: Props) {
     });
   }
 
-  const visibleEntries = chatEntries.filter((e) => activeFilters.has(e.type));
+  // Entries are filtered by both role visibility and active filter toggles
+  const visibleEntries = chatEntries.filter(
+    (e) => visibleTypes.includes(e.type) && activeFilters.has(e.type),
+  );
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-2">
 
-      {/* Filter toggles */}
+      {/* Filter toggles — only show types the current user is allowed to see */}
       <div className="flex gap-2">
-        {(['LOG', 'ADM', 'GEN', 'MEM'] as ChatEntryType[]).map((type) => {
+        {visibleTypes.map((type) => {
           const isActive = activeFilters.has(type);
           const colours  = TYPE_COLOURS[type];
           return (
