@@ -42,6 +42,7 @@ export class GroupsService {
       ...groupWithMemberships,
     });
     await this.usersService.addAdminGroup(creatorId, group.id);
+    await this.chatService.logEvent(group.id, creatorId, 'CREATE_GROUP');
     return toApiGroup(group);
   }
 

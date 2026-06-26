@@ -1,6 +1,7 @@
 import { apiRequest } from '../http';
 import type {
   CreateVocabularyInput,
+  RemoveVocabularyInput,
   RenameVocabularyInput,
   SetActiveVocabularyInput,
   UpdateVocabularyEntriesInput,
@@ -44,10 +45,10 @@ export const vocabulariesApi = {
     });
   },
 
-  remove(vocabularyId: number): Promise<VocabularyDto | boolean> {
-    return apiRequest('/vocabularies/remove', {
+  remove(input: RemoveVocabularyInput): Promise<boolean> {
+    return apiRequest<boolean>('/vocabularies/remove', {
       method: 'POST',
-      body: JSON.stringify({ vocabularyId }),
+      body: JSON.stringify(input),
     });
   },
 };
