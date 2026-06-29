@@ -67,7 +67,7 @@ export default function AdminToAdmins({ syncAndRefresh }: Props) {
             <p className="text-sm text-gray-600 mb-4">
               Write a message to all other admins of group{' '}
               <span className="font-semibold">{group.name}</span>.
-              It will appear in the group chat window.
+              It will appear in the Group Chat, visible to admins only.
             </p>
 
             <textarea

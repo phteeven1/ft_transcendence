@@ -63,11 +63,11 @@ export default function MemberToAdmin({ syncAndRefresh }: Props) {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-2">Ask Admin</h2>
+            <h2 className="text-xl font-bold mb-2">Message Admin</h2>
             <p className="text-sm text-gray-600 mb-4">
               Write a question or concern to the admins of group{' '}
               <span className="font-semibold">{group.name}</span>.
-              It will appear in the group chat window.
+              It will be visible in the Group Chat, but only to the admins of the group.
             </p>
 
             <textarea
