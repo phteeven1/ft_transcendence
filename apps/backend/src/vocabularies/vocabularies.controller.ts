@@ -9,6 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { VocabulariesService } from './vocabularies.service';
 import { ExtractionService } from './extraction.service';
 
@@ -64,7 +65,12 @@ export class VocabulariesController {
   }
 
 	@Post('extract')
-	@UseInterceptors(FileInterceptor('file'))
+	@UseInterceptors(
+		FileInterceptor('file', {
+			storage: memoryStorage(),
+			limits: { fileSize: 10 * 1024 * 1024 },
+		}),
+	)
 	async extract(
 		@UploadedFile() file: Express.Multer.File | undefined,
 		@Body() body: { fromLanguage?: string; toLanguage?: string }
