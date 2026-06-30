@@ -45,6 +45,9 @@ echo "[dev] Wende Datenbank-Migrationen an..."
   DATABASE_URL="$LOCAL_DATABASE_URL" npm run db:migrate:deploy
 )
 
+echo "[dev] Generiere Prisma Client..."
+npm run db:generate
+
 BACK_PID=""
 FRONT_PID=""
 DEV_CLEANUP_DONE=false
