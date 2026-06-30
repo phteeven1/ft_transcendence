@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Param, Body, UseInterceptors, UploadedFile
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { VocabulariesService } from './vocabularies.service';
@@ -58,18 +66,16 @@ export class VocabulariesController {
 	@Post('extract')
 	@UseInterceptors(FileInterceptor('file'))
 	async extract(
-		@UploadedFile() file: Express.Multer.File,
+		@UploadedFile() file: Express.Multer.File | undefined,
 		@Body() body: { fromLanguage?: string; toLanguage?: string }
 	) {
-		try {
-			const fromLang = body.fromLanguage || 'fr';
-			const toLang = body.toLanguage || 'en';
-			console.log('Received file for extraction:', file.originalname, 'from:', fromLang, 'to:', toLang);
-			return await this.extractionService.extractVocab(file, fromLang, toLang);
-		} catch (error) {
-			console.error('Extraction Error:', error); // This will show the real error in your terminal
-			throw error;
+		if (!file) {
+			throw new BadRequestException('No file uploaded.');
 		}
+		const fromLang = body.fromLanguage || 'French';
+		const toLang = body.toLanguage || 'English';
+		console.log('Received file for extraction:', file.originalname, file.mimetype, 'from:', fromLang, 'to:', toLang);
+		return this.extractionService.extractVocab(file, fromLang, toLang);
 	}
 
 	@Get(':id')

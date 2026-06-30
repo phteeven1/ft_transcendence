@@ -64,9 +64,21 @@ export const vocabulariesApi = {
 		});
 
 		if (!response.ok) {
-			const errorData = await response.text();
-			console.error('Backend extraction error:', errorData);
-			throw new Error('Failed to extract vocabulary: ' + errorData);
+			let message = 'Failed to extract vocabulary';
+			const errorText = await response.text();
+			try {
+				const errorData = JSON.parse(errorText) as { message?: string | string[] };
+				const backendMessage = errorData.message;
+				if (typeof backendMessage === 'string') {
+					message = backendMessage;
+				} else if (Array.isArray(backendMessage)) {
+					message = backendMessage.join(', ');
+				}
+			} catch {
+				if (errorText) message = errorText;
+			}
+			console.error('Backend extraction error:', message);
+			throw new Error(message);
 		}
 		return response.json();
 	}
