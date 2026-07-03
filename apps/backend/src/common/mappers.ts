@@ -8,6 +8,7 @@ import {
   PlayerSession as DbPlayerSession,
   User as DbUser,
   Vocabulary as DbVocabulary,
+  GroupChatEntry as DbGroupChatEntry,
 } from '@ft-transcendence/database';
 import type { Game } from '../games/games.service';
 import type { Group } from '../groups/groups.service';
@@ -15,6 +16,7 @@ import type { Invitation } from '../invitations/invitations.service';
 import type { Player } from '../players/players.service';
 import type { User } from '../users/users.service';
 import type { Vocabulary } from '../vocabularies/vocabularies.service';
+import type { GroupChatEntry } from '../chat/chat.service';
 
 type UserWithMemberships = DbUser & { memberships: GroupMembership[] };
 type GroupWithMemberships = DbGroup & { memberships: GroupMembership[] };
@@ -126,3 +128,18 @@ export const gameWithPlayers = {
 export const playerWithSession = {
   include: { session: true },
 } as const;
+
+export function toApiChatEntry(entry: DbGroupChatEntry): GroupChatEntry {
+  return {
+    groupId:     entry.groupId,
+    entryNumber: entry.entryNumber,
+    createdAt:   entry.createdAt.toISOString(),
+    type:        entry.type,
+    authorId:    entry.authorId,
+    authorName:  entry.authorName ?? 'Unknown User',
+    targetId:    entry.targetId   ?? undefined,
+    targetName:  entry.targetName ?? undefined,
+    eventKey:    entry.eventKey   ?? undefined,
+    content:     entry.content    ?? undefined,
+  };
+}

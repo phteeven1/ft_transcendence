@@ -24,13 +24,13 @@ export default function PromoteToAdmin({
   currentGroupMembers,
   syncAndRefresh,
 }: Props) {
-  const { group } = useAuth();
+  const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
 
-  if (!group) return null;
+  if (!group || !user) return null;
 
   const nonAdmins = currentGroupMembers.filter((m) => !m.isAdmin);
   const admins = currentGroupMembers.filter((m) => m.isAdmin);
@@ -70,7 +70,7 @@ export default function PromoteToAdmin({
     try {
       await Promise.all(
         selectedIds.map((userId) =>
-          groupsApi.promote({ groupId: group.id, userId }),
+          groupsApi.promote({ groupId: group.id, userId, authorId: user.id }),
         ),
       );
 

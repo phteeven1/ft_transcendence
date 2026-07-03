@@ -8,10 +8,11 @@ export class InvitationsController {
   @Post('send')
   async send(
     @Body() body: {
-      groupId: number;
-      groupName: string;
-      toEmail: string;
+      groupId:        number;
+      groupName:      string;
+      toEmail:        string;
       invitationText: string;
+      authorId:       number;
     },
   ) {
     return this.invitationsService.sendInvitation(
@@ -19,6 +20,7 @@ export class InvitationsController {
       body.groupName,
       body.toEmail,
       body.invitationText,
+      body.authorId,
     );
   }
 

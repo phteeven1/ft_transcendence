@@ -8,40 +8,82 @@ export class VocabulariesController {
   @Post('create')
   create(
     @Body() body: {
-      vocabularyInGroup: number;
-      byUser: number;
-      vocabularyName: string;
-      vocabularyWords?: string[];
-      vocabularyMeanings?: string[];
+      vocabularyInGroup:    number;
+      byUser:               number;
+      vocabularyName:       string;
+      vocabularyWords?:     string[];
+      vocabularyMeanings?:  string[];
     },
   ) {
     return this.vocabulariesService.create(
       body.vocabularyInGroup,
       body.byUser,
       body.vocabularyName,
-      body.vocabularyWords ?? [],
+      body.vocabularyWords   ?? [],
       body.vocabularyMeanings ?? [],
     );
   }
 
   @Post('setActive')
-  setActive(@Body() body: { vocabularyId: number; vocabularyInGroup: number }) {
-    return this.vocabulariesService.setActive(body.vocabularyId, body.vocabularyInGroup);
+  setActive(
+    @Body() body: {
+      vocabularyId:      number;
+      vocabularyInGroup: number;
+      authorId:          number;
+    },
+  ) {
+    return this.vocabulariesService.setActive(
+      body.vocabularyId,
+      body.vocabularyInGroup,
+      body.authorId,
+    );
   }
 
   @Post('rename')
-  rename(@Body() body: { vocabularyId: number; vocabularyName: string }) {
-    return this.vocabulariesService.rename(body.vocabularyId, body.vocabularyName);
+  rename(
+    @Body() body: {
+      vocabularyId:      number;
+      vocabularyName:    string;
+      vocabularyInGroup: number;
+      authorId:          number;
+    },
+  ) {
+    return this.vocabulariesService.rename(
+      body.vocabularyId,
+      body.vocabularyName,
+      body.vocabularyInGroup,
+      body.authorId,
+    );
   }
 
   @Post('update-entries')
-  updateEntries(@Body() body: { vocabularyId: number; vocabularyWords: string[]; vocabularyMeanings: string[] }) {
-    return this.vocabulariesService.updateEntries(body.vocabularyId, body.vocabularyWords, body.vocabularyMeanings);
+  updateEntries(
+    @Body() body: {
+      vocabularyId:       number;
+      vocabularyWords:    string[];
+      vocabularyMeanings: string[];
+    },
+  ) {
+    return this.vocabulariesService.updateEntries(
+      body.vocabularyId,
+      body.vocabularyWords,
+      body.vocabularyMeanings,
+    );
   }
 
   @Post('remove')
-  remove(@Body() body: { vocabularyId: number }) {
-    return this.vocabulariesService.remove(body.vocabularyId);
+  remove(
+    @Body() body: {
+      vocabularyId:      number;
+      vocabularyInGroup: number;
+      authorId:          number;
+    },
+  ) {
+    return this.vocabulariesService.remove(
+      body.vocabularyId,
+      body.vocabularyInGroup,
+      body.authorId,
+    );
   }
 
   @Get('group/:groupId')

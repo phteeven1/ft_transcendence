@@ -9,16 +9,17 @@ type Props = {
 };
 
 export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
-  const { group } = useAuth();
+  const { group, user } = useAuth();
 
   const isActive = selectedVocabulary !== null && selectedVocabulary.id !== group?.currentVocabulary;
 
   const handleClick = async () => {
-    if (!selectedVocabulary || !group) return;
+    if (!selectedVocabulary || !group || !user) return;
     try {
       const updated = await vocabulariesApi.setActive({
-        vocabularyId: selectedVocabulary.id,
+        vocabularyId:      selectedVocabulary.id,
         vocabularyInGroup: group.id,
+        authorId:          user.id,
       });
       if (!updated) throw new Error('Failed to activate vocabulary');
       onActivated(updated);

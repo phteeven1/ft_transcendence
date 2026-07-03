@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
+import { useAuth } from '../../context/auth-context';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -14,15 +15,17 @@ export default function RenameVocabulary({
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [newName, setNewName] = useState('');
-
+  const { group, user } = useAuth();
   const isActive = selectedVocabulary !== null;
 
   const handleRename = async () => {
-    if (!selectedVocabulary || !newName.trim()) return;
+    if (!selectedVocabulary || !newName.trim() || !group || !user) return;
     try {
       const updated = await vocabulariesApi.rename({
-        vocabularyId: selectedVocabulary.id,
-        vocabularyName: newName.trim(),
+        vocabularyId:      selectedVocabulary.id,
+        vocabularyName:    newName.trim(),
+        vocabularyInGroup: group.id,
+        authorId:          user.id,
       });
       if (!updated) throw new Error('Failed to rename vocabulary');
       onRenamed(updated);
