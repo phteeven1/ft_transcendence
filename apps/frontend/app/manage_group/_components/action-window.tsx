@@ -23,7 +23,7 @@ type Props = {
   isAdmin:        boolean;
 };
 
-export default function ActionWindow({ selectedMember, groupId, members, chatEntries, isAdmin }: Props) {
+export default function ActionWindow({ selectedMember, members, chatEntries, isAdmin }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const tabs: { id: Tab; label: string }[] = [
