@@ -60,7 +60,7 @@ export default function ManageGroup() {
       const members = await groupsApi.getMembers(group.id);
       setCurrentGroupMembers(members);
       setSelectedMember(prev => prev ?? members.find(m => m.id === user?.id) ?? null);
-      await fetchChatEntries(); // add this
+      await fetchChatEntries();
     } catch (error) {
       console.error('fetchMembers failed:', error);
     }
