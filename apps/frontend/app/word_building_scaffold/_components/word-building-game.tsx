@@ -61,6 +61,7 @@ export default function WordBuildingGame() {
   // ── Cell selection ──────────────────────────────────────────────────────────
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [selectedCol, setSelectedCol] = useState<number | null>(null);
+  const [direction, setDirection] = useState<'across' | 'down'>('across');
 
   // ── UI state ────────────────────────────────────────────────────────────────
   const [showAbandonModal, setShowAbandonModal] = useState(false);
@@ -123,37 +124,149 @@ export default function WordBuildingGame() {
   }, [gameFinished, router]);
 
   /**
-   * Selects a playable cell so subsequent keyboard input targets the right location.
-   *
-   * @param row Row of the clicked cell.
-   * @param col Column of the clicked cell.
+   * Determines which word(s) a cell belongs to by scanning from clue start positions.
+   * Returns { hasAcross: boolean, hasDown: boolean, acrossEmpty: number, downEmpty: number }
+   */
+  const analyzeCell = useCallback((row: number, col: number): {
+    hasAcross: boolean;
+    hasDown: boolean;
+    acrossEmpty: number;
+    downEmpty: number;
+  } => {
+    let hasAcross = false;
+    let hasDown = false;
+    let acrossEmpty = 0;
+    let downEmpty = 0;
+
+    // Check across clues
+    for (const clue of cluesAcross) {
+      // Scan rightward from clue start to find word extent
+      let wordEnd = clue.col;
+      while (wordEnd < COURT_COLS && visibleCourt[clue.row]?.[wordEnd]?.status !== 'none') {
+        wordEnd++;
+      }
+      
+      // Check if current cell is within this word
+      if (clue.row === row && col >= clue.col && col < wordEnd) {
+        hasAcross = true;
+        // Count empty cells in this word
+        for (let c = clue.col; c < wordEnd; c++) {
+          if (visibleCourt[clue.row][c].status === 'empty') acrossEmpty++;
+        }
+        break;
+      }
+    }
+
+    // Check down clues
+    for (const clue of cluesDown) {
+      // Scan downward from clue start to find word extent
+      let wordEnd = clue.row;
+      while (wordEnd < COURT_ROWS && visibleCourt[wordEnd]?.[clue.col]?.status !== 'none') {
+        wordEnd++;
+      }
+      
+      // Check if current cell is within this word
+      if (clue.col === col && row >= clue.row && row < wordEnd) {
+        hasDown = true;
+        // Count empty cells in this word
+        for (let r = clue.row; r < wordEnd; r++) {
+          if (visibleCourt[r][clue.col].status === 'empty') downEmpty++;
+        }
+        break;
+      }
+    }
+
+    return { hasAcross, hasDown, acrossEmpty, downEmpty };
+  }, [visibleCourt, cluesAcross, cluesDown]);
+
+  /**
+   * Intelligently determines the best direction for a cell:
+   * - If cell is start of only one clue → use that direction
+   * - If cell is start of both → prefer the one with more empty cells
+   * - If cell is middle of both → prefer the one with more empty cells
+   * - If clicking same cell → toggle direction
    */
   const handleCellClick = useCallback((row: number, col: number) => {
     const cell = visibleCourt[row]?.[col];
     if (!cell || cell.status === 'none') return;
+    
+    // Toggle direction if clicking the same cell
+    if (row === selectedRow && col === selectedCol) {
+      setDirection(prev => prev === 'across' ? 'down' : 'across');
+      return;
+    }
+    
+    // Set new selection
     setSelectedRow(row);
     setSelectedCol(col);
-  }, [visibleCourt]);
+    
+    // Intelligently determine direction
+    const analysis = analyzeCell(row, col);
+    
+    if (analysis.hasAcross && !analysis.hasDown) {
+      // Cell only belongs to across word
+      setDirection('across');
+    } else if (analysis.hasDown && !analysis.hasAcross) {
+      // Cell only belongs to down word
+      setDirection('down');
+    } else if (analysis.hasAcross && analysis.hasDown) {
+      // Intersection cell - prefer the word with more empty cells
+      if (analysis.acrossEmpty > analysis.downEmpty) {
+        setDirection('across');
+      } else if (analysis.downEmpty > analysis.acrossEmpty) {
+        setDirection('down');
+      }
+      // If equal, keep current direction (or default to across if no current)
+    }
+    // If neither, keep current direction
+  }, [visibleCourt, selectedRow, selectedCol, analyzeCell]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**
    * Moves the current selection to the next playable cell after a letter is entered.
-   * This keeps keyboard-driven play flowing across the crossword.
+   * Movement direction depends on the current direction state:
+   * - 'across': moves right within the same word
+   * - 'down': moves down within the same word
+   * Stops at the end of the word (doesn't wrap to next word automatically)
    */
   const advanceSelection = useCallback(() => {
     if (selectedRow === null || selectedCol === null) return;
-    const nextCol = selectedCol + 1;
-    if (nextCol < COURT_COLS && visibleCourt[selectedRow]?.[nextCol]?.status !== 'none') {
-      setSelectedCol(nextCol);
-    } else {
-      const nextRow = selectedRow + 1;
-      if (nextRow < COURT_ROWS) {
-        setSelectedRow(nextRow);
-        setSelectedCol(0);
+    
+    if (direction === 'across') {
+      // Move horizontally (right) within the same row
+      let nextCol = selectedCol + 1;
+      
+      // Find next non-black cell in the same row
+      while (nextCol < COURT_COLS) {
+        const nextCell = visibleCourt[selectedRow]?.[nextCol];
+        if (!nextCell || nextCell.status === 'none') {
+          // Hit a black square or edge, stop at current position
+          break;
+        }
+        // Found a valid cell
+        setSelectedCol(nextCol);
+        return;
       }
+      // Reached end of row or hit black square, stay at current position
+    } else {
+      // Move vertically (down) within the same column
+      let nextRow = selectedRow + 1;
+      
+      // Find next non-black cell in the same column
+      while (nextRow < COURT_ROWS) {
+        const nextCell = visibleCourt[nextRow]?.[selectedCol];
+        if (!nextCell || nextCell.status === 'none') {
+          // Hit a black square or edge, stop at current position
+          break;
+        }
+        // Found a valid cell
+        setSelectedRow(nextRow);
+        return;
+      }
+      // Reached end of column or hit black square, stay at current position
     }
-  }, [selectedRow, selectedCol, visibleCourt]);
+  }, [selectedRow, selectedCol, direction, visibleCourt]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -162,6 +275,15 @@ export default function WordBuildingGame() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedRow === null || selectedCol === null) return;
       if (solved) return;
+      
+      // Toggle direction with Space or Tab
+      if (e.key === ' ' || e.key === 'Tab') {
+        e.preventDefault();
+        setDirection(prev => prev === 'across' ? 'down' : 'across');
+        return;
+      }
+      
+      // Handle letter input
       const key = e.key.normalize('NFC');
       if (key.length !== 1 || !/\p{L}/u.test(key)) return;
       e.preventDefault();
@@ -215,9 +337,18 @@ export default function WordBuildingGame() {
       className="min-h-screen bg-emerald-200 overflow-x-auto outline-none focus:ring-0"
     >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
-        <p className="text-xs text-gray-600 mb-2">
-          Click a cell, then type a letter. Green = correct · Blue = empty · Red = wrong.
-        </p>
+        <div className="flex items-center gap-4 mb-2">
+          <p className="text-xs text-gray-600">
+            Click a cell to auto-select direction · Type letters to fill · 
+            Green = correct · Blue = empty · Red = wrong · 
+            <strong>Space/Tab to toggle direction</strong>
+          </p>
+          {selectedRow !== null && selectedCol !== null && (
+            <span className="text-xs font-semibold px-2 py-1 rounded bg-blue-100 text-blue-800">
+              {direction === 'across' ? '→ Across' : '↓ Down'}
+            </span>
+          )}
+        </div>
         <div className="flex gap-6 items-start">
           {/* Grid */}
           <main className="flex flex-col gap-2">

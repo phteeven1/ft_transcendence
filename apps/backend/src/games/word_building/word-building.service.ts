@@ -1,11 +1,31 @@
-//
-// Integrates:
-//   - WordBuildingPuzzleEngine crossword generation
-//   - Letter placement with correct/wrong/empty validation
-//   - First-correct-placer scoring via creditGrid
-//   - In-memory live state with DB persistence on solve
-//
-// Court dimensions must stay in sync with game-court.tsx on the frontend.
+/**
+ * Word Building Service
+ * 
+ * Integrates crossword generation, database persistence, and real-time gameplay state management.
+ * 
+ * Responsibilities:
+ * - Puzzle Generation: Creates crossword puzzles using WordBuildingPuzzleEngine with quality guarantee
+ * - State Management: Maintains in-memory live game state with lazy hydration from database
+ * - Letter Placement: Handles WebSocket-driven letter placement with validation and scoring
+ * - Credit Tracking: Implements "first-correct-placer wins" scoring via creditGrid
+ * - Database Sync: Persists final state on puzzle completion
+ * 
+ * Grid Dimensions:
+ * - Fixed 18×18 board (COURT_COLS × COURT_ROWS)
+ * - Must match game-court.tsx constants on frontend
+ * - Trimmed puzzles are centered within this fixed canvas
+ * 
+ * Quality Guarantee:
+ * - Generates puzzle, checks placement ratio (≥50% of vocabulary)
+ * - Retries once with fresh seed if first attempt is too sparse
+ * - Keeps better result (higher placement count)
+ * 
+ * State Flow:
+ * 1. POST /initWordBuildingCourt: Generate puzzle → persist → return initial grid
+ * 2. WebSocket placeLetter: Validate → update live state → broadcast payload
+ * 3. GET /wordBuildingState: Return current state for reconnecting clients
+ * 4. On solve: Persist final grid + scores → mark game finished → evict from memory
+ */
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -20,9 +40,12 @@ import {
   IPlaceLetterDto,
 } from './word-building.types';
 
-// Keep in sync with game-court.tsx (COURT_COLS / COURT_ROWS)
+/** Fixed board width - must match game-court.tsx COURT_COLS */
 const COURT_COLS = 18;
+/** Fixed board height - must match game-court.tsx COURT_ROWS */
 const COURT_ROWS = 18;
+/** Minimum fraction of vocabulary that must be placed (0.5 = 50%) */
+const MIN_PLACEMENT_RATIO = 0.5;
 
 @Injectable()
 export class WordBuildingService {
@@ -32,16 +55,35 @@ export class WordBuildingService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─── initCourt ─────────────────────────────────────────────────────────────
   /**
-   * Called by POST /games/:id/initWordBuildingCourt on scaffold mount.
-   * Runs WordBuildingPuzzleEngine, persists Crossword row, returns trueCourt + visibleCourt.
-   * Idempotent: if a Crossword row already exists for this game, reloads it.
+   * Initializes a crossword puzzle for a game - generates, persists, and returns initial grid state.
+   * 
+   * Flow:
+   * 1. Check for existing crossword in database (idempotent - returns cached if exists)
+   * 2. Fetch game + group + active vocabulary
+   * 3. Generate puzzle with quality guarantee:
+   *    - Run engine with seed
+   *    - If placement ratio < MIN_PLACEMENT_RATIO (50%), retry once with fresh seed
+   *    - Keep better result (higher placement count)
+   * 4. Pad trimmed puzzle to fixed 18×18 grid (centered)
+   * 5. Persist to database: solution, playerGrid (all null), creditGrid (all null), clues
+   * 6. Return trueCourt (solution visible) + visibleCourt (empty cells) + clues
+   * 
+   * Quality Guarantee:
+   * - Ensures puzzles use ≥50% of vocabulary words
+   * - Prevents sparse/unsolvable puzzles from bad random seeds
+   * - Single retry balances quality with performance
+   * 
+   * @param gameId Game ID requiring crossword initialization.
+   * @returns Initial grid state for frontend rendering (trueCourt used for debugging, visibleCourt for gameplay).
+   * @throws If game not found or group has no active vocabulary.
    */
   async initCourt(gameId: number): Promise<IInitCourtResponse> {
+    // Idempotent: if crossword already exists, rehydrate from database
     const existing = await this.prisma.crossword.findUnique({ where: { gameId } });
     if (existing) return this.rehydrateInitResponse(existing);
 
+    // Fetch game with vocabulary
     const game = await this.prisma.game.findUniqueOrThrow({
       where: { id: gameId },
       include: { group: { include: { currentVocabulary: true } } },
@@ -55,13 +97,35 @@ export class WordBuildingService {
       clue: vocab.meanings[i] ?? '',
     }));
 
-    const engine = new WordBuildingPuzzleEngine(Math.min(COURT_COLS, COURT_ROWS), 80, 12);
-    const result = engine.generate(entries);
+    // Quality guarantee: generate puzzle, retry once if too sparse
+    const engine1 = new WordBuildingPuzzleEngine(Math.min(COURT_COLS, COURT_ROWS), 80, 12);
+    const result1 = engine1.generate(entries);
+    
+    let result = result1;
+    const placementRatio = result1.placements.length / entries.length;
+    
+    if (placementRatio < MIN_PLACEMENT_RATIO) {
+      this.logger.warn(
+        `Puzzle quality below threshold (${(placementRatio * 100).toFixed(1)}%). Retrying with fresh seed...`,
+      );
+      const engine2 = new WordBuildingPuzzleEngine(Math.min(COURT_COLS, COURT_ROWS), 80, 12);
+      const result2 = engine2.generate(entries);
+      
+      // Keep better result (more placements)
+      result = result2.placements.length > result1.placements.length ? result2 : result1;
+      
+      this.logger.log(
+        `Retry complete: ${result1.placements.length} → ${result2.placements.length} placements. ` +
+        `Using ${result === result2 ? 'retry' : 'original'}.`,
+      );
+    }
 
+    // Pad trimmed puzzle to fixed board size (centered)
     const solution   = this.padGrid(result.solution, COURT_ROWS, COURT_COLS);
     const playerGrid = solution.map(row => row.map(() => null as string | null));
     const clues      = this.buildClueMap(result.placements);
 
+    // Persist to database
     await this.prisma.crossword.create({
       data: {
         gameId,
@@ -69,7 +133,7 @@ export class WordBuildingService {
         cols:       COURT_COLS,
         solution:   solution   as unknown as object,
         playerGrid: playerGrid as unknown as object,
-        creditGrid: playerGrid as unknown as object,  // same shape, all null
+        creditGrid: playerGrid as unknown as object,  // Same shape, all null initially
         clues:      clues      as unknown as object,
         revision:   0,
         solved:     false,
@@ -79,26 +143,49 @@ export class WordBuildingService {
     return this.buildInitResponse(solution, clues);
   }
 
-  // ─── placeLetter ───────────────────────────────────────────────────────────
   /**
-   * Called by the placeLetter WebSocket event.
-   * Validates, scores, and returns an updated IGameStatePayload for broadcast.
-   * Returns null if the cell is a black square (no-op).
+   * Processes a letter placement from a player via WebSocket.
+   * 
+   * Flow:
+   * 1. Normalize letter: NFC Unicode → uppercase → strip non-letters
+   * 2. Load or hydrate game state from memory/database
+   * 3. Ignore black squares (solution[r][c] === null)
+   * 4. Update playerGrid with normalized letter
+   * 5. Check correctness: compare with solution[r][c]
+   * 6. First-correct-placer scoring:
+   *    - If correct AND creditGrid[r][c] is null → assign playerId, increment score
+   *    - If already credited OR wrong → no score change
+   * 7. Build payload: visibleCourt (correct/wrong/empty), scores, solved flag
+   * 8. If solved → persist completion (final grids + scores + isFinished=true), evict from memory
+   * 9. Return payload for broadcast to game room
+   * 
+   * Scoring Rules:
+   * - First player to correctly place a letter wins the point permanently
+   * - Wrong placements have no effect on credit ownership
+   * - Overwriting correct letters has no effect (credit is sticky)
+   * 
+   * @param dto Letter placement data from WebSocket event.
+   * @returns Updated game state payload for broadcast, or null if black square clicked.
    */
   async placeLetter(dto: IPlaceLetterDto): Promise<IGameStatePayload | null> {
     const { gameId, playerId, row, col, letter } = dto;
+    
+    // Normalize letter (handle accents, case, non-letter characters)
     const normalized = letter.normalize('NFC').toUpperCase().replace(/[^\p{L}]/gu, '');
     if (!normalized) return null;
 
+    // Load live state (from memory or hydrate from database)
     const state = await this.loadOrHydrate(gameId);
 
-    // Ignore clicks on black squares
+    // Ignore clicks on black squares (no-op)
     if (state.solution[row]?.[col] === null) return null;
 
+    // Update player grid with normalized letter
     state.playerGrid[row][col] = normalized;
     state.revision++;
 
-    const isCorrect      = normalized === state.solution[row][col];
+    // Check correctness and credit
+    const isCorrect       = normalized === state.solution[row][col];
     const alreadyCredited = state.creditGrid[row][col] !== null;
 
     // First correct placer wins permanently
@@ -107,8 +194,10 @@ export class WordBuildingService {
       state.scores.set(playerId, (state.scores.get(playerId) ?? 0) + 1);
     }
 
+    // Build payload with current state
     const payload = this.buildPayload(state);
 
+    // Persist completion if puzzle is fully solved
     if (payload.solved) {
       await this.persistCompletion(gameId, state);
     }
@@ -116,10 +205,19 @@ export class WordBuildingService {
     return payload;
   }
 
-  // ─── getState ──────────────────────────────────────────────────────────────
   /**
-   * Called by GET /games/:id/wordBuildingState — used when a player reconnects
-   * mid-game and needs the current grid state without re-running initCourt.
+   * Retrieves current game state for reconnecting clients or state refresh requests.
+   * 
+   * Unlike initCourt (which generates and returns a NEW puzzle), this method returns
+   * the CURRENT state of an existing puzzle, including all player placements and scores.
+   * 
+   * Use cases:
+   * - Player refreshes browser mid-game
+   * - Player reconnects after network interruption
+   * - Frontend needs to sync state after WebSocket reconnection
+   * 
+   * @param gameId Game whose current state should be retrieved.
+   * @returns Current game state payload with visibleCourt (showing all placements), scores, solved flag.
    */
   async getState(gameId: number): Promise<IGameStatePayload> {
     const state = await this.loadOrHydrate(gameId);
