@@ -102,7 +102,7 @@ export class GroupsService {
     await this.usersService.removeAdminGroup(userId, groupId);
     await this.usersService.addMemberGroup(userId, groupId);
 
-    await this.chatService.logEvent(groupId, authorId, 'RESIGN_ADMIN', userId);
+    await this.chatService.logEvent(groupId, authorId, 'RESIGN_ADMIN');
 
     return this.findById(groupId);
   }
