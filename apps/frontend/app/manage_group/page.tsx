@@ -67,9 +67,9 @@ export default function ManageGroup() {
   };
 
   const fetchChatEntries = async () => {
-    if (!group) return;
+    if (!group || !user) return;
     try {
-      const entries = await chatApi.getEntries(group.id);
+      const entries = await chatApi.getEntries(group.id, user.id);
       setChatEntries(entries);
     } catch (error) {
       console.error('fetchChatEntries failed:', error);
