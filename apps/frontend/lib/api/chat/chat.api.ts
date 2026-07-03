@@ -6,8 +6,10 @@ export const chatApi = {
    * Fetch all chat entries for a group, ordered oldest → newest.
    * The UI renders them in order and can filter client-side.
    */
-  getEntries(groupId: number): Promise<GroupChatEntryDto[]> {
-    return apiRequest<GroupChatEntryDto[]>(`/groups/${groupId}/chat`);
+  getEntries(groupId: number, userId: number): Promise<GroupChatEntryDto[]> {
+    return apiRequest<GroupChatEntryDto[]>(
+      `/groups/${groupId}/chat?userId=${userId}`,
+    );
   },
 
   /**
