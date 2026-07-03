@@ -25,6 +25,14 @@ export class GamesService {
     private readonly gateway: GameGateway,
   ) {}
 
+  /**
+   * Creates a new game, adds the initiating player to it, and refreshes the lobby view.
+   *
+   * @param name Display name for the game.
+   * @param inGroup Group that owns the game.
+   * @param initiatedBy Player id of the creator.
+   * @returns The created game in API shape.
+   */
   async create(
     name: string,
     inGroup: number,
@@ -45,6 +53,13 @@ export class GamesService {
     return result;
   }
 
+  /**
+   * Adds a player to a pending game when the game is still joinable.
+   *
+   * @param gameId Game to join.
+   * @param playerId Player joining the game.
+   * @returns The updated game, or `undefined` if joining is not allowed.
+   */
   async join(gameId: number, playerId: number): Promise<Game | undefined> {
     const game = await this.findById(gameId);
     if (!game || game.isActive) return undefined;
@@ -60,6 +75,12 @@ export class GamesService {
     return result;
   }
 
+  /**
+   * Starts a pending game and promotes it into the active play state.
+   *
+   * @param gameId Game to start.
+   * @returns The updated game, or `undefined` if it cannot be started.
+   */
   async start(gameId: number): Promise<Game | undefined> {
     const game = await this.findById(gameId);
     if (!game) return undefined;
@@ -67,6 +88,14 @@ export class GamesService {
     return this.findById(gameId);
   }
 
+  /**
+   * Removes a player from a game and deletes the game when it becomes empty.
+   * This keeps lobby state and ownership consistent when participants leave.
+   *
+   * @param gameId Game to leave.
+   * @param playerId Player leaving the game.
+   * @returns The updated game, `null` if the game was removed, or `undefined` when missing.
+   */
   async leave(
     gameId: number,
     playerId: number,
@@ -98,11 +127,23 @@ export class GamesService {
     return this.findById(gameId);
   }
 
+  /**
+   * Ends a play session for the given player without requiring the game to be deleted.
+   *
+   * @param gameId Game to abandon.
+   * @param playerId Player ending the session.
+   */
   async abandonPlay(gameId: number, playerId: number): Promise<void> {
     await this.leave(gameId, playerId);
     await this.playersService.clearSession(playerId);
   }
 
+  /**
+   * Looks up one game by id and converts it into the API response shape.
+   *
+   * @param gameId Game id to fetch.
+   * @returns The matching game, or `undefined` if it does not exist.
+   */
   async findById(gameId: number): Promise<Game | undefined> {
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
@@ -111,6 +152,12 @@ export class GamesService {
     return game ? toApiGame(game) : undefined;
   }
 
+  /**
+   * Returns all games that belong to a single group.
+   *
+   * @param groupId Group id to filter by.
+   * @returns The list of games in that group.
+   */
   async findByGroup(groupId: number): Promise<Game[]> {
     const games = await this.prisma.game.findMany({
       where: { inGroupId: groupId },
@@ -119,11 +166,34 @@ export class GamesService {
     return games.map(toApiGame);
   }
 
+  /**
+   * Returns every game visible to the application.
+   *
+   * @returns The full game list in API shape.
+   */
   async findAll(): Promise<Game[]> {
     const games = await this.prisma.game.findMany(gameWithPlayers);
     return games.map(toApiGame);
   }
 
+  /**
+   * Returns the player roster for one game for scoreboard rendering.
+   *
+   * @param gameId Game whose players should be listed.
+   * @returns Player ids and names for the requested game.
+   */
+  async findPlayersForGame(gameId: number): Promise<Array<{ id: number; name: string }>> {
+    const gamePlayers = await this.prisma.gamePlayer.findMany({
+      where: { gameId },
+      include: { player: { select: { id: true, name: true } } },
+    });
+    return gamePlayers.map(gp => ({ id: gp.player.id, name: gp.player.name }));
+  }
+
+  /**
+   * Finds stale pending games and starts the ones that have expired.
+   * This is used as a best-effort cleanup and auto-start path for abandoned lobbies.
+   */
   async cleanupExpired(): Promise<void> {
     const now = new Date();
     const THIRTY_MINUTES_MS = 30 * 60 * 1000;
@@ -141,6 +211,12 @@ export class GamesService {
     }
   }
 
+  /**
+   * Promotes a pending game to active status, updates related player state,
+   * and removes empty stale games that were left behind in the same cleanup pass.
+   *
+   * @param game Game to start.
+   */
   private async startGame(game: Game): Promise<void> {
     await this.prisma.game.update({
       where: { id: game.id },
@@ -208,11 +284,22 @@ export class GamesService {
     }
   }
 
+  /**
+   * Pushes the refreshed lobby game list to the websocket gateway.
+   *
+   * @param groupId Group whose lobby should be refreshed.
+   */
   private async emitLobbyUpdate(groupId: number): Promise<void> {
     const games = await this.findByGroup(groupId);
     this.gateway.emitLobbyUpdate(groupId, games);
   }
 
+  /**
+   * Marks a game as finished, clears player session state, and emits the end-game event.
+   *
+   * @param gameId Game to finish.
+   * @returns The updated game, or `undefined` if the game does not exist.
+   */
   async finish(gameId: number): Promise<Game | undefined> {
     const game = await this.findById(gameId);
     if (!game) return undefined;

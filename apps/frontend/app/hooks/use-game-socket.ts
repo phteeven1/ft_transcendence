@@ -2,12 +2,14 @@
 
 /*
   Custom hook for in-game WebSocket communication.
-  Connects to the game room and handles tile reveal and game-finished events.
+  Connects to the game room and handles tile reveal, game-finished,
+  and the new game:state / placeLetter events for word building.
   Follows the same pattern as useGroupSocket.
 */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import type { IGameStatePayload, IPlaceLetterDto } from '@/lib/api/games/word-building.types';
 
 export type RevealedTile = {
   row: number;
@@ -19,14 +21,24 @@ interface GameSocketState {
   revealedTile: RevealedTile | null;
   gameFinished: boolean;
   isConnected: boolean;
+  gameState: IGameStatePayload | null;
 }
 
+/**
+ * Connects the active player to the game socket room and exposes the live websocket state.
+ * The hook centralizes join, state, and finish handling for the word-building gameplay flow.
+ *
+ * @param gameId The game room to join.
+ * @param playerId The current player using the socket.
+ * @returns Connection state, the latest game payload, and emit helpers for tile clicks and letters.
+ */
 export function useGameSocket(gameId: number, playerId: number) {
   const socketRef = useRef<Socket | null>(null);
   const [state, setState] = useState<GameSocketState>({
     revealedTile: null,
     gameFinished: false,
     isConnected: false,
+    gameState: null,
   });
 
   useEffect(() => {
@@ -51,11 +63,16 @@ export function useGameSocket(gameId: number, playerId: number) {
       setState((s) => ({ ...s, isConnected: false }));
     });
 
-    // Backend broadcasts this when any player clicks a tile.
-    // The orchestrator copies trueCourt[row][col] into visibleCourt[row][col].
+    // word_soup: Backend broadcasts this when any player clicks a tile.
     socket.on('game:tileRevealed', (tile: RevealedTile) => {
       if (!active) return;
       setState((s) => ({ ...s, revealedTile: tile }));
+    });
+
+    // word_building: Backend broadcasts full visible court after every letter placement.
+    socket.on('game:state', (payload: IGameStatePayload) => {
+      if (!active) return;
+      setState((s) => ({ ...s, gameState: payload }));
     });
 
     // Backend broadcasts this when the game is marked finished.
@@ -70,9 +87,25 @@ export function useGameSocket(gameId: number, playerId: number) {
     };
   }, [gameId, playerId]);
 
+  /**
+   * Sends a tile-click event to the server so all clients can update their revealed-tile state.
+   *
+   * @param row Board row of the clicked tile.
+   * @param col Board column of the clicked tile.
+   */
   const emitTileClick = (row: number, col: number) => {
     socketRef.current?.emit('tile:click', { gameId, playerId, row, col });
   };
 
-  return { ...state, emitTileClick };
+  /**
+   * Sends a letter placement to the server and lets the backend broadcast the authoritative state.
+   *
+   * @param dto Placement payload containing the game, player, cell, and letter.
+   */
+  const emitPlaceLetter = useCallback((dto: IPlaceLetterDto) => {
+    socketRef.current?.emit('placeLetter', dto);
+  }, []);
+
+  return { ...state, emitTileClick, emitPlaceLetter };
 }
+

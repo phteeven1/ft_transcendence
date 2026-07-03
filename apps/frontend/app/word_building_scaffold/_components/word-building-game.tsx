@@ -1,169 +1,195 @@
 'use client';
 
-/*
-  Orchestrator for the Word Building scaffold.
-  Responsibilities:
-  - Reads gameId and playerId from URL params
-  - Fetches game and players on mount
-  - Owns trueCourt and visibleCourt state, both populated by the backend
-    via POST /games/:id/initCourt (see games.service.ts: initWordBuildingCourt)
-  - Wires tile clicks: client emits tile:click → server broadcasts game:tileRevealed
-    → all clients copy trueCourt[row][col] into visibleCourt[row][col]
-  - Handles Leave Game (one player leaves) and Game Over (ends game for all)
-  - Redirects to /select_game when backend emits game:finished
-*/
+//
+// Orchestrator for the Word Building crossword game.
+// Replaces the scaffold placeholder.
+//
+// Data flow:
+//   REST  POST /games/:id/initWordBuildingCourt → trueCourt + visibleCourt + clues
+//   REST  GET  /games/:id                       → game metadata
+//   REST  GET  /games/:id/players               → player names for scoreboard
+//   WS    placeLetter  → client → server
+//   WS    game:state   → server → all clients → update visibleCourt + scores
+//   WS    game:finished → server → redirect all players
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { gamesApi, playersApi, wordBuildingApi } from '@/lib/api';
-import type { Game, Player } from '../../types';
-import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useAuth } from '../../context/auth-context';
-import { clearPlayerSession } from '@/lib/player-session';
+import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
+import { clearPlayerSession } from '@/lib/player-session';
+import { gamesApi } from '@/lib/api/games';
+import { wordBuildingApi } from '@/lib/api/games/word-building.api';
+import GameCourt, { COURT_COLS, COURT_ROWS } from './game-court';
+import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
-import GameCourt from './game-court';
 import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
-import type { CourtCell } from './court-tile';
+import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
-// ── Grid dimensions — must match COURT_COLS / COURT_ROWS in game-court.tsx ──
-const COURT_COLS = 18;
-const COURT_ROWS = 10;
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Creates a blank COURT_ROWS × COURT_COLS grid of CourtCells.
-function createEmptyCourt(): CourtCell[][] {
-  return Array.from({ length: COURT_ROWS }, () =>
-    Array.from({ length: COURT_COLS }, () => ({ char: '' })),
+/**
+ * Creates the default empty crossword board used before the REST payload arrives.
+ *
+ * @returns An 18x18 board filled with black cells.
+ */
+const EMPTY_COURT = (): CourtCell[][] =>
+  Array.from({ length: COURT_ROWS }, () =>
+    Array.from({ length: COURT_COLS }, () => ({ char: '', status: 'none' as const })),
   );
-}
 
-async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
-  const results = await Promise.all(
-    playerIds.map((id) => playersApi.getById(id).catch(() => null)),
-  );
-  return results.filter((p): p is Player => p !== null);
-}
-
+/**
+ * Orchestrates the full Word Building play experience: fetches the initial puzzle,
+ * listens for websocket updates, handles keyboard placement, and routes the player
+ * away when the game ends.
+ */
 export default function WordBuildingGame() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { logoutPlayer } = useAuth();
   useSessionGuard();
 
-  const gameId = Number(searchParams.get('gameId'));
+  const gameId   = Number(searchParams.get('gameId'));
   const playerId = Number(searchParams.get('playerId'));
 
-  const [game, setGame] = useState<Game | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loadingGame, setLoadingGame] = useState(true);
+  // ── Grid state ──────────────────────────────────────────────────────────────
+  const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(EMPTY_COURT);
+  const [cluesAcross,  setCluesAcross]  = useState<IInitCourtResponse['clues']['across']>([]);
+  const [cluesDown,    setCluesDown]    = useState<IInitCourtResponse['clues']['down']>([]);
+  const [scores,       setScores]       = useState<IGameStatePayload['scores']>([]);
+  const [solved,       setSolved]       = useState(false);
+
+  // ── Cell selection ──────────────────────────────────────────────────────────
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [selectedCol, setSelectedCol] = useState<number | null>(null);
+
+  // ── UI state ────────────────────────────────────────────────────────────────
   const [showAbandonModal, setShowAbandonModal] = useState(false);
-  const [isAbandoning, setIsAbandoning] = useState(false);
+  const [isAbandoning,     setIsAbandoning]     = useState(false);
+  const [playerNames,      setPlayerNames]      = useState<Map<number, string>>(new Map());
+  const [gameName,         setGameName]         = useState('Word Building');
+  const [startedTime,      setStartedTime]      = useState<string | null>(null);
+  const [loading,          setLoading]          = useState(true);
 
-  // trueCourt: the correct layout, received from the backend on mount.
-  // visibleCourt: what players see, updated tile by tile via WebSocket reveals.
-  const [trueCourt, setTrueCourt] = useState<CourtCell[][]>(createEmptyCourt);
-  const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(createEmptyCourt);
+  // ── WebSocket ───────────────────────────────────────────────────────────────
+  const { gameState, gameFinished, emitPlaceLetter } = useGameSocket(gameId, playerId);
 
-  // --- WebSocket ---
-
-  const { revealedTile, gameFinished, emitTileClick } = useGameSocket(gameId, playerId);
-
-  // When the server broadcasts a revealed tile, copy from trueCourt into visibleCourt.
-  useEffect(() => {
-    if (!revealedTile) return;
-    const { row, col } = revealedTile;
-    setVisibleCourt((prev) =>
-      prev.map((r, rIdx) =>
-        r.map((cell, cIdx) => {
-          if (rIdx !== row || cIdx !== col) return cell;
-          return { ...trueCourt[row][col] };
-        }),
-      ),
-    );
-  }, [revealedTile, trueCourt]);
-
-  // When the backend tells us the game is finished, send all players home.
-  useEffect(() => {
-    if (gameFinished) {
-      router.push('/select_game');
-    }
-  }, [gameFinished, router]);
-
-  // --- Tile click handler ---
-
-  const handleTileClick = (row: number, col: number) => {
-    emitTileClick(row, col);
-  };
-
-  // --- Data fetching ---
-
+  // ── On mount: init court via REST ──────────────────────────────────────────
   useEffect(() => {
     if (!gameId || !playerId) {
       router.push('/');
       return;
     }
 
-    const load = async () => {
-      const loadedGame = await gamesApi.getById(gameId).catch(() => null);
-      if (!loadedGame) {
-        router.push('/');
-        return;
-      }
-      setGame(loadedGame);
-      const loadedPlayers = await loadPlayersByIds(loadedGame.players);
-      setPlayers(loadedPlayers);
-      setLoadingGame(false);
-    };
+    let cancelled = false;
 
-    load();
+    wordBuildingApi.initCourt(gameId).then((data: IInitCourtResponse) => {
+      if (cancelled) return;
+      setVisibleCourt(data.visibleCourt);
+      setCluesAcross(data.clues.across);
+      setCluesDown(data.clues.down);
+      setLoading(false);
+    }).catch(() => {
+      if (!cancelled) router.push('/');
+    });
+
+    gamesApi.getById(gameId).then(game => {
+      if (cancelled) return;
+      setGameName(game.name);
+      setStartedTime(game.startedTime ?? null);
+    });
+
+    wordBuildingApi.getPlayersForGame(gameId).then(players => {
+      if (cancelled) return;
+      const map = new Map<number, string>();
+      for (const p of players) map.set(p.id, p.name);
+      setPlayerNames(map);
+    });
+
+    return () => { cancelled = true; };
   }, [gameId, playerId, router]);
 
-  // Fetch both courts from the backend once the game is loaded.
-  // The backend runs initWordBuildingCourt which populates trueCourt from
-  // the group's active vocabulary and fills visibleCourt with placeholder chars.
-  // Teammates replace those algorithms in games.service.ts without touching this file.
+  // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
-    if (!game) return;
+    if (!gameState) return;
+    setVisibleCourt(gameState.visibleCourt);
+    setScores(gameState.scores);
+    setSolved(gameState.solved);
+  }, [gameState]);
 
-    let isMounted = true;
+  // ── React to game:finished WS event ───────────────────────────────────────
+  useEffect(() => {
+    if (!gameFinished) return;
+    router.push('/select_game');
+  }, [gameFinished, router]);
 
-    const loadCourt = async () => {
-      try {
-        const { trueCourt, visibleCourt } = await wordBuildingApi.initCourt(game.id);
-        if (isMounted) {
-          setTrueCourt(trueCourt);
-          setVisibleCourt(visibleCourt);
-        }
-      } catch (error) {
-        console.error('WordBuildingGame: failed to init court', error);
+  /**
+   * Selects a playable cell so subsequent keyboard input targets the right location.
+   *
+   * @param row Row of the clicked cell.
+   * @param col Column of the clicked cell.
+   */
+  const handleCellClick = useCallback((row: number, col: number) => {
+    const cell = visibleCourt[row]?.[col];
+    if (!cell || cell.status === 'none') return;
+    setSelectedRow(row);
+    setSelectedCol(col);
+  }, [visibleCourt]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Moves the current selection to the next playable cell after a letter is entered.
+   * This keeps keyboard-driven play flowing across the crossword.
+   */
+  const advanceSelection = useCallback(() => {
+    if (selectedRow === null || selectedCol === null) return;
+    const nextCol = selectedCol + 1;
+    if (nextCol < COURT_COLS && visibleCourt[selectedRow]?.[nextCol]?.status !== 'none') {
+      setSelectedCol(nextCol);
+    } else {
+      const nextRow = selectedRow + 1;
+      if (nextRow < COURT_ROWS) {
+        setSelectedRow(nextRow);
+        setSelectedCol(0);
       }
+    }
+  }, [selectedRow, selectedCol, visibleCourt]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedRow === null || selectedCol === null) return;
+      if (solved) return;
+      const key = e.key.normalize('NFC');
+      if (key.length !== 1 || !/\p{L}/u.test(key)) return;
+      e.preventDefault();
+      emitPlaceLetter({ gameId, playerId, row: selectedRow, col: selectedCol, letter: key });
+      advanceSelection();
     };
 
-    loadCourt();
+    el.addEventListener('keydown', handleKeyDown);
+    return () => el.removeEventListener('keydown', handleKeyDown);
+  }, [selectedRow, selectedCol, solved, gameId, playerId, emitPlaceLetter, advanceSelection]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [game]);
-
-  // --- Game controls ---
-
-  const handleLeaveClick = () => setShowAbandonModal(true);
-
+  /**
+   * Ends the game from the parent controls and lets the backend broadcast completion.
+   */
   const handleGameOver = async () => {
     await gamesApi.finish({ gameId });
-    // game:finished is broadcast by the backend to all players,
-    // which triggers the gameFinished effect above for everyone simultaneously.
   };
 
+  /**
+   * Ends the active play session, clears the local session token, and redirects out.
+   * This is the escape path when the child leaves the game intentionally.
+   */
   const abandonPlay = async () => {
     setIsAbandoning(true);
     try {
       await gamesApi.abandonPlay({ gameId, playerId });
-    } catch (error) {
-      console.error('abandonPlay failed:', error);
+    } catch {
+      // best-effort
     } finally {
       clearPlayerSession();
       logoutPlayer();
@@ -172,48 +198,62 @@ export default function WordBuildingGame() {
     }
   };
 
-  // --- Render ---
+  // ── Render ─────────────────────────────────────────────────────────────────
 
-  if (loadingGame || !game) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-emerald-200 flex items-center justify-center">
-        <p className="text-gray-600">Loading game...</p>
+        <p className="text-gray-600">Generating crossword…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-emerald-200 overflow-x-auto">
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      className="min-h-screen bg-emerald-200 overflow-x-auto outline-none focus:ring-0"
+    >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
-        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(180px,220px)] lg:items-start">
-
-          <GameInfoColumn
-            game={game}
-            players={players}
-            playerId={playerId}
-          />
-
-          <div className="flex">
+        <p className="text-xs text-gray-600 mb-2">
+          Click a cell, then type a letter. Green = correct · Blue = empty · Red = wrong.
+        </p>
+        <div className="flex gap-6 items-start">
+          {/* Grid */}
+          <main className="flex flex-col gap-2">
             <GameCourt
-              visibleCourt={visibleCourt}
-              onTileClick={handleTileClick}
+              court={visibleCourt}
+              selectedRow={selectedRow}
+              selectedCol={selectedCol}
+              onCellClick={handleCellClick}
             />
-          </div>
+            <GameControls
+              onLeave={() => setShowAbandonModal(true)}
+              onGameOver={handleGameOver}
+            />
+          </main>
 
-          <GameControls
-            onLeave={handleLeaveClick}
-            onGameOver={handleGameOver}
+          {/* Info panel */}
+          <GameInfoColumn
+            gameName={gameName}
+            startedTime={startedTime}
+            playerNames={playerNames}
+            scores={scores}
+            cluesAcross={cluesAcross}
+            cluesDown={cluesDown}
+            solved={solved}
           />
         </div>
-
-        {showAbandonModal && (
-          <AbandonPlayModal
-            onStay={() => setShowAbandonModal(false)}
-            onLeave={abandonPlay}
-            isLeaving={isAbandoning}
-          />
-        )}
       </div>
+
+      {/* Abandon modal */}
+      {showAbandonModal && (
+        <AbandonPlayModal
+          onStay={() => setShowAbandonModal(false)}
+          onLeave={abandonPlay}
+          isLeaving={isAbandoning}
+        />
+      )}
     </div>
   );
 }
