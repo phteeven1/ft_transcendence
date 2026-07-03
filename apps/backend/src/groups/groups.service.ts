@@ -59,7 +59,7 @@ export class GroupsService {
     });
     await this.usersService.addMemberGroup(userId, groupId);
 
-    await this.chatService.logEvent(groupId, authorId, 'JOIN_GROUP');
+    await this.chatService.logEvent(groupId, userId, 'JOIN_GROUP');
 
     return this.findById(groupId);
   }
