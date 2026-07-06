@@ -40,6 +40,43 @@ export type ClueMap = {
   down: ClueEntry[];
 };
 
+// ─── Cell locking ─────────────────────────────────────────────────────────────
+
+/**
+ * Configurable timeout (ms) for soft cell reservations.
+ * Short enough to avoid blocking gameplay; long enough to prevent race conditions.
+ */
+export const CELL_LOCK_TIMEOUT_MS = 5_000;
+
+/**
+ * One soft lock record: which player reserved a cell and when it expires.
+ */
+export type ICellLock = {
+  playerId:   number;
+  playerName: string;
+  expiresAt:  number; // Unix timestamp (ms)
+};
+
+/** Emitted by client → server when a player selects a cell for editing. */
+export type ILockCellDto = {
+  gameId:     number;
+  playerId:   number;
+  playerName: string;
+  row:        number;
+  col:        number;
+};
+
+/** Broadcast server → all clients whenever the lock map changes. */
+export type ICellLocksPayload = {
+  locks: Array<{
+    row:        number;
+    col:        number;
+    playerId:   number;
+    playerName: string;
+    expiresAt:  number;
+  }>;
+};
+
 // ─── In-memory live state (per game, lives in WordBuildingService Map) ─────────
 
 export type ILiveGameState = {
@@ -49,6 +86,7 @@ export type ILiveGameState = {
   scores:      Map<number, number>;   // playerId → current point total
   clues:       ClueMap;
   revision:    number;
+  locks:       Map<string, ICellLock>; // soft reservations: key = "row,col"
 };
 
 // ─── WebSocket payloads ───────────────────────────────────────────────────────

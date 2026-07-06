@@ -18,6 +18,12 @@ type GameCourtProps = {
   selectedRow:  number | null;
   selectedCol:  number | null;
   onCellClick:  (row: number, col: number) => void;
+  /** Callback fired when a letter tile from the rack is dropped onto a cell. */
+  onCellDrop?:  (row: number, col: number, letter: string) => void;
+  /** Active soft locks keyed by "row,col". Used to render the activity indicator. */
+  locks?:       Map<string, { playerName: string; playerId: number }>;
+  /** Current player's id — prevents showing the indicator for own lock. */
+  myPlayerId?:  number;
 };
 
 /**
@@ -27,8 +33,11 @@ type GameCourtProps = {
  * @param selectedRow The currently selected row, if any.
  * @param selectedCol The currently selected column, if any.
  * @param onCellClick Callback fired when a playable cell is selected.
+ * @param onCellDrop Callback fired when a letter tile is dropped onto a cell.
+ * @param locks Active soft locks keyed by "row,col".
+ * @param myPlayerId Current player — suppresses own lock indicator.
  */
-export function GameCourt({ court, selectedRow, selectedCol, onCellClick }: GameCourtProps) {
+export function GameCourt({ court, selectedRow, selectedCol, onCellClick, onCellDrop, locks, myPlayerId }: GameCourtProps) {
   if (!court.length) return null;
 
   const cols = court[0].length;
@@ -39,14 +48,20 @@ export function GameCourt({ court, selectedRow, selectedCol, onCellClick }: Game
       style={{ gridTemplateColumns: `repeat(${cols}, 2rem)` }}
     >
       {court.map((row, r) =>
-        row.map((cell, c) => (
-          <CourtTile
-            key={`${r}-${c}`}
-            cell={cell}
-            isSelected={r === selectedRow && c === selectedCol}
-            onClick={() => onCellClick(r, c)}
-          />
-        )),
+        row.map((cell, c) => {
+          const lock = locks?.get(`${r},${c}`);
+          const lockedByName = (lock && lock.playerId !== myPlayerId) ? lock.playerName : undefined;
+          return (
+            <CourtTile
+              key={`${r}-${c}`}
+              cell={cell}
+              isSelected={r === selectedRow && c === selectedCol}
+              onClick={() => onCellClick(r, c)}
+              lockedByName={lockedByName}
+              onTileDrop={onCellDrop ? (letter) => onCellDrop(r, c, letter) : undefined}
+            />
+          );
+        }),
       )}
     </div>
   );

@@ -12,7 +12,7 @@
 //   WS    game:state   → server → all clients → update visibleCourt + scores
 //   WS    game:finished → server → redirect all players
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
@@ -25,6 +25,7 @@ import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
+import TileRack from './tile-rack';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
 /**
@@ -70,9 +71,34 @@ export default function WordBuildingGame() {
   const [gameName,         setGameName]         = useState('Word Building');
   const [startedTime,      setStartedTime]      = useState<string | null>(null);
   const [loading,          setLoading]          = useState(true);
+  const [availableLetters, setAvailableLetters] = useState<string[]>([]);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
-  const { gameState, gameFinished, emitPlaceLetter } = useGameSocket(gameId, playerId);
+  const { gameState, gameFinished, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock } = useGameSocket(gameId, playerId);
+
+  // ── Refs for lock emissions (avoid stale closures) ──────────────────────────
+  /** Tracks the cell currently held by this player so unlock can be emitted on navigation. */
+  const prevSelectionRef = useRef<{ row: number; col: number } | null>(null);
+  /** Up-to-date player name map for lock payloads — updated in sync with playerNames state. */
+  const playerNamesRef = useRef<Map<number, string>>(new Map());
+  useEffect(() => { playerNamesRef.current = playerNames; }, [playerNames]);
+
+  // ── Derive locks map from WS payload ────────────────────────────────────────
+  /**
+   * Active soft locks filtered to non-expired entries.
+   * Keyed by "row,col" so GameCourt can look them up per-cell efficiently.
+   */
+  const locksMap = useMemo(() => {
+    const map = new Map<string, { playerName: string; playerId: number }>();
+    if (!cellLocks) return map;
+    const now = Date.now();
+    for (const lock of cellLocks.locks) {
+      if (lock.expiresAt > now) {
+        map.set(`${lock.row},${lock.col}`, { playerName: lock.playerName, playerId: lock.playerId });
+      }
+    }
+    return map;
+  }, [cellLocks]);
 
   // ── On mount: init court via REST ──────────────────────────────────────────
   useEffect(() => {
@@ -88,6 +114,22 @@ export default function WordBuildingGame() {
       setVisibleCourt(data.visibleCourt);
       setCluesAcross(data.clues.across);
       setCluesDown(data.clues.down);
+      
+      // Extract unique letters from the puzzle vocabulary for the tile rack.
+      // Extract as-is from the solution (already normalized/uppercased by backend).
+      // This avoids issues like 'ß' → 'SS' expansion that breaks matching.
+      const lettersSet = new Set<string>();
+      for (const row of data.trueCourt) {
+        for (const cell of row) {
+          if (cell.char && cell.status !== 'none' && /\p{L}/u.test(cell.char)) {
+            lettersSet.add(cell.char);
+          }
+        }
+      }
+      // Sort using locale-aware comparison for correct ordering in any language
+      const sortedLetters = Array.from(lettersSet).sort((a, b) => a.localeCompare(b));
+      setAvailableLetters(sortedLetters);
+      
       setLoading(false);
     }).catch(() => {
       if (!cancelled) router.push('/');
@@ -120,8 +162,12 @@ export default function WordBuildingGame() {
   // ── React to game:finished WS event ───────────────────────────────────────
   useEffect(() => {
     if (!gameFinished) return;
-    router.push('/select_game');
-  }, [gameFinished, router]);
+    // When the puzzle was solved, let players see the completed board before leaving.
+    // When the game was force-ended by a parent (not solved), redirect immediately.
+    const delay = solved ? 3000 : 0;
+    const t = setTimeout(() => router.push('/select_game'), delay);
+    return () => clearTimeout(t);
+  }, [gameFinished, router, solved]);
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -185,6 +231,7 @@ export default function WordBuildingGame() {
    * - If cell is start of both → prefer the one with more empty cells
    * - If cell is middle of both → prefer the one with more empty cells
    * - If clicking same cell → toggle direction
+   * Also emits cell:lock for the new cell and cell:unlock for the previous one.
    */
   const handleCellClick = useCallback((row: number, col: number) => {
     const cell = visibleCourt[row]?.[col];
@@ -195,10 +242,21 @@ export default function WordBuildingGame() {
       setDirection(prev => prev === 'across' ? 'down' : 'across');
       return;
     }
-    
+
+    // Release the previous cell's reservation
+    if (prevSelectionRef.current) {
+      const { row: pr, col: pc } = prevSelectionRef.current;
+      emitCellUnlock(pr, pc);
+    }
+
     // Set new selection
     setSelectedRow(row);
     setSelectedCol(col);
+    prevSelectionRef.current = { row, col };
+
+    // Reserve the new cell so other players see the activity indicator
+    const myName = playerNamesRef.current.get(playerId) ?? `Player ${playerId}`;
+    emitCellLock({ gameId, playerId, playerName: myName, row, col });
     
     // Intelligently determine direction
     const analysis = analyzeCell(row, col);
@@ -219,7 +277,7 @@ export default function WordBuildingGame() {
       // If equal, keep current direction (or default to across if no current)
     }
     // If neither, keep current direction
-  }, [visibleCourt, selectedRow, selectedCol, analyzeCell]);
+  }, [visibleCourt, selectedRow, selectedCol, analyzeCell, emitCellUnlock, emitCellLock, gameId, playerId]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -232,6 +290,13 @@ export default function WordBuildingGame() {
    */
   const advanceSelection = useCallback(() => {
     if (selectedRow === null || selectedCol === null) return;
+
+    const emitLockForNext = (row: number, col: number) => {
+      emitCellUnlock(selectedRow, selectedCol);
+      const myName = playerNamesRef.current.get(playerId) ?? `Player ${playerId}`;
+      emitCellLock({ gameId, playerId, playerName: myName, row, col });
+      prevSelectionRef.current = { row, col };
+    };
     
     if (direction === 'across') {
       // Move horizontally (right) within the same row
@@ -245,6 +310,7 @@ export default function WordBuildingGame() {
           break;
         }
         // Found a valid cell
+        emitLockForNext(selectedRow, nextCol);
         setSelectedCol(nextCol);
         return;
       }
@@ -261,12 +327,13 @@ export default function WordBuildingGame() {
           break;
         }
         // Found a valid cell
+        emitLockForNext(nextRow, selectedCol);
         setSelectedRow(nextRow);
         return;
       }
       // Reached end of column or hit black square, stay at current position
     }
-  }, [selectedRow, selectedCol, direction, visibleCourt]);
+  }, [selectedRow, selectedCol, direction, visibleCourt, emitCellUnlock, emitCellLock, gameId, playerId]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -301,6 +368,18 @@ export default function WordBuildingGame() {
   const handleGameOver = async () => {
     await gamesApi.finish({ gameId });
   };
+
+  /**
+   * Handles a letter tile drop from the tile rack onto a crossword cell.
+   * Sends the placement via WebSocket; the server validates and broadcasts the update.
+   * No lock emission needed — drag-to-drop is instantaneous.
+   */
+  const handleCellDrop = useCallback((row: number, col: number, letter: string) => {
+    if (solved) return;
+    const cell = visibleCourt[row]?.[col];
+    if (!cell || cell.status === 'none' || cell.status === 'correct') return;
+    emitPlaceLetter({ gameId, playerId, row, col, letter });
+  }, [solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
 
   /**
    * Ends the active play session, clears the local session token, and redirects out.
@@ -357,7 +436,12 @@ export default function WordBuildingGame() {
               selectedRow={selectedRow}
               selectedCol={selectedCol}
               onCellClick={handleCellClick}
+              onCellDrop={handleCellDrop}
+              locks={locksMap}
+              myPlayerId={playerId}
             />
+            {/* Tile rack — drag language-specific tiles onto cells as an alternative to keyboard */}
+            <TileRack letters={availableLetters} disabled={solved} />
             <GameControls
               onLeave={() => setShowAbandonModal(true)}
               onGameOver={handleGameOver}
@@ -384,6 +468,17 @@ export default function WordBuildingGame() {
           onLeave={abandonPlay}
           isLeaving={isAbandoning}
         />
+      )}
+
+      {/* Puzzle-complete overlay — shown as soon as the board is solved */}
+      {solved && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 pointer-events-none">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4">
+            <p className="text-5xl mb-3">🎉</p>
+            <p className="text-2xl font-bold text-green-600 mb-2">Puzzle Complete!</p>
+            <p className="text-sm text-gray-500">Returning to lobby…</p>
+          </div>
+        </div>
       )}
     </div>
   );

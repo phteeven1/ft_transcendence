@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { IGameStatePayload, IPlaceLetterDto } from '@/lib/api/games/word-building.types';
+import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto } from '@/lib/api/games/word-building.types';
 
 export type RevealedTile = {
   row: number;
@@ -22,6 +22,7 @@ interface GameSocketState {
   gameFinished: boolean;
   isConnected: boolean;
   gameState: IGameStatePayload | null;
+  cellLocks: ICellLocksPayload | null;
 }
 
 /**
@@ -39,6 +40,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     gameFinished: false,
     isConnected: false,
     gameState: null,
+    cellLocks: null,
   });
 
   useEffect(() => {
@@ -75,6 +77,12 @@ export function useGameSocket(gameId: number, playerId: number) {
       setState((s) => ({ ...s, gameState: payload }));
     });
 
+    // word_building: Backend broadcasts updated cell lock map after any reservation change.
+    socket.on('cell:locks', (payload: ICellLocksPayload) => {
+      if (!active) return;
+      setState((s) => ({ ...s, cellLocks: payload }));
+    });
+
     // Backend broadcasts this when the game is marked finished.
     socket.on('game:finished', () => {
       if (!active) return;
@@ -106,6 +114,25 @@ export function useGameSocket(gameId: number, playerId: number) {
     socketRef.current?.emit('placeLetter', dto);
   }, []);
 
-  return { ...state, emitTileClick, emitPlaceLetter };
+  /**
+   * Reserves a cell for the current player so others see the "is playing" indicator.
+   *
+   * @param dto Lock request with game, player, name, and cell coordinates.
+   */
+  const emitCellLock = useCallback((dto: ILockCellDto) => {
+    socketRef.current?.emit('cell:lock', dto);
+  }, []);
+
+  /**
+   * Releases a previously acquired cell reservation.
+   *
+   * @param row Cell row to release.
+   * @param col Cell column to release.
+   */
+  const emitCellUnlock = useCallback((row: number, col: number) => {
+    socketRef.current?.emit('cell:unlock', { gameId, playerId, row, col });
+  }, [gameId, playerId]);
+
+  return { ...state, emitTileClick, emitPlaceLetter, emitCellLock, emitCellUnlock };
 }
 

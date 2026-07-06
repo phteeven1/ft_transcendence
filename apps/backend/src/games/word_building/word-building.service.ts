@@ -34,6 +34,9 @@ import {
   ClueEntry,
   ClueMap,
   CourtCell,
+  ICellLock,
+  ICellLocksPayload,
+  CELL_LOCK_TIMEOUT_MS as _LOCK_MS,
   IGameStatePayload,
   IInitCourtResponse,
   ILiveGameState,
@@ -52,6 +55,8 @@ export class WordBuildingService {
   private readonly logger = new Logger(WordBuildingService.name);
   /** In-memory live state, keyed by gameId. Evicted on puzzle completion. */
   private readonly liveGames = new Map<number, ILiveGameState>();
+  /** Timer handles for auto-expiring soft cell locks. Key: "gameId:row:col" */
+  private readonly lockTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -125,20 +130,37 @@ export class WordBuildingService {
     const playerGrid = solution.map(row => row.map(() => null as string | null));
     const clues      = this.buildClueMap(result.placements);
 
-    // Persist to database
-    await this.prisma.crossword.create({
-      data: {
-        gameId,
-        rows:       COURT_ROWS,
-        cols:       COURT_COLS,
-        solution:   solution   as unknown as object,
-        playerGrid: playerGrid as unknown as object,
-        creditGrid: playerGrid as unknown as object,  // Same shape, all null initially
-        clues:      clues      as unknown as object,
-        revision:   0,
-        solved:     false,
-      },
-    });
+    // Persist to database.
+    // Wrap in try/catch to handle the race condition that occurs when two players
+    // open the game page at the same moment: both call initCourt, both find no
+    // existing crossword, both generate a puzzle, and both attempt to create.
+    // The second writer receives a Prisma unique-constraint error (P2002).
+    // In that case, load the crossword that was just created by the winner.
+    try {
+      await this.prisma.crossword.create({
+        data: {
+          gameId,
+          rows:       COURT_ROWS,
+          cols:       COURT_COLS,
+          solution:   solution   as unknown as object,
+          playerGrid: playerGrid as unknown as object,
+          creditGrid: playerGrid as unknown as object,  // Same shape, all null initially
+          clues:      clues      as unknown as object,
+          revision:   0,
+          solved:     false,
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' && error !== null &&
+        'code' in error && (error as { code: unknown }).code === 'P2002'
+      ) {
+        // Another concurrent request won the race. Use its result.
+        const concurrent = await this.prisma.crossword.findUniqueOrThrow({ where: { gameId } });
+        return this.rehydrateInitResponse(concurrent);
+      }
+      throw error;
+    }
 
     return this.buildInitResponse(solution, clues);
   }
@@ -170,7 +192,8 @@ export class WordBuildingService {
   async placeLetter(dto: IPlaceLetterDto): Promise<IGameStatePayload | null> {
     const { gameId, playerId, row, col, letter } = dto;
     
-    // Normalize letter (handle accents, case, non-letter characters)
+    // Normalize letter: identical pipeline to prepareEntries() in the puzzle engine so
+    // comparison against the stored solution is always consistent (e.g. ß → SS).
     const normalized = letter.normalize('NFC').toUpperCase().replace(/[^\p{L}]/gu, '');
     if (!normalized) return null;
 
@@ -179,6 +202,16 @@ export class WordBuildingService {
 
     // Ignore clicks on black squares (no-op)
     if (state.solution[row]?.[col] === null) return null;
+
+    // Don't overwrite cells that already have a correct first-placer credit
+    if (state.creditGrid[row]?.[col] !== null) return null;
+
+    // Reject placement if another player holds an active soft lock on this cell
+    const lockKey = `${row},${col}`;
+    const existingLock = state.locks.get(lockKey);
+    if (existingLock && existingLock.playerId !== playerId && existingLock.expiresAt > Date.now()) {
+      return null;
+    }
 
     // Update player grid with normalized letter
     state.playerGrid[row][col] = normalized;
@@ -193,6 +226,9 @@ export class WordBuildingService {
       state.creditGrid[row][col] = playerId;
       state.scores.set(playerId, (state.scores.get(playerId) ?? 0) + 1);
     }
+
+    // Placement completes the interaction — clear the soft lock
+    state.locks.delete(lockKey);
 
     // Build payload with current state
     const payload = this.buildPayload(state);
@@ -449,6 +485,7 @@ export class WordBuildingService {
       scores,
       clues:    crossword.clues as ClueMap,
       revision: crossword.revision,
+      locks:    new Map(),   // soft cell reservations — always empty on hydration
     };
 
     this.liveGames.set(gameId, state);
@@ -579,5 +616,161 @@ export class WordBuildingService {
     }
 
     return { offsetRow, offsetCol };
+  }
+
+  // ─── Cell lock management (called by GameGateway) ──────────────────────────
+
+  /**
+   * Acquires a soft lock on a cell for a player and schedules automatic expiry.
+   * If the cell is already held by a different active lock, the request is ignored
+   * and the current locks map is returned unchanged.
+   *
+   * @param gameId The game to update.
+   * @param row Cell row.
+   * @param col Cell column.
+   * @param playerId Player acquiring the lock.
+   * @param playerName Display name shown to other players.
+   * @param expiresAt Unix timestamp (ms) when the lock auto-expires.
+   * @param onExpire Callback to broadcast the updated locks when timer fires.
+   * @returns Updated locks payload for broadcast.
+   */
+  lockCell(
+    gameId: number,
+    row: number,
+    col: number,
+    playerId: number,
+    playerName: string,
+    expiresAt: number,
+    onExpire: (payload: ICellLocksPayload) => void,
+  ): ICellLocksPayload {
+    const state = this.liveGames.get(gameId);
+    if (!state) return { locks: [] };
+    const key = `${row},${col}`;
+    const existing = state.locks.get(key);
+    // Don't steal a lock held by another player
+    if (existing && existing.playerId !== playerId && existing.expiresAt > Date.now()) {
+      return this.getLocksPayload(gameId);
+    }
+    state.locks.set(key, { playerId, playerName, expiresAt } satisfies ICellLock);
+    this.scheduleLockExpiry(gameId, row, col, playerId, expiresAt, onExpire);
+    return this.getLocksPayload(gameId);
+  }
+
+  /**
+   * Releases a soft lock on a cell and cancels its auto-expire timer.
+   * Only the lock owner can release; calls by other players are silently ignored.
+   *
+   * @param gameId The game to update.
+   * @param row Cell row.
+   * @param col Cell column.
+   * @param playerId Must be the current lock owner.
+   * @returns Updated locks payload for broadcast.
+   */
+  unlockCell(gameId: number, row: number, col: number, playerId: number): ICellLocksPayload {
+    const state = this.liveGames.get(gameId);
+    if (!state) return { locks: [] };
+    const key = `${row},${col}`;
+    const lock = state.locks.get(key);
+    if (lock?.playerId === playerId) {
+      state.locks.delete(key);
+      this.cancelLockTimer(gameId, row, col);
+    }
+    return this.getLocksPayload(gameId);
+  }
+
+  /**
+   * Releases all soft locks held by a player and cancels their timers.
+   * Called on socket disconnect so cells are not left blocked indefinitely.
+   *
+   * @param gameId The game to update.
+   * @param playerId Player whose locks should all be released.
+   * @returns Updated locks payload for broadcast.
+   */
+  unlockAllForPlayer(gameId: number, playerId: number): ICellLocksPayload {
+    const state = this.liveGames.get(gameId);
+    if (!state) return { locks: [] };
+    for (const [key, lock] of state.locks.entries()) {
+      if (lock.playerId === playerId) {
+        const [r, c] = key.split(',').map(Number);
+        this.cancelLockTimer(gameId, r, c);
+        state.locks.delete(key);
+      }
+    }
+    return this.getLocksPayload(gameId);
+  }
+
+  /**
+   * Returns all non-expired soft locks for a game as a broadcast-ready payload.
+   *
+   * @param gameId The game to query.
+   * @returns Payload containing every active lock.
+   */
+  getLocksPayload(gameId: number): ICellLocksPayload {
+    const state = this.liveGames.get(gameId);
+    if (!state) return { locks: [] };
+    const now = Date.now();
+    const locks: ICellLocksPayload['locks'] = [];
+    for (const [key, lock] of state.locks.entries()) {
+      if (lock.expiresAt > now) {
+        const [r, c] = key.split(',').map(Number);
+        locks.push({ row: r, col: c, ...lock });
+      }
+    }
+    return { locks };
+  }
+
+  /**
+   * Cancels the auto-expire timer for a specific cell lock.
+   * Called when a cell is released manually before expiry.
+   *
+   * @param gameId Game ID.
+   * @param row Cell row.
+   * @param col Cell column.
+   */
+  cancelLockTimer(gameId: number, row: number, col: number): void {
+    const key = this.lockTimerKey(gameId, row, col);
+    const timer = this.lockTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      this.lockTimers.delete(key);
+    }
+  }
+
+  // ─── Private timer management ───────────────────────────────────────────────
+
+  private lockTimerKey(gameId: number, row: number, col: number): string {
+    return `${gameId}:${row}:${col}`;
+  }
+
+  /**
+   * Schedules an automatic lock expiry, replacing any existing timer for the same cell.
+   * When the timer fires, the lock is removed and the callback broadcasts the update.
+   *
+   * @param gameId Game ID.
+   * @param row Cell row.
+   * @param col Cell column.
+   * @param playerId Player who holds the lock.
+   * @param expiresAt Expiry timestamp (used to calculate timeout duration).
+   * @param onExpire Callback to broadcast updated locks after expiry.
+   */
+  private scheduleLockExpiry(
+    gameId: number,
+    row: number,
+    col: number,
+    playerId: number,
+    expiresAt: number,
+    onExpire: (payload: ICellLocksPayload) => void,
+  ): void {
+    const key = this.lockTimerKey(gameId, row, col);
+    this.cancelLockTimer(gameId, row, col); // Clear any existing timer
+
+    const timeout = Math.max(0, expiresAt - Date.now());
+    const timer = setTimeout(() => {
+      this.lockTimers.delete(key);
+      const payload = this.unlockCell(gameId, row, col, playerId);
+      onExpire(payload);
+    }, timeout);
+
+    this.lockTimers.set(key, timer);
   }
 }

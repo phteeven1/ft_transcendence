@@ -42,3 +42,23 @@ export type IPlaceLetterDto = {
   col:      number;
   letter:   string;
 };
+
+// ─── Cell locking ─────────────────────────────────────────────────────────────
+
+export type ICellLocksPayload = {
+  locks: Array<{
+    row:        number;
+    col:        number;
+    playerId:   number;
+    playerName: string;
+    expiresAt:  number;
+  }>;
+};
+
+export type ILockCellDto = {
+  gameId:     number;
+  playerId:   number;
+  playerName: string;
+  row:        number;
+  col:        number;
+};
