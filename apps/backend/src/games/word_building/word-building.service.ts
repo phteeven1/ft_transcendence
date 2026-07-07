@@ -165,6 +165,7 @@ export class WordBuildingService {
       throw error;
     }
 
+    await this.loadOrHydrate(gameId);
     return this.buildInitResponse(solution, clues);
   }
 
