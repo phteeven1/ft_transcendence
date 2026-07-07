@@ -87,12 +87,8 @@ export class GameGateway implements OnGatewayDisconnect {
     const { gameId, playerId } = client.data as { gameId?: number; playerId?: number };
     if (gameId && playerId) {
       // Word Building: release all locks for this player and notify the room.
-      // Guard: only emit if there were active locks — prevents noisy broadcasts
-      // to word_soup rooms that have no locking at all.
       const payload = this.wordBuildingService.unlockAllForPlayer(gameId, playerId);
-      if (payload.locks.length > 0) {
-        this.server.to(`game:${gameId}`).emit('cell:locks', payload);
-      }
+      this.server.to(`game:${gameId}`).emit('cell:locks', payload);
     }
   }
 
