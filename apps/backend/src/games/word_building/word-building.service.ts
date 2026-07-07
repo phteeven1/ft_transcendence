@@ -160,6 +160,7 @@ export class WordBuildingService {
       ) {
         // Another concurrent request won the race. Use its result.
         const concurrent = await this.prisma.crossword.findUniqueOrThrow({ where: { gameId } });
+        await this.loadOrHydrate(gameId);
         return this.rehydrateInitResponse(concurrent);
       }
       throw error;
