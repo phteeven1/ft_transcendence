@@ -1,5 +1,5 @@
 'use client';
-import { useState, ChangeEvent, SyntheticEvent } from 'react';
+import { useState, useEffect, ChangeEvent, SyntheticEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { groupsApi } from '@/lib/api';
@@ -15,10 +15,11 @@ export default function CreateGroup() {
   const [groupName, setGroupName] = useState('');
   const [showError, setShowError] = useState(false);
 
-  if (!user) {
-    router.push('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) router.push('/');
+  }, [user, router]);
+
+  if (!user) return null;
 
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
