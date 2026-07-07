@@ -11,7 +11,7 @@ Three responsive tiers:
 
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../types';
 import MemberList from './_components/member-list';
@@ -40,57 +40,7 @@ export default function ManageGroup() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [chatEntries, setChatEntries] = useState<GroupChatEntryDto[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function init() {
-      if (!user) {
-        if (!cancelled) router.push('/signin');
-        return;
-      }
-
-      if (!group) {
-        const targetGroupId =
-          user.currentGroup ??
-          user.isMemberOf.at(-1) ??
-          user.isAdminOf.at(-1);
-        if (targetGroupId) {
-          const synced = await syncGroup(targetGroupId);
-          if (!cancelled && synced) return;
-        }
-        if (!cancelled) router.push('/dashboard');
-        return;
-      }
-
-      fetchMembers();
-    }
-
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, group]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      syncAndRefresh();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchMembers = async () => {
-    if (!group) return;
-    try {
-      const members = await groupsApi.getMembers(group.id);
-      setCurrentGroupMembers(members);
-      setSelectedMember(prev => prev ?? members.find(m => m.id === user?.id) ?? null);
-      await fetchChatEntries();
-    } catch (error) {
-      console.error('fetchMembers failed:', error);
-    }
-  };
-
-  const fetchChatEntries = async () => {
+  const fetchChatEntries = useCallback(async () => {
     if (!group || !user) return;
     try {
       const entries = await chatApi.getEntries(group.id, user.id);
@@ -98,9 +48,21 @@ export default function ManageGroup() {
     } catch (error) {
       console.error('fetchChatEntries failed:', error);
     }
-  };
+  }, [group, user]);
 
-  const syncAndRefresh = async () => {
+  const fetchMembers = useCallback(async () => {
+    if (!group) return;
+    try {
+      const members = await groupsApi.getMembers(group.id);
+      setCurrentGroupMembers(members);
+      setSelectedMember((prev) => prev ?? members.find((m) => m.id === user?.id) ?? null);
+      await fetchChatEntries();
+    } catch (error) {
+      console.error('fetchMembers failed:', error);
+    }
+  }, [group, user, fetchChatEntries]);
+
+  const syncAndRefresh = useCallback(async () => {
     if (!group || !user) return;
     try {
       const updatedGroup = await syncGroup(group.id);
@@ -121,7 +83,43 @@ export default function ManageGroup() {
     } catch (error) {
       console.error('syncAndRefresh failed:', error);
     }
-  };
+  }, [group, user, syncGroup, leaveGroup, router, fetchMembers, fetchChatEntries]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      if (!user) {
+        if (!cancelled) router.push('/signin');
+        return;
+      }
+
+      if (!group) {
+        if (user.currentGroup) {
+          const synced = await syncGroup(user.currentGroup);
+          if (!cancelled && synced) return;
+        }
+        if (!cancelled) router.push('/dashboard');
+        return;
+      }
+
+      fetchMembers();
+    }
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, group, router, syncGroup, fetchMembers]);
+
+  useEffect(() => {
+    if (!group || !user) return;
+
+    const interval = setInterval(() => {
+      void syncAndRefresh();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [group, user, syncAndRefresh]);
 
   if (!user || !group) return null;
 

@@ -1,2 +1,7 @@
 .dev/
 node_modules/
+
+# Cursor IDE (local agent skills, debug logs)
+.cursor/skills/
+.cursor/debug*.log
+**/__pycache__/
