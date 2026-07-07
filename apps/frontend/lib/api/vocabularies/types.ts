@@ -17,13 +17,22 @@ export type CreateVocabularyInput = {
 };
 
 export type SetActiveVocabularyInput = {
-  vocabularyId: number;
+  vocabularyId:      number;
   vocabularyInGroup: number;
+  authorId:          number;
 };
 
 export type RenameVocabularyInput = {
-  vocabularyId: number;
-  vocabularyName: string;
+  vocabularyId:      number;
+  vocabularyName:    string;
+  vocabularyInGroup: number;
+  authorId:          number;
+};
+
+export type RemoveVocabularyInput = {
+  vocabularyId:      number;
+  vocabularyInGroup: number;
+  authorId:          number;
 };
 
 export type UpdateVocabularyEntriesInput = {

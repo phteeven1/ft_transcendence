@@ -23,7 +23,7 @@ export default function ExpelMember({
   currentGroupMembers,
   syncAndRefresh,
 }: Props) {
-  const { group } = useAuth();
+  const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -31,7 +31,7 @@ export default function ExpelMember({
   const [showResult, setShowResult] = useState(false);
 
   // Guard. Returns null if no group
-  if (!group) return null;
+  if (!group || !user) return null;
 
   const nonAdmins = currentGroupMembers.filter((m) => !m.isAdmin);
   const admins = currentGroupMembers.filter((m) => m.isAdmin);
@@ -74,7 +74,7 @@ export default function ExpelMember({
   const handleConfirmExpel = async () => {
     if (!selectedId || !selectedMember) return;
     try {
-      await groupsApi.expel({ groupId: group.id, userId: selectedId });
+      await groupsApi.expel({ groupId: group.id, userId: selectedId, authorId: user.id });
       await syncAndRefresh();
       setShowConfirm(false);
       setSelectedId(null);

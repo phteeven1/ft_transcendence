@@ -8,13 +8,13 @@ type Props = {
 };
 
 export default function RenameGroup({ syncAndRefresh }: Props) {
-  const { group } = useAuth();
+  const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
 
-  if (!group) return null;
+  if (!group || !user) return null;
 
   const handleOpen = () => {
     setNewName(group.name);
@@ -39,6 +39,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
       await groupsApi.rename({
         groupId: group.id,
         groupName: newName.trim(),
+        authorId: user.id,
       });
       await syncAndRefresh();
       setShowModal(false);

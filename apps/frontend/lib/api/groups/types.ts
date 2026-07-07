@@ -17,12 +17,14 @@ export type CreateGroupInput = {
   creatorId: number;
 };
 
-export type GroupIdUserIdInput = {
+export type GroupMemberActionInput = {
   groupId: number;
-  userId: number;
+  userId: number;     // the user being acted upon
+  authorId: number;   // the user performing the action
 };
 
 export type RenameGroupInput = {
   groupId: number;
   groupName: string;
+  authorId: number;
 };
