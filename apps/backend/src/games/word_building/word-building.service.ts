@@ -199,7 +199,7 @@ export class WordBuildingService {
     // Normalize letter: identical pipeline to prepareEntries() in the puzzle engine so
     // comparison against the stored solution is always consistent (e.g. ß → SS).
     const normalized = letter.normalize('NFC').toUpperCase().replace(/[^\p{L}]/gu, '');
-    if (!normalized) return null;
+    if (!normalized || normalized.length !== 1) return null;
 
     // Load live state (from memory or hydrate from database)
     const state = await this.loadOrHydrate(gameId);
