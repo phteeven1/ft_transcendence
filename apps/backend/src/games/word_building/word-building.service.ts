@@ -86,7 +86,10 @@ export class WordBuildingService {
   async initCourt(gameId: number): Promise<IInitCourtResponse> {
     // Idempotent: if crossword already exists, rehydrate from database
     const existing = await this.prisma.crossword.findUnique({ where: { gameId } });
-    if (existing) return this.rehydrateInitResponse(existing);
+    if (existing) {
+      await this.loadOrHydrate(gameId);
+      return this.rehydrateInitResponse(existing);
+    }
 
     // Fetch game with vocabulary
     const game = await this.prisma.game.findUniqueOrThrow({
