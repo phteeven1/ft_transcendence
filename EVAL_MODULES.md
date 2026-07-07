@@ -1,4 +1,4 @@
-# Dicteé — Eval modules summary (WhatsApp)
+# Dicteé — Eval modules summary
 
 *42 ft_transcendence · need **14 points** to pass (Major = 2 pts, Minor = 1 pt)*
 
