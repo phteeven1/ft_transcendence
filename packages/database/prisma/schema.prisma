@@ -148,16 +148,33 @@ model Game {
   initiatedBy     Player       @relation("GameInitiator", fields: [initiatedById], references: [id])
   gamePlayers     GamePlayer[]
   currentPlayers  Player[]     @relation("PlayerCurrentGame")
+  crossword       Crossword?
 }
 
 model GamePlayer {
   gameId   Int
   playerId Int
+  score    Int    @default(0)
 
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@id([gameId, playerId])
+}
+
+model Crossword {
+  id         Int     @id @default(autoincrement())
+  gameId     Int     @unique
+  rows       Int
+  cols       Int
+  solution   Json               // (string | null)[][] — NEVER sent to frontend
+  playerGrid Json               // (string | null)[][] — current placed letters
+  creditGrid Json?              // (number | null)[][] — first-correct-placer per cell
+  clues      Json               // { across: ClueEntry[], down: ClueEntry[] }
+  revision   Int     @default(0)
+  solved     Boolean @default(false)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 }
 
 model Invitation {

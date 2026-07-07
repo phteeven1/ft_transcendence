@@ -4,6 +4,13 @@ type Props = {
   isLeaving: boolean;
 };
 
+/**
+ * Confirms that the player really wants to leave the active play session.
+ *
+ * @param onStay Callback for dismissing the modal.
+ * @param onLeave Callback for leaving the game and ending the session.
+ * @param isLeaving Whether the leave request is already in flight.
+ */
 export default function AbandonPlayModal({ onStay, onLeave, isLeaving }: Props) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
