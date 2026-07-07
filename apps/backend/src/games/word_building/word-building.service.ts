@@ -72,7 +72,7 @@ export class WordBuildingService {
    *    - Keep better result (higher placement count)
    * 4. Pad trimmed puzzle to fixed 18×18 grid (centered)
    * 5. Persist to database: solution, playerGrid (all null), creditGrid (all null), clues
-   * 6. Return trueCourt (solution visible) + visibleCourt (empty cells) + clues
+   * 6. Return initial courts + clues (without exposing solution letters)
    * 
    * Quality Guarantee:
    * - Ensures puzzles use ≥50% of vocabulary words
@@ -80,7 +80,7 @@ export class WordBuildingService {
    * - Single retry balances quality with performance
    * 
    * @param gameId Game ID requiring crossword initialization.
-   * @returns Initial grid state for frontend rendering (trueCourt used for debugging, visibleCourt for gameplay).
+   * @returns Initial grid state for frontend rendering.
    * @throws If game not found or group has no active vocabulary.
    */
   async initCourt(gameId: number): Promise<IInitCourtResponse> {
@@ -328,7 +328,7 @@ export class WordBuildingService {
    *
    * @param solution Trimmed crossword solution grid.
    * @param clues Clue metadata produced by the engine.
-   * @returns The initial trueCourt/visibleCourt payload sent on mount.
+   * @returns The initial court payload sent on mount.
    */
   private buildInitResponse(
     solution: (string | null)[][],
@@ -358,7 +358,7 @@ export class WordBuildingService {
           trueRow.push({ char: '', status: 'none' });
           visibleRow.push({ char: '', status: 'none' });
         } else {
-          trueRow.push({ char: letter, status: 'correct', ...(clueNumber ? { clueNumber } : {}) });
+          trueRow.push({ char: '', status: 'empty', ...(clueNumber ? { clueNumber } : {}) });
           visibleRow.push({ char: '', status: 'empty', ...(clueNumber ? { clueNumber } : {}) });
         }
       }
