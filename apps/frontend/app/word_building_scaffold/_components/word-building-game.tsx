@@ -302,7 +302,7 @@ export default function WordBuildingGame() {
     
     if (direction === 'across') {
       // Move horizontally (right) within the same row
-      let nextCol = selectedCol + 1;
+      const nextCol = selectedCol + 1;
       
       // Find next non-black cell in the same row
       while (nextCol < COURT_COLS) {
@@ -319,7 +319,7 @@ export default function WordBuildingGame() {
       // Reached end of row or hit black square, stay at current position
     } else {
       // Move vertically (down) within the same column
-      let nextRow = selectedRow + 1;
+      const nextRow = selectedRow + 1;
       
       // Find next non-black cell in the same column
       while (nextRow < COURT_ROWS) {

@@ -9,7 +9,7 @@ how many are needed to start game OR
 how much time remains until automatic start
 */
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Game } from '../../types';
 import { Button } from '../../components/ui/button';
 
@@ -20,6 +20,19 @@ type Props = {
   onForceStart: () => void;
 };
 
+function subscribeToClock(onChange: () => void) {
+  const interval = setInterval(onChange, 1000);
+  return () => clearInterval(interval);
+}
+
+function getClockSnapshot() {
+  return Date.now();
+}
+
+function getServerClockSnapshot() {
+  return 0;
+}
+
 function formatElapsed(initiatedTime: string, now: number): string {
   const secondsElapsed = Math.max(0, Math.floor((now - new Date(initiatedTime).getTime()) / 1000));
   const mins = Math.floor(secondsElapsed / 60);
@@ -28,12 +41,11 @@ function formatElapsed(initiatedTime: string, now: number): string {
 }
 
 export default function PendingGameButton({ game, currentPlayerId, onClick, onForceStart }: Props) {
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const now = useSyncExternalStore(
+    subscribeToClock,
+    getClockSnapshot,
+    getServerClockSnapshot,
+  );
 
   const isInitiator = game.initiatedBy === currentPlayerId;
   const alreadyJoined = game.players.includes(currentPlayerId);
@@ -47,7 +59,7 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
     middleLabel = 'Click to Join';
   }
 
-  const elapsed = formatElapsed(game.initiatedTime, now);
+  const elapsed = now > 0 ? formatElapsed(game.initiatedTime, now) : '0:00';
   const bottomLabel = `${game.players.length} player${game.players.length !== 1 ? 's' : ''}, ${elapsed}`;
 
   const isDisabled = !isInitiator && alreadyJoined;

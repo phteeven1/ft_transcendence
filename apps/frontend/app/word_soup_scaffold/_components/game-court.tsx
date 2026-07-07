@@ -11,7 +11,7 @@
   The matching constants in word-building-game.tsx must be kept in sync.
 */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
 import { Button } from '../../components/ui/button';
@@ -53,12 +53,7 @@ interface Props {
 }
 
 export default function GameCourt({ visibleCourt, onTileClick }: Props) {
-  const [courtSize, setCourtSize] = useState<CourtSize>('L');
-
-  // Set the default once on mount — never again automatically.
-  useEffect(() => {
-    setCourtSize(getDefaultSize());
-  }, []);
+  const [courtSize, setCourtSize] = useState<CourtSize>(() => getDefaultSize());
 
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
   const gridWidth = computeGridWidth(courtSize);

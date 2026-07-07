@@ -46,29 +46,32 @@ export default function MemberProfile({ member }: Props) {
   const { group } = useAuth();
   const [fullUser, setFullUser] = useState<User | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedForMemberId, setLoadedForMemberId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!group) return;
-    setLoading(true);
-    setFullUser(null);
-    setPlayers([]);
+    let cancelled = false;
 
     Promise.all([
       usersApi.getById(member.id),
       playersApi.findByParentInGroup(member.id, group.id),
     ])
       .then(([userData, playerData]) => {
+        if (cancelled) return;
         setFullUser(userData);
         setPlayers(playerData);
+        setLoadedForMemberId(member.id);
       })
       .catch((err) => {
         console.error('MemberProfile fetch failed:', err);
-      })
-      .finally(() => {
-        setLoading(false);
       });
-  }, [member.id, group?.id]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [member.id, group]);
+
+  const loading = !group || loadedForMemberId !== member.id;
 
   if (loading) {
     return <p className="text-sm text-muted-foreground italic">Loading profile...</p>;

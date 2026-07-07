@@ -54,9 +54,13 @@ export default function ImportVocabulary({ onImported }: Props) {
 
       onImported(created);
       setSelectedFile(null);
-    } catch (error: any) {
-      console.error("AI extraction failed", error);
-      alert(error.message || "AI extraction failed. Please ensure the file has at least 5 words and try again.");
+    } catch (error: unknown) {
+      console.error('AI extraction failed', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'AI extraction failed. Please ensure the file has at least 5 words and try again.';
+      alert(message);
     } finally {
       setIsExtracting(false);
     }

@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../types';
 import UserSettings from './_components/user-settings';
@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [adminGroups, setAdminGroups] = useState<Group[]>([]);
   const [memberGroups, setMemberGroups] = useState<Group[]>([]);
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     if (!user) return;
     try {
       const freshUser = await refreshUser();
@@ -30,24 +30,21 @@ export default function Dashboard() {
     } catch (error) {
       console.error('loadDashboard failed:', error);
     }
-  };
+  }, [user, refreshUser]);
 
   useEffect(() => {
     if (!user) {
       router.push('/');
+      return;
     }
-  }, [user]);
-
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  useEffect(() => {
+    queueMicrotask(() => {
+      void loadDashboard();
+    });
     const interval = setInterval(() => {
-      loadDashboard();
+      void loadDashboard();
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user, router, loadDashboard]);
 
   if (!user) return null;
 

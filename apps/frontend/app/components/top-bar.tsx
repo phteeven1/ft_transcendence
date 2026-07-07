@@ -11,10 +11,7 @@ export default function TopBar() {
   const [minutesLeft, setMinutesLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!player) {
-      setPlayerGroupName(null);
-      return;
-    }
+    if (!player) return;
     const fetchGroupName = async () => {
       try {
         const data = await groupsApi.getById(player.inGroup);
@@ -23,14 +20,11 @@ export default function TopBar() {
         console.error('TopBar: failed to fetch player group name:', error);
       }
     };
-    fetchGroupName();
+    void fetchGroupName();
   }, [player]);
 
   useEffect(() => {
-    if (!sessionExpiresAt) {
-      setMinutesLeft(null);
-      return;
-    }
+    if (!sessionExpiresAt) return;
     const update = () => {
       const mins = Math.ceil((sessionExpiresAt - Date.now()) / 60000);
       setMinutesLeft(Math.max(0, mins));
@@ -40,6 +34,9 @@ export default function TopBar() {
     return () => clearInterval(interval);
   }, [sessionExpiresAt]);
 
+  const displayedGroupName = player ? playerGroupName : null;
+  const displayedMinutesLeft = sessionExpiresAt != null ? minutesLeft : null;
+
   return (
     <header className="clay-topbar flex items-center justify-between px-4 md:px-6 py-3">
       <div className="flex items-center gap-4 min-w-0">
@@ -47,14 +44,14 @@ export default function TopBar() {
         {player ? (
           <span className="text-sm text-muted-foreground truncate">
             Playing as <strong className="text-foreground">{player.name}</strong>
-            {playerGroupName && (
+            {displayedGroupName && (
               <span>
                 {' '}
-                in group <strong className="text-foreground">{playerGroupName}</strong>
+                in group <strong className="text-foreground">{displayedGroupName}</strong>
               </span>
             )}
-            {minutesLeft !== null && (
-              <span className="ml-2 text-xs opacity-75">{minutesLeft} min left</span>
+            {displayedMinutesLeft !== null && (
+              <span className="ml-2 text-xs opacity-75">{displayedMinutesLeft} min left</span>
             )}
           </span>
         ) : user ? (

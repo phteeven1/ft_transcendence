@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 type Language = {
   code: string;
@@ -15,18 +15,25 @@ type LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [selected, setSelected] = useState<Language>({
-    code: 'en',
-    label: 'English',
-    flag: '/flags/gb.svg',
-  });
+const DEFAULT_LANGUAGE: Language = {
+  code: 'en',
+  label: 'English',
+  flag: '/flags/gb.svg',
+};
 
-  // Load saved language from localStorage on initial render
-  useEffect(() => {
-    const saved = localStorage.getItem('selectedLanguage');
-    if (saved) setSelected(JSON.parse(saved));
-  }, []);
+function readSavedLanguage(): Language {
+  if (typeof window === 'undefined') return DEFAULT_LANGUAGE;
+  const saved = localStorage.getItem('selectedLanguage');
+  if (!saved) return DEFAULT_LANGUAGE;
+  try {
+    return JSON.parse(saved) as Language;
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
+}
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [selected, setSelected] = useState<Language>(readSavedLanguage);
 
   // Update localStorage whenever the language changes
   const handleSetSelected = (lang: Language) => {

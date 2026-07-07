@@ -11,7 +11,7 @@ Means-What puzzle: player sees a meaning and picks the matching word from three 
   FALSE appears, Skip → Next.
 - Layout: buttons side by side on desktop/landscape, stacked on portrait mobile.
 */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { Button } from '../../components/ui/button';
 
@@ -62,45 +62,43 @@ function buildOptions(vocabulary: VocabularyDto, correctIndex: number): AnswerOp
   return shuffle(options);
 }
 
+type PuzzleData =
+  | { kind: 'skip' }
+  | { kind: 'ready'; meaning: string; options: AnswerOption[]; correctIndex: number };
+
+function buildPuzzleData(vocabulary: VocabularyDto): PuzzleData {
+  if (vocabulary.words.length < 3) return { kind: 'skip' };
+  const idx = randomIndex(vocabulary.words.length);
+  const built = buildOptions(vocabulary, idx);
+  if (!built) return { kind: 'skip' };
+  return {
+    kind: 'ready',
+    meaning: vocabulary.meanings[idx],
+    options: built,
+    correctIndex: built.findIndex((o) => o.correct),
+  };
+}
+
 export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
-  const [meaning, setMeaning] = useState('');
-  const [options, setOptions] = useState<AnswerOption[]>([]);
+  const puzzleData = useMemo(() => buildPuzzleData(vocabulary), [vocabulary]);
   const [guessed, setGuessed] = useState(false);
   const [result, setResult] = useState<'success' | 'false' | null>(null);
-  // selectedIndex and correctIndex kept in refs — only needed for styling, not re-rendering
-  const selectedIndexRef = useRef<number | null>(null);
-  const correctIndexRef = useRef<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  // Runs once on mount. Picks a random entry, builds and shuffles the three options.
-  // Skips immediately if vocabulary is too small.
   useEffect(() => {
-    if (vocabulary.words.length < 3) {
-      onSkip();
-      return;
-    }
-    const idx = randomIndex(vocabulary.words.length);
-    const built = buildOptions(vocabulary, idx);
-    if (!built) {
-      onSkip();
-      return;
-    }
-    setMeaning(vocabulary.meanings[idx]);
-    // record which index in the shuffled options array is correct
-    correctIndexRef.current = built.findIndex((o) => o.correct);
-    setOptions(built);
-  }, []);
+    if (puzzleData.kind === 'skip') onSkip();
+  }, [puzzleData, onSkip]);
 
-  // Called when player clicks an answer button.
-  // One attempt only — guessed flag prevents further clicks.
   const handleGuess = (index: number) => {
-    if (guessed) return;
-    selectedIndexRef.current = index;
+    if (guessed || puzzleData.kind !== 'ready') return;
+    setSelectedIndex(index);
     setGuessed(true);
-    setResult(options[index].correct ? 'success' : 'false');
+    setResult(puzzleData.options[index].correct ? 'success' : 'false');
   };
 
-  // Returns the Tailwind classes for each button depending on game state
   const buttonClasses = (index: number): string => {
+    if (puzzleData.kind !== 'ready') return '';
+    const { options, correctIndex } = puzzleData;
     const base = [
       'flex-1 px-4 py-3 rounded-lg text-sm font-semibold text-foreground text-left clay-panel',
       'transition-colors duration-200',
@@ -116,8 +114,10 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
         base.push('opacity-35 cursor-default');
       }
     } else {
-      if (options[index].correct) {
-        base.push('cursor-default');
+      if (index === selectedIndex) {
+        base.push('border-destructive text-destructive cursor-default');
+      } else if (index === correctIndex) {
+        base.push('border-primary text-primary cursor-default');
       } else {
         base.push('opacity-35 cursor-default');
       }
@@ -126,7 +126,9 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
     return base.join(' ');
   };
 
-  if (options.length === 0) return null;
+  if (puzzleData.kind !== 'ready') return null;
+
+  const { meaning, options } = puzzleData;
 
   return (
     <div className="flex flex-col h-full px-4 py-3 select-none">
