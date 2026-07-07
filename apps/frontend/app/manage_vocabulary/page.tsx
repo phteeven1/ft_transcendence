@@ -22,6 +22,8 @@ import EditVocabulary from './_components/edit-vocabulary';
 import ShareVocabulary from './_components/share-vocabulary';
 import DeleteVocabulary from './_components/delete-vocabulary';
 import UseInGames from './_components/use-in-games';
+import { PageShell } from '../components/ui/page-shell';
+import { Button } from '../components/ui/button';
 
 export default function ManageVocabulary() {
   const { user, group, syncGroup } = useAuth();
@@ -97,56 +99,56 @@ export default function ManageVocabulary() {
   if (!user || !group) return null;
 
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="max-w-4xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2 text-center">{group.name}</h1>
-        <p className="text-sm text-gray-600 mb-6 text-center">
-          Manage Vocabulary
-        </p>
+    <PageShell>
+      <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
+        {group.name}
+      </h1>
+      <p className="text-sm text-muted-foreground mb-6 text-center">
+        Manage Vocabulary
+      </p>
 
-        <div className="md:grid md:grid-cols-3 gap-6">
-          {' '}
-          {/* overrides with pc layout if md */}
-          {/* Vocabulary list */}
-          <div className="col-span-1 mb-6 md:mb-0">
-            <h2 className="text-lg font-semibold mb-2">Vocabularies</h2>
-            <VocabularyList
-              vocabularies={vocabularies}
-              selectedVocabulary={selectedVocabulary}
-              currentVocabulary={group.currentVocabulary}
-              isLoading={isLoading}
-              onSelect={handleSelect}
-            />
-          </div>
-          {/* Action buttons */}
-          <div className="col-span-2 grid grid-cols-2 gap-3 content-start">
-            <ImportVocabulary onImported={handleImported} />
-            <UseInGames
-              selectedVocabulary={selectedVocabulary}
-              onActivated={handleActivated}
-            />
-            <RenameVocabulary
-              selectedVocabulary={selectedVocabulary}
-              onRenamed={handleRenamed}
-            />
-            <EditVocabulary
-              selectedVocabulary={selectedVocabulary}
-              onEdited={handleEdited}
-            />
-            <ShareVocabulary selectedVocabulary={selectedVocabulary} />
-            <DeleteVocabulary
-              selectedVocabulary={selectedVocabulary}
-              onDeleted={handleDeleted}
-            />
-            <button
-              onClick={() => router.push('/manage_group')}
-              className="w-full bg-gray-400 text-white p-2 rounded hover:bg-gray-500"
-            >
-              Back to Group
-            </button>
-          </div>
+      <div className="md:grid md:grid-cols-3 gap-6">
+        <div className="col-span-1 mb-6 md:mb-0">
+          <h2 className="font-heading text-lg font-semibold mb-2 text-foreground">
+            Vocabularies
+          </h2>
+          <VocabularyList
+            vocabularies={vocabularies}
+            selectedVocabulary={selectedVocabulary}
+            currentVocabulary={group.currentVocabulary}
+            isLoading={isLoading}
+            onSelect={handleSelect}
+          />
+        </div>
+        <div className="col-span-2 grid grid-cols-2 gap-3 content-start">
+          <ImportVocabulary onImported={handleImported} />
+          <UseInGames
+            selectedVocabulary={selectedVocabulary}
+            onActivated={handleActivated}
+          />
+          <RenameVocabulary
+            selectedVocabulary={selectedVocabulary}
+            onRenamed={handleRenamed}
+          />
+          <EditVocabulary
+            selectedVocabulary={selectedVocabulary}
+            onEdited={handleEdited}
+          />
+          <ShareVocabulary selectedVocabulary={selectedVocabulary} />
+          <DeleteVocabulary
+            selectedVocabulary={selectedVocabulary}
+            onDeleted={handleDeleted}
+          />
+          <Button
+            variant="ghost"
+            fullWidth
+            className="clay-action-btn"
+            onClick={() => router.push('/manage_group')}
+          >
+            Back to Group
+          </Button>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

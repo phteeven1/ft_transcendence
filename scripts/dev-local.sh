@@ -48,6 +48,19 @@ echo "[dev] Wende Datenbank-Migrationen an..."
 echo "[dev] Generiere Prisma Client..."
 npm run db:generate
 
+echo "[dev] Raeume alte Frontend/Backend-Prozesse auf..."
+DEV_STOP_QUIET=true
+dev_stop_pid_file "backend"
+dev_stop_pid_file "frontend"
+dev_stop_port 4000 "Backend (Nest)"
+dev_stop_port 3000 "Frontend (Next)"
+unset DEV_STOP_QUIET
+
+# Docker backend/frontend wuerden sonst Port 4000/3000 blockieren
+if command -v docker >/dev/null 2>&1; then
+  docker compose stop backend frontend 2>/dev/null || true
+fi
+
 BACK_PID=""
 FRONT_PID=""
 DEV_CLEANUP_DONE=false
@@ -113,6 +126,16 @@ for name_pid in "Backend:$BACK_PID" "Frontend:$FRONT_PID"; do
     exit 1
   fi
 done
+
+# Nest braucht laenger — pruefen ob Port wirklich lauscht
+sleep 4
+if ! lsof -tiTCP:4000 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo ""
+  echo "[error] Backend hoert nicht auf Port 4000 (EADDRINUSE oder Startfehler?)."
+  echo "        Freigeben: npm run dev:stop -- --keep-db && npm run dev:local"
+  cleanup
+  exit 1
+fi
 
 # Blockiert bis beide Prozesse enden (oder Ctrl+C → cleanup via trap)
 wait "$BACK_PID" "$FRONT_PID" 2>/dev/null || true

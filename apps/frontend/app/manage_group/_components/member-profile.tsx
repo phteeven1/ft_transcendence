@@ -14,6 +14,7 @@ import { Member, Player, User } from '../../types';
 import { usersApi } from '@/lib/api/users';
 import { playersApi } from '@/lib/api/players';
 import { useAuth } from '../../context/auth-context';
+import { Card } from '../../components/ui';
 
 type Props = {
   member: Member;
@@ -70,27 +71,27 @@ export default function MemberProfile({ member }: Props) {
   }, [member.id, group?.id]);
 
   if (loading) {
-    return <p className="text-sm text-gray-400 italic">Loading profile...</p>;
+    return <p className="text-sm text-muted-foreground italic">Loading profile...</p>;
   }
 
   if (!fullUser) {
-    return <p className="text-sm text-red-400 italic">Could not load profile.</p>;
+    return <p className="text-sm text-destructive italic">Could not load profile.</p>;
   }
 
   const userBlock = (
     <div className="flex flex-col gap-1">
-      <p className="font-semibold text-gray-800">{fullUser.name}</p>
-      <p className="text-xs font-medium text-emerald-600">
+      <p className="font-semibold text-foreground">{fullUser.name}</p>
+      <p className="text-xs font-medium text-primary">
         {member.isAdmin ? 'Admin' : 'Member'}
       </p>
       {fullUser.showEmail && (
-        <p className="text-xs text-gray-500">{fullUser.email}</p>
+        <p className="text-xs text-muted-foreground">{fullUser.email}</p>
       )}
       {fullUser.showRealName && fullUser.realName && (
-        <p className="text-xs text-gray-500">{fullUser.realName}</p>
+        <p className="text-xs text-muted-foreground">{fullUser.realName}</p>
       )}
       {fullUser.showRelationshipComment && fullUser.relationshipComment && (
-        <p className="text-xs text-gray-400 italic">{fullUser.relationshipComment}</p>
+        <p className="text-xs text-muted-foreground italic">{fullUser.relationshipComment}</p>
       )}
     </div>
   );
@@ -98,20 +99,20 @@ export default function MemberProfile({ member }: Props) {
   const playersBlock = (
     <div className="flex flex-col gap-3">
       {players.length === 0 ? (
-        <p className="text-xs text-gray-400 italic">No players in this group.</p>
+        <p className="text-xs text-muted-foreground italic">No players in this group.</p>
       ) : (
         players.map((p) => {
           const isInSession = p.sessionExpiresAt !== null;
           return (
             <div key={p.id} className="flex items-center gap-3">
               {/* Avatar placeholder — same height as three text rows */}
-              <div className="w-10 h-[60px] rounded bg-emerald-100 flex-shrink-0" />
+              <div className="w-10 h-[60px] rounded bg-muted flex-shrink-0" />
               <div className="flex flex-col justify-center">
-                <p className="text-sm font-medium text-gray-800">{p.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-medium text-foreground">{p.name}</p>
+                <p className="text-xs text-muted-foreground">
                   {isInSession ? 'In Game Session' : 'Currently Offline'}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {isInSession && p.sessionExpiresAt
                     ? `expires in ${formatExpiresIn(p.sessionExpiresAt)}`
                     : `since ${formatTimeAgo(p.lastSignout)}`}
@@ -126,12 +127,12 @@ export default function MemberProfile({ member }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-4">
-      <div className="md:w-1/2 border border-emerald-200 rounded-lg px-4 py-3">
+      <Card className="md:w-1/2 !p-4">
         {userBlock}
-      </div>
-      <div className="md:w-1/2 border border-emerald-200 rounded-lg px-4 py-3">
+      </Card>
+      <Card className="md:w-1/2 !p-4">
         {playersBlock}
-      </div>
+      </Card>
     </div>
   );
 }

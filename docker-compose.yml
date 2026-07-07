@@ -20,6 +20,9 @@ services:
     ports:
       - "4000:4000"
 
+    env_file:
+      - apps/backend/.env
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,8 +34,6 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/transcendence
 
       REDIS_URL: redis://redis:6379
-
-      JWT_SECRET: supersecret
 
 
   postgres:

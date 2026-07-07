@@ -1,8 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
+  private readonly smtpConfigured =
+    Boolean(process.env.MAIL_USER?.trim()) &&
+    Boolean(process.env.MAIL_PASS?.trim());
+
   constructor(private readonly mailerService: MailerService) {}
 
   async sendInvitation(
@@ -11,7 +16,7 @@ export class MailService {
     groupName: string,
     inviteLink: string,
   ): Promise<void> {
-    await this.mailerService.sendMail({
+    const payload = {
       to: toEmail,
       subject: 'Invitation to Dictée vocabulary learning space',
       text: `${invitationText}\n\n${inviteLink}`,
@@ -20,6 +25,20 @@ export class MailService {
         <br>
         <a href="${inviteLink}">Click here to join ${groupName}</a>
       `,
-    });
+    };
+
+    const result = await this.mailerService.sendMail(payload);
+
+    if (!this.smtpConfigured) {
+      this.logger.warn(
+        `MAIL_USER/MAIL_PASS not set — invitation logged locally instead of sent via SMTP.`,
+      );
+      this.logger.log(
+        `Dev invitation to ${toEmail} for "${groupName}": ${inviteLink}`,
+      );
+      if (result) {
+        this.logger.debug(String(result));
+      }
+    }
   }
 }

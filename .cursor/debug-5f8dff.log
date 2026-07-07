@@ -1,0 +1,2 @@
+{"sessionId":"5f8dff","runId":"post-fix","hypothesisId":"B","location":"manage_group/page.tsx:mount","message":"manage_group mount check","data":{"hasUser":false,"hasGroup":false,"userId":null,"groupId":null},"timestamp":1783418097340}
+{"sessionId":"5f8dff","runId":"post-fix","hypothesisId":"B","location":"manage_group/page.tsx:redirectSignin","message":"redirecting to signin","data":{"hasUser":false,"hasGroup":false},"timestamp":1783418097341}

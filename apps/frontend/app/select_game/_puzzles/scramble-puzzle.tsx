@@ -14,6 +14,7 @@ Scramble puzzle: player drags letter tiles to reconstruct a word from its meanin
 */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
+import { Button } from '../../components/ui/button';
 
 interface Props {
   vocabulary: VocabularyDto;
@@ -215,9 +216,9 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     <div className="flex flex-col h-full px-4 py-3 select-none">
 
       {/* Instruction + meaning */}
-      <p className="text-sm text-gray-500 mb-3 leading-snug">
+      <p className="text-sm text-muted-foreground mb-3 leading-snug">
         Move the scrambled letters, to find the word meaning…{' '}
-        <span className="font-semibold text-gray-700">{meaning}</span>
+        <span className="font-semibold text-foreground">{meaning}</span>
       </p>
 
       {/* Tile row */}
@@ -257,15 +258,11 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
                   cursor: isDragging ? 'grabbing' : 'grab',
                 }}
                 className={[
-                  'flex items-center justify-center rounded-lg text-lg font-bold',
-                  'border border-gray-200',
-                  'shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
+                  'flex items-center justify-center rounded-lg text-lg font-bold clay-panel',
                   tile.char === ' '
-                    ? 'bg-gray-100 text-gray-300'
-                    : 'bg-white text-gray-800',
-                  isDragging
-                    ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_6px_16px_rgba(0,0,0,0.25)] scale-105'
-                    : '',
+                    ? 'bg-muted text-muted-foreground'
+                    : 'bg-surface text-foreground',
+                  isDragging ? 'scale-105 shadow-lg' : '',
                   blinking ? 'animate-blink-orange' : '',
                 ].join(' ')}
               >
@@ -280,18 +277,15 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
       <div className="flex items-center justify-between mt-3">
         <span
           className={[
-            'text-sm font-semibold text-emerald-500 transition-opacity duration-300',
+            'text-sm font-semibold text-primary transition-opacity duration-300',
             success ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
         >
           SUCCESS!
         </span>
-        <button
-          onClick={onSkip}
-          className="text-sm text-gray-400 hover:text-gray-600 underline"
-        >
+        <Button variant="ghost" size="sm" onClick={onSkip}>
           {success ? 'Next' : 'Skip'}
-        </button>
+        </Button>
       </div>
     </div>
   );

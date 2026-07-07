@@ -9,6 +9,7 @@
 import { useLanguage } from '../context/language-context';
 import { useState } from 'react'
 import Image from 'next/image'
+import { Button } from './ui/button';
 
 const languages = [
     { code: 'en', label: 'English', flag: '/flags/gb.svg' },
@@ -22,17 +23,24 @@ export default function FlagMenu() {
 
   return (
     <div className="relative">
-      <button onClick={() => setIsOpen(!isOpen)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Select language"
+        aria-expanded={isOpen}
+      >
         <Image src={selected.flag} alt={selected.label} width={24} height={18} />
-      </button>
+      </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 flex flex-col bg-white shadow-md rounded w-30">
+        <div className="clay-dropdown absolute right-0 mt-2 flex flex-col min-w-[8rem] z-50">
           {languages.map((lang) => (
             <button
               key={lang.code}
+              type="button"
               onClick={() => { setSelected(lang); setIsOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100"
+              className="clay-dropdown-item text-foreground"
             >
               <Image src={lang.flag} alt={lang.label} width={24} height={18} />
               <span>{lang.label}</span>

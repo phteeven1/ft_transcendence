@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
+import { Button, Dialog, Modal } from '../../components/ui';
 
 // defines shape of props that ExpelMember must receive from parent
 type Props = {
@@ -92,124 +93,98 @@ export default function ExpelMember({
 
   return (
     <>
-      <button
+      <Button
         onClick={handleOpen}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        variant="accent"
+        fullWidth
+        className="clay-action-btn"
       >
         Expel Member
-      </button>
+      </Button>
 
-      {/* Selection modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[80vh]">
-            <div className="p-6 pb-2">
-              <h2 className="text-xl font-bold mb-1">Expel Member</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Select a member to expel.
-              </p>
-            </div>
-            <div className="overflow-y-auto flex-1 px-6">
-              <ul>
-                {admins.map((member) => (
-                  <li
-                    key={member.id}
-                    className="flex items-center justify-between py-2 border-b border-gray-100"
-                  >
-                    <span className="text-gray-400">{member.name}</span>
-                    <span className="text-xs text-gray-400">Admin</span>
-                  </li>
-                ))}
-                {nonAdmins.map((member) => (
-                  <li
-                    key={member.id}
-                    className="flex items-center justify-between py-2 border-b border-gray-100 cursor-pointer"
-                    onClick={() => handleSelect(member.id)}
-                  >
-                    <span>{member.name}</span>
-                    <input
-                      type="radio"
-                      checked={selectedId === member.id}
-                      onChange={() => {}}
-                      onClick={(e) => e.stopPropagation()}
-                      readOnly
-                      className="w-4 h-4 accent-red-500 pointer-events-none"
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="p-6 pt-4 flex gap-3 justify-end border-t border-gray-100">
-              <button
-                onClick={handleClose}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleExpelClick}
-                disabled={!selectedId}
-                className={`font-medium py-2 px-4 rounded transition-colors text-white ${
-                  selectedId
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-gray-300 cursor-not-allowed'
-                }`}
-              >
-                Expel
-              </button>
-            </div>
+      <Dialog
+        open={showModal}
+        onClose={handleClose}
+        title="Expel Member"
+        scrollable
+        footer={
+          <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
+            <Button variant="ghost" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleExpelClick}
+              disabled={!selectedId}
+            >
+              Expel
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <p className="text-sm text-muted-foreground mb-4">
+          Select a member to expel.
+        </p>
+        <ul>
+          {admins.map((member) => (
+            <li
+              key={member.id}
+              className="flex items-center justify-between py-2 border-b border-border"
+            >
+              <span className="text-muted-foreground">{member.name}</span>
+              <span className="text-xs text-muted-foreground">Admin</span>
+            </li>
+          ))}
+          {nonAdmins.map((member) => {
+            const isSelected = selectedId === member.id;
+            return (
+              <li key={member.id} className="py-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleSelect(member.id)}
+                  className={
+                    isSelected
+                      ? 'clay-list-btn clay-list-btn-active rounded-lg'
+                      : 'clay-list-btn rounded-lg'
+                  }
+                >
+                  <span className="text-foreground">{member.name}</span>
+                  <input
+                    type="radio"
+                    checked={isSelected}
+                    onChange={() => {}}
+                    readOnly
+                    className="w-4 h-4 accent-destructive pointer-events-none"
+                  />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Dialog>
 
-      {/* Confirmation modal */}
-      {showConfirm && selectedMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-3">Are you sure?</h2>
-            <p className="text-gray-700 mb-6">
-              This will expel{' '}
-              <span className="font-semibold">{selectedMember.name}</span> from{' '}
-              <span className="font-semibold">{group.name}</span>. This cannot
-              be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => {
-                  setShowConfirm(false);
-                  setShowModal(true);
-                }}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleConfirmExpel}
-                className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Expel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showConfirm && !!selectedMember}
+        onClose={() => {
+          setShowConfirm(false);
+          setShowModal(true);
+        }}
+        title="Are you sure?"
+        cancelLabel="Back"
+        confirmLabel="Expel"
+        onConfirm={handleConfirmExpel}
+        confirmVariant="destructive"
+        cancelVariant="ghost"
+      >
+        This will expel{' '}
+        <span className="font-semibold text-foreground">{selectedMember?.name}</span> from{' '}
+        <span className="font-semibold text-foreground">{group.name}</span>. This cannot
+        be undone.
+      </Dialog>
 
-      {/* Result modal */}
-      {showResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">{resultMessage}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={handleCloseResult}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={showResult} onClose={handleCloseResult}>
+        {resultMessage}
+      </Modal>
     </>
   );
 }

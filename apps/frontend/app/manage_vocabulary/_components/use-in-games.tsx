@@ -2,6 +2,7 @@
 import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
+import { Button } from '../../components/ui/button';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -29,16 +30,14 @@ export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
   };
 
   return (
-    <button
+    <Button
+      variant="accent"
+      fullWidth
+      className="clay-action-btn"
       onClick={handleClick}
       disabled={!isActive}
-      className={`w-full p-2 rounded transition-colors ${
-        isActive
-          ? 'bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer'
-          : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-      }`}
     >
       Use in Games
-    </button>
+    </Button>
   );
 }

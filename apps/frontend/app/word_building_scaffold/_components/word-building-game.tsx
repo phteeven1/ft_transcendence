@@ -405,8 +405,8 @@ export default function WordBuildingGame() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-emerald-200 flex items-center justify-center">
-        <p className="text-gray-600">Generating crossword…</p>
+      <div className="game-shell min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <p className="text-muted-foreground">Generating crossword…</p>
       </div>
     );
   }
@@ -415,17 +415,17 @@ export default function WordBuildingGame() {
     <div
       ref={containerRef}
       tabIndex={0}
-      className="min-h-screen bg-emerald-200 overflow-x-auto outline-none focus:ring-0"
+      className="game-shell min-h-[calc(100vh-4rem)] overflow-x-auto outline-none focus:ring-0"
     >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         <div className="flex items-center gap-4 mb-2">
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Click a cell to auto-select direction · Type letters to fill · 
             Green = correct · Blue = empty · Red = wrong · 
-            <strong>Space/Tab to toggle direction</strong>
+            <strong className="text-foreground">Space/Tab to toggle direction</strong>
           </p>
           {selectedRow !== null && selectedCol !== null && (
-            <span className="text-xs font-semibold px-2 py-1 rounded bg-blue-100 text-blue-800">
+            <span className="text-xs font-semibold font-heading px-2 py-1 rounded clay-panel text-foreground">
               {direction === 'across' ? '→ Across' : '↓ Down'}
             </span>
           )}
@@ -474,11 +474,11 @@ export default function WordBuildingGame() {
 
       {/* Puzzle-complete overlay — shown as soon as the board is solved */}
       {solved && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 pointer-events-none">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4">
+        <div className="clay-modal-overlay fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="clay-modal text-center max-w-sm mx-4">
             <p className="text-5xl mb-3">🎉</p>
-            <p className="text-2xl font-bold text-green-600 mb-2">Puzzle Complete!</p>
-            <p className="text-sm text-gray-500">Returning to lobby…</p>
+            <p className="font-heading text-2xl font-bold text-primary mb-2">Puzzle Complete!</p>
+            <p className="text-sm text-muted-foreground">Returning to lobby…</p>
           </div>
         </div>
       )}

@@ -75,10 +75,10 @@ const TYPE_LABELS: Record<ChatEntryType, string> = {
 };
 
 const TYPE_COLOURS: Record<ChatEntryType, { active: string; inactive: string }> = {
-  LOG: { active: 'bg-gray-700 text-white',     inactive: 'bg-gray-100 text-gray-400' },
-  ADM: { active: 'bg-red-600 text-white',       inactive: 'bg-red-50 text-red-300' },
-  GEN: { active: 'bg-emerald-600 text-white',   inactive: 'bg-emerald-50 text-emerald-300' },
-  MEM: { active: 'bg-blue-600 text-white',      inactive: 'bg-blue-50 text-blue-300' },
+  LOG: { active: 'bg-foreground text-background', inactive: 'clay-chip-inactive' },
+  ADM: { active: 'bg-destructive text-on-primary border-destructive', inactive: 'clay-chip-inactive' },
+  GEN: { active: 'bg-primary text-on-primary border-primary', inactive: 'clay-chip-inactive' },
+  MEM: { active: 'bg-secondary text-foreground border-border-dark', inactive: 'clay-chip-inactive' },
 };
 
 // Types visible to admins vs members
@@ -102,7 +102,7 @@ function ChatEntryRow({
     const isCurrent = memberIds.has(id);
     return isCurrent
       ? <span className="font-semibold">{name}</span>
-      : <span className="font-semibold italic text-gray-500">{name}</span>;
+      : <span className="font-semibold italic text-muted-foreground">{name}</span>;
   }
 
   const authorEl = nameEl(entry.authorId, entry.authorName);
@@ -113,7 +113,7 @@ function ChatEntryRow({
   return (
     <div className="flex items-start gap-2 py-1 text-sm font-mono">
       {/* Timestamp */}
-      <span className="text-gray-400 shrink-0">{formatTimestamp(entry.createdAt)}</span>
+      <span className="text-muted-foreground shrink-0">{formatTimestamp(entry.createdAt)}</span>
 
       {/* Type badge */}
       <span className={`shrink-0 rounded px-1 text-xs font-bold ${colours.active}`}>
@@ -122,11 +122,11 @@ function ChatEntryRow({
 
       {/* Content */}
       {isLog ? (
-        <span className="text-gray-700">
+        <span className="text-foreground">
           {renderLogSentence(entry, authorEl, targetEl)}
         </span>
       ) : (
-        <span className="text-gray-800">
+        <span className="text-foreground">
           {authorEl}{': '}
           {entry.content}
         </span>
@@ -185,10 +185,9 @@ export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
           return (
             <button
               key={type}
+              type="button"
               onClick={() => toggleFilter(type)}
-              className={`rounded px-2 py-0.5 text-xs font-bold transition-colors ${
-                isActive ? colours.active : colours.inactive
-              }`}
+              className={`clay-chip ${isActive ? colours.active : colours.inactive}`}
             >
               {TYPE_LABELS[type]}
             </button>
@@ -197,9 +196,9 @@ export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
       </div>
 
       {/* Chat scroll area */}
-      <div className="h-48 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">
+      <div className="h-48 overflow-y-auto clay-panel p-2 bg-muted">
         {visibleEntries.length === 0 && (
-          <p className="text-sm text-gray-400 italic">No entries to show.</p>
+          <p className="text-sm text-muted-foreground italic">No entries to show.</p>
         )}
         {visibleEntries.map((entry) => (
           <ChatEntryRow

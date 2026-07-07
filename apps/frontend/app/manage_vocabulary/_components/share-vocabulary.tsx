@@ -1,5 +1,6 @@
 'use client';
 import { Vocabulary } from '../../types';
+import { Button } from '../../components/ui/button';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -7,11 +8,13 @@ type Props = {
 
 export default function ShareVocabulary({ selectedVocabulary }: Props) {
   return (
-    <button
+    <Button
+      variant="ghost"
+      fullWidth
+      className="clay-action-btn"
       disabled
-      className="w-full bg-gray-200 text-gray-400 p-2 rounded cursor-not-allowed opacity-50"
     >
       Share Vocabulary
-    </button>
+    </Button>
   );
 }

@@ -31,6 +31,7 @@ import type { GroupChatEntryDto } from '@/lib/api/chat';
 import AdminToAdmins from './_components/admin-to-admins';
 import AdminToGroup from './_components/admin-to-group';
 import MemberToAdmin from './_components/member-to-admin';
+import { PageShell } from '../components/ui';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -40,12 +41,35 @@ export default function ManageGroup() {
   const [chatEntries, setChatEntries] = useState<GroupChatEntryDto[]>([]);
 
   useEffect(() => {
-    if (!user || !group) {
-      router.push('/');
-      return;
+    let cancelled = false;
+
+    async function init() {
+      if (!user) {
+        if (!cancelled) router.push('/signin');
+        return;
+      }
+
+      if (!group) {
+        const targetGroupId =
+          user.currentGroup ??
+          user.isMemberOf.at(-1) ??
+          user.isAdminOf.at(-1);
+        if (targetGroupId) {
+          const synced = await syncGroup(targetGroupId);
+          if (!cancelled && synced) return;
+        }
+        if (!cancelled) router.push('/dashboard');
+        return;
+      }
+
+      fetchMembers();
     }
-    fetchMembers();
-  }, []);
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, group]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -132,16 +156,34 @@ export default function ManageGroup() {
   );
 
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="max-w-4xl mx-auto p-4">
+    <PageShell>
+      {/* Mobile portrait (below md): single column stack */}
+      <div className="flex flex-col gap-4 md:hidden">
+        <MemberList
+          members={currentGroupMembers}
+          selectedMember={selectedMember}
+          onSelect={setSelectedMember}
+        />
+        <ActionWindow
+          selectedMember={selectedMember}
+          groupId={group.id}
+          members={currentGroupMembers}
+          chatEntries={chatEntries}
+          isAdmin={isAdmin}
+        />
+        <div className="grid grid-cols-2 gap-3">{buttons}</div>
+      </div>
 
-        {/* Mobile portrait (below md): single column stack */}
-        <div className="flex flex-col gap-4 md:hidden">
+      {/* Landscape mobile (md to lg): three columns side by side, no header */}
+      <div className="hidden md:grid lg:hidden grid-cols-3 gap-3 items-start">
+        <div className="col-span-1">
           <MemberList
             members={currentGroupMembers}
             selectedMember={selectedMember}
             onSelect={setSelectedMember}
           />
+        </div>
+        <div className="col-span-1">
           <ActionWindow
             selectedMember={selectedMember}
             groupId={group.id}
@@ -149,64 +191,42 @@ export default function ManageGroup() {
             chatEntries={chatEntries}
             isAdmin={isAdmin}
           />
-          <div className="grid grid-cols-2 gap-3">{buttons}</div>
         </div>
+        <div className="col-span-1 grid grid-cols-2 gap-2">
+          {buttons}
+        </div>
+      </div>
 
-        {/* Landscape mobile (md to lg): three columns side by side, no header */}
-        <div className="hidden md:grid lg:hidden grid-cols-3 gap-3 items-start">
-          <div className="col-span-1">
+      {/* Desktop (lg+): member list + buttons side by side, action window below */}
+      <div className="hidden lg:flex flex-col gap-6">
+        <div className="hidden lg:block text-center">
+          <h1 className="font-heading text-2xl font-bold text-foreground">{group.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            You are {isAdmin ? 'an admin' : 'a member'} of this group.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-1 flex flex-col">
             <MemberList
               members={currentGroupMembers}
               selectedMember={selectedMember}
               onSelect={setSelectedMember}
             />
           </div>
-          <div className="col-span-1">
-            <ActionWindow
-              selectedMember={selectedMember}
-              groupId={group.id}
-              members={currentGroupMembers}
-              chatEntries={chatEntries}
-              isAdmin={isAdmin}
-            />
-          </div>
-          <div className="col-span-1 grid grid-cols-2 gap-2 [&_button]:py-1 [&_button]:text-s">
-            {buttons}
-          </div>
-        </div>
-
-        {/* Desktop (lg+): member list + buttons side by side, action window below */}
-        <div className="hidden lg:flex flex-col gap-6">
-          <div className="hidden lg:block text-center">
-            <h1 className="text-2xl font-bold">{group.name}</h1>
-            <p className="text-sm text-gray-600">
-              You are {isAdmin ? 'an admin' : 'a member'} of this group.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-1 flex flex-col">
-              <MemberList
-                members={currentGroupMembers}
-                selectedMember={selectedMember}
-                onSelect={setSelectedMember}
-              />
-            </div>
-            <div className="col-span-2 flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3 content-start">
-                {buttons}
-              </div>
+          <div className="col-span-2 flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3 content-start">
+              {buttons}
             </div>
           </div>
-          <ActionWindow
-            selectedMember={selectedMember}
-            groupId={group.id}
-            members={currentGroupMembers}
-            chatEntries={chatEntries}
-            isAdmin={isAdmin}
-          />
         </div>
-
+        <ActionWindow
+          selectedMember={selectedMember}
+          groupId={group.id}
+          members={currentGroupMembers}
+          chatEntries={chatEntries}
+          isAdmin={isAdmin}
+        />
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -11,6 +11,7 @@ how much time remains until automatic start
 
 import { useEffect, useState } from 'react';
 import { Game } from '../../types';
+import { Button } from '../../components/ui/button';
 
 type Props = {
   game: Game;
@@ -49,9 +50,6 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
   const elapsed = formatElapsed(game.initiatedTime, now);
   const bottomLabel = `${game.players.length} player${game.players.length !== 1 ? 's' : ''}, ${elapsed}`;
 
-  // Initiator always gets a clickable button that force-starts.
-  // Non-initiator who already joined: disabled.
-  // Non-initiator who hasn't joined: clickable to join.
   const isDisabled = !isInitiator && alreadyJoined;
 
   const handleClick = () => {
@@ -62,23 +60,20 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
     }
   };
 
+  const variant = isInitiator ? 'accent' : alreadyJoined ? 'secondary' : 'primary';
+
   return (
-    <button
+    <Button
+      variant={variant}
+      size="lg"
+      fullWidth
       onClick={handleClick}
       disabled={isDisabled}
-      className={`
-        text-white font-medium py-4 px-4 rounded transition-colors text-center
-        ${isInitiator
-          ? 'bg-amber-500 hover:bg-amber-600'
-          : alreadyJoined
-            ? 'bg-sky-300 cursor-default'
-            : 'bg-sky-500 hover:bg-sky-600'
-        }
-      `}
+      className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
     >
       <div className="font-semibold">{game.name}</div>
       <div className="text-xs mt-1 opacity-90">{middleLabel}</div>
       <div className="text-sm font-bold mt-0.5">{bottomLabel}</div>
-    </button>
+    </Button>
   );
 }

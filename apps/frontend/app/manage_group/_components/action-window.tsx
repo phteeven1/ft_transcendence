@@ -33,30 +33,25 @@ export default function ActionWindow({ selectedMember, members, chatEntries, isA
   ];
 
   return (
-    <div className="border border-emerald-400 rounded-lg overflow-hidden">
-      {/* Tab bar */}
-      <div className="flex border-b border-emerald-400">
+    <div className="clay-panel overflow-hidden">
+      <div className="clay-tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-emerald-700 border-b-2 border-emerald-600'
-                : 'bg-emerald-100 text-gray-500 hover:bg-emerald-50'
-            }`}
+            className={activeTab === tab.id ? 'clay-tab clay-tab-active' : 'clay-tab'}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab content */}
-      <div className="px-4 py-3 bg-white">
+      <div className="px-4 py-3 bg-surface">
         {activeTab === 'profile' && (
           selectedMember
             ? <MemberProfile member={selectedMember} />
-            : <p className="text-sm text-gray-400 italic">Select a member to view their profile.</p>
+            : <p className="text-sm text-muted-foreground italic">Select a member to view their profile.</p>
         )}
         {activeTab === 'chat' && (
           <GroupChat members={members} chatEntries={chatEntries} isAdmin={isAdmin} />

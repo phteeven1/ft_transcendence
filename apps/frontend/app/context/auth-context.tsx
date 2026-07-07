@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const updatedGroup = await groupsApi.getById(groupId);
       setGroup(updatedGroup);
-      if (user) setUser({ ...user, currentGroup: groupId });
+      setUser((prev) => (prev ? { ...prev, currentGroup: groupId } : prev));
       return updatedGroup;
     } catch (error) {
       console.error('syncGroup failed:', error);

@@ -13,6 +13,7 @@ Means-What puzzle: player sees a meaning and picks the matching word from three 
 */
 import { useState, useEffect, useRef } from 'react';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
+import { Button } from '../../components/ui/button';
 
 interface Props {
   vocabulary: VocabularyDto;
@@ -101,28 +102,24 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
   // Returns the Tailwind classes for each button depending on game state
   const buttonClasses = (index: number): string => {
     const base = [
-      'flex-1 px-4 py-3 rounded-lg text-sm font-semibold text-gray-800 text-left',
-      'border border-gray-200',
-      'shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
+      'flex-1 px-4 py-3 rounded-lg text-sm font-semibold text-foreground text-left clay-panel',
       'transition-colors duration-200',
       'whitespace-normal break-words',
     ];
 
     if (!guessed) {
-      base.push('bg-white hover:bg-gray-50 cursor-pointer');
+      base.push('cursor-pointer hover:opacity-90');
     } else if (result === 'success') {
-      // correct guess: correct button green, others dim
       if (options[index].correct) {
-        base.push('bg-emerald-100 border-emerald-400 text-emerald-800');
+        base.push('border-primary text-primary');
       } else {
-        base.push('bg-white opacity-35 cursor-default');
+        base.push('opacity-35 cursor-default');
       }
     } else {
-      // wrong guess: all dim, correct stays white
       if (options[index].correct) {
-        base.push('bg-white cursor-default');
+        base.push('cursor-default');
       } else {
-        base.push('bg-white opacity-35 cursor-default');
+        base.push('opacity-35 cursor-default');
       }
     }
 
@@ -135,8 +132,8 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
     <div className="flex flex-col h-full px-4 py-3 select-none">
 
       {/* Prompt */}
-      <p className="text-sm text-gray-500 mb-1">What best translates…</p>
-      <p className="text-base font-semibold text-gray-800 mb-4 leading-snug">{meaning}</p>
+      <p className="text-sm text-muted-foreground mb-1">What best translates…</p>
+      <p className="text-base font-semibold font-heading text-foreground mb-4 leading-snug">{meaning}</p>
 
       {/* Answer buttons — row on landscape/desktop, column on portrait mobile */}
       <div className="flex-1 flex flex-col md:flex-row gap-3 items-stretch">
@@ -157,19 +154,16 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
         <span
           className={[
             'text-sm font-semibold transition-opacity duration-300',
-            result === 'success' ? 'text-emerald-500 opacity-100' : '',
-            result === 'false' ? 'text-red-500 opacity-100' : '',
+            result === 'success' ? 'text-primary opacity-100' : '',
+            result === 'false' ? 'text-destructive opacity-100' : '',
             result === null ? 'opacity-0' : '',
           ].join(' ')}
         >
           {result === 'success' ? 'SUCCESS!' : result === 'false' ? 'FALSE' : ''}
         </span>
-        <button
-          onClick={onSkip}
-          className="text-sm text-gray-400 hover:text-gray-600 underline"
-        >
+        <Button variant="ghost" size="sm" onClick={onSkip}>
           {guessed ? 'Next' : 'Skip'}
-        </button>
+        </Button>
       </div>
     </div>
   );

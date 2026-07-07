@@ -40,12 +40,10 @@ export default function TileRack({ letters, disabled = false }: Props) {
             e.dataTransfer.effectAllowed = 'copy';
           }}
           className={[
-            'w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold select-none',
-            'border border-gray-200',
-            'shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
+            'w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold select-none clay-panel',
             disabled
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
-              : 'bg-white text-gray-800 cursor-grab hover:bg-blue-50 hover:border-blue-300 active:cursor-grabbing',
+              ? 'text-muted-foreground cursor-not-allowed opacity-50'
+              : 'text-foreground cursor-grab hover:opacity-90 active:cursor-grabbing',
           ].join(' ')}
         >
           {letter}

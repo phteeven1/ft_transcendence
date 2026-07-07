@@ -26,7 +26,6 @@ export default function TopBar() {
     fetchGroupName();
   }, [player]);
 
-  // Update minutes remaining once per minute
   useEffect(() => {
     if (!sessionExpiresAt) {
       setMinutesLeft(null);
@@ -42,31 +41,35 @@ export default function TopBar() {
   }, [sessionExpiresAt]);
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-emerald-200 border-b border-emerald-300">
-      <div className="flex items-center gap-4">
-        <span className="font-bold text-lg">Dictee</span>
+    <header className="clay-topbar flex items-center justify-between px-4 md:px-6 py-3">
+      <div className="flex items-center gap-4 min-w-0">
+        <span className="font-heading font-bold text-xl text-primary shrink-0">Dicteé</span>
         {player ? (
-          <span className="text-sm text-gray-600">
-            Playing as <strong>{player.name}</strong>
+          <span className="text-sm text-muted-foreground truncate">
+            Playing as <strong className="text-foreground">{player.name}</strong>
             {playerGroupName && (
-              <span> in group <strong>{playerGroupName}</strong></span>
+              <span>
+                {' '}
+                in group <strong className="text-foreground">{playerGroupName}</strong>
+              </span>
             )}
             {minutesLeft !== null && (
-              <span className="ml-3 text-xs text-gray-400">
-                {minutesLeft} min left
-              </span>
+              <span className="ml-2 text-xs opacity-75">{minutesLeft} min left</span>
             )}
           </span>
         ) : user ? (
-          <span className="text-sm text-gray-600">
-            Signed in as <strong>{user.name}</strong>
+          <span className="text-sm text-muted-foreground truncate">
+            Signed in as <strong className="text-foreground">{user.name}</strong>
             {group && (
-              <span> in group <strong>{group.name}</strong></span>
+              <span>
+                {' '}
+                in group <strong className="text-foreground">{group.name}</strong>
+              </span>
             )}
           </span>
         ) : null}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 shrink-0">
         <FlagMenu />
         <AuthButton />
       </div>

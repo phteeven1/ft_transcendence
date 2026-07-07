@@ -14,6 +14,7 @@
 import { useState, useEffect } from 'react';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
+import { Button } from '../../components/ui/button';
 
 // ── Grid dimensions ──────────────────────────────────────────────────────────
 const COURT_COLS = 18;
@@ -68,24 +69,21 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
       {/* Size selector */}
       <div className="flex gap-2">
         {(['S', 'M', 'L'] as CourtSize[]).map((size) => (
-          <button
+          <Button
             key={size}
+            variant={courtSize === size ? 'accent' : 'ghost'}
+            size="sm"
+            className="w-8 h-8 p-0"
             onClick={() => setCourtSize(size)}
-            className={[
-              'w-8 h-8 rounded font-bold text-sm transition-colors',
-              courtSize === size
-                ? 'bg-emerald-500 text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50',
-            ].join(' ')}
           >
             {size}
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* Court grid — fixed pixel size, scrolls if it doesn't fit */}
       <div
-        className="rounded-2xl bg-white shadow-xl"
+        className="clay-panel rounded-2xl"
         style={{
           width: `${gridWidth}px`,
           minWidth: `${gridWidth}px`,

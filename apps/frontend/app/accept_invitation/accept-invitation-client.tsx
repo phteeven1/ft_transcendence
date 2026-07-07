@@ -31,7 +31,7 @@ type PageState =
 type AuthMode = 'signin' | 'register';
 
 export default function AcceptInvitationClient() {
-  const { login, syncGroup, refreshUser } = useAuth();
+  const { user: authUser, login, syncGroup, refreshUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -56,6 +56,18 @@ export default function AcceptInvitationClient() {
     validateToken();
   }, [token]);
 
+  // Confirm screen requires a signed-in user (local state can be lost on refresh/retry)
+  useEffect(() => {
+    if (pageState !== 'confirm') return;
+    const effectiveUser = currentUser ?? authUser;
+    if (!effectiveUser) {
+      setErrorMessage('Please sign in or register before joining the group.');
+      setPageState('auth');
+    } else if (!currentUser && authUser) {
+      setCurrentUser(authUser);
+    }
+  }, [pageState, currentUser, authUser]);
+
   const validateToken = async () => {
     try {
       const data = await invitationsApi.validateToken(token!);
@@ -68,7 +80,13 @@ export default function AcceptInvitationClient() {
 
       const group = await groupsApi.getById(gId);
       setGroupName(group.name);
-      setPageState('auth');
+
+      if (authUser) {
+        setCurrentUser(authUser);
+        setPageState('confirm');
+      } else {
+        setPageState('auth');
+      }
     } catch (error) {
       console.error('Token validation failed:', error);
       setPageState('invalid');
@@ -112,14 +130,20 @@ export default function AcceptInvitationClient() {
   };
 
   const handleJoin = async () => {
-    if (!currentUser || !groupId || !token) return;
+    const joinUser = currentUser ?? authUser;
+    if (!joinUser || !groupId || !token) {
+      setErrorMessage('Please sign in or register before joining the group.');
+      setPageState('auth');
+      return;
+    }
+    if (!currentUser) setCurrentUser(joinUser);
     setPageState('joining');
     try {
       const groupData = await groupsApi.getById(groupId);
 
       const isAlreadyMember =
-        groupData.members.includes(currentUser.id) ||
-        groupData.admins.includes(currentUser.id);
+        groupData.members.includes(joinUser.id) ||
+        groupData.admins.includes(joinUser.id);
 
       if (isAlreadyMember) {
         await syncGroup(groupId);
@@ -127,11 +151,14 @@ export default function AcceptInvitationClient() {
         return;
       }
 
-      await groupsApi.addMember({ groupId, userId: currentUser.id, authorId: currentUser.id });
+      await groupsApi.addMember({ groupId, userId: joinUser.id, authorId: joinUser.id });
       await invitationsApi.accept({ token });
 
       await refreshUser();
-      await syncGroup(groupId);
+      const synced = await syncGroup(groupId);
+      if (!synced) {
+        throw new Error('Could not load group after joining');
+      }
       router.push('/manage_group');
     } catch (error) {
       console.error('Failed to join group:', error);
@@ -143,8 +170,23 @@ export default function AcceptInvitationClient() {
   };
 
   const handleDecline = () => router.push('/dashboard');
-  const handleGoToGroup = () => router.push('/manage_group');
-  const handleRetry = () => setPageState('confirm');
+  const handleGoToGroup = async () => {
+    const joinUser = currentUser ?? authUser;
+    if (!joinUser || !groupId) {
+      setPageState('auth');
+      return;
+    }
+    await syncGroup(groupId);
+    router.push('/manage_group');
+  };
+  const handleRetry = () => {
+    if (currentUser ?? authUser) {
+      setPageState('confirm');
+    } else {
+      setErrorMessage('Please sign in or register before joining the group.');
+      setPageState('auth');
+    }
+  };
   const handleAuthModeChange = (mode: AuthMode) => {
     setAuthMode(mode);
     setErrorMessage('');

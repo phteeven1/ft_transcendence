@@ -11,6 +11,9 @@ import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 
 type Props = {
   onCreated: (player: Player) => void;
@@ -59,72 +62,59 @@ export default function CreatePlayer({ onCreated }: Props) {
     setError('');
   };
 
+  const canCreate =
+    playerName.trim() !== '' &&
+    passQuestion.trim() !== '' &&
+    passAnswer.trim() !== '';
+
   // renders two things. CreatePlayer button is always visible. modal is only rendered when isOpen === true
   return (
     <>
-      <button
+      <Button
+        variant="primary"
+        fullWidth
+        className="clay-action-btn"
         onClick={() => setIsOpen(true)}
-        className="w-full bg-emerald-500 text-white p-2 rounded hover:bg-emerald-600"
       >
         Create Player
-      </button>
+      </Button>
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Create Player Profile</h2>
-            <div>
-              <label className="block mb-1">Player Name</label>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="e.g. Adam"
-                autoComplete="new-password"
-              />{' '}
-              {/* autoComplete="new-password" stops browser from autofilling */}
-            </div>
-            <div>
-              <label className="block mb-1">Secret Question</label>
-              <input
-                type="text"
-                value={passQuestion}
-                onChange={(e) => setPassQuestion(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="e.g. What is your dog's name?"
-                autoComplete="new-password"
-              />
-            </div>
-            <div>
-              <label className="block mb-1">Answer</label>
-              <input
-                type="text"
-                value={passAnswer}
-                onChange={(e) => setPassAnswer(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="e.g. Rex"
-                autoComplete="new-password"
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <div className="flex gap-3">
-              <button
-                onClick={handleCreate}
-                className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-              >
-                Create
-              </button>
-              <button
-                onClick={handleClose}
-                className="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+      <Dialog
+        open={isOpen}
+        onClose={handleClose}
+        title="Create Player Profile"
+        confirmLabel="Create"
+        onConfirm={handleCreate}
+        confirmDisabled={!canCreate}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Player Name"
+            type="text"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="e.g. Adam"
+            autoComplete="new-password"
+          />
+          <Input
+            label="Secret Question"
+            type="text"
+            value={passQuestion}
+            onChange={(e) => setPassQuestion(e.target.value)}
+            placeholder="e.g. What is your dog's name?"
+            autoComplete="new-password"
+          />
+          <Input
+            label="Answer"
+            type="text"
+            value={passAnswer}
+            onChange={(e) => setPassAnswer(e.target.value)}
+            placeholder="e.g. Rex"
+            autoComplete="new-password"
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-      )}
+      </Dialog>
     </>
   );
 }

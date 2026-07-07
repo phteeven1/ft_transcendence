@@ -8,15 +8,18 @@
 // that player+game. A second tab loading play_game invalidates the first tab's token,
 // which then kicks itself out via polling. That prevents two active tabs in the same game.
 
+import { PageShell } from '../components/ui/page-shell';
+import { Card } from '../components/ui/card';
+
 export default function AlreadyInGame() {
   return (
-    <div className="min-h-screen bg-emerald-200 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-8 text-center">
-        <h1 className="text-xl font-bold mb-3">Already in a game</h1>
-        <p className="text-gray-600 text-sm">
+    <PageShell narrow centered>
+      <Card className="w-full text-center">
+        <h1 className="font-heading text-xl font-bold mb-3 text-foreground">Already in a game</h1>
+        <p className="text-muted-foreground text-sm">
           You are already playing a game in another tab. Please go back to that tab to continue.
         </p>
-      </div>
-    </div>
+      </Card>
+    </PageShell>
   );
 }

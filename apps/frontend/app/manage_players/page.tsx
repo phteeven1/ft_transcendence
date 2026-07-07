@@ -19,6 +19,8 @@ import EditPassphrase from './_components/edit-passphrase';
 import DeletePlayer from './_components/delete-player';
 import InviteToPlay from './_components/invite-to-play';
 import EndGameSession from './_components/end-game-session';
+import { PageShell } from '../components/ui/page-shell';
+import { Button } from '../components/ui/button';
 
 export default function ManagePlayers() {
   const { user, group } = useAuth();
@@ -88,52 +90,50 @@ export default function ManagePlayers() {
   if (!user || !group) return null;
 
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="max-w-4xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2 text-center">{group.name}</h1>
-        <p className="text-sm text-gray-600 mb-6 text-center">Manage Players</p>
+    <PageShell>
+      <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
+        {group.name}
+      </h1>
+      <p className="text-sm text-muted-foreground mb-6 text-center">Manage Players</p>
 
-        <div className="md:grid md:grid-cols-3 gap-6">
-          {' '}
-          {/* overrides with pc layout if md */}
-          {/* Player list */}
-          <div className="col-span-1 mb-6 md:mb-0">
-            <PlayerList
-              players={players}
-              selectedPlayer={selectedPlayer}
-              isLoading={isLoading}
-              onSelect={handleSelect}
-            />
-          </div>
-          {/* Action buttons */}
-          <div className="col-span-2 grid grid-cols-2 gap-3 content-start">
-            <CreatePlayer onCreated={handleCreated} />
-            <RenamePlayer
-              selectedPlayer={selectedPlayer}
-              onRenamed={handleRenamed}
-            />
-            <EditPassphrase
-              selectedPlayer={selectedPlayer}
-              onUpdated={handleUpdated}
-            />
-            <DeletePlayer
-              selectedPlayer={selectedPlayer}
-              onDeleted={handleDeleted}
-            />
-            <InviteToPlay selectedPlayer={selectedPlayer} />
-            <EndGameSession
-              selectedPlayer={selectedPlayer}
-              onCleared={handleCleared}
-            />
-            <button
-              onClick={() => router.push('/manage_group')}
-              className="w-full bg-gray-400 text-white p-2 rounded hover:bg-gray-500"
-            >
-              Back to Group
-            </button>
-          </div>
+      <div className="md:grid md:grid-cols-3 gap-6">
+        <div className="col-span-1 mb-6 md:mb-0">
+          <PlayerList
+            players={players}
+            selectedPlayer={selectedPlayer}
+            isLoading={isLoading}
+            onSelect={handleSelect}
+          />
+        </div>
+        <div className="col-span-2 grid grid-cols-2 gap-3 content-start">
+          <CreatePlayer onCreated={handleCreated} />
+          <RenamePlayer
+            selectedPlayer={selectedPlayer}
+            onRenamed={handleRenamed}
+          />
+          <EditPassphrase
+            selectedPlayer={selectedPlayer}
+            onUpdated={handleUpdated}
+          />
+          <DeletePlayer
+            selectedPlayer={selectedPlayer}
+            onDeleted={handleDeleted}
+          />
+          <InviteToPlay selectedPlayer={selectedPlayer} />
+          <EndGameSession
+            selectedPlayer={selectedPlayer}
+            onCleared={handleCleared}
+          />
+          <Button
+            variant="ghost"
+            fullWidth
+            className="clay-action-btn"
+            onClick={() => router.push('/manage_group')}
+          >
+            Back to Group
+          </Button>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -3,6 +3,11 @@ import { useState, ChangeEvent, SyntheticEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { groupsApi } from '@/lib/api';
+import { PageShell } from '../components/ui/page-shell';
+import { Card } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Modal } from '../components/ui/modal';
 
 export default function CreateGroup() {
   const { user, syncGroup } = useAuth();
@@ -10,14 +15,11 @@ export default function CreateGroup() {
   const [groupName, setGroupName] = useState('');
   const [showError, setShowError] = useState(false);
 
-  // if no user, returns to landing page
   if (!user) {
     router.push('/');
     return null;
   }
 
-  // is called when Submit is clicked. Tries to POST to /groups/create in backend
-  // to create a new group, then syncs the group locally and redirects to /manage_group
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
@@ -33,63 +35,41 @@ export default function CreateGroup() {
     }
   };
 
-  // creates layout with input field and two buttons
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="bg-emerald-200 max-w-md mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Create New Group</h1>
-        <p className="mb-6 text-gray-600">Choose a name for your new group.</p>
+    <PageShell narrow centered>
+      <Card className="w-full">
+        <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">
+          Create New Group
+        </h1>
+        <p className="mb-6 text-muted-foreground">Choose a name for your new group.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="groupName" className="block mb-1">
-              Group Name
-            </label>
-            <input
-              type="text"
-              id="groupName"
-              name="groupName"
-              value={groupName}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setGroupName(e.target.value)
-              }
-              className="w-full p-2 border rounded"
-              placeholder="Enter a group name"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
+          <Input
+            label="Group Name"
+            type="text"
+            id="groupName"
+            name="groupName"
+            value={groupName}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+            placeholder="Enter a group name"
+            required
+          />
+          <Button type="submit" variant="accent" fullWidth>
             Create Group
-          </button>
+          </Button>
         </form>
-        <button
+        <Button
+          variant="ghost"
+          fullWidth
+          className="mt-4"
           onClick={() => router.push('/dashboard')}
-          className="mt-4 w-full bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
         >
           Back to Dashboard
-        </button>
-      </div>
+        </Button>
+      </Card>
 
-      {/* Error modal */}
-      {showError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">
-              Failed to create group. Please try again.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowError(false)}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <Modal open={showError} onClose={() => setShowError(false)}>
+        Failed to create group. Please try again.
+      </Modal>
+    </PageShell>
   );
 }

@@ -39,6 +39,8 @@ import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guar
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
 import PuzzleWindow from './_components/puzzle-window';
+import { PageShell } from '../components/ui/page-shell';
+import { Button } from '../components/ui/button';
 
 function getStartedGameRoute(
   gameName: string,
@@ -204,41 +206,47 @@ export default function SelectGame() {
   // clicking button opens JoinGameModal, if player isn't already in game
   // then a 'Exit Games' button to log out
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="max-w-4xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2 text-center">
+    <>
+      <PageShell>
+        <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
           Hi, {player.name}!
         </h1>
-        <p className="text-sm text-gray-600 mb-8 text-center">
+        <p className="text-sm text-muted-foreground mb-8 text-center">
           Choose a game to play
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <button
+          <Button
+            variant="accent"
+            size="lg"
+            fullWidth
+            className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
             onClick={() =>
               setModal({ kind: 'initiate', gameName: 'Word Building' })
             }
             disabled={hasInitiated('Word Building')}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
             <span className="text-lg font-bold">Word Building</span>
             <span className="text-xs font-normal opacity-90">
               Create new game
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="accent"
+            size="lg"
+            fullWidth
+            className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
             onClick={() =>
               setModal({ kind: 'initiate', gameName: 'Word Soup' })
             }
             disabled={hasInitiated('Word Soup')}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-4 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
             <span className="text-lg font-bold">Word Soup</span>
             <span className="text-xs font-normal opacity-90">
               Create new game
             </span>
-          </button>
+          </Button>
 
           {pendingGames.map((game) => (
             <PendingGameButton
@@ -260,14 +268,11 @@ export default function SelectGame() {
         </div>
 
         <div className="mt-6 text-center">
-          <button
-            onClick={handleFinishGame}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-6 rounded transition-colors"
-          >
+          <Button variant="ghost" onClick={handleFinishGame}>
             Exit Games
-          </button>
+          </Button>
         </div>
-      </div>
+      </PageShell>
 
       {modal.kind === 'initiate' && (
         <InitiateGameModal
@@ -292,6 +297,6 @@ export default function SelectGame() {
           onConfirm={() => handleForceStart(modal.game)}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { Button, Dialog, Modal } from '../../components/ui';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -51,56 +52,32 @@ export default function DeleteGroup({ syncAndRefresh }: Props) {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleClick}
-        className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        variant="destructive"
+        fullWidth
+        className="clay-action-btn"
       >
         Delete Group
-      </button>
+      </Button>
 
-      {/* Confirmation modal */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-3">Delete {group.name}?</h2>
-            <p className="text-gray-700 mb-6">
-              This will permanently delete the group and all player profiles
-              belonging to it. This cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        title={`Delete ${group.name}?`}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onConfirm={handleConfirm}
+        confirmVariant="destructive"
+        cancelVariant="ghost"
+      >
+        This will permanently delete the group and all player profiles
+        belonging to it. This cannot be undone.
+      </Dialog>
 
-      {/* Result modal */}
-      {showResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">{resultMessage}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowResult(false)}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={showResult} onClose={() => setShowResult(false)}>
+        {resultMessage}
+      </Modal>
     </>
   );
 }
