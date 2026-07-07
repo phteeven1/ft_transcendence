@@ -1,6 +1,11 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  ReactNode,
+} from 'react';
 
 type Language = {
   code: string;
@@ -15,34 +20,76 @@ type LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const DEFAULT_LANGUAGE: Language = {
-  code: 'en',
-  label: 'English',
-  flag: '/flags/gb.svg',
-};
+const STORAGE_KEY = 'selectedLanguage';
+const CHANGE_EVENT = 'language-change';
 
-function readSavedLanguage(): Language {
-  if (typeof window === 'undefined') return DEFAULT_LANGUAGE;
-  const saved = localStorage.getItem('selectedLanguage');
-  if (!saved) return DEFAULT_LANGUAGE;
+export const LANGUAGES: Language[] = [
+  { code: 'en', label: 'English', flag: '/flags/gb.svg' },
+  { code: 'de', label: 'Deutsch', flag: '/flags/de.svg' },
+  { code: 'fr', label: 'Français', flag: '/flags/fr.svg' },
+];
+
+const DEFAULT_LANGUAGE = LANGUAGES[0];
+
+const languagesByCode = Object.fromEntries(
+  LANGUAGES.map((lang) => [lang.code, lang]),
+) as Record<string, Language>;
+
+let cachedRaw: string | null | undefined;
+let cachedSnapshot: Language = DEFAULT_LANGUAGE;
+
+function parseStoredLanguage(raw: string | null): Language {
+  if (!raw) return DEFAULT_LANGUAGE;
   try {
-    return JSON.parse(saved) as Language;
+    const parsed = JSON.parse(raw) as Language;
+    return languagesByCode[parsed.code] ?? DEFAULT_LANGUAGE;
   } catch {
     return DEFAULT_LANGUAGE;
   }
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [selected, setSelected] = useState<Language>(readSavedLanguage);
+function getSnapshot(): Language {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw === cachedRaw) return cachedSnapshot;
+  cachedRaw = raw;
+  cachedSnapshot = parseStoredLanguage(raw);
+  return cachedSnapshot;
+}
 
-  // Update localStorage whenever the language changes
-  const handleSetSelected = (lang: Language) => {
-    setSelected(lang);
-    localStorage.setItem('selectedLanguage', JSON.stringify(lang));
+function getServerSnapshot(): Language {
+  return DEFAULT_LANGUAGE;
+}
+
+function subscribe(onStoreChange: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) onStoreChange();
+  };
+  window.addEventListener('storage', onStorage);
+  window.addEventListener(CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('storage', onStorage);
+    window.removeEventListener(CHANGE_EVENT, onStoreChange);
+  };
+}
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const selected = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
+
+  const setSelected = (lang: Language) => {
+    const normalized = languagesByCode[lang.code] ?? DEFAULT_LANGUAGE;
+    const raw = JSON.stringify(normalized);
+    localStorage.setItem(STORAGE_KEY, raw);
+    cachedRaw = raw;
+    cachedSnapshot = normalized;
+    window.dispatchEvent(new Event(CHANGE_EVENT));
   };
 
   return (
-    <LanguageContext.Provider value={{ selected, setSelected: handleSetSelected }}>
+    <LanguageContext.Provider value={{ selected, setSelected }}>
       {children}
     </LanguageContext.Provider>
   );

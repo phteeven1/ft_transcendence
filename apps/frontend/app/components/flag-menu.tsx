@@ -6,16 +6,10 @@
 
 'use client'
 
-import { useLanguage } from '../context/language-context';
+import { useLanguage, LANGUAGES } from '../context/language-context';
 import { useState } from 'react'
 import Image from 'next/image'
 import { Button } from './ui/button';
-
-const languages = [
-    { code: 'en', label: 'English', flag: '/flags/gb.svg' },
-    { code: 'de', label: 'Deutsch', flag: '/flags/de.svg' },
-    { code: 'fr', label: 'Français', flag: '/flags/fr.svg' },
-]
 
 export default function FlagMenu() {
   const { selected, setSelected } = useLanguage();
@@ -35,7 +29,7 @@ export default function FlagMenu() {
 
       {isOpen && (
         <div className="clay-dropdown absolute right-0 mt-2 flex flex-col min-w-[8rem] z-50">
-          {languages.map((lang) => (
+          {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               type="button"
