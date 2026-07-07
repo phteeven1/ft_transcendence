@@ -19,7 +19,14 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+dev_warn_node_version 22
+
 LOCAL_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/transcendence"
+
+echo "[dev] Pruefe npm-Abhaengigkeiten..."
+dev_ensure_npm_deps "$ROOT_DIR/packages/database" "prisma" "packages/database"
+dev_ensure_npm_deps "$ROOT_DIR/apps/backend" "nest" "apps/backend"
+dev_ensure_npm_deps "$ROOT_DIR/apps/frontend" "next" "apps/frontend"
 
 echo "[dev] Starte PostgreSQL in Docker..."
 docker compose up -d postgres
@@ -56,9 +63,9 @@ dev_stop_port 4000 "Backend (Nest)"
 dev_stop_port 3000 "Frontend (Next)"
 unset DEV_STOP_QUIET
 
-# Docker backend/frontend wuerden sonst Port 4000/3000 blockieren
+# Lokal nur Postgres in Docker — andere Container wuerden Ports blockieren
 if command -v docker >/dev/null 2>&1; then
-  docker compose stop backend frontend 2>/dev/null || true
+  docker compose stop backend frontend redis 2>/dev/null || true
 fi
 
 BACK_PID=""
@@ -110,7 +117,7 @@ echo "      Postgres:  localhost:5432"
 echo ""
 echo "[dev] Beenden:"
 echo "      Ctrl+C (einmal)  — stoppt Frontend/Backend (Postgres laeuft weiter)"
-echo "      npm run dev:stop — alles inkl. Postgres/Redis sauber stoppen"
+echo "      npm run dev:stop — alles inkl. Postgres sauber stoppen"
 echo ""
 echo "[dev] Nest/Next brauchen einige Sekunden zum Kompilieren — erst dann sind die URLs erreichbar."
 

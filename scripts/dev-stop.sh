@@ -27,7 +27,7 @@ for arg in "$@"; do
 dev-stop.sh — lokale Dev-Umgebung beenden
 
   ./scripts/dev-stop.sh
-      Stoppt Frontend (3000), Backend (4000), postgres + redis
+      Stoppt Frontend (3000), Backend (4000), postgres
 
   ./scripts/dev-stop.sh --keep-db
       Nur Frontend/Backend; Postgres/Redis laufen weiter
