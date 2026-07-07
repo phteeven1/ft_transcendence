@@ -31,3 +31,9 @@ export type UpdateVocabularyEntriesInput = {
   vocabularyWords: string[];
   vocabularyMeanings: string[];
 };
+
+export type ExtractVocabularyResult = {
+  title: string;
+  words: string[];
+  meanings: string[];
+};

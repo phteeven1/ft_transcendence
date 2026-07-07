@@ -2,23 +2,52 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  OnModuleDestroy,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFileSync } from 'fs';
 import OpenAI from 'openai';
 import { PDFParse } from 'pdf-parse';
-import { extname } from 'path';
+import { basename, extname } from 'path';
+import { createWorker, type Worker } from 'tesseract.js';
 
-type VocabPair = { words: string[]; meanings: string[] };
+type ExtractionResult = { title: string; words: string[]; meanings: string[] };
+
+const TESSERACT_LANG: Record<string, string> = {
+  en: 'eng',
+  english: 'eng',
+  fr: 'fra',
+  french: 'fra',
+  de: 'deu',
+  german: 'deu',
+  es: 'spa',
+  spanish: 'spa',
+  it: 'ita',
+  italian: 'ita',
+  pt: 'por',
+  portuguese: 'por',
+  ru: 'rus',
+  russian: 'rus',
+  zh: 'chi_sim',
+  chinese: 'chi_sim',
+  ja: 'jpn',
+  japanese: 'jpn',
+};
 
 @Injectable()
-export class ExtractionService {
+export class ExtractionService implements OnModuleDestroy {
   private openai: OpenAI;
+  private ocrWorker: Worker | null = null;
+  private ocrLangKey = '';
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.openai = new OpenAI({ apiKey });
+  }
+
+  async onModuleDestroy() {
+    await this.terminateOcrWorker();
   }
 
   private isPdf(file: Express.Multer.File): boolean {
@@ -38,22 +67,78 @@ export class ExtractionService {
     throw new BadRequestException('Uploaded file is empty.');
   }
 
-  private buildPrompt(fromLanguage: string, toLanguage: string, isImage: boolean): string {
-    const intro = isImage
-      ? `You are an OCR assistant. The attached image may be a photo of a vocabulary list, worksheet, textbook page, or screenshot (including WhatsApp photos). Read all visible text carefully, including handwriting and table layouts.`
-      : `Extract vocabulary pairs from the provided document text.`;
+  private resolveTesseractLang(language: string): string | null {
+    const normalized = language.trim().toLowerCase();
+    return TESSERACT_LANG[normalized] ?? TESSERACT_LANG[language.trim()] ?? null;
+  }
 
-    return `${intro}
+  private toTesseractLangs(fromLanguage: string, toLanguage: string): string {
+    const langs = new Set<string>(['eng']);
+    for (const lang of [fromLanguage, toLanguage]) {
+      const resolved = this.resolveTesseractLang(lang);
+      if (resolved) langs.add(resolved);
+    }
+    return [...langs].join('+');
+  }
+
+  private async terminateOcrWorker() {
+    if (!this.ocrWorker) return;
+    await this.ocrWorker.terminate();
+    this.ocrWorker = null;
+    this.ocrLangKey = '';
+  }
+
+  private async getOcrWorker(fromLanguage: string, toLanguage: string): Promise<Worker> {
+    const langKey = this.toTesseractLangs(fromLanguage, toLanguage);
+    if (this.ocrWorker && this.ocrLangKey === langKey) {
+      return this.ocrWorker;
+    }
+
+    await this.terminateOcrWorker();
+    this.ocrWorker = await createWorker(langKey);
+    this.ocrLangKey = langKey;
+    return this.ocrWorker;
+  }
+
+  private buildPrompt(fromLanguage: string, toLanguage: string, documentText: string): string {
+    const MAX_CHARS = 15000;
+    const text =
+      documentText.length > MAX_CHARS
+        ? documentText.substring(0, MAX_CHARS) + '... [truncated]'
+        : documentText;
+
+    return `Extract vocabulary pairs from the document text below.
 
 Extract between 5 and 50 vocabulary pairs.
 Prefer ${fromLanguage} words in "words" and ${toLanguage} meanings in "meanings".
 If the document uses another language or mixed columns, still extract every clear word/translation pair you see.
 Accept formats like "word - meaning", two-column tables, numbered lists, or bullet lists.
 Keep words and meanings aligned by row/order.
-Return strictly JSON: { "words": ["..."], "meanings": ["..."] } with the same number of entries in both arrays.`;
+Also include a short descriptive "title" for the vocabulary list (max 80 characters), based on the document heading, topic, or subject. If none is obvious, invent a concise title such as "French Unit 3 Vocabulary".
+Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } with the same number of entries in both arrays.
+
+Document Text:
+${text}`;
   }
 
-  private normalizePairs(parsed: Record<string, unknown>): VocabPair {
+  private resolveTitle(
+    parsed: Record<string, unknown>,
+    fromLanguage: string,
+    toLanguage: string,
+    fallbackFilename?: string,
+  ): string {
+    const raw = parsed.title ?? parsed.name ?? parsed.listName;
+    if (typeof raw === 'string' && raw.trim()) {
+      return raw.trim().slice(0, 80);
+    }
+    if (fallbackFilename) {
+      const stem = basename(fallbackFilename, extname(fallbackFilename)).trim();
+      if (stem) return stem.slice(0, 80);
+    }
+    return `${fromLanguage} - ${toLanguage} Vocabulary`;
+  }
+
+  private normalizePairs(parsed: Record<string, unknown>): Pick<ExtractionResult, 'words' | 'meanings'> {
     const words = Array.isArray(parsed.words) ? parsed.words.map(String) : [];
     const meanings = Array.isArray(parsed.meanings) ? parsed.meanings.map(String) : [];
     if (words.length > 0 || meanings.length > 0) {
@@ -94,7 +179,7 @@ Return strictly JSON: { "words": ["..."], "meanings": ["..."] } with the same nu
     return { words: [], meanings: [] };
   }
 
-  private validatePairs(words: string[], meanings: string[]): VocabPair {
+  private validatePairs(words: string[], meanings: string[]): Pick<ExtractionResult, 'words' | 'meanings'> {
     const cleanedWords = words.map((w) => w.trim()).filter(Boolean);
     const cleanedMeanings = meanings.map((m) => m.trim()).filter(Boolean);
     const count = Math.min(cleanedWords.length, cleanedMeanings.length);
@@ -124,9 +209,45 @@ Return strictly JSON: { "words": ["..."], "meanings": ["..."] } with the same nu
     }
   }
 
+  private async extractImageText(
+    buffer: Buffer,
+    fromLanguage: string,
+    toLanguage: string,
+  ): Promise<string> {
+    try {
+      const worker = await this.getOcrWorker(fromLanguage, toLanguage);
+      const { data } = await worker.recognize(buffer);
+      return data.text.trim();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown OCR error';
+      console.error('OCR extraction error:', message);
+      throw new BadRequestException(`Could not read text from image: ${message}`);
+    }
+  }
+
+  private async extractDocumentText(
+    file: Express.Multer.File,
+    buffer: Buffer,
+    fromLanguage: string,
+    toLanguage: string,
+  ): Promise<string> {
+    if (this.isImage(file)) {
+      return this.extractImageText(buffer, fromLanguage, toLanguage);
+    }
+    if (this.isPdf(file)) {
+      return this.extractPdfText(buffer);
+    }
+    throw new BadRequestException(
+      `Unsupported file type "${file.mimetype}". Upload a PDF or image (PNG, JPEG, etc.).`,
+    );
+  }
+
   private async callOpenAi(
-    userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[],
-  ): Promise<VocabPair> {
+    prompt: string,
+    fromLanguage: string,
+    toLanguage: string,
+    fallbackFilename?: string,
+  ): Promise<ExtractionResult> {
     let response: OpenAI.Chat.Completions.ChatCompletion;
     try {
       response = await this.openai.chat.completions.create({
@@ -135,9 +256,9 @@ Return strictly JSON: { "words": ["..."], "meanings": ["..."] } with the same nu
           {
             role: 'system',
             content:
-              'You extract vocabulary word/translation pairs from documents and images. Always return valid JSON.',
+              'You extract vocabulary word/translation pairs and a list title from document text. Always return valid JSON.',
           },
-          { role: 'user', content: userContent },
+          { role: 'user', content: prompt },
         ],
         response_format: { type: 'json_object' },
         temperature: 0.2,
@@ -165,7 +286,11 @@ Return strictly JSON: { "words": ["..."], "meanings": ["..."] } with the same nu
     if (words.length === 0 && meanings.length === 0) {
       console.error('AI returned no vocabulary pairs:', jsonString);
     }
-    return this.validatePairs(words, meanings);
+    const validated = this.validatePairs(words, meanings);
+    return {
+      title: this.resolveTitle(parsed, fromLanguage, toLanguage, fallbackFilename),
+      ...validated,
+    };
   }
 
   async extractVocab(
@@ -179,40 +304,23 @@ Return strictly JSON: { "words": ["..."], "meanings": ["..."] } with the same nu
     }
 
     const buffer = this.getFileBuffer(file);
-    const imageUpload = this.isImage(file);
-    const promptText = this.buildPrompt(fromLanguage, toLanguage, imageUpload);
+    const documentText = await this.extractDocumentText(file, buffer, fromLanguage, toLanguage);
 
-    const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-      { type: 'text', text: promptText },
-    ];
-
-    if (imageUpload) {
-      const mime = file.mimetype.startsWith('image/') ? file.mimetype : 'image/jpeg';
-      userContent.push({
-        type: 'image_url',
-        image_url: {
-          url: `data:${mime};base64,${buffer.toString('base64')}`,
-          detail: 'high',
-        },
-      });
-    } else if (this.isPdf(file)) {
-      let text = await this.extractPdfText(buffer);
-      if (!text) {
-        throw new BadRequestException(
-          'No readable text found in the PDF. Try a clearer document or upload an image instead.',
-        );
-      }
-      const MAX_CHARS = 15000;
-      if (text.length > MAX_CHARS) {
-        text = text.substring(0, MAX_CHARS) + '... [truncated]';
-      }
-      userContent[0] = { type: 'text', text: `${promptText}\n\nDocument Text:\n${text}` };
-    } else {
+    if (!documentText) {
       throw new BadRequestException(
-        `Unsupported file type "${file.mimetype}". Upload a PDF or image (PNG, JPEG, etc.).`,
+        'No readable text found in the file. Try a clearer photo or PDF with visible vocabulary.',
       );
     }
 
-    return this.callOpenAi(userContent);
+    console.log(
+      `Extracted ${documentText.length} characters via ${this.isImage(file) ? 'OCR' : 'PDF parsing'}`,
+    );
+
+    return this.callOpenAi(
+      this.buildPrompt(fromLanguage, toLanguage, documentText),
+      fromLanguage,
+      toLanguage,
+      file.originalname,
+    );
   }
 }

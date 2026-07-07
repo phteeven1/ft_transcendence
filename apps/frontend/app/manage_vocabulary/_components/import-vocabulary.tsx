@@ -47,7 +47,7 @@ export default function ImportVocabulary({ onImported }: Props) {
 			const created = await vocabulariesApi.create({
 				vocabularyInGroup: group.id,
 				byUser: user.id,
-				vocabularyName: selectedFile?.name.split('.')[0] || 'AI Generated List',
+				vocabularyName: data.title,
 				vocabularyWords: data.words,
 				vocabularyMeanings: data.meanings,
 			});

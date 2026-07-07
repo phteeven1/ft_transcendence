@@ -1,6 +1,7 @@
 import { apiRequest } from '../http';
 import type {
   CreateVocabularyInput,
+  ExtractVocabularyResult,
   RenameVocabularyInput,
   SetActiveVocabularyInput,
   UpdateVocabularyEntriesInput,
@@ -52,7 +53,7 @@ export const vocabulariesApi = {
     });
   },
 
-	async extract(file: File, fromLanguage: string, toLanguage: string): Promise<{ words: string[], meanings: string[] }> {
+	async extract(file: File, fromLanguage: string, toLanguage: string): Promise<ExtractVocabularyResult> {
 		const formData = new FormData();
 		formData.append('file', file);
 		formData.append('fromLanguage', fromLanguage);
