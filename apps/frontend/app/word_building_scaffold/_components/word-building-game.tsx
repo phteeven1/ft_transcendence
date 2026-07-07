@@ -236,6 +236,8 @@ export default function WordBuildingGame() {
   const handleCellClick = useCallback((row: number, col: number) => {
     const cell = visibleCourt[row]?.[col];
     if (!cell || cell.status === 'none') return;
+
+    containerRef.current?.focus();
     
     // Toggle direction if clicking the same cell
     if (row === selectedRow && col === selectedCol) {
