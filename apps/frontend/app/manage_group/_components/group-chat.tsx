@@ -23,6 +23,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatEntryType, GroupChatEntryDto } from '@/lib/api/chat';
 import type { Member } from '../../types';
+import { Chip, Panel } from '../../components/ui';
 
 // ─── Log entry rendering ──────────────────────────────────────────────────────
 
@@ -183,20 +184,20 @@ export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
           const isActive = activeFilters.has(type);
           const colours  = TYPE_COLOURS[type];
           return (
-            <button
+            <Chip
               key={type}
-              type="button"
+              active={isActive}
               onClick={() => toggleFilter(type)}
-              className={`clay-chip ${isActive ? colours.active : colours.inactive}`}
+              className={isActive ? colours.active : colours.inactive}
             >
               {TYPE_LABELS[type]}
-            </button>
+            </Chip>
           );
         })}
       </div>
 
       {/* Chat scroll area */}
-      <div className="h-48 overflow-y-auto clay-panel p-2 bg-muted">
+      <Panel className="h-48 overflow-y-auto p-2 bg-muted">
         {visibleEntries.length === 0 && (
           <p className="text-sm text-muted-foreground italic">No entries to show.</p>
         )}
@@ -208,7 +209,7 @@ export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
           />
         ))}
         <div ref={bottomRef} />
-      </div>
+      </Panel>
 
     </div>
   );

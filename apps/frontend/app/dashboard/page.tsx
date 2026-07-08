@@ -5,8 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../types';
 import UserSettings from './_components/user-settings';
-import { PageShell } from '../components/ui/page-shell';
-import { Button } from '../components/ui/button';
+import { PageShell, Tile } from '../components/ui';
 
 export default function Dashboard() {
   const { user, syncGroup, refreshUser } = useAuth();
@@ -70,38 +69,29 @@ export default function Dashboard() {
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <UserSettings />
-        <Button
-          variant="accent"
-          size="lg"
-          fullWidth
-          className="clay-tile clay-tile-create min-h-[5rem]"
+        <Tile
+          tileVariant="create"
           onClick={() => router.push('/create_group')}
         >
           Create New Group
-        </Button>
+        </Tile>
         {adminGroups.map((group) => (
-          <Button
+          <Tile
             key={group.id}
-            variant="primary"
-            size="lg"
-            fullWidth
-            className="clay-tile clay-tile-admin min-h-[5rem]"
+            tileVariant="admin"
             onClick={() => handleGroupClick(group.id)}
           >
             {group.name}
-          </Button>
+          </Tile>
         ))}
         {memberGroups.map((group) => (
-          <Button
+          <Tile
             key={group.id}
-            variant="secondary"
-            size="lg"
-            fullWidth
-            className="clay-tile clay-tile-member min-h-[5rem]"
+            tileVariant="member"
             onClick={() => handleGroupClick(group.id)}
           >
             {group.name}
-          </Button>
+          </Tile>
         ))}
       </div>
     </PageShell>

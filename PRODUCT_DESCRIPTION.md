@@ -1,11 +1,22 @@
-# Dictee
-A web based app for helping school children with their language homework by generating simple crossword games based on their uploaded vocabulary lists. It uses Next.js for frontend and NestJS for backend. It uses ORM for the database.
+# Dicteé
+
+A web-based app for helping school children with language homework by generating multiplayer word games from uploaded vocabulary lists. Built with **Next.js** (frontend), **NestJS** (backend), and **Prisma/PostgreSQL** (database).
+
+**Eval documentation:** [README.md](./README.md) · **Module planning:** [EVAL_MODULES.md](./EVAL_MODULES.md)
 
 <details>
-  <summary>Modules (3 Points)</summary>
+  <summary>Modules implemented (16 pts)</summary>
   <ul>
-    <li><b>Major: Use a framework for both frontend and backend.</b></li>
-    <li>Minor: Use ORM for database</li>
+    <li><b>Major (Web):</b> Next.js + NestJS frameworks (2)</li>
+    <li><b>Major (Web):</b> WebSockets real-time (2)</li>
+    <li><b>Minor (Web):</b> ORM / Prisma (1)</li>
+    <li><b>Minor (Web):</b> File upload (1)</li>
+    <li><b>Minor (Web):</b> Custom design system — Claymorphism (1)</li>
+    <li><b>Major (Gaming):</b> Word Building game (2)</li>
+    <li><b>Major (Gaming):</b> Remote players (2)</li>
+    <li><b>Major (Gaming):</b> Multiplayer 3+ (2)</li>
+    <li><b>Major (User):</b> Organization system — groups (2)</li>
+    <li><b>Minor (AI):</b> Image recognition — OCR vocab photos (1)</li>
   </ul>
 </details>
 
@@ -156,18 +167,13 @@ Players can:
 
 
 ### Vocabulary Lists
-The Vocabulary Lists are the basis of all games. They can be extracted from any of a number of common text file formats. Once a file has been uploaded, the text is shown in a separate window, and the user is asked to select the text to be included into the vocabulary list. This way, the user can exclude headers and explanations like "List 5" or "English vocabulary for Friday". After each selection, the user is asked if they want to finish the list or add another section. After selection is finished, the text is then automatically divided into a list separated by any of the following chars ",.;:\n" but not by simple spaces. The list is presented to the user, as a simple list separated by linebreak only, with all non letter characters apart from spaces removed. The user can now toggle up or down and correct, so that for example 
-"der"
-"Arm"
-becomes
-"der Arm"
-and
-"der Arm das Bein"
-becomes
-"der Arm"
-"das Bein"
-The crossword algorithm checks if it can build a crossword which fits inside a 24x24 grid from the list. If not, it automatically divides the list in two and tries again. It prompts the user to name each list and saves them.
-While importing a vocabulary, the user is asked what language the vocabulary words are. This question can be based on a guess, but doesn't have to. Knowing which language is important for randomly selected noise letters in the games. A language API can be used to produce a dropdown menu for valid BCP 47 tags.
+Vocabulary lists are the basis of all games. Admins can create lists manually or use **AI Vocabulary Import**:
+
+- **Photo upload (OCR):** Tesseract.js reads text from images; OpenAI GPT-4o extracts word/translation pairs and a title.
+- **PDF upload:** Text is extracted server-side, then structured by the same AI step.
+- **Manual CRUD:** Create, edit, rename, delete, and set the **active list for games**.
+
+See [docs/modules/image-recognition.md](./docs/modules/image-recognition.md) and `apps/frontend/app/manage_vocabulary/`.
 
 ### *Group Chat*
 Chat window appears below the function buttons in manage_group. There is no chat in dashboard, since all chats are group specific. Chat has two main functions: 
@@ -199,24 +205,22 @@ The chat entries should be saved not as strings but as an array of objects, with
 ## *Games*
 Dicteé is conceived such, that many Games can be added to the website later. It needs at least one Game. Probably use SVG text elements for the grid of letters, since this frees us from having to import hundreds of letter-images, and still allows styling. Then animate player elements in separate div with position: absolute.
 
-### *Word Building*
-A crossword is automatically generated that fits on a maximum 24x24 grid. On the tile in front of every word, an arrow is indicating the start of the word. All letters making up the entire list are randomly placed over the grid. The players can direct little trucks around the playing field. They can pick up letters and put them down in other (empty) squares. If they drive over an arrow, the word is read out in audio, and the squares where the word should fit are progressively lit up so that the players can see how long it is. Any square in the word that contains the correct letter lights up in green, empty squares light up in blue, and squares containing the wrong letter light up in red. The players continue building together until the crossword is complete. In the end, each player gets one point per letter that they placed correctly. You can get maximum one point per letter, even if it is removed and replaced several times. The player that first placed it correctly gets the point.
+### Word Building
+A crossword is automatically generated from the group's active vocabulary (18×18 grid). Players fill cells via **keyboard** or **drag-and-drop letter tiles**. Real-time sync uses **WebSockets** (Socket.IO). Features include cell locking, live scores, clue panels, and support for **3+ players**.
+
+**Implemented:** `apps/frontend/app/word_building_scaffold/`, `apps/backend/src/games/word_building/`
+
+See [docs/modules/gaming-word-building.md](./docs/modules/gaming-word-building.md) (also [remote](./docs/modules/gaming-remote-players.md), [3+ players](./docs/modules/gaming-multiplayer-3-plus.md)).
 
 <details>
   <summary>Modules (6 Points)</summary>
   <ul>
     <li><b>Major: Implement a complete web-based real-time multiplayer game.</b></li>
     <li><b>Major: Remote players.</b></li>
-    <li><b>Major: Multiplayer game.</b></li>
+    <li><b>Major: Multiplayer game (3+).</b></li>
   </ul>
 </details>
 
-### *Word soup (optional)*
-First, the list of words is displayed for a brief while (1 sec per word). Then, a word soup is generated (a grid of 24x24 squares where the words are hidden among other random letters. Words can cross each other. Words can be displayed horizontally from left to right and vertically from up to down. The player can use the mouse (or finger on mobile) to mark a word, by starting at its beginning, holding the mouse button, and selecting the word. If they correctly mark the word, it light up and changes color. It only lights up, as the mouse button/finger is released, so that one has to commit to a guess before finding out if it is correct. If you mark the wrong boxes, you are frozen for 5 s. This is to stop players from randomly swiping all over the grid. The Game can be played by several players simultaneously. Each Player has their own color, which shows which words were claimed by which player. The Players gets one point per correct word. You see the guesses of the other players appear as colored swipes.
+### *Word soup (optional)* — **stub / not implemented**
 
-<details>
-  <summary>Modules (2 Points)</summary>
-  <ul>
-    <li><b>Major: Add another Game with user history and matchmaking.</b></li>
-  </ul>
-</details>
+Scaffold exists at `apps/frontend/app/word_soup_scaffold/` and `apps/backend/src/games/word_soup/` but gameplay is placeholder only.

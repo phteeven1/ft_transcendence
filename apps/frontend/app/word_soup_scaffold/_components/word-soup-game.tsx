@@ -176,14 +176,14 @@ export default function WordSoupGame() {
 
   if (loadingGame || !game) {
     return (
-      <div className="game-shell min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="game-shell flex-1 flex items-center justify-center">
         <p className="text-muted-foreground">Loading game...</p>
       </div>
     );
   }
 
   return (
-    <div className="game-shell min-h-[calc(100vh-4rem)] overflow-x-auto">
+    <div className="game-shell flex-1 overflow-x-auto">
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(180px,220px)] lg:items-start">
 

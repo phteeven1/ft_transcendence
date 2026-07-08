@@ -405,7 +405,7 @@ export default function WordBuildingGame() {
 
   if (loading) {
     return (
-      <div className="game-shell min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="game-shell flex-1 flex items-center justify-center">
         <p className="text-muted-foreground">Generating crossword…</p>
       </div>
     );
@@ -415,7 +415,7 @@ export default function WordBuildingGame() {
     <div
       ref={containerRef}
       tabIndex={0}
-      className="game-shell min-h-[calc(100vh-4rem)] overflow-x-auto outline-none focus:ring-0"
+      className="game-shell flex-1 overflow-x-auto outline-none focus:ring-0"
     >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         <div className="flex items-center gap-4 mb-2">

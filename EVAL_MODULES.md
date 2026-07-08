@@ -2,37 +2,37 @@
 
 *42 ft_transcendence · need **14 points** to pass (Major = 2 pts, Minor = 1 pt)*
 
----
-
-## ✅ What we already have (strong)
-
-| Module | Pts |
-|--------|-----|
-| Web Major — Next.js + NestJS frameworks | 2 |
-| Web Major — WebSockets (real-time games + lobby) | 2 |
-| Web Minor — ORM (Prisma + PostgreSQL) | 1 |
-| Web Minor — File upload (vocab import: images/PDF/text) | 1 |
-| Gaming Major — Word Building game (full gameplay) | 2 |
-| Gaming Major — Remote players (WebSockets) | 2 |
-| Gaming Major — Multiplayer 3+ players | 2 |
-
-**Subtotal: ~12 points** — solid base if we demo it well.
+> **Official eval documentation:** see [README.md](./README.md) (Modules, Features, Instructions) and [docs/modules/](./docs/modules/) for deep dives.
 
 ---
 
-## 🟡 Close — small polish needed
+## ✅ Implemented modules (eval-ready)
+
+| Module | Pts | Doc |
+|--------|-----|-----|
+| Web Major — Next.js + NestJS frameworks | 2 | [web-frameworks.md](./docs/modules/web-frameworks.md) |
+| Web Major — WebSockets (real-time games + lobby) | 2 | [websockets-realtime.md](./docs/modules/websockets-realtime.md) |
+| Web Minor — ORM (Prisma + PostgreSQL) | 1 | [orm-prisma.md](./docs/modules/orm-prisma.md) |
+| Web Minor — File upload (vocab import) | 1 | [file-upload.md](./docs/modules/file-upload.md) |
+| Web Minor — Custom design system | 1 | [design-system.md](./docs/modules/design-system.md) |
+| User Major — Organization system (groups) | 2 | [groups-and-chat.md](./docs/modules/groups-and-chat.md) |
+| AI Minor — Image recognition (OCR) | 1 | [image-recognition.md](./docs/modules/image-recognition.md) |
+| Gaming Major — Word Building game | 2 | [gaming-word-building.md](./docs/modules/gaming-word-building.md) |
+| Gaming Major — Remote players | 2 | [gaming-remote-players.md](./docs/modules/gaming-remote-players.md) |
+| Gaming Major — Multiplayer 3+ players | 2 | [gaming-multiplayer-3-plus.md](./docs/modules/gaming-multiplayer-3-plus.md) |
+
+**Total: 16 points** — above the 14-point minimum. Full index: [docs/modules/README.md](./docs/modules/README.md)
+
+---
+
+## 🟡 Close — polish for extra points or stronger eval
 
 | Module | Pts | What's missing |
 |--------|-----|----------------|
-| User Major — Organization system | 2 | Groups already do this — need README + eval demo |
-| Web Minor — Custom design system | 1 | Clay UI exists — document 10+ components + tokens |
 | Web Minor — SSR | 1 | Next.js supports it — show/explain usage |
-| AI Minor — Image recognition | 1 | OCR on vocab photos already works — document it |
 | AI Major — LLM interface | 2 | OpenAI extraction works — needs streaming + rate limits |
 | Gaming Minor — Gamification | 1 | Scores exist — need 3 of: badges, XP, leaderboard, etc. |
 | Devops Minor — Health check | 1 | Add `GET /health` + simple status page |
-
-**+2 to +4 points possible** with relatively little new code.
 
 ---
 
@@ -48,45 +48,48 @@
 
 ## 🚨 Mandatory blockers (can fail whole project)
 
-1. **Privacy Policy + Terms of Service** pages (footer links, real content)
+1. ~~**Privacy Policy + Terms of Service** pages (footer links, real content)~~ — done (`/privacy`, `/terms`)
 2. **Password hashing** — passwords still plain text today
 3. **No console errors** in Chrome during eval
 4. **README** — team roles, module list, point calculation, who did what
 
 ---
 
-## 🎯 Fastest path to 14+ points
+## 🎯 Path to eval
 
 ```
-Already strong:                    12 pts
+Implemented modules:               16 pts  ✓ (above 14 minimum)
 
-Add next:
-  + Organization system (groups)    2 pts  ← mostly done
-  + Health check endpoint           1 pt   ← quick win
-  + Image recognition (OCR)         1 pt   ← already built
+Optional extras:
+  + Health check                   1 pt
+  + Design system / SSR / etc.
 
-Fix blockers:
-  Privacy/Terms + password hashing + README
+Fix blockers before eval:
+  password hashing + team README contributions
 ```
-
-**Target: ~16 points** if evaluators accept the above.
 
 ---
 
 ## 📋 Suggested next tasks (priority order)
 
-1. Privacy + Terms pages
-2. Password hashing (bcrypt)
-3. README modules section (points + justifications)
+1. Password hashing (bcrypt)
+2. ~~Privacy + Terms pages~~ — done at `/privacy` and `/terms`
+3. ~~README modules section~~ — done in [README.md](./README.md)
 4. `/health` endpoint
-5. Document groups as “organization system” for eval
-6. Wire i18n into UI OR add gamification (pick one for +1 pt)
+5. Wire i18n into UI OR add gamification (pick one for +1 pt)
+
+---
+
+## 📷 Module deep dives
+
+OCR / image recognition: [docs/modules/image-recognition.md](./docs/modules/image-recognition.md)  
+Groups / organization system: [docs/modules/groups-and-chat.md](./docs/modules/groups-and-chat.md)
 
 ---
 
 ## 💬 One-liner for the group
 
-> We’re at **~12 eval points** with Word Building + WebSockets + upload + Prisma. Add **groups-as-orgs**, **health check**, and **legal pages + password hashing**, and we’re safely at **14+**. Friends + full i18n are the next bigger modules if we want more buffer.
+> We’re at **16 eval points** (frameworks, WebSockets, ORM, upload, design system, groups, OCR, Word Building ×3). Fix **password hashing**, then polish demos.
 
 ---
 

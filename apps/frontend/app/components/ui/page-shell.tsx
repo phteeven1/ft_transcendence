@@ -17,7 +17,7 @@ export function PageShell({
   return (
     <div
       className={[
-        'page-shell min-h-[calc(100vh-4rem)]',
+        'page-shell flex-1 w-full',
         centered ? 'flex flex-col items-center justify-center' : '',
         className,
       ]

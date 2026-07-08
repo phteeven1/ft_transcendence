@@ -9,7 +9,7 @@
 import { useLanguage, LANGUAGES } from '../context/language-context';
 import { useState } from 'react'
 import Image from 'next/image'
-import { Button } from './ui/button';
+import { Button, Dropdown, DropdownItem } from './ui';
 
 export default function FlagMenu() {
   const { selected, setSelected } = useLanguage();
@@ -28,19 +28,17 @@ export default function FlagMenu() {
       </Button>
 
       {isOpen && (
-        <div className="clay-dropdown absolute right-0 mt-2 flex flex-col min-w-[8rem] z-50">
+        <Dropdown className="absolute right-0 mt-2 flex flex-col min-w-[8rem] z-50">
           {LANGUAGES.map((lang) => (
-            <button
+            <DropdownItem
               key={lang.code}
-              type="button"
               onClick={() => { setSelected(lang); setIsOpen(false); }}
-              className="clay-dropdown-item text-foreground"
             >
               <Image src={lang.flag} alt={lang.label} width={24} height={18} />
               <span>{lang.label}</span>
-            </button>
+            </DropdownItem>
           ))}
-        </div>
+        </Dropdown>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { Member } from '../../types';
+import { ListButton, Panel } from '../../components/ui';
 
 type Props = {
   members: Member[];
@@ -10,7 +11,8 @@ type Props = {
 
 export default function MemberList({ members, selectedMember, onSelect }: Props) {
   return (
-    <ul className="clay-panel overflow-y-auto max-h-64 md:max-h-full md:h-full">
+    <Panel className="overflow-y-auto max-h-64 md:max-h-full md:h-full p-0">
+      <ul className="list-none m-0 p-0">
       <li className="border-b border-border bg-muted px-3 py-2">
         <span className="font-heading text-lg font-semibold text-foreground">Members</span>
       </li>
@@ -18,19 +20,16 @@ export default function MemberList({ members, selectedMember, onSelect }: Props)
         const isSelected = selectedMember?.id === member.id;
         return (
           <li key={member.id} className="border-b border-border last:border-b-0 px-1 py-0.5">
-            <button
-              type="button"
-              onClick={() => onSelect(member)}
-              className={isSelected ? 'clay-list-btn clay-list-btn-active rounded-lg' : 'clay-list-btn rounded-lg'}
-            >
+            <ListButton active={isSelected} onClick={() => onSelect(member)}>
               <span className="text-foreground">{member.name}</span>
               <span className={`text-xs ${isSelected ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
                 {member.isAdmin ? 'Admin' : 'Member'}
               </span>
-            </button>
+            </ListButton>
           </li>
         );
       })}
-    </ul>
+      </ul>
+    </Panel>
   );
 }

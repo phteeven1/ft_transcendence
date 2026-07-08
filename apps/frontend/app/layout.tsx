@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Baloo_2, Comic_Neue } from 'next/font/google';
 import './globals.css';
 import TopBar from './components/top-bar';
+import SiteFooter from './components/site-footer';
 import { LanguageProvider } from './context/language-context';
 import { AuthProvider } from './context/auth-context';
 
@@ -30,12 +31,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${baloo2.variable} ${comicNeue.variable} antialiased bg-background text-foreground`}
+        className={`${baloo2.variable} ${comicNeue.variable} flex min-h-screen flex-col antialiased bg-background text-foreground`}
       >
         <AuthProvider>
           <LanguageProvider>
             <TopBar />
-            {children}
+            <main className="flex flex-1 flex-col">{children}</main>
+            <SiteFooter />
           </LanguageProvider>
         </AuthProvider>
       </body>
