@@ -23,14 +23,22 @@ ft_transcendence/
 
 ## Starting the App
 
+**Recommended (Postgres in Docker, apps locally):**
+
 ```bash
-./scripts/dev-local.sh
+npm run dev:local
 ```
 
-Opens at `http://localhost:3000`.
+Opens at [http://localhost:3000](http://localhost:3000). See [README.md](./README.md) for full setup.
 
-- Frontend changes are visible instantly (hot reload).
-- Backend changes require `Ctrl-C` and restarting the script.
+**Full Docker stack:**
+
+```bash
+docker compose up --build
+```
+
+- Frontend changes hot-reload instantly.
+- Backend changes: restart `dev:local` or the Nest watch process.
 
 ---
 

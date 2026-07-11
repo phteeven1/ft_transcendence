@@ -11,6 +11,9 @@ import { useRouter } from 'next/navigation';
 import { ApiError, playersApi } from '@/lib/api';
 import { savePlayerSession } from '@/lib/player-session';
 import { Player } from '../../types';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 
 type Props = {
   selectedPlayer: Player | null;
@@ -19,7 +22,7 @@ type Props = {
 const SESSION_SHORTCUTS = [30, 45, 60];
 
 export default function InviteToPlay({ selectedPlayer }: Props) {
-  const { logout, loginAsPlayer, setSessionExpiresAt, group } = useAuth();
+  const { loginAsPlayer, setSessionExpiresAt, group } = useAuth();
   const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isSessionOpen, setIsSessionOpen] = useState(false);
@@ -71,11 +74,10 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
         session.expiresAt,
       );
 
-      logout();
       loginAsPlayer(selectedPlayer);
       setSessionExpiresAt(new Date(session.expiresAt).getTime());
       setIsSessionOpen(false);
-      router.push('/select_game');
+      router.replace('/select_game');
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         setStartError(
@@ -89,124 +91,117 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
     }
   };
 
+  const closeInvite = () => {
+    setIsInviteOpen(false);
+    setHasActiveSession(false);
+  };
+
+  const canStart =
+    !isStarting &&
+    sessionMinutes !== '' &&
+    parseInt(sessionMinutes, 10) > 0;
+
   return (
     <>
-      <button
+      <Button
+        variant="accent"
+        fullWidth
+        className="clay-action-btn"
         onClick={() => isActive && setIsInviteOpen(true)}
         disabled={!isActive}
-        className={`w-full p-2 rounded transition-colors ${
-          isActive
-            ? 'bg-yellow-500 text-white hover:bg-yellow-600 cursor-pointer'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-        }`}
       >
         Invite to Play
-      </button>
+      </Button>
 
-      {isInviteOpen && selectedPlayer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">
-              Invite {selectedPlayer.name} to Play
-            </h2>
-
-            {hasActiveSession && (
-              <p className="text-red-500 text-sm">
-                {selectedPlayer.name} already has an active play session.
-                Please end it first using the End Game Session button.
-              </p>
-            )}
-
-            <div className="space-y-3">
-              <button
+      {selectedPlayer && (
+        <Dialog
+          open={isInviteOpen}
+          onClose={closeInvite}
+          title={`Invite ${selectedPlayer.name} to Play`}
+          footer={
+            <div className="flex flex-col gap-3 shrink-0 border-t border-border pt-4">
+              <Button
+                variant="primary"
+                fullWidth
                 onClick={handlePlayNow}
                 disabled={isChecking}
-                className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isChecking ? 'Checking…' : 'Play Now'}
-              </button>
-              <button
-                disabled
-                className="w-full bg-gray-200 text-gray-400 p-2 rounded cursor-not-allowed opacity-50"
-              >
+              </Button>
+              <Button variant="ghost" fullWidth disabled>
                 Create Play Button
-              </button>
-              <button
-                disabled
-                className="w-full bg-gray-200 text-gray-400 p-2 rounded cursor-not-allowed opacity-50"
-              >
+              </Button>
+              <Button variant="ghost" fullWidth disabled>
                 Send Invite to Play
-              </button>
-              <button
-                onClick={() => {
-                  setIsInviteOpen(false);
-                  setHasActiveSession(false);
-                }}
-                className="w-full bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
-              >
+              </Button>
+              <Button variant="ghost" fullWidth onClick={closeInvite}>
                 Cancel
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
+          }
+        >
+          {hasActiveSession && (
+            <p className="text-destructive text-sm">
+              {selectedPlayer.name} already has an active play session.
+              Please end it first using the End Game Session button.
+            </p>
+          )}
+        </Dialog>
       )}
 
-      {isSessionOpen && selectedPlayer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm space-y-4">
-            <h2 className="text-xl font-bold">
-              How long can {selectedPlayer.name} play?
-            </h2>
-
-            <div className="space-y-2">
-              <label className="text-sm text-gray-600">Minutes</label>
-              <input
-                type="number"
-                min="1"
-                value={sessionMinutes}
-                onChange={(e) => setSessionMinutes(e.target.value)}
-                placeholder="Enter minutes"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              />
-              <div className="flex gap-2 pt-1">
-                {SESSION_SHORTCUTS.map((mins) => (
-                  <button
-                    key={mins}
-                    onClick={() => setSessionMinutes(String(mins))}
-                    className="w-10 h-10 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-medium transition-colors"
-                  >
-                    {mins}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {startError && (
-              <p className="text-red-500 text-sm">{startError}</p>
-            )}
-
-            <div className="flex gap-3 pt-2">
-              <button
+      {selectedPlayer && (
+        <Dialog
+          open={isSessionOpen}
+          onClose={() => setIsSessionOpen(false)}
+          title={`How long can ${selectedPlayer.name} play?`}
+          footer={
+            <div className="flex gap-3 shrink-0 border-t border-border pt-4">
+              <Button
+                variant="ghost"
+                fullWidth
                 onClick={() => setIsSessionOpen(false)}
                 disabled={isStarting}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 rounded transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="accent"
+                fullWidth
                 onClick={handleSessionStart}
-                disabled={
-                  isStarting ||
-                  !sessionMinutes ||
-                  parseInt(sessionMinutes, 10) <= 0
-                }
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 rounded transition-colors"
+                disabled={!canStart}
               >
                 {isStarting ? 'Starting…' : 'Start'}
-              </button>
+              </Button>
             </div>
+          }
+        >
+          <div className="space-y-2">
+            <Input
+              label="Minutes"
+              type="number"
+              min="1"
+              value={sessionMinutes}
+              onChange={(e) => setSessionMinutes(e.target.value)}
+              placeholder="Enter minutes"
+            />
+            <div className="flex gap-2 pt-1">
+              {SESSION_SHORTCUTS.map((mins) => (
+                <Button
+                  key={mins}
+                  variant="ghost"
+                  size="sm"
+                  className="w-10 h-10 rounded-full p-0"
+                  onClick={() => setSessionMinutes(String(mins))}
+                >
+                  {mins}
+                </Button>
+              ))}
+            </div>
+            {startError && (
+              <p className="text-destructive text-sm">{startError}</p>
+            )}
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

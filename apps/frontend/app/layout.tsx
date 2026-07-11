@@ -1,23 +1,26 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import TopBar from "./components/top-bar";
+import type { Metadata } from 'next';
+import { Baloo_2, Comic_Neue } from 'next/font/google';
+import './globals.css';
+import TopBar from './components/top-bar';
+import SiteFooter from './components/site-footer';
 import { LanguageProvider } from './context/language-context';
 import { AuthProvider } from './context/auth-context';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const baloo2 = Baloo_2({
+  variable: '--font-baloo',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const comicNeue = Comic_Neue({
+  variable: '--font-comic',
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
 });
 
 export const metadata: Metadata = {
-  title: "Dicteé",
-  description: "Generates crossword games from vocabulary lists",
+  title: 'Dicteé',
+  description: 'Turn vocabulary lists into fun learning games for kids',
 };
 
 export default function RootLayout({
@@ -27,11 +30,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-emerald-200`}>
+      <body
+        className={`${baloo2.variable} ${comicNeue.variable} flex min-h-screen flex-col antialiased bg-background text-foreground`}
+      >
         <AuthProvider>
           <LanguageProvider>
             <TopBar />
-            {children}
+            <main className="flex flex-1 flex-col">{children}</main>
+            <SiteFooter />
           </LanguageProvider>
         </AuthProvider>
       </body>

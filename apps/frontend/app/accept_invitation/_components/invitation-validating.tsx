@@ -1,14 +1,14 @@
 'use client';
 
-const containerClass = "min-h-screen bg-emerald-200";
-const innerClass = "max-w-md mx-auto p-4";
+import { PageShell } from '../../components/ui/page-shell';
+import { Card } from '../../components/ui/card';
 
 export default function InvitationValidating() {
   return (
-    <div className={containerClass}>
-      <div className={innerClass}>
-        <p className="text-gray-600 text-center mt-12">Validating invitation...</p>
-      </div>
-    </div>
+    <PageShell narrow centered>
+      <Card className="w-full text-center">
+        <p className="text-muted-foreground mt-4">Validating invitation...</p>
+      </Card>
+    </PageShell>
   );
 }

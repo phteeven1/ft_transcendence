@@ -6,6 +6,8 @@ On confirm, calls clearSession on the backend and reports back via onCleared.
 import { useEffect, useState } from 'react';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
   selectedPlayer: Player | null;
@@ -62,45 +64,32 @@ export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
 
   return (
     <>
-      <button
+      <Button
+        variant="destructive"
+        fullWidth
+        className="clay-action-btn"
         onClick={() => isActive && setIsConfirmOpen(true)}
         disabled={!isActive}
-        className={`w-full p-2 rounded transition-colors ${
-          isActive
-            ? 'bg-red-500 text-white hover:bg-red-600 cursor-pointer'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-        }`}
       >
         End Game Session
-      </button>
+      </Button>
 
-      {isConfirmOpen && selectedPlayer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm space-y-4">
-            <h2 className="text-xl font-bold">End Game Session</h2>
-            <p className="text-gray-600 text-sm">
-              Are you sure you want to end {selectedPlayer.name}&apos;s current
-              play session? They will be logged out immediately.
-            </p>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setIsConfirmOpen(false)}
-                disabled={isLoading}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-gray-700 font-medium py-2 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={isLoading}
-                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-medium py-2 rounded transition-colors"
-              >
-                {isLoading ? 'Ending…' : 'End Session'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {selectedPlayer && (
+        <Dialog
+          open={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          title="End Game Session"
+          confirmLabel={isLoading ? 'Ending…' : 'End Session'}
+          confirmVariant="destructive"
+          onConfirm={handleConfirm}
+          confirmDisabled={isLoading}
+        >
+          <p className="text-sm">
+            Are you sure you want to end {selectedPlayer.name}&apos;s current
+            play session? They will be logged out immediately.
+          </p>
+          {error && <p className="text-destructive text-sm mt-2">{error}</p>}
+        </Dialog>
       )}
     </>
   );

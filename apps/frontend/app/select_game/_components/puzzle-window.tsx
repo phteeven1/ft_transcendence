@@ -14,6 +14,7 @@ import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import ScramblePuzzle from '../_puzzles/scramble-puzzle';
 import MeansWhatPuzzle from '../_puzzles/means-what-puzzle';
 import CorrectionPuzzle from '../_puzzles/correction-puzzle';
+import { Button } from '../../components/ui/button';
 
 const PUZZLE_COUNT = 3;
 
@@ -51,7 +52,7 @@ export default function PuzzleWindow() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [player]);
 
   const handleSkip = useCallback(async () => {
     if (!player) return;
@@ -73,7 +74,7 @@ export default function PuzzleWindow() {
   const renderPuzzle = () => {
     if (loading) {
       return (
-        <div className="flex items-center justify-center h-full text-emerald-400 text-sm">
+        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
           Loading puzzle…
         </div>
       );
@@ -81,13 +82,10 @@ export default function PuzzleWindow() {
     if (!vocabulary) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-3">
-          <p className="text-gray-400 text-sm">No vocabulary list is active yet.</p>
-          <button
-            onClick={handleSkip}
-            className="text-xs text-gray-400 hover:text-gray-600 underline"
-          >
+          <p className="text-muted-foreground text-sm">No vocabulary list is active yet.</p>
+          <Button variant="ghost" size="sm" onClick={handleSkip}>
             Skip
-          </button>
+          </Button>
         </div>
       );
     }
@@ -102,7 +100,7 @@ export default function PuzzleWindow() {
   };
 
   return (
-    <div className="puzzle-window w-full aspect-[1/1] md:aspect-[4/1] border-2 border-emerald-400 rounded-xl bg-white overflow-hidden">
+    <div className="clay-panel w-full aspect-[1/1] md:aspect-[4/1] overflow-hidden">
       {renderPuzzle()}
     </div>
   );

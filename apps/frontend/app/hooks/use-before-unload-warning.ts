@@ -11,7 +11,10 @@ import { useEffect, useRef } from 'react';
  */
 export function useBeforeUnloadWarning(enabled: boolean) {
   const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {

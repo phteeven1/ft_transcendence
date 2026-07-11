@@ -3,8 +3,8 @@ import WordSoupPlaceholderClient from './_components/word-soup-game';
 
 function WordSoupLoading() {
   return (
-    <div className="min-h-screen bg-emerald-200 flex items-center justify-center">
-      <p className="text-gray-600">Loading game...</p>
+    <div className="game-shell flex-1 flex items-center justify-center">
+      <p className="text-muted-foreground">Loading game...</p>
     </div>
   );
 }

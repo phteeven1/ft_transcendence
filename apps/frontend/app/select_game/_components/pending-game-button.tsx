@@ -9,8 +9,9 @@ how many are needed to start game OR
 how much time remains until automatic start
 */
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Game } from '../../types';
+import { Button } from '../../components/ui/button';
 
 type Props = {
   game: Game;
@@ -18,6 +19,24 @@ type Props = {
   onClick: () => void;
   onForceStart: () => void;
 };
+
+let clockSnapshot = Date.now();
+
+function subscribeToClock(onChange: () => void) {
+  const interval = setInterval(() => {
+    clockSnapshot = Date.now();
+    onChange();
+  }, 1000);
+  return () => clearInterval(interval);
+}
+
+function getClockSnapshot() {
+  return clockSnapshot;
+}
+
+function getServerClockSnapshot() {
+  return 0;
+}
 
 function formatElapsed(initiatedTime: string, now: number): string {
   const secondsElapsed = Math.max(0, Math.floor((now - new Date(initiatedTime).getTime()) / 1000));
@@ -27,12 +46,11 @@ function formatElapsed(initiatedTime: string, now: number): string {
 }
 
 export default function PendingGameButton({ game, currentPlayerId, onClick, onForceStart }: Props) {
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const now = useSyncExternalStore(
+    subscribeToClock,
+    getClockSnapshot,
+    getServerClockSnapshot,
+  );
 
   const isInitiator = game.initiatedBy === currentPlayerId;
   const alreadyJoined = game.players.includes(currentPlayerId);
@@ -46,12 +64,9 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
     middleLabel = 'Click to Join';
   }
 
-  const elapsed = formatElapsed(game.initiatedTime, now);
+  const elapsed = now > 0 ? formatElapsed(game.initiatedTime, now) : '0:00';
   const bottomLabel = `${game.players.length} player${game.players.length !== 1 ? 's' : ''}, ${elapsed}`;
 
-  // Initiator always gets a clickable button that force-starts.
-  // Non-initiator who already joined: disabled.
-  // Non-initiator who hasn't joined: clickable to join.
   const isDisabled = !isInitiator && alreadyJoined;
 
   const handleClick = () => {
@@ -62,23 +77,20 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
     }
   };
 
+  const variant = isInitiator ? 'accent' : alreadyJoined ? 'secondary' : 'primary';
+
   return (
-    <button
+    <Button
+      variant={variant}
+      size="lg"
+      fullWidth
       onClick={handleClick}
       disabled={isDisabled}
-      className={`
-        text-white font-medium py-4 px-4 rounded transition-colors text-center
-        ${isInitiator
-          ? 'bg-amber-500 hover:bg-amber-600'
-          : alreadyJoined
-            ? 'bg-sky-300 cursor-default'
-            : 'bg-sky-500 hover:bg-sky-600'
-        }
-      `}
+      className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
     >
       <div className="font-semibold">{game.name}</div>
       <div className="text-xs mt-1 opacity-90">{middleLabel}</div>
       <div className="text-sm font-bold mt-0.5">{bottomLabel}</div>
-    </button>
+    </Button>
   );
 }

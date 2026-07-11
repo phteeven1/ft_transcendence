@@ -1,15 +1,18 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { Button } from '../../components/ui';
 
 export default function ManagePlayers() {
   const router = useRouter();
 
   return (
-    <button
+    <Button
       onClick={() => router.push('/manage_players')}
-      className="w-full bg-emerald-500 text-white p-2 rounded hover:bg-emerald-600"
+      variant="primary"
+      fullWidth
+      className="clay-action-btn"
     >
       Manage Players
-    </button>
+    </Button>
   );
 }

@@ -2,6 +2,8 @@
 import React, { useRef, useState } from 'react';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -62,15 +64,34 @@ export default function EditVocabulary({
       if (nextIndex < entries.length) {
         wordRefs.current[nextIndex]?.focus();
       } else {
-        wordRefs.current[0]?.focus();
+        handleAddRow();
       }
     }
   };
 
+  const handleAddRow = () => {
+    setEntries((prev) => [...prev, { word: '', meaning: '' }]);
+    setTimeout(() => {
+      wordRefs.current[entries.length]?.focus();
+    }, 0);
+  };
+
+  const handleDeleteRow = (index: number) => {
+    if (entries.length <= 5) return;
+    setEntries((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleCommit = async () => {
     if (!selectedVocabulary) return;
-    const updatedWords = entries.map((e) => e.word);
-    const updatedMeanings = entries.map((e) => e.meaning);
+    const validEntries = entries.filter(e => e.word.trim() !== '' || e.meaning.trim() !== '');
+
+    if (validEntries.length < 5) {
+      alert("A vocabulary list must have at least 5 words.");
+      return;
+    }
+
+    const updatedWords = validEntries.map((e) => e.word.trim());
+    const updatedMeanings = validEntries.map((e) => e.meaning.trim());
     try {
       const updated = await vocabulariesApi.updateEntries({
         vocabularyId: selectedVocabulary.id,
@@ -87,79 +108,90 @@ export default function EditVocabulary({
 
   return (
     <>
-      <button
+      <Button
+        variant="primary"
+        fullWidth
+        className="clay-action-btn"
         onClick={handleOpen}
         disabled={!isActive}
-        className={`w-full p-2 rounded transition-colors ${
-          isActive
-            ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-        }`}
       >
         Edit Vocabulary
-      </button>
+      </Button>
 
-      {isOpen && selectedVocabulary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[80vh] flex flex-col gap-4">
-            <h2 className="text-xl font-bold">
-              Edit: {selectedVocabulary.name}
-            </h2>
-
-            <div className="overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                <div className="font-semibold text-gray-500 text-sm pb-1">
-                  Word
-                </div>
-                <div className="font-semibold text-gray-500 text-sm pb-1">
-                  Meaning
-                </div>
-
-                {entries.map((entry, index) => (
-                  <React.Fragment key={index}>
-                    <input
-                      ref={(el) => {
-                        wordRefs.current[index] = el;
-                      }}
-                      value={entry.word}
-                      onChange={(e) =>
-                        handleChange(index, 'word', e.target.value)
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, index, 'word')}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400"
-                    />
-                    <input
-                      ref={(el) => {
-                        meaningRefs.current[index] = el;
-                      }}
-                      value={entry.meaning}
-                      onChange={(e) =>
-                        handleChange(index, 'meaning', e.target.value)
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, index, 'meaning')}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400"
-                    />
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={handleCommit}
-                className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-              >
+      {selectedVocabulary && (
+        <Dialog
+          open={isOpen}
+          onClose={() => setIsOpen(false)}
+          title={`Edit: ${selectedVocabulary.name}`}
+          wide
+          scrollable
+          footer={
+            <div className="flex gap-3 shrink-0 border-t border-border pt-4">
+              <Button variant="accent" fullWidth onClick={handleCommit}>
                 Commit Changes
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
-              >
+              </Button>
+              <Button variant="ghost" fullWidth onClick={() => setIsOpen(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
+          }
+        >
+          <div className="grid grid-cols-[1fr_1fr_40px] gap-x-4 gap-y-2 items-center">
+            <div className="font-semibold text-muted-foreground text-sm pb-1">
+              Word
+            </div>
+            <div className="font-semibold text-muted-foreground text-sm pb-1">
+              Meaning
+            </div>
+            <div></div>
+
+            {entries.map((entry, index) => (
+              <React.Fragment key={index}>
+                <input
+                  ref={(el) => {
+                    wordRefs.current[index] = el;
+                  }}
+                  value={entry.word}
+                  onChange={(e) =>
+                    handleChange(index, 'word', e.target.value)
+                  }
+                  onKeyDown={(e) => handleKeyDown(e, index, 'word')}
+                  className="clay-input text-sm w-full"
+                />
+                <input
+                  ref={(el) => {
+                    meaningRefs.current[index] = el;
+                  }}
+                  value={entry.meaning}
+                  onChange={(e) =>
+                    handleChange(index, 'meaning', e.target.value)
+                  }
+                  onKeyDown={(e) => handleKeyDown(e, index, 'meaning')}
+                  className="clay-input text-sm w-full"
+                />
+                <button
+                  onClick={() => handleDeleteRow(index)}
+                  disabled={entries.length <= 5}
+                  title={entries.length <= 5 ? "Minimum 5 words required" : "Delete word"}
+                  className={`text-lg font-bold rounded-full w-8 h-8 flex items-center justify-center transition-colors ${
+                    entries.length <= 5
+                      ? 'text-muted-foreground cursor-not-allowed'
+                      : 'text-destructive hover:bg-muted'
+                  }`}
+                >
+                  ×
+                </button>
+              </React.Fragment>
+            ))}
           </div>
-        </div>
+
+          <button
+            onClick={handleAddRow}
+            className="mt-4 flex items-center gap-2 text-sm text-primary hover:text-accent font-medium"
+          >
+            <span className="text-xl">+</span> Add Word Pair
+          </button>
+        </Dialog>
       )}
     </>
   );

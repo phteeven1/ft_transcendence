@@ -13,10 +13,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-
-type Props = {
-  syncAndRefresh: () => Promise<void>;
-};
+import { Button, Dialog, Modal } from '../../components/ui';
 
 type ModalState =
   | 'none'
@@ -25,7 +22,7 @@ type ModalState =
   | 'confirmLastMember'
   | 'error';
 
-export default function LeaveGroup({ syncAndRefresh }: Props) {
+export default function LeaveGroup() {
   const { user, group, refreshUser, leaveGroup } = useAuth();
   const router = useRouter();
   const [modal, setModal] = useState<ModalState>('none');
@@ -74,104 +71,56 @@ export default function LeaveGroup({ syncAndRefresh }: Props) {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleClick}
-        className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        variant="primary"
+        fullWidth
+        className="clay-action-btn"
       >
         Leave Group
-      </button>
+      </Button>
 
-      {/* Confirm leave */}
-      {modal === 'confirmLeave' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-3">Leave Group?</h2>
-            <p className="text-gray-700 mb-6">
-              Are you sure you want to permanently leave {group.name}?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setModal('none')}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmLeave}
-                className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Leave
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={modal === 'confirmLeave'}
+        onClose={() => setModal('none')}
+        title="Leave Group?"
+        cancelLabel="Cancel"
+        confirmLabel="Leave"
+        onConfirm={handleConfirmLeave}
+        confirmVariant="primary"
+        cancelVariant="ghost"
+      >
+        Are you sure you want to permanently leave {group.name}?
+      </Dialog>
 
-      {/* Only admin — cannot leave */}
-      {modal === 'onlyAdmin' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">
-              You are the only admin of this group. Before leaving, you need to
-              make another member admin.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setModal('none')}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={modal === 'onlyAdmin'}
+        onClose={() => setModal('none')}
+      >
+        You are the only admin of this group. Before leaving, you need to
+        make another member admin.
+      </Modal>
 
-      {/* Confirm last member — group will be deleted */}
-      {modal === 'confirmLastMember' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-3">Group will be deleted</h2>
-            <p className="text-gray-700 mb-6">
-              You are the last member of {group.name}. If you leave, the group
-              will be permanently removed.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setModal('none')}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeLeave}
-                className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Leave
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={modal === 'confirmLastMember'}
+        onClose={() => setModal('none')}
+        title="Group will be deleted"
+        cancelLabel="Cancel"
+        confirmLabel="Leave"
+        onConfirm={executeLeave}
+        confirmVariant="primary"
+        cancelVariant="ghost"
+      >
+        You are the last member of {group.name}. If you leave, the group
+        will be permanently removed.
+      </Dialog>
 
-      {/* Error */}
-      {modal === 'error' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">
-              Something went wrong. Please try again.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setModal('none')}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={modal === 'error'}
+        onClose={() => setModal('none')}
+      >
+        Something went wrong. Please try again.
+      </Modal>
     </>
   );
 }

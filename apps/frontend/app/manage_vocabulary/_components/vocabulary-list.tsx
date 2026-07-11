@@ -16,25 +16,30 @@ export default function VocabularyList({
   isLoading,
   onSelect,
 }: Props) {
-  if (isLoading) return <p className="text-gray-500 text-sm">Loading...</p>;
-  if (vocabularies.length === 0)
-    return <p className="text-gray-500 text-sm italic">No vocabularies yet.</p>;
+  if (isLoading) {
+    return <p className="text-muted-foreground text-sm">Loading...</p>;
+  }
+  if (vocabularies.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm italic">No vocabularies yet.</p>
+    );
+  }
 
   return (
-    <ul className="overflow-y-auto max-h-64 md:max-h-full md:h-full border border-emerald-300 rounded">
+    <ul className="clay-panel overflow-y-auto max-h-64 md:max-h-full md:h-full">
       {vocabularies.map((vocabulary) => (
-        <li key={vocabulary.id} className="border-b border-emerald-300 last:border-b-0">
+        <li key={vocabulary.id} className="border-b border-border last:border-b-0">
           <button
             onClick={() => onSelect(vocabulary)}
             className={`w-full text-left px-3 py-2 transition-colors flex items-center justify-between ${
               selectedVocabulary?.id === vocabulary.id
-                ? 'bg-blue-50 font-medium text-blue-700'
-                : 'bg-white hover:bg-gray-50'
+                ? 'bg-muted font-medium text-foreground'
+                : 'text-foreground hover:bg-muted/50'
             }`}
           >
             <span>{vocabulary.name}</span>
             {vocabulary.id === currentVocabulary && (
-              <span className="text-xs font-semibold text-emerald-600">Active</span>
+              <span className="text-xs font-semibold text-primary">Active</span>
             )}
           </button>
         </li>

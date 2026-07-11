@@ -1,11 +1,12 @@
 import { Suspense } from 'react';
 import PlayGameClient from './play-game-client';
+import { PageShell } from '../components/ui/page-shell';
 
 function PlayGameLoading() {
   return (
-    <div className="min-h-screen bg-emerald-200 flex items-center justify-center">
-      <p className="text-gray-600">Loading game...</p>
-    </div>
+    <PageShell centered narrow>
+      <p className="text-muted-foreground">Loading game...</p>
+    </PageShell>
   );
 }
 

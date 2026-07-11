@@ -1,5 +1,6 @@
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { Button } from '../../components/ui';
 
 export default function BackToDashboard() {
   const { leaveGroup } = useAuth();
@@ -12,11 +13,13 @@ export default function BackToDashboard() {
   };
 
   return (
-    <button
+    <Button
       onClick={handleBackToDashboard}
-      className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-3 px-4 rounded transition-colors"
+      variant="ghost"
+      fullWidth
+      className="clay-action-btn"
     >
       Back to Dashboard
-    </button>
+    </Button>
   );
 }
