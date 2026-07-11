@@ -9,10 +9,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 
 const SALT_ROUNDS = 10;
+
 export type User = {
   id: number;
   name: string;
-  //password: string;
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
@@ -125,7 +125,7 @@ export class UsersService {
     });
     return toApiUser(user);
   }
-
+  
   async changePassword(
     userId: number,
     oldPassword: string,
@@ -135,13 +135,21 @@ export class UsersService {
       where: { id: userId },
       ...userWithMemberships,
     });
-    if (!user || user.password !== oldPassword) {
-      throw new Error('WRONG_PASSWORD');
+
+    if (!user){
+      throw new Error('User not found');
     }
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: newPassword },
-    });
-    return { success: true };
+    else {
+      const passwordMatches : Boolean = await compare(oldPassword, user.password);
+      if (!passwordMatches) {
+        throw new Error('Old password is incorrect');
+      }
+      const newHashedPassword = await hash(newPassword, SALT_ROUNDS);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: newHashedPassword },
+      });
+      return { success: true };
+    }
   }
 }
