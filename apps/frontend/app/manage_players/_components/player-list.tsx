@@ -23,24 +23,24 @@ export default function PlayerList({
   onSelect,
 }: Props) {
   return (
-    <ul className="overflow-y-auto max-h-64 md:max-h-full md:h-full border border-emerald-300 rounded">
-      <li className="border-b border-emerald-300 bg-white px-3 py-2">
-        <span className="text-lg font-semibold">Your Players</span>
+    <ul className="clay-panel overflow-y-auto max-h-64 md:max-h-full md:h-full">
+      <li className="border-b border-border px-3 py-2">
+        <span className="font-heading text-lg font-semibold text-foreground">Your Players</span>
       </li>
       {isLoading && (
-        <li className="px-3 py-2 text-gray-500 text-sm">Loading...</li>
+        <li className="px-3 py-2 text-muted-foreground text-sm">Loading...</li>
       )}
       {!isLoading && players.length === 0 && (
-        <li className="px-3 py-2 text-gray-500 text-sm italic">No players yet.</li>
+        <li className="px-3 py-2 text-muted-foreground text-sm italic">No players yet.</li>
       )}
       {!isLoading && players.map((player) => (
-        <li key={player.id} className="border-b border-emerald-300 last:border-b-0">
+        <li key={player.id} className="border-b border-border last:border-b-0">
           <button
             onClick={() => onSelect(player)}
             className={`w-full text-left px-3 py-2 transition-colors ${
               selectedPlayer?.id === player.id
-                ? 'bg-blue-50 font-medium text-blue-700'
-                : 'bg-white hover:bg-gray-50'
+                ? 'bg-muted font-medium text-foreground'
+                : 'text-foreground hover:bg-muted/50'
             }`}
           >
             {player.name}

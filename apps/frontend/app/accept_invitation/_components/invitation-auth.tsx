@@ -1,6 +1,10 @@
 'use client';
 
 import { ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
+import { PageShell } from '../../components/ui/page-shell';
+import { Card } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 
 type AuthMode = 'signin' | 'register';
 
@@ -15,9 +19,6 @@ interface IInvitationAuthProps {
   onSubmit: (e: SyntheticEvent) => void;
 }
 
-const containerClass = "min-h-screen bg-emerald-200";
-const innerClass = "max-w-md mx-auto p-4";
-
 export default function InvitationAuth({
   groupName,
   authMode,
@@ -29,93 +30,77 @@ export default function InvitationAuth({
   onSubmit,
 }: IInvitationAuthProps) {
   return (
-    <div className={containerClass}>
-      <div className={innerClass}>
-        <h1 className="text-2xl font-bold mb-2 text-center">
+    <PageShell narrow centered>
+      <Card className="w-full">
+        <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
           You have been invited to join {groupName}
         </h1>
-        <p className="mb-6 text-gray-600 text-center">
+        <p className="mb-6 text-muted-foreground text-center">
           Please sign in or register to continue.
         </p>
 
         <div className="flex gap-2 mb-6">
-          <button
+          <Button
+            type="button"
+            variant={authMode === 'signin' ? 'accent' : 'ghost'}
+            className="flex-1"
             onClick={() => onAuthModeChange('signin')}
-            className={`flex-1 py-2 rounded font-medium transition-colors ${
-              authMode === 'signin'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-blue-500 border border-blue-500'
-            }`}
           >
             Sign In
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={authMode === 'register' ? 'accent' : 'ghost'}
+            className="flex-1"
             onClick={() => onAuthModeChange('register')}
-            className={`flex-1 py-2 rounded font-medium transition-colors ${
-              authMode === 'register'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-blue-500 border border-blue-500'
-            }`}
           >
             Register
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="userName" className="block mb-1">Username</label>
-            <input
-              type="text"
-              id="userName"
-              name="userName"
-              value={formData.userName}
-              onChange={onChange}
-              onKeyDown={onKeyDown}
-              className="w-full p-2 border rounded"
-              placeholder="Enter your username"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="userPassword" className="block mb-1">Password</label>
-            <input
-              type="password"
-              id="userPassword"
-              name="userPassword"
-              value={formData.userPassword}
-              onChange={onChange}
-              onKeyDown={onKeyDown}
-              className="w-full p-2 border rounded"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+          <Input
+            label="Username"
+            type="text"
+            id="userName"
+            name="userName"
+            value={formData.userName}
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+            placeholder="Enter your username"
+            required
+          />
+          <Input
+            label="Password"
+            type="password"
+            id="userPassword"
+            name="userPassword"
+            value={formData.userPassword}
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+            placeholder="Enter your password"
+            required
+          />
           {authMode === 'register' && (
-            <div>
-              <label htmlFor="userEmail" className="block mb-1">Email</label>
-              <input
-                type="email"
-                id="userEmail"
-                name="userEmail"
-                value={formData.userEmail}
-                onChange={onChange}
-                className="w-full p-2 border rounded"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              id="userEmail"
+              name="userEmail"
+              value={formData.userEmail}
+              onChange={onChange}
+              placeholder="Enter your email"
+              required
+            />
           )}
           {errorMessage && (
-            <p className="text-red-600 text-sm">{errorMessage}</p>
+            <p className="text-destructive text-sm">{errorMessage}</p>
           )}
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
+          <Button type="submit" variant="accent" fullWidth>
             Submit
-          </button>
+          </Button>
         </form>
-      </div>
-    </div>
+      </Card>
+    </PageShell>
   );
 }

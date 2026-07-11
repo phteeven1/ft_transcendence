@@ -11,7 +11,7 @@ Three responsive tiers:
 
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../types';
 import MemberList from './_components/member-list';
@@ -31,6 +31,7 @@ import type { GroupChatEntryDto } from '@/lib/api/chat';
 import AdminToAdmins from './_components/admin-to-admins';
 import AdminToGroup from './_components/admin-to-group';
 import MemberToAdmin from './_components/member-to-admin';
+import { PageShell } from '../components/ui';
 
 export default function ManageGroup() {
   const { user, group, syncGroup, leaveGroup } = useAuth();
@@ -39,34 +40,7 @@ export default function ManageGroup() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [chatEntries, setChatEntries] = useState<GroupChatEntryDto[]>([]);
 
-  useEffect(() => {
-    if (!user || !group) {
-      router.push('/');
-      return;
-    }
-    fetchMembers();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      syncAndRefresh();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchMembers = async () => {
-    if (!group) return;
-    try {
-      const members = await groupsApi.getMembers(group.id);
-      setCurrentGroupMembers(members);
-      setSelectedMember(prev => prev ?? members.find(m => m.id === user?.id) ?? null);
-      await fetchChatEntries();
-    } catch (error) {
-      console.error('fetchMembers failed:', error);
-    }
-  };
-
-  const fetchChatEntries = async () => {
+  const fetchChatEntries = useCallback(async () => {
     if (!group || !user) return;
     try {
       const entries = await chatApi.getEntries(group.id, user.id);
@@ -74,9 +48,21 @@ export default function ManageGroup() {
     } catch (error) {
       console.error('fetchChatEntries failed:', error);
     }
-  };
+  }, [group, user]);
 
-  const syncAndRefresh = async () => {
+  const fetchMembers = useCallback(async () => {
+    if (!group) return;
+    try {
+      const members = await groupsApi.getMembers(group.id);
+      setCurrentGroupMembers(members);
+      setSelectedMember((prev) => prev ?? members.find((m) => m.id === user?.id) ?? null);
+      await fetchChatEntries();
+    } catch (error) {
+      console.error('fetchMembers failed:', error);
+    }
+  }, [group, user, fetchChatEntries]);
+
+  const syncAndRefresh = useCallback(async () => {
     if (!group || !user) return;
     try {
       const updatedGroup = await syncGroup(group.id);
@@ -97,7 +83,43 @@ export default function ManageGroup() {
     } catch (error) {
       console.error('syncAndRefresh failed:', error);
     }
-  };
+  }, [group, user, syncGroup, leaveGroup, router, fetchMembers, fetchChatEntries]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      if (!user) {
+        if (!cancelled) router.push('/signin');
+        return;
+      }
+
+      if (!group) {
+        if (user.currentGroup) {
+          const synced = await syncGroup(user.currentGroup);
+          if (!cancelled && synced) return;
+        }
+        if (!cancelled) router.push('/dashboard');
+        return;
+      }
+
+      fetchMembers();
+    }
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, group, router, syncGroup, fetchMembers]);
+
+  useEffect(() => {
+    if (!group || !user) return;
+
+    const interval = setInterval(() => {
+      void syncAndRefresh();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [group, user, syncAndRefresh]);
 
   if (!user || !group) return null;
 
@@ -124,24 +146,42 @@ export default function ManageGroup() {
       {isAdmin && <AdminToAdmins syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <AdminToGroup syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
-      <LeaveGroup syncAndRefresh={syncAndRefresh} />
+      <LeaveGroup />
       {!isAdmin && <MemberToAdmin syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <DeleteGroup />}
       <BackToDashboard />
     </>
   );
 
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="max-w-4xl mx-auto p-4">
+    <PageShell>
+      {/* Mobile portrait (below md): single column stack */}
+      <div className="flex flex-col gap-4 md:hidden">
+        <MemberList
+          members={currentGroupMembers}
+          selectedMember={selectedMember}
+          onSelect={setSelectedMember}
+        />
+        <ActionWindow
+          selectedMember={selectedMember}
+          groupId={group.id}
+          members={currentGroupMembers}
+          chatEntries={chatEntries}
+          isAdmin={isAdmin}
+        />
+        <div className="grid grid-cols-2 gap-3">{buttons}</div>
+      </div>
 
-        {/* Mobile portrait (below md): single column stack */}
-        <div className="flex flex-col gap-4 md:hidden">
+      {/* Landscape mobile (md to lg): three columns side by side, no header */}
+      <div className="hidden md:grid lg:hidden grid-cols-3 gap-3 items-start">
+        <div className="col-span-1">
           <MemberList
             members={currentGroupMembers}
             selectedMember={selectedMember}
             onSelect={setSelectedMember}
           />
+        </div>
+        <div className="col-span-1">
           <ActionWindow
             selectedMember={selectedMember}
             groupId={group.id}
@@ -149,64 +189,42 @@ export default function ManageGroup() {
             chatEntries={chatEntries}
             isAdmin={isAdmin}
           />
-          <div className="grid grid-cols-2 gap-3">{buttons}</div>
         </div>
+        <div className="col-span-1 grid grid-cols-2 gap-2">
+          {buttons}
+        </div>
+      </div>
 
-        {/* Landscape mobile (md to lg): three columns side by side, no header */}
-        <div className="hidden md:grid lg:hidden grid-cols-3 gap-3 items-start">
-          <div className="col-span-1">
+      {/* Desktop (lg+): member list + buttons side by side, action window below */}
+      <div className="hidden lg:flex flex-col gap-6">
+        <div className="hidden lg:block text-center">
+          <h1 className="font-heading text-2xl font-bold text-foreground">{group.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            You are {isAdmin ? 'an admin' : 'a member'} of this group.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-1 flex flex-col">
             <MemberList
               members={currentGroupMembers}
               selectedMember={selectedMember}
               onSelect={setSelectedMember}
             />
           </div>
-          <div className="col-span-1">
-            <ActionWindow
-              selectedMember={selectedMember}
-              groupId={group.id}
-              members={currentGroupMembers}
-              chatEntries={chatEntries}
-              isAdmin={isAdmin}
-            />
-          </div>
-          <div className="col-span-1 grid grid-cols-2 gap-2 [&_button]:py-1 [&_button]:text-s">
-            {buttons}
-          </div>
-        </div>
-
-        {/* Desktop (lg+): member list + buttons side by side, action window below */}
-        <div className="hidden lg:flex flex-col gap-6">
-          <div className="hidden lg:block text-center">
-            <h1 className="text-2xl font-bold">{group.name}</h1>
-            <p className="text-sm text-gray-600">
-              You are {isAdmin ? 'an admin' : 'a member'} of this group.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-1 flex flex-col">
-              <MemberList
-                members={currentGroupMembers}
-                selectedMember={selectedMember}
-                onSelect={setSelectedMember}
-              />
-            </div>
-            <div className="col-span-2 flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3 content-start">
-                {buttons}
-              </div>
+          <div className="col-span-2 flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3 content-start">
+              {buttons}
             </div>
           </div>
-          <ActionWindow
-            selectedMember={selectedMember}
-            groupId={group.id}
-            members={currentGroupMembers}
-            chatEntries={chatEntries}
-            isAdmin={isAdmin}
-          />
         </div>
-
+        <ActionWindow
+          selectedMember={selectedMember}
+          groupId={group.id}
+          members={currentGroupMembers}
+          chatEntries={chatEntries}
+          isAdmin={isAdmin}
+        />
       </div>
-    </div>
+    </PageShell>
   );
 }

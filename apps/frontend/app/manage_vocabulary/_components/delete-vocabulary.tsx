@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { useAuth } from '../../context/auth-context';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -34,44 +36,30 @@ export default function DeleteVocabulary({
 
   return (
     <>
-      <button
+      <Button
+        variant="destructive"
+        fullWidth
+        className="clay-action-btn"
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
-        className={`w-full p-2 rounded transition-colors ${
-          isActive
-            ? 'bg-red-500 text-white hover:bg-red-600 cursor-pointer'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-        }`}
       >
         Delete Vocabulary
-      </button>
+      </Button>
 
-      {isOpen && selectedVocabulary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">
-              Delete {selectedVocabulary.name}?
-            </h2>
-            <p className="text-gray-600">
-              This will permanently delete this vocabulary list. This cannot be
-              undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleDelete}
-                className="flex-1 bg-red-500 text-white p-2 rounded hover:bg-red-600"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+      {selectedVocabulary && (
+        <Dialog
+          open={isOpen}
+          onClose={() => setIsOpen(false)}
+          title={`Delete ${selectedVocabulary.name}?`}
+          confirmLabel="Delete"
+          confirmVariant="destructive"
+          onConfirm={handleDelete}
+        >
+          <p>
+            This will permanently delete this vocabulary list. This cannot be
+            undone.
+          </p>
+        </Dialog>
       )}
     </>
   );

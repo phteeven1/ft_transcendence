@@ -17,6 +17,10 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { usersApi } from '@/lib/api';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
+import { Modal } from '../../components/ui/modal';
+import { Input } from '../../components/ui/input';
 
 export default function UserSettings() {
   const { user, refreshUser } = useAuth();
@@ -131,253 +135,150 @@ export default function UserSettings() {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleOpen}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-4 px-4 rounded transition-colors"
+        variant="secondary"
+        size="lg"
+        fullWidth
+        className="clay-tile min-h-[5rem]"
       >
         User Settings
-      </button>
+      </Button>
 
-      {/* Main settings modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh]">
+      <Dialog
+        open={showModal}
+        onClose={handleCancel}
+        title="User Settings"
+        onConfirm={handleConfirm}
+        confirmLabel="Confirm"
+        scrollable
+      >
+        <div className="flex flex-col gap-5">
+          <Input
+            label="Username"
+            type="text"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+          />
 
-            <div className="p-6 pb-2">
-              <h2 className="text-xl font-bold mb-1">User Settings</h2>
+          <div>
+            <Input
+              label="Real Name"
+              type="text"
+              value={realName}
+              onChange={(e) => setRealName(e.target.value)}
+            />
+            <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showRealName}
+                onChange={(e) => setShowRealName(e.target.checked)}
+                className="w-4 h-4 accent-[var(--color-accent)]"
+              />
+              Show to other users in same group
+            </label>
+          </div>
+
+          <div>
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showEmail}
+                onChange={(e) => setShowEmail(e.target.checked)}
+                className="w-4 h-4 accent-[var(--color-accent)]"
+              />
+              Show to other users in same group
+            </label>
+          </div>
+
+          <div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="block text-sm font-semibold text-foreground">
+                Relationship Comment
+              </span>
+              <p className="text-xs text-muted-foreground italic">
+                For example: Dana&apos;s Mum
+              </p>
             </div>
+            <Input
+              type="text"
+              value={relationshipComment}
+              onChange={(e) => setRelationshipComment(e.target.value)}
+            />
+            <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showRelationshipComment}
+                onChange={(e) =>
+                  setShowRelationshipComment(e.target.checked)
+                }
+                className="w-4 h-4 accent-[var(--color-accent)]"
+              />
+              Show to other users in same group
+            </label>
+          </div>
 
-            <div className="overflow-y-auto flex-1 px-6 py-2 flex flex-col gap-5">
-
-              {/* Username */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-              </div>
-
-              {/* Real name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Real Name
-                </label>
-                <input
-                  type="text"
-                  value={realName}
-                  onChange={(e) => setRealName(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-                <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showRealName}
-                    onChange={(e) => setShowRealName(e.target.checked)}
-                    className="w-4 h-4 accent-indigo-500"
-                  />
-                  Show to other users in same group
-                </label>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-                <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showEmail}
-                    onChange={(e) => setShowEmail(e.target.checked)}
-                    className="w-4 h-4 accent-indigo-500"
-                  />
-                  Show to other users in same group
-                </label>
-              </div>
-
-              {/* Relationship comment */}
-              <div>
-                <div className="flex items-baseline gap-2 mb-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Relationship Comment
-                    </label>
-                    <p className="text-xs text-gray-400 italic mb-1">
-                    For example: Dana's Mum
-                    </p>
-                    </div>
-                <input
-                  type="text"
-                  value={relationshipComment}
-                  onChange={(e) => setRelationshipComment(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-                <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showRelationshipComment}
-                    onChange={(e) =>
-                      setShowRelationshipComment(e.target.checked)
-                    }
-                    className="w-4 h-4 accent-indigo-500"
-                  />
-                  Show to other users in same group
-                </label>
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <button
-                  onClick={handleOpenPasswordModal}
-                  className="bg-gray-300 hover:bg-gray-500 text-black hover:text-white font-medium py-2 px-4 rounded transition-colors"
-                >
-                  Change Password
-                </button>
-              </div>
-
-            </div>
-
-            {/* Confirm / Cancel */}
-            <div className="p-6 pt-4 flex gap-3 justify-end border-t border-gray-100">
-              <button
-                onClick={handleCancel}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Confirm
-              </button>
-            </div>
-
+          <div>
+            <span className="block text-sm font-semibold text-foreground mb-1">
+              Password
+            </span>
+            <Button variant="secondary" onClick={handleOpenPasswordModal}>
+              Change Password
+            </Button>
           </div>
         </div>
-      )}
+      </Dialog>
 
-      {/* Change password modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col">
-
-            <div className="p-6 pb-2">
-              <h2 className="text-xl font-bold mb-1">Change Password</h2>
-            </div>
-
-            <div className="px-6 py-2 flex flex-col gap-4">
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Old Password
-                </label>
-                <input
-                  type="password"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-              </div>
-
-              {/* Inline error */}
-              {passwordError && (
-                <p className="text-red-500 text-sm">{passwordError}</p>
-              )}
-
-            </div>
-
-            <div className="p-6 pt-4 flex gap-3 justify-end border-t border-gray-100">
-              <button
-                onClick={handleCancelPassword}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmPassword}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Confirm
-              </button>
-            </div>
-
-          </div>
+      <Dialog
+        open={showPasswordModal}
+        onClose={handleCancelPassword}
+        title="Change Password"
+        onConfirm={handleConfirmPassword}
+        confirmLabel="Confirm"
+      >
+        <div className="flex flex-col gap-4">
+          <Input
+            label="Old Password"
+            type="password"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+          />
+          <Input
+            label="New Password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <Input
+            label="Confirm New Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          {passwordError && (
+            <p className="text-destructive text-sm">{passwordError}</p>
+          )}
         </div>
-      )}
+      </Dialog>
 
-      {/* Result modal — password change outcome */}
-      {showResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">{resultMessage}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={handleCloseResult}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={showResult} onClose={handleCloseResult}>
+        {resultMessage}
+      </Modal>
 
-      {/* Username change reminder */}
-      {showUsernameReminder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">
-              Your username has been changed to <span className="font-semibold">{userName}</span>. Remember to use it next time you sign in.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowUsernameReminder(false)}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showUsernameReminder}
+        onClose={() => setShowUsernameReminder(false)}
+      >
+        Your username has been changed to{' '}
+        <span className="font-semibold text-foreground">{userName}</span>. Remember to use it
+        next time you sign in.
+      </Modal>
     </>
   );
 }

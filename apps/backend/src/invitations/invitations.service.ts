@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from '../chat/chat.service';
@@ -31,13 +34,28 @@ export class InvitationsService {
     const invitation = await this.prisma.invitation.create({
       data: { groupId, expiresAt },
     });
-    const inviteLink = `${process.env.APP_URL}/accept_invitation?token=${invitation.token}`;
-    await this.mailService.sendInvitation(
-      toEmail,
-      invitationText,
-      groupName,
-      inviteLink,
-    );
+
+    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const inviteLink = `${appUrl}/accept_invitation?token=${invitation.token}`;
+
+    try {
+      await this.mailService.sendInvitation(
+        toEmail,
+        invitationText,
+        groupName,
+        inviteLink,
+      );
+    } catch (error) {
+      await this.prisma.invitation
+        .delete({ where: { token: invitation.token } })
+        .catch(() => undefined);
+
+      const detail =
+        error instanceof Error ? error.message : 'Unknown mail error';
+      throw new ServiceUnavailableException(
+        `Could not send invitation email. ${detail}`,
+      );
+    }
 
     await this.chatService.logEvent(groupId, authorId, 'SEND_INVITE');
 

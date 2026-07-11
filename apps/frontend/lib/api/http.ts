@@ -27,15 +27,29 @@ export async function apiRequest<T>(
     );
   }
 
+  const text = await res.text();
+
   if (!res.ok) {
-    throw new ApiError(res.status);
+    let message: string | undefined;
+    if (text) {
+      try {
+        const body = JSON.parse(text) as { message?: string | string[] };
+        if (typeof body.message === 'string') {
+          message = body.message;
+        } else if (Array.isArray(body.message)) {
+          message = body.message.join(', ');
+        }
+      } catch {
+        message = text;
+      }
+    }
+    throw new ApiError(res.status, message);
   }
 
   if (res.status === 204) {
     return undefined as T;
   }
 
-  const text = await res.text();
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
 }

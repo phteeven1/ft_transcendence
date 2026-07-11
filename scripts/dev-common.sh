@@ -11,6 +11,41 @@ dev_ensure_state_dir() {
   mkdir -p "$DEV_STATE_DIR"
 }
 
+# Install npm dependencies when local binaries are missing (nest, next, prisma, …).
+dev_ensure_npm_deps() {
+  local dir="$1"
+  local bin_name="$2"
+  local label="${3:-$dir}"
+
+  if [ -x "$dir/node_modules/.bin/$bin_name" ]; then
+    return 0
+  fi
+
+  echo "[dev] Installiere Abhaengigkeiten in $label (npm ci)..."
+  if ! (cd "$dir" && npm ci); then
+    echo "[error] npm ci fehlgeschlagen in $label"
+    exit 1
+  fi
+
+  if [ ! -x "$dir/node_modules/.bin/$bin_name" ]; then
+    echo "[error] $bin_name nicht gefunden nach npm ci in $label"
+    exit 1
+  fi
+}
+
+dev_warn_node_version() {
+  local expected_major="${1:-22}"
+  if ! command -v node >/dev/null 2>&1; then
+    echo "[error] node ist nicht installiert."
+    exit 1
+  fi
+  local major
+  major="$(node -p "process.versions.node.split('.')[0]")"
+  if [ "$major" != "$expected_major" ]; then
+    echo "[warn] Node $major aktiv — CI nutzt Node $expected_major (nvm use $expected_major empfohlen)."
+  fi
+}
+
 # Kill whatever listens on a TCP port (Next, Nest, etc.)
 dev_stop_port() {
   local port="$1"

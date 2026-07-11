@@ -6,15 +6,10 @@
 
 'use client'
 
-import { useLanguage } from '../context/language-context';
+import { useLanguage, LANGUAGES } from '../context/language-context';
 import { useState } from 'react'
 import Image from 'next/image'
-
-const languages = [
-    { code: 'en', label: 'English', flag: '/flags/gb.svg' },
-    { code: 'de', label: 'Deutsch', flag: '/flags/de.svg' },
-    { code: 'fr', label: 'Français', flag: '/flags/fr.svg' },
-]
+import { Button, Dropdown, DropdownItem } from './ui';
 
 export default function FlagMenu() {
   const { selected, setSelected } = useLanguage();
@@ -22,23 +17,28 @@ export default function FlagMenu() {
 
   return (
     <div className="relative">
-      <button onClick={() => setIsOpen(!isOpen)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Select language"
+        aria-expanded={isOpen}
+      >
         <Image src={selected.flag} alt={selected.label} width={24} height={18} />
-      </button>
+      </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 flex flex-col bg-white shadow-md rounded w-30">
-          {languages.map((lang) => (
-            <button
+        <Dropdown className="absolute right-0 mt-2 flex flex-col min-w-[8rem] z-50">
+          {LANGUAGES.map((lang) => (
+            <DropdownItem
               key={lang.code}
               onClick={() => { setSelected(lang); setIsOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100"
             >
               <Image src={lang.flag} alt={lang.label} width={24} height={18} />
               <span>{lang.label}</span>
-            </button>
+            </DropdownItem>
           ))}
-        </div>
+        </Dropdown>
       )}
     </div>
   );

@@ -50,9 +50,9 @@ export function GameInfoColumn({
     <aside className="flex flex-col gap-4 w-56 text-sm overflow-y-auto max-h-screen">
       {/* Game header */}
       <div>
-        <h2 className="font-bold text-lg">{gameName}</h2>
+        <h2 className="font-heading font-bold text-lg text-foreground">{gameName}</h2>
         {startedTime && (
-          <p className="text-gray-500 text-xs">
+          <p className="text-muted-foreground text-xs">
             Started {new Date(startedTime).toLocaleTimeString()}
           </p>
         )}
@@ -60,20 +60,20 @@ export function GameInfoColumn({
 
       {/* Solved banner */}
       {solved && (
-        <div className="rounded bg-green-100 border border-green-400 px-3 py-2 text-green-800 font-semibold">
+        <div className="clay-panel px-3 py-2 text-primary font-semibold font-heading">
           🎉 Puzzle solved!
         </div>
       )}
 
       {/* Scoreboard */}
       <section>
-        <h3 className="font-semibold text-gray-700 mb-1">Scores</h3>
+        <h3 className="font-semibold font-heading text-foreground mb-1">Scores</h3>
         {sortedScores.length === 0 ? (
-          <p className="text-gray-400 italic">No points yet</p>
+          <p className="text-muted-foreground italic">No points yet</p>
         ) : (
           <ul className="space-y-0.5">
             {sortedScores.map(({ playerId, score }) => (
-              <li key={playerId} className="flex justify-between">
+              <li key={playerId} className="flex justify-between text-foreground">
                 <span>{playerNames.get(playerId) ?? `Player ${playerId}`}</span>
                 <span className="font-mono font-bold">{score}</span>
               </li>
@@ -85,15 +85,15 @@ export function GameInfoColumn({
       {/* Clue list — across */}
       {cluesAcross.length > 0 && (
         <section>
-          <h3 className="font-semibold text-gray-700 mb-1">Across</h3>
+          <h3 className="font-semibold font-heading text-foreground mb-1">Across</h3>
           <ol className="space-y-1 list-none">
             {cluesAcross
               .slice()
               .sort((a, b) => a.number - b.number)
               .map(c => (
                 <li key={c.number} className="flex gap-1">
-                  <span className="font-bold w-5 shrink-0">{c.number}.</span>
-                  <span className="text-gray-700">{c.clue}</span>
+                  <span className="font-bold w-5 shrink-0 text-foreground">{c.number}.</span>
+                  <span className="text-muted-foreground">{c.clue}</span>
                 </li>
               ))}
           </ol>
@@ -103,15 +103,15 @@ export function GameInfoColumn({
       {/* Clue list — down */}
       {cluesDown.length > 0 && (
         <section>
-          <h3 className="font-semibold text-gray-700 mb-1">Down</h3>
+          <h3 className="font-semibold font-heading text-foreground mb-1">Down</h3>
           <ol className="space-y-1 list-none">
             {cluesDown
               .slice()
               .sort((a, b) => a.number - b.number)
               .map(c => (
                 <li key={c.number} className="flex gap-1">
-                  <span className="font-bold w-5 shrink-0">{c.number}.</span>
-                  <span className="text-gray-700">{c.clue}</span>
+                  <span className="font-bold w-5 shrink-0 text-foreground">{c.number}.</span>
+                  <span className="text-muted-foreground">{c.clue}</span>
                 </li>
               ))}
           </ol>

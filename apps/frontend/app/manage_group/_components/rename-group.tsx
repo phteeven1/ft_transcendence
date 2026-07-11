@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
+import { Button, Dialog, Input, Modal } from '../../components/ui';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -60,66 +61,39 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleOpen}
-        className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        variant="primary"
+        fullWidth
+        className="clay-action-btn"
       >
         Rename Group
-      </button>
+      </Button>
 
-      {/* Rename modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">Rename Group</h2>
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-1">
-                New Group Name
-              </label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="Enter new group name"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleClose}
-                className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRename}
-                disabled={!newName.trim()}
-                className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                Rename
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showModal}
+        onClose={handleClose}
+        title="Rename Group"
+        cancelLabel="Cancel"
+        confirmLabel="Rename"
+        onConfirm={handleRename}
+        confirmVariant="primary"
+        cancelVariant="ghost"
+        confirmDisabled={!newName.trim()}
+      >
+        <Input
+          label="New Group Name"
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Enter new group name"
+          autoFocus
+        />
+      </Dialog>
 
-      {/* Result modal */}
-      {showResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">{resultMessage}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={handleCloseResult}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={showResult} onClose={handleCloseResult}>
+        {resultMessage}
+      </Modal>
     </>
   );
 }

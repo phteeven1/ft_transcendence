@@ -10,6 +10,9 @@ renders button and one input field. Three states:
 import { useState } from 'react';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
+import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 
 type Props = {
   selectedPlayer: Player | null;
@@ -40,57 +43,41 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
     }
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    setRenameName('');
+  };
+
   // Rename button is disabled until player is selected
   return (
     <>
-      <button
+      <Button
+        variant="primary"
+        fullWidth
+        className="clay-action-btn"
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
-        className={`w-full p-2 rounded transition-colors ${
-          isActive
-            ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-        }`}
       >
         Rename Player
-      </button>
+      </Button>
 
-      {isOpen && selectedPlayer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Rename {selectedPlayer.name}</h2>
-            <input
-              type="text"
-              value={renameName}
-              onChange={(e) => setRenameName(e.target.value)}
-              className="w-full p-2 border rounded"
-              placeholder="New name"
-              autoComplete="new-password"
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleRename}
-                disabled={!renameName.trim()}
-                className={`flex-1 p-2 rounded text-white ${
-                  renameName.trim()
-                    ? 'bg-blue-500 hover:bg-blue-600'
-                    : 'bg-gray-300 cursor-not-allowed'
-                }`}
-              >
-                Rename
-              </button>
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setRenameName('');
-                }}
-                className="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+      {selectedPlayer && (
+        <Dialog
+          open={isOpen}
+          onClose={handleClose}
+          title={`Rename ${selectedPlayer.name}`}
+          confirmLabel="Rename"
+          onConfirm={handleRename}
+          confirmDisabled={!renameName.trim()}
+        >
+          <Input
+            type="text"
+            value={renameName}
+            onChange={(e) => setRenameName(e.target.value)}
+            placeholder="New name"
+            autoComplete="new-password"
+          />
+        </Dialog>
       )}
     </>
   );

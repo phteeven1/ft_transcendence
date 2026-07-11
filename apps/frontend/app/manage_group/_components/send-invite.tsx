@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
-import { invitationsApi } from '@/lib/api';
+import { invitationsApi, ApiError } from '@/lib/api';
+import { Button, Dialog, Input, Modal } from '../../components/ui';
 
 const DEFAULT_INVITE_TEXT = (groupName: string) =>
   `Hi, I want to invite you to join the Dictée App, where your child can learn vocabulary lists in a fun and interactive way. Click the link below to join the learning group ${groupName} which I am also part of.`;
@@ -47,88 +48,82 @@ export default function SendInvite() {
       setInviteStatus('success');
     } catch (error) {
       console.error('Failed to send invitation:', error);
-      setInviteError(error instanceof Error ? error.message : 'Unknown error');
+      setInviteError(
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Unknown error',
+      );
       setInviteStatus('error');
     }
   };
 
   return (
     <>
-      <button
+      <Button
         onClick={handleOpen}
-        className="bg-yellow-500 hover:bg-yelow-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        variant="accent"
+        fullWidth
+        className="clay-action-btn"
       >
         Send Invite
-      </button>
+      </Button>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
-            <h2 className="text-xl font-bold mb-4">Send Invitation</h2>
+      {inviteStatus === 'success' ? (
+        <Modal open={showModal} onClose={handleClose} confirmLabel="Close">
+          <p className="text-primary font-medium">
+            Invitation successfully sent to {inviteEmail}.
+          </p>
+        </Modal>
+      ) : (
+        <Dialog
+          open={showModal}
+          onClose={handleClose}
+          title="Send Invitation"
+          wide
+          footer={
+            <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
+              <Button variant="ghost" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSend}
+                disabled={inviteStatus === 'sending' || !inviteEmail}
+              >
+                {inviteStatus === 'sending' ? 'Sending...' : 'Submit'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-1">
+                Invitation
+              </label>
+              <textarea
+                value={inviteText}
+                onChange={(e) => setInviteText(e.target.value)}
+                rows={6}
+                className="clay-input w-full resize-y text-sm"
+              />
+            </div>
+            <Input
+              label="Email"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="recipient@example.com"
+            />
 
-            {inviteStatus === 'success' ? (
-              <div className="flex flex-col gap-4">
-                <p className="text-green-600 font-medium">
-                  Invitation successfully sent to {inviteEmail}.
-                </p>
-                <button
-                  onClick={handleClose}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Invitation
-                  </label>
-                  <textarea
-                    value={inviteText}
-                    onChange={(e) => setInviteText(e.target.value)}
-                    rows={6}
-                    className="w-full p-2 border border-gray-300 rounded resize-y text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="recipient@example.com"
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                  />
-                </div>
-
-                {inviteStatus === 'error' && (
-                  <p className="text-red-600 text-sm">
-                    Sending invitation failed: {inviteError}
-                  </p>
-                )}
-
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={handleClose}
-                    className="bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSend}
-                    disabled={inviteStatus === 'sending' || !inviteEmail}
-                    className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium py-2 px-4 rounded transition-colors"
-                  >
-                    {inviteStatus === 'sending' ? 'Sending...' : 'Submit'}
-                  </button>
-                </div>
-              </div>
+            {inviteStatus === 'error' && (
+              <p className="text-destructive text-sm">
+                Sending invitation failed: {inviteError}
+              </p>
             )}
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

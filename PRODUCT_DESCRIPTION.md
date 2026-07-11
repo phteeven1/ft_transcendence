@@ -1,11 +1,22 @@
-# Dictee
-A web based app for helping school children with their language homework by generating simple crossword games based on their uploaded vocabulary lists. It uses Next.js for frontend and NestJS for backend. It uses ORM for the database.
+# Dicteé
+
+A web-based app for helping school children with language homework by generating multiplayer word games from uploaded vocabulary lists. Built with **Next.js** (frontend), **NestJS** (backend), and **Prisma/PostgreSQL** (database).
+
+**Eval documentation:** [README.md](./README.md) · **Module planning:** [EVAL_MODULES.md](./EVAL_MODULES.md)
 
 <details>
-  <summary>Modules (3 Points)</summary>
+  <summary>Modules implemented (16 pts)</summary>
   <ul>
-    <li><b>Major: Use a framework for both frontend and backend.</b></li>
-    <li>Minor: Use ORM for database</li>
+    <li><b>Major (Web):</b> Next.js + NestJS frameworks (2)</li>
+    <li><b>Major (Web):</b> WebSockets real-time (2)</li>
+    <li><b>Minor (Web):</b> ORM / Prisma (1)</li>
+    <li><b>Minor (Web):</b> File upload (1)</li>
+    <li><b>Minor (Web):</b> Custom design system — Claymorphism (1)</li>
+    <li><b>Major (Gaming):</b> Word Building game (2)</li>
+    <li><b>Major (Gaming):</b> Remote players (2)</li>
+    <li><b>Major (Gaming):</b> Multiplayer 3+ (2)</li>
+    <li><b>Major (User):</b> Organization system — groups (2)</li>
+    <li><b>Minor (AI):</b> Image recognition — OCR vocab photos (1)</li>
   </ul>
 </details>
 
@@ -156,18 +167,13 @@ Players can:
 
 
 ### Vocabulary Lists
-The Vocabulary Lists are the basis of all games. They can be extracted from any of a number of common text file formats. Once a file has been uploaded, the text is shown in a separate window, and the user is asked to select the text to be included into the vocabulary list. This way, the user can exclude headers and explanations like "List 5" or "English vocabulary for Friday". After each selection, the user is asked if they want to finish the list or add another section. After selection is finished, the text is then automatically divided into a list separated by any of the following chars ",.;:\n" but not by simple spaces. The list is presented to the user, as a simple list separated by linebreak only, with all non letter characters apart from spaces removed. The user can now toggle up or down and correct, so that for example 
-"der"
-"Arm"
-becomes
-"der Arm"
-and
-"der Arm das Bein"
-becomes
-"der Arm"
-"das Bein"
-The crossword algorithm checks if it can build a crossword which fits inside a 24x24 grid from the list. If not, it automatically divides the list in two and tries again. It prompts the user to name each list and saves them.
-While importing a vocabulary, the user is asked what language the vocabulary words are. This question can be based on a guess, but doesn't have to. Knowing which language is important for randomly selected noise letters in the games. A language API can be used to produce a dropdown menu for valid BCP 47 tags.
+Vocabulary lists are the basis of all games. Admins can create lists manually or use **AI Vocabulary Import**:
+
+- **Photo upload (OCR):** Tesseract.js reads text from images; OpenAI GPT-4o extracts word/translation pairs and a title.
+- **PDF upload:** Text is extracted server-side, then structured by the same AI step.
+- **Manual CRUD:** Create, edit, rename, delete, and set the **active list for games**.
+
+See [docs/modules/image-recognition.md](./docs/modules/image-recognition.md) and `apps/frontend/app/manage_vocabulary/`.
 
 ### *Group Chat*
 Chat window appears below the function buttons in manage_group. There is no chat in dashboard, since all chats are group specific. Chat has two main functions: 

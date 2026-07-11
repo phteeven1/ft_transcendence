@@ -12,6 +12,7 @@ import MemberProfile from './member-profile';
 import GroupChat from './group-chat';
 import GameSessionOverview from './game-session-overview';
 import { GroupChatEntryDto } from '@/lib/api';
+import { Panel, Tab, TabPanel, Tabs } from '../../components/ui';
 
 type Tab = 'profile' | 'chat' | 'games';
 
@@ -33,36 +34,49 @@ export default function ActionWindow({ selectedMember, members, chatEntries, isA
   ];
 
   return (
-    <div className="border border-emerald-400 rounded-lg overflow-hidden">
-      {/* Tab bar */}
-      <div className="flex border-b border-emerald-400">
+    <Panel className="overflow-hidden">
+      <Tabs>
         {tabs.map((tab) => (
-          <button
+          <Tab
             key={tab.id}
+            id={`${tab.id}-tab`}
+            panelId={`${tab.id}-panel`}
+            active={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-emerald-700 border-b-2 border-emerald-600'
-                : 'bg-emerald-100 text-gray-500 hover:bg-emerald-50'
-            }`}
           >
             {tab.label}
-          </button>
+          </Tab>
         ))}
-      </div>
+      </Tabs>
 
-      {/* Tab content */}
-      <div className="px-4 py-3 bg-white">
-        {activeTab === 'profile' && (
-          selectedMember
-            ? <MemberProfile member={selectedMember} />
-            : <p className="text-sm text-gray-400 italic">Select a member to view their profile.</p>
+      <TabPanel
+        panelId="profile-panel"
+        labelledBy="profile-tab"
+        hidden={activeTab !== 'profile'}
+        className="px-4 py-3 bg-surface"
+      >
+        {selectedMember ? (
+          <MemberProfile member={selectedMember} />
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Select a member to view their profile.</p>
         )}
-        {activeTab === 'chat' && (
-          <GroupChat members={members} chatEntries={chatEntries} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'games' && <GameSessionOverview />}
-      </div>
-    </div>
+      </TabPanel>
+      <TabPanel
+        panelId="chat-panel"
+        labelledBy="chat-tab"
+        hidden={activeTab !== 'chat'}
+        className="px-4 py-3 bg-surface"
+      >
+        <GroupChat members={members} chatEntries={chatEntries} isAdmin={isAdmin} />
+      </TabPanel>
+      <TabPanel
+        panelId="games-panel"
+        labelledBy="games-tab"
+        hidden={activeTab !== 'games'}
+        className="px-4 py-3 bg-surface"
+      >
+        <GameSessionOverview />
+      </TabPanel>
+    </Panel>
   );
 }

@@ -8,7 +8,7 @@
 
 export default function GameSessionOverview() {
   return (
-    <div className="text-sm text-gray-400 italic p-2">
+    <div className="text-sm text-muted-foreground italic p-2">
       Game Session Overview coming soon.
     </div>
   );

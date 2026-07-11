@@ -19,7 +19,14 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+dev_warn_node_version 22
+
 LOCAL_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/transcendence"
+
+echo "[dev] Pruefe npm-Abhaengigkeiten..."
+dev_ensure_npm_deps "$ROOT_DIR/packages/database" "prisma" "packages/database"
+dev_ensure_npm_deps "$ROOT_DIR/apps/backend" "nest" "apps/backend"
+dev_ensure_npm_deps "$ROOT_DIR/apps/frontend" "next" "apps/frontend"
 
 echo "[dev] Starte PostgreSQL in Docker..."
 docker compose up -d postgres
@@ -44,6 +51,22 @@ echo "[dev] Wende Datenbank-Migrationen an..."
   cd packages/database
   DATABASE_URL="$LOCAL_DATABASE_URL" npm run db:migrate:deploy
 )
+
+echo "[dev] Generiere Prisma Client..."
+npm run db:generate
+
+echo "[dev] Raeume alte Frontend/Backend-Prozesse auf..."
+DEV_STOP_QUIET=true
+dev_stop_pid_file "backend"
+dev_stop_pid_file "frontend"
+dev_stop_port 4000 "Backend (Nest)"
+dev_stop_port 3000 "Frontend (Next)"
+unset DEV_STOP_QUIET
+
+# Lokal nur Postgres in Docker — andere Container wuerden Ports blockieren
+if command -v docker >/dev/null 2>&1; then
+  docker compose stop backend frontend redis 2>/dev/null || true
+fi
 
 BACK_PID=""
 FRONT_PID=""

@@ -1,15 +1,18 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { Button } from '../../components/ui';
 
 export default function ManageVocabulary() {
   const router = useRouter();
 
   return (
-    <button
+    <Button
       onClick={() => router.push('/manage_vocabulary')}
-      className="bg-purple-500 hover:bg-purple-600 text-white font-medium py-3 px-4 rounded transition-colors"
+      variant="accent"
+      fullWidth
+      className="clay-action-btn"
     >
       Manage Vocabulary
-    </button>
+    </Button>
   );
 }

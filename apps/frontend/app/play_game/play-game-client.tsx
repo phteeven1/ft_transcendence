@@ -8,6 +8,9 @@ import { useSessionGuard } from '../hooks/use-session-guard';
 import { useAuth } from '../context/auth-context';
 import { clearPlayerSession } from '@/lib/player-session';
 import AbandonPlayModal from './_components/abandon-play-modal';
+import { PageShell } from '../components/ui/page-shell';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 
 async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
   const results = await Promise.all(
@@ -86,9 +89,9 @@ export default function PlayGameClient() {
 
   if (loading || !game) {
     return (
-      <div className="min-h-screen bg-emerald-200 flex items-center justify-center">
-        <p className="text-gray-600">Loading game...</p>
-      </div>
+      <PageShell centered narrow>
+        <p className="text-muted-foreground">Loading game...</p>
+      </PageShell>
     );
   }
 
@@ -96,45 +99,45 @@ export default function PlayGameClient() {
   const startedTime = game.startedTime ? new Date(game.startedTime) : null;
 
   return (
-    <div className="min-h-screen bg-emerald-200">
-      <div className="max-w-md mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-1 text-center">{game.name}</h1>
-        <p className="text-sm text-gray-500 text-center mb-8">
+    <>
+      <PageShell narrow>
+        <h1 className="font-heading text-2xl font-bold mb-1 text-center text-foreground">{game.name}</h1>
+        <p className="text-sm text-muted-foreground text-center mb-8">
           Game #{game.id}
         </p>
 
-        <div className="bg-white rounded-lg shadow p-5 space-y-3 mb-8">
+        <Card className="clay-panel space-y-3 mb-8">
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
+            <span className="text-xs text-muted-foreground uppercase tracking-wide">
               Started
             </span>
-            <p className="text-gray-800 font-medium">
+            <p className="text-foreground font-medium">
               {startedTime ? startedTime.toLocaleTimeString() : '—'}
             </p>
           </div>
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
+            <span className="text-xs text-muted-foreground uppercase tracking-wide">
               Initiated by
             </span>
-            <p className="text-gray-800 font-medium">
+            <p className="text-foreground font-medium">
               {initiatorPlayer
                 ? initiatorPlayer.name
                 : `Player #${game.initiatedBy}`}
             </p>
           </div>
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
+            <span className="text-xs text-muted-foreground uppercase tracking-wide">
               Players
             </span>
             <ul className="mt-1 space-y-1">
               {players.map((p) => (
                 <li
                   key={p.id}
-                  className="text-gray-800 font-medium flex items-center gap-2"
+                  className="text-foreground font-medium flex items-center gap-2"
                 >
                   {p.name}
                   {p.id === playerId && (
-                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
+                    <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded">
                       you
                     </span>
                   )}
@@ -142,23 +145,17 @@ export default function PlayGameClient() {
               ))}
             </ul>
           </div>
-        </div>
+        </Card>
 
         <div className="space-y-3">
-          <button
-            onClick={handleLeaveClick}
-            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-3 rounded transition-colors"
-          >
+          <Button variant="primary" fullWidth onClick={handleLeaveClick}>
             Leave Game
-          </button>
-          <button
-            onClick={handleGameOver}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-3 rounded transition-colors"
-          >
+          </Button>
+          <Button variant="destructive" fullWidth onClick={handleGameOver}>
             Game Over
-          </button>
+          </Button>
         </div>
-      </div>
+      </PageShell>
 
       {showAbandonModal && (
         <AbandonPlayModal
@@ -167,6 +164,6 @@ export default function PlayGameClient() {
           isLeaving={isAbandoning}
         />
       )}
-    </div>
+    </>
   );
 }

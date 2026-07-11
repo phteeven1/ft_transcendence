@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
+import { Button, Modal } from '../../components/ui';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -51,28 +52,18 @@ export default function ResignAdmin({ syncAndRefresh }: Props) {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleResign}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-4 rounded transition-colors"
+        variant="accent"
+        fullWidth
+        className="clay-action-btn"
       >
         Resign as Admin
-      </button>
+      </Button>
 
-      {showResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <p className="mb-6 text-gray-700">{resultMessage}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={handleCloseResult}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={showResult} onClose={handleCloseResult}>
+        {resultMessage}
+      </Modal>
     </>
   );
 }

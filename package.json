@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
- "scripts": {
+  "scripts": {
     "dev": "docker compose up",
     "dev:local": "bash scripts/dev-local.sh",
     "dev:stop": "bash scripts/dev-stop.sh",
