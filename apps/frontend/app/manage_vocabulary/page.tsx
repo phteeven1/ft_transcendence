@@ -10,13 +10,14 @@ selectedVocabulary: whichever the user has clicked or null.
 isLoading: shows loading state while fetching.
 */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../types';
 import VocabularyList from './_components/vocabulary-list';
 import ImportVocabulary from './_components/import-vocabulary';
+import { TEST_VOCABULARY } from './_components/test-vocabulary';
 import RenameVocabulary from './_components/rename-vocabulary';
 import EditVocabulary from './_components/edit-vocabulary';
 import ShareVocabulary from './_components/share-vocabulary';
@@ -33,27 +34,41 @@ export default function ManageVocabulary() {
     useState<Vocabulary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user || !group) {
-      router.push('/');
-      return;
-    }
-    fetchVocabularies();
-  }, []);
-
-  // guards against no group. fetches only the vocabularies belonging to current group
-  // displays eventual error, then closes state isLoading regardless of success or failure
-  const fetchVocabularies = async () => {
-    if (!group) return;
+  const fetchVocabularies = useCallback(async () => {
+    if (!group || !user) return;
     try {
-      const data = await vocabulariesApi.findByGroup(group.id);
+      let data = await vocabulariesApi.findByGroup(group.id);
+
+      const hasTestList = data.some((v) => v.name === TEST_VOCABULARY.name);
+      if (!hasTestList) {
+        const created = await vocabulariesApi.create({
+          vocabularyInGroup: group.id,
+          byUser: user.id,
+          vocabularyName: TEST_VOCABULARY.name,
+          vocabularyWords: TEST_VOCABULARY.words,
+          vocabularyMeanings: TEST_VOCABULARY.meanings,
+        });
+        data = [...data, created];
+      }
+
       setVocabularies(data);
     } catch (error) {
       console.error('fetchVocabularies failed:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [group, user]);
+
+  useEffect(() => {
+    if (!user || !group) {
+      router.push('/');
+      return;
+    }
+    fetchVocabularies();
+  }, [user, group, router, fetchVocabularies]);
+
+  // guards against no group. fetches only the vocabularies belonging to current group
+  // displays eventual error, then closes state isLoading regardless of success or failure
 
   // toggle. If already selected -> null, if not selected -> select it
   const handleSelect = (vocabulary: Vocabulary) => {
@@ -134,7 +149,7 @@ export default function ManageVocabulary() {
             selectedVocabulary={selectedVocabulary}
             onEdited={handleEdited}
           />
-          <ShareVocabulary selectedVocabulary={selectedVocabulary} />
+          <ShareVocabulary />
           <DeleteVocabulary
             selectedVocabulary={selectedVocabulary}
             onDeleted={handleDeleted}

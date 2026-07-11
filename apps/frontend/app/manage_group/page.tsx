@@ -146,9 +146,9 @@ export default function ManageGroup() {
       {isAdmin && <AdminToAdmins syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <AdminToGroup syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
-      <LeaveGroup syncAndRefresh={syncAndRefresh} />
+      <LeaveGroup />
       {!isAdmin && <MemberToAdmin syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <DeleteGroup syncAndRefresh={syncAndRefresh} />}
+      {isAdmin && <DeleteGroup />}
       <BackToDashboard />
     </>
   );

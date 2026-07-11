@@ -52,7 +52,7 @@ export default function PuzzleWindow() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [player]);
 
   const handleSkip = useCallback(async () => {
     if (!player) return;

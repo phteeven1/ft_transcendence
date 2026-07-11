@@ -5,11 +5,7 @@ import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { Button, Dialog, Modal } from '../../components/ui';
 
-type Props = {
-  syncAndRefresh: () => Promise<void>;
-};
-
-export default function DeleteGroup({ syncAndRefresh }: Props) {
+export default function DeleteGroup() {
   const { user, group, leaveGroup } = useAuth();
   const router = useRouter();
   const [showConfirm, setShowConfirm] = useState(false);

@@ -117,7 +117,7 @@ echo "      Postgres:  localhost:5432"
 echo ""
 echo "[dev] Beenden:"
 echo "      Ctrl+C (einmal)  — stoppt Frontend/Backend (Postgres laeuft weiter)"
-echo "      npm run dev:stop — alles inkl. Postgres sauber stoppen"
+echo "      npm run dev:stop — alles inkl. Postgres/Redis sauber stoppen"
 echo ""
 echo "[dev] Nest/Next brauchen einige Sekunden zum Kompilieren — erst dann sind die URLs erreichbar."
 
@@ -133,16 +133,6 @@ for name_pid in "Backend:$BACK_PID" "Frontend:$FRONT_PID"; do
     exit 1
   fi
 done
-
-# Nest braucht laenger — pruefen ob Port wirklich lauscht
-sleep 4
-if ! lsof -tiTCP:4000 -sTCP:LISTEN >/dev/null 2>&1; then
-  echo ""
-  echo "[error] Backend hoert nicht auf Port 4000 (EADDRINUSE oder Startfehler?)."
-  echo "        Freigeben: npm run dev:stop -- --keep-db && npm run dev:local"
-  cleanup
-  exit 1
-fi
 
 # Blockiert bis beide Prozesse enden (oder Ctrl+C → cleanup via trap)
 wait "$BACK_PID" "$FRONT_PID" 2>/dev/null || true

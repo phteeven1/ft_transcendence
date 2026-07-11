@@ -20,13 +20,18 @@ type Props = {
   onForceStart: () => void;
 };
 
+let clockSnapshot = Date.now();
+
 function subscribeToClock(onChange: () => void) {
-  const interval = setInterval(onChange, 1000);
+  const interval = setInterval(() => {
+    clockSnapshot = Date.now();
+    onChange();
+  }, 1000);
   return () => clearInterval(interval);
 }
 
 function getClockSnapshot() {
-  return Date.now();
+  return clockSnapshot;
 }
 
 function getServerClockSnapshot() {

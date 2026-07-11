@@ -7,7 +7,7 @@ Parent updates its own local copy without refetching full list from backend.
 players always belong to both a group and a user
 */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { playersApi } from '@/lib/api';
@@ -23,24 +23,13 @@ import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
 
 export default function ManagePlayers() {
-  const { user, group } = useAuth();
+  const { user, group, player } = useAuth();
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // guard. if no group or user then back to landing page
-  useEffect(() => {
-    if (!user || !group) {
-      router.push('/');
-      return;
-    }
-    fetchPlayers();
-  }, []);
-
-  // guards against no user or no group. fetches only the players belonging to current user in current group
-  // displays eventual error, then closes state isLoading regardless of success or failure
-  const fetchPlayers = async () => {
+  const fetchPlayers = useCallback(async () => {
     if (!user || !group) return;
     try {
       const data = await playersApi.findByParentInGroup(user.id, group.id);
@@ -50,7 +39,21 @@ export default function ManagePlayers() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, group]);
+
+  // guard. if no group or user then back to landing page — unless parent just
+  // handed off to a player session (Invite to Play), in which case select_game loads next
+  useEffect(() => {
+    if (!user || !group) {
+      if (player) return;
+      router.push('/');
+      return;
+    }
+    fetchPlayers();
+  }, [user, group, player, router, fetchPlayers]);
+
+  // guards against no user or no group. fetches only the players belonging to current user in current group
+  // displays eventual error, then closes state isLoading regardless of success or failure
 
   // toggle. If already selected -> null, if not selected
   const handleSelect = (player: Player) => {

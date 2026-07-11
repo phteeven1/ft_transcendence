@@ -137,8 +137,8 @@ dev_stop_docker_services() {
       echo "[stop] Alle Container gestoppt."
     fi
   else
-    echo "[stop] Docker: postgres stoppen..."
-    docker compose stop postgres 2>/dev/null || true
-    echo "[stop] postgres gestoppt (Frontend/Backend/Redis-Container unberührt)."
+    echo "[stop] Docker: postgres + redis stoppen..."
+    docker compose stop postgres redis 2>/dev/null || true
+    echo "[stop] postgres/redis gestoppt (Frontend/Backend-Container unberührt)."
   fi
 }

@@ -53,8 +53,42 @@ export default function AcceptInvitationClient() {
       setPageState('invalid');
       return;
     }
-    validateToken();
-  }, [token]);
+
+    let cancelled = false;
+
+    const runValidation = async () => {
+      try {
+        const data = await invitationsApi.validateToken(token);
+        if (cancelled) return;
+        if (!data.valid || data.groupId == null) {
+          setPageState('invalid');
+          return;
+        }
+        const gId = data.groupId;
+        setGroupId(gId);
+
+        const group = await groupsApi.getById(gId);
+        if (cancelled) return;
+        setGroupName(group.name);
+
+        if (authUser) {
+          setCurrentUser(authUser);
+          setPageState('confirm');
+        } else {
+          setPageState('auth');
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Token validation failed:', error);
+        setPageState('invalid');
+      }
+    };
+
+    void runValidation();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, authUser]);
 
   // Confirm screen requires a signed-in user (local state can be lost on refresh/retry)
   useEffect(() => {
@@ -67,31 +101,6 @@ export default function AcceptInvitationClient() {
       setCurrentUser(authUser);
     }
   }, [pageState, currentUser, authUser]);
-
-  const validateToken = async () => {
-    try {
-      const data = await invitationsApi.validateToken(token!);
-      if (!data.valid || data.groupId == null) {
-        setPageState('invalid');
-        return;
-      }
-      const gId = data.groupId;
-      setGroupId(gId);
-
-      const group = await groupsApi.getById(gId);
-      setGroupName(group.name);
-
-      if (authUser) {
-        setCurrentUser(authUser);
-        setPageState('confirm');
-      } else {
-        setPageState('auth');
-      }
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      setPageState('invalid');
-    }
-  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

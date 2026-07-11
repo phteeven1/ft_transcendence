@@ -15,10 +15,6 @@ import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { Button, Dialog, Modal } from '../../components/ui';
 
-type Props = {
-  syncAndRefresh: () => Promise<void>;
-};
-
 type ModalState =
   | 'none'
   | 'confirmLeave'
@@ -26,7 +22,7 @@ type ModalState =
   | 'confirmLastMember'
   | 'error';
 
-export default function LeaveGroup({ syncAndRefresh }: Props) {
+export default function LeaveGroup() {
   const { user, group, refreshUser, leaveGroup } = useAuth();
   const router = useRouter();
   const [modal, setModal] = useState<ModalState>('none');

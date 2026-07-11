@@ -37,13 +37,21 @@ const TESSERACT_LANG: Record<string, string> = {
 
 @Injectable()
 export class ExtractionService implements OnModuleDestroy {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
   private ocrWorker: Worker | null = null;
   private ocrLangKey = '';
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService) {}
+
+  private getOpenAiClient(): OpenAI {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
-    this.openai = new OpenAI({ apiKey });
+    if (!apiKey?.trim() || apiKey.trim() === 'null') {
+      throw new InternalServerErrorException('OPENAI_API_KEY is not configured on the server.');
+    }
+    if (!this.openai) {
+      this.openai = new OpenAI({ apiKey });
+    }
+    return this.openai;
   }
 
   async onModuleDestroy() {
@@ -250,7 +258,7 @@ ${text}`;
   ): Promise<ExtractionResult> {
     let response: OpenAI.Chat.Completions.ChatCompletion;
     try {
-      response = await this.openai.chat.completions.create({
+      response = await this.getOpenAiClient().chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
@@ -299,7 +307,7 @@ ${text}`;
     toLanguage = 'English',
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
-    if (!apiKey?.trim()) {
+    if (!apiKey?.trim() || apiKey.trim() === 'null') {
       throw new InternalServerErrorException('OPENAI_API_KEY is not configured on the server.');
     }
 

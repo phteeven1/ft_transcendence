@@ -1,12 +1,7 @@
 'use client';
-import { Vocabulary } from '../../types';
 import { Button } from '../../components/ui/button';
 
-type Props = {
-  selectedVocabulary: Vocabulary | null;
-};
-
-export default function ShareVocabulary({ selectedVocabulary }: Props) {
+export default function ShareVocabulary() {
   return (
     <Button
       variant="ghost"

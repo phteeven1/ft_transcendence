@@ -10,6 +10,18 @@ type Props = {
   onImported: (vocabulary: Vocabulary) => void;
 };
 
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'ja', name: 'Japanese' },
+];
+
 export default function ImportVocabulary({ onImported }: Props) {
   const { user, group } = useAuth();
 
@@ -17,18 +29,6 @@ export default function ImportVocabulary({ onImported }: Props) {
   const [isExtracting, setIsExtracting] = useState(false);
   const [fromLanguage, setFromLanguage] = useState('fr');
   const [toLanguage, setToLanguage] = useState('en');
-
-  const LANGUAGES = [
-    { code: 'en', name: 'English' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ru', name: 'Russian' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ja', name: 'Japanese' },
-  ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {

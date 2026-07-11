@@ -3,7 +3,7 @@
 // A custom React hook that manages a WebSocket connection for a single player in a group lobby. 
 // It connects, listens for server events, and returns reactive state that the component can render.
 import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { Game } from '../types';
 
 interface GroupSocketState {

@@ -22,7 +22,7 @@ type Props = {
 const SESSION_SHORTCUTS = [30, 45, 60];
 
 export default function InviteToPlay({ selectedPlayer }: Props) {
-  const { logout, loginAsPlayer, setSessionExpiresAt, group } = useAuth();
+  const { loginAsPlayer, setSessionExpiresAt, group } = useAuth();
   const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isSessionOpen, setIsSessionOpen] = useState(false);
@@ -74,11 +74,10 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
         session.expiresAt,
       );
 
-      logout();
       loginAsPlayer(selectedPlayer);
       setSessionExpiresAt(new Date(session.expiresAt).getTime());
       setIsSessionOpen(false);
-      router.push('/select_game');
+      router.replace('/select_game');
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         setStartError(

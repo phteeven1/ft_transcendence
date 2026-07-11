@@ -205,22 +205,24 @@ The chat entries should be saved not as strings but as an array of objects, with
 ## *Games*
 Dicteé is conceived such, that many Games can be added to the website later. It needs at least one Game. Probably use SVG text elements for the grid of letters, since this frees us from having to import hundreds of letter-images, and still allows styling. Then animate player elements in separate div with position: absolute.
 
-### Word Building
-A crossword is automatically generated from the group's active vocabulary (18×18 grid). Players fill cells via **keyboard** or **drag-and-drop letter tiles**. Real-time sync uses **WebSockets** (Socket.IO). Features include cell locking, live scores, clue panels, and support for **3+ players**.
-
-**Implemented:** `apps/frontend/app/word_building_scaffold/`, `apps/backend/src/games/word_building/`
-
-See [docs/modules/gaming-word-building.md](./docs/modules/gaming-word-building.md) (also [remote](./docs/modules/gaming-remote-players.md), [3+ players](./docs/modules/gaming-multiplayer-3-plus.md)).
+### *Word Building*
+A crossword is automatically generated that fits on a maximum 24x24 grid. On the tile in front of every word, an arrow is indicating the start of the word. All letters making up the entire list are randomly placed over the grid. The players can direct little trucks around the playing field. They can pick up letters and put them down in other (empty) squares. If they drive over an arrow, the word is read out in audio, and the squares where the word should fit are progressively lit up so that the players can see how long it is. Any square in the word that contains the correct letter lights up in green, empty squares light up in blue, and squares containing the wrong letter light up in red. The players continue building together until the crossword is complete. In the end, each player gets one point per letter that they placed correctly. You can get maximum one point per letter, even if it is removed and replaced several times. The player that first placed it correctly gets the point.
 
 <details>
   <summary>Modules (6 Points)</summary>
   <ul>
     <li><b>Major: Implement a complete web-based real-time multiplayer game.</b></li>
     <li><b>Major: Remote players.</b></li>
-    <li><b>Major: Multiplayer game (3+).</b></li>
+    <li><b>Major: Multiplayer game.</b></li>
   </ul>
 </details>
 
-### *Word soup (optional)* — **stub / not implemented**
+### *Word soup (optional)*
+First, the list of words is displayed for a brief while (1 sec per word). Then, a word soup is generated (a grid of 24x24 squares where the words are hidden among other random letters. Words can cross each other. Words can be displayed horizontally from left to right and vertically from up to down. The player can use the mouse (or finger on mobile) to mark a word, by starting at its beginning, holding the mouse button, and selecting the word. If they correctly mark the word, it light up and changes color. It only lights up, as the mouse button/finger is released, so that one has to commit to a guess before finding out if it is correct. If you mark the wrong boxes, you are frozen for 5 s. This is to stop players from randomly swiping all over the grid. The Game can be played by several players simultaneously. Each Player has their own color, which shows which words were claimed by which player. The Players gets one point per correct word. You see the guesses of the other players appear as colored swipes.
 
-Scaffold exists at `apps/frontend/app/word_soup_scaffold/` and `apps/backend/src/games/word_soup/` but gameplay is placeholder only.
+<details>
+  <summary>Modules (2 Points)</summary>
+  <ul>
+    <li><b>Major: Add another Game with user history and matchmaking.</b></li>
+  </ul>
+</details>

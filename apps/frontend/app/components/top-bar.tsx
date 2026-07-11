@@ -34,6 +34,9 @@ export default function TopBar() {
     return () => clearInterval(interval);
   }, [sessionExpiresAt]);
 
+  // Derived for display instead of setPlayerGroupName(null) / setMinutesLeft(null) in the
+  // effects above — same outcome (no stale group name or timer when player/session ends), but
+  // clearing state inside useEffect triggers react-hooks/set-state-in-effect (ESLint).
   const displayedGroupName = player ? playerGroupName : null;
   const displayedMinutesLeft = sessionExpiresAt != null ? minutesLeft : null;
 
