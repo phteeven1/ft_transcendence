@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { GroupRole } from '@ft-transcendence/database';
 import { hash, compare } from 'bcryptjs';
-import {
-  groupWithMemberships,
-  toApiUser,
-  userWithMemberships,
-} from '../common/mappers';
+import { toApiUser, userWithMemberships } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 
 const SALT_ROUNDS = 10;
@@ -125,7 +121,7 @@ export class UsersService {
     });
     return toApiUser(user);
   }
-  
+
   async changePassword(
     userId: number,
     oldPassword: string,
@@ -136,11 +132,13 @@ export class UsersService {
       ...userWithMemberships,
     });
 
-    if (!user){
+    if (!user) {
       throw new Error('User not found');
-    }
-    else {
-      const passwordMatches : Boolean = await compare(oldPassword, user.password);
+    } else {
+      const passwordMatches: boolean = await compare(
+        oldPassword,
+        user.password,
+      );
       if (!passwordMatches) {
         throw new Error('Old password is incorrect');
       }

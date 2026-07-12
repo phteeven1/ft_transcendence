@@ -65,8 +65,9 @@ export function toApiGroup(group: GroupWithMemberships): Group {
   };
 }
 
-export function toSafePlayer(player: PlayerWithSession): Omit<Player, 'passAnswer'> {
-  const { passAnswer: _, inGroupId, ofUserId, session, ...rest } = player;
+export function toSafePlayer(player: PlayerWithSession): Player {
+  const { inGroupId, ofUserId, session, ...rest } = player;
+  delete (rest as Partial<typeof rest & { passAnswer?: unknown }>).passAnswer;
   return {
     ...rest,
     inGroup: inGroupId,
@@ -130,15 +131,15 @@ export const playerWithSession = {
 
 export function toApiChatEntry(entry: DbGroupChatEntry): GroupChatEntry {
   return {
-    groupId:     entry.groupId,
+    groupId: entry.groupId,
     entryNumber: entry.entryNumber,
-    createdAt:   entry.createdAt.toISOString(),
-    type:        entry.type,
-    authorId:    entry.authorId,
-    authorName:  entry.authorName ?? 'Unknown User',
-    targetId:    entry.targetId   ?? undefined,
-    targetName:  entry.targetName ?? undefined,
-    eventKey:    entry.eventKey   ?? undefined,
-    content:     entry.content    ?? undefined,
+    createdAt: entry.createdAt.toISOString(),
+    type: entry.type,
+    authorId: entry.authorId,
+    authorName: entry.authorName ?? 'Unknown User',
+    targetId: entry.targetId ?? undefined,
+    targetName: entry.targetName ?? undefined,
+    eventKey: entry.eventKey ?? undefined,
+    content: entry.content ?? undefined,
   };
 }
