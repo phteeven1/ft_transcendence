@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { groupsApi, usersApi, type UserDto } from '@/lib/api';
 import type { GroupDto } from '@/lib/api/groups/types';
 import { clearPlayerSession } from '@/lib/player-session';
@@ -41,11 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPlayer(playerData);
   };
 
-  const logoutPlayer = () => {
+  const logoutPlayer = useCallback(() => {
     clearPlayerSession();
     setPlayer(null);
     setSessionExpiresAt(null);
-  };
+  }, []);
 
   const login = (userData: User) => {
     setUser(userData);

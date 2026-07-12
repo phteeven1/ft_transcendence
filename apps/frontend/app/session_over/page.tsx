@@ -19,7 +19,7 @@ export default function SessionOver() {
   // Sign out the player as soon as we land here
   useEffect(() => {
     logoutPlayer();
-  }, []);
+  }, [logoutPlayer]);
 
   return (
     <PageShell narrow centered>

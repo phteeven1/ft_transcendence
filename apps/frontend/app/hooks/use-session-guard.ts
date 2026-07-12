@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/auth-context';
 import {
   getPlayerSession,
-  isSessionExpired,
+  //isSessionExpired,
 } from '@/lib/player-session';
 
 export function useSessionGuard() {

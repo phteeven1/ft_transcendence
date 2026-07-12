@@ -10,8 +10,19 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GamesService, Game } from './games.service';
 import { WordBuildingService } from './word_building/word-building.service';
-import type { IPlaceLetterDto, ILockCellDto } from './word_building/word-building.types';
+import type {
+  IPlaceLetterDto,
+  ILockCellDto,
+} from './word_building/word-building.types';
 import { CELL_LOCK_TIMEOUT_MS } from './word_building/word-building.types';
+
+interface SocketData {
+  groupId?: number;
+  playerId?: number;
+  gameId?: number;
+}
+
+type TypedSocket = Socket<any, any, any, SocketData>;
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GameGateway implements OnGatewayDisconnect {
@@ -33,15 +44,29 @@ export class GameGateway implements OnGatewayDisconnect {
    */
   @SubscribeMessage('joinGroup')
   async handleJoinGroup(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: TypedSocket,
     @MessageBody() data: { groupId: number; playerId: number },
-  ) {
+  ): Promise<void> {
     client.join(`group:${data.groupId}`);
+
     client.data.groupId = data.groupId;
     client.data.playerId = data.playerId;
+
     const games = await this.gamesService.findByGroup(data.groupId);
+
     client.emit('lobby:update', { games });
   }
+  // @SubscribeMessage('joinGroup')
+  // async handleJoinGroup(
+  //   @ConnectedSocket() client: Socket,
+  //   @MessageBody() data: { groupId: number; playerId: number },
+  // ) {
+  //   client.join(`group:${data.groupId}`);
+  //   client.data.groupId = data.groupId;
+  //   client.data.playerId = data.playerId;
+  //   const games = await this.gamesService.findByGroup(data.groupId);
+  //   client.emit('lobby:update', { games });
+  // }
 
   /**
    * Joins a client to the in-game room used for live crossword updates.
@@ -51,13 +76,21 @@ export class GameGateway implements OnGatewayDisconnect {
    */
   @SubscribeMessage('joinGame')
   handleJoinGame(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: TypedSocket,
     @MessageBody() data: { gameId: number; playerId: number },
-  ) {
+  ): void {
     client.join(`game:${data.gameId}`);
     client.data.gameId = data.gameId;
     client.data.playerId = data.playerId;
   }
+  //handleJoinGame(
+  //  @ConnectedSocket() client: Socket,
+  //  @MessageBody() data: { gameId: number; playerId: number },
+  //) {
+  //  client.join(`game:${data.gameId}`);
+  //  client.data.gameId = data.gameId;
+  //  client.data.playerId = data.playerId;
+  //}
 
   /**
    * Relays a revealed-tile event to every player in the game room.
@@ -69,7 +102,8 @@ export class GameGateway implements OnGatewayDisconnect {
   @SubscribeMessage('tile:click')
   handleTileClick(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { gameId: number; playerId: number; row: number; col: number },
+    @MessageBody()
+    data: { gameId: number; playerId: number; row: number; col: number },
   ) {
     this.server.to(`game:${data.gameId}`).emit('game:tileRevealed', {
       row: data.row,
@@ -84,10 +118,16 @@ export class GameGateway implements OnGatewayDisconnect {
    * @param client The disconnected socket.
    */
   handleDisconnect(client: Socket) {
-    const { gameId, playerId } = client.data as { gameId?: number; playerId?: number };
+    const { gameId, playerId } = client.data as {
+      gameId?: number;
+      playerId?: number;
+    };
     if (gameId && playerId) {
       // Word Building: release all locks for this player and notify the room.
-      const payload = this.wordBuildingService.unlockAllForPlayer(gameId, playerId);
+      const payload = this.wordBuildingService.unlockAllForPlayer(
+        gameId,
+        playerId,
+      );
       this.server.to(`game:${gameId}`).emit('cell:locks', payload);
     }
   }
@@ -167,9 +207,15 @@ export class GameGateway implements OnGatewayDisconnect {
   @SubscribeMessage('cell:unlock')
   handleCellUnlock(
     @ConnectedSocket() client: Socket,
-    @MessageBody() dto: { gameId: number; playerId: number; row: number; col: number },
+    @MessageBody()
+    dto: { gameId: number; playerId: number; row: number; col: number },
   ): void {
-    const payload = this.wordBuildingService.unlockCell(dto.gameId, dto.row, dto.col, dto.playerId);
+    const payload = this.wordBuildingService.unlockCell(
+      dto.gameId,
+      dto.row,
+      dto.col,
+      dto.playerId,
+    );
     this.server.to(`game:${dto.gameId}`).emit('cell:locks', payload);
   }
 

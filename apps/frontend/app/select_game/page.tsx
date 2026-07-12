@@ -148,7 +148,7 @@ export default function SelectGame() {
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
     try {
-      const newGame = await gamesApi.create({
+        await gamesApi.create({  // backend will handle returning updated game - no need for assignment (i.e. "const newGame =")
         name: gameName,
         inGroup: player.inGroup,
         initiatedBy: player.id,
@@ -165,7 +165,7 @@ export default function SelectGame() {
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
     try {
-      const updatedGame = await gamesApi.join({
+        await gamesApi.join({ // backend will handle returning updated game - no need for assignment (i.e. "const updatedGame =")
         gameId: game.id,
         playerId: player.id,
       });
