@@ -2,6 +2,7 @@
 import { useState, useEffect, ChangeEvent, SyntheticEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { groupsApi } from '@/lib/api';
 import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
@@ -10,6 +11,7 @@ import { Button } from '../components/ui/button';
 import { Modal } from '../components/ui/modal';
 
 export default function CreateGroup() {
+  const t = useTranslations('dashboard.createGroup');
   const { user, syncGroup } = useAuth();
   const router = useRouter();
   const [groupName, setGroupName] = useState('');
@@ -40,22 +42,22 @@ export default function CreateGroup() {
     <PageShell narrow centered>
       <Card className="w-full">
         <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">
-          Create New Group
+          {t('title')}
         </h1>
-        <p className="mb-6 text-muted-foreground">Choose a name for your new group.</p>
+        <p className="mb-6 text-muted-foreground">{t('subtitle')}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Group Name"
+            label={t('groupNameLabel')}
             type="text"
             id="groupName"
             name="groupName"
             value={groupName}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
-            placeholder="Enter a group name"
+            placeholder={t('groupNamePlaceholder')}
             required
           />
           <Button type="submit" variant="accent" fullWidth>
-            Create Group
+            {t('submit')}
           </Button>
         </form>
         <Button
@@ -64,12 +66,12 @@ export default function CreateGroup() {
           className="mt-4"
           onClick={() => router.push('/dashboard')}
         >
-          Back to Dashboard
+          {t('backToDashboard')}
         </Button>
       </Card>
 
       <Modal open={showError} onClose={() => setShowError(false)}>
-        Failed to create group. Please try again.
+        {t('failed')}
       </Modal>
     </PageShell>
   );

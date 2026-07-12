@@ -1,38 +1,34 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { Button, Dialog, Modal } from '../../components/ui';
 
 export default function DeleteGroup() {
+  const t = useTranslations('group');
+  const tCommon = useTranslations('common');
   const { user, group, leaveGroup } = useAuth();
   const router = useRouter();
   const [showConfirm, setShowConfirm] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
 
-  // Guard. Returns null if no user or no group
   if (!user || !group) return null;
 
-  // true if user is the only admin in the group
   const isOnlyAdmin =
     group.admins.includes(user.id) && group.admins.length === 1;
 
-  // on clicking Delete Group. Checks conditional.
   const handleClick = () => {
     if (!isOnlyAdmin) {
-      setResultMessage(
-        `You cannot delete ${group.name} while there are other admins. ` +
-          `Please demote all other admins first.`,
-      );
+      setResultMessage(t('delete.otherAdminsBlock', { groupName: group.name }));
       setShowResult(true);
       return;
     }
     setShowConfirm(true);
   };
 
-  // deletes the group by POSTing delete to backend with groupId.
   const handleConfirm = async () => {
     try {
       await groupsApi.delete(group.id);
@@ -41,7 +37,7 @@ export default function DeleteGroup() {
     } catch (error) {
       console.error('deleteGroup failed:', error);
       setShowConfirm(false);
-      setResultMessage('Something went wrong. Please try again.');
+      setResultMessage(t('delete.failed'));
       setShowResult(true);
     }
   };
@@ -54,21 +50,20 @@ export default function DeleteGroup() {
         fullWidth
         className="clay-action-btn"
       >
-        Delete Group
+        {t('deleteGroup')}
       </Button>
 
       <Dialog
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
-        title={`Delete ${group.name}?`}
-        cancelLabel="Cancel"
-        confirmLabel="Delete"
+        title={t('delete.title', { groupName: group.name })}
+        cancelLabel={tCommon('cancel')}
+        confirmLabel={tCommon('delete')}
         onConfirm={handleConfirm}
         confirmVariant="destructive"
         cancelVariant="ghost"
       >
-        This will permanently delete the group and all player profiles
-        belonging to it. This cannot be undone.
+        {t('delete.confirmMessage')}
       </Dialog>
 
       <Modal open={showResult} onClose={() => setShowResult(false)}>

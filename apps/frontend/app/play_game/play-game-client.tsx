@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { gamesApi, playersApi } from '@/lib/api';
 import { Game, Player } from '../types';
 import { useSessionGuard } from '../hooks/use-session-guard';
@@ -20,6 +21,10 @@ async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
 }
 
 export default function PlayGameClient() {
+  const tInfo = useTranslations('games.info');
+  const tControls = useTranslations('games.controls');
+  const tCommon = useTranslations('common');
+  const tLobby = useTranslations('games.lobby');
   const searchParams = useSearchParams();
   const router = useRouter();
   const { logoutPlayer } = useAuth();
@@ -90,44 +95,51 @@ export default function PlayGameClient() {
   if (loading || !game) {
     return (
       <PageShell centered narrow>
-        <p className="text-muted-foreground">Loading game...</p>
+        <p className="text-muted-foreground">{tCommon('loadingGame')}</p>
       </PageShell>
     );
   }
 
   const initiatorPlayer = players.find((p) => p.id === game.initiatedBy);
   const startedTime = game.startedTime ? new Date(game.startedTime) : null;
+  const normalizedGameName = game.name.trim().toLowerCase();
+  const displayGameName =
+    normalizedGameName === 'word building'
+      ? tLobby('wordBuilding')
+      : normalizedGameName === 'word soup'
+        ? tLobby('wordSoup')
+        : game.name;
 
   return (
     <>
       <PageShell narrow>
-        <h1 className="font-heading text-2xl font-bold mb-1 text-center text-foreground">{game.name}</h1>
+        <h1 className="font-heading text-2xl font-bold mb-1 text-center text-foreground">{displayGameName}</h1>
         <p className="text-sm text-muted-foreground text-center mb-8">
-          Game #{game.id}
+          {tInfo('gameNumber', { id: game.id })}
         </p>
 
         <Card className="clay-panel space-y-3 mb-8">
           <div>
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              Started
+              {tInfo('started')}
             </span>
             <p className="text-foreground font-medium">
-              {startedTime ? startedTime.toLocaleTimeString() : '—'}
+              {startedTime ? startedTime.toLocaleTimeString() : tCommon('emDash')}
             </p>
           </div>
           <div>
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              Initiated by
+              {tInfo('initiatedBy')}
             </span>
             <p className="text-foreground font-medium">
               {initiatorPlayer
                 ? initiatorPlayer.name
-                : `Player #${game.initiatedBy}`}
+                : tCommon('playerNumber', { id: game.initiatedBy })}
             </p>
           </div>
           <div>
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              Players
+              {tInfo('players')}
             </span>
             <ul className="mt-1 space-y-1">
               {players.map((p) => (
@@ -138,7 +150,7 @@ export default function PlayGameClient() {
                   {p.name}
                   {p.id === playerId && (
                     <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded">
-                      you
+                      {tCommon('you')}
                     </span>
                   )}
                 </li>
@@ -149,10 +161,10 @@ export default function PlayGameClient() {
 
         <div className="space-y-3">
           <Button variant="primary" fullWidth onClick={handleLeaveClick}>
-            Leave Game
+            {tControls('leaveGame')}
           </Button>
           <Button variant="destructive" fullWidth onClick={handleGameOver}>
-            Game Over
+            {tControls('gameOver')}
           </Button>
         </div>
       </PageShell>

@@ -3,6 +3,7 @@ import { useState, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { usersApi } from '@/lib/api';
 import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
@@ -11,6 +12,7 @@ import { Button } from '../components/ui/button';
 import { Modal } from '../components/ui/modal';
 
 export default function SignIn() {
+  const t = useTranslations('auth.signIn');
   const [formData, setFormData] = useState({
     userName: '',
     userPassword: '',
@@ -49,47 +51,47 @@ export default function SignIn() {
   return (
     <PageShell narrow centered>
       <Card className="w-full">
-        <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">Sign In</h1>
+        <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">{t('title')}</h1>
         <p className="mb-6 text-muted-foreground">
-          Welcome back! Please sign in to continue.
+          {t('subtitle')}
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Username"
+            label={t('usernameLabel')}
             type="text"
             id="userName"
             name="userName"
             value={formData.userName}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Enter your username"
+            placeholder={t('usernamePlaceholder')}
             required
           />
           <Input
-            label="Password"
+            label={t('passwordLabel')}
             type="password"
             id="userPassword"
             name="userPassword"
             value={formData.userPassword}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Enter your password"
+            placeholder={t('passwordPlaceholder')}
             required
           />
           <Button type="submit" variant="accent" fullWidth>
-            Sign In
+            {t('submit')}
           </Button>
         </form>
         <p className="mt-6 text-center text-muted-foreground">
-          Don&apos;t have an account?{' '}
+          {t('noAccount')}{' '}
           <Link href="/register" className="link-accent">
-            Register here
+            {t('registerLink')}
           </Link>
         </p>
       </Card>
 
       <Modal open={showError} onClose={() => setShowError(false)}>
-        Invalid username or password. Please try again.
+        {t('invalidCredentials')}
       </Modal>
     </PageShell>
   );

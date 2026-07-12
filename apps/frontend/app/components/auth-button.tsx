@@ -2,9 +2,11 @@
 
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from './ui/button';
 
 export default function AuthButton() {
+  const t = useTranslations('nav');
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -23,7 +25,7 @@ export default function AuthButton() {
       size="sm"
       onClick={user ? handleSignOut : handleSignIn}
     >
-      {user ? 'Sign Out' : 'Sign In'}
+      {user ? t('signOut') : t('signIn')}
     </Button>
   );
 }

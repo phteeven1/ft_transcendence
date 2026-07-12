@@ -1,15 +1,13 @@
 'use client';
 
-/*
-  Placeholder for Game Session Overview feature.
-  Will display which players from current group are offline, online 
-  and what they are playing with whom
-*/
+import { useTranslations } from 'next-intl';
 
 export default function GameSessionOverview() {
+  const t = useTranslations('group');
+
   return (
     <div className="text-sm text-muted-foreground italic p-2">
-      Game Session Overview coming soon.
+      {t('gameSessionOverviewComingSoon')}
     </div>
   );
 }

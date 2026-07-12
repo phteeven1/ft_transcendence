@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { groupsApi, invitationsApi, usersApi } from '@/lib/api';
 import type { UserDto } from '@/lib/api/users/types';
 import InvitationValidating from './_components/invitation-validating';
@@ -31,6 +32,7 @@ type PageState =
 type AuthMode = 'signin' | 'register';
 
 export default function AcceptInvitationClient() {
+  const t = useTranslations('invitation');
   const { user: authUser, login, syncGroup, refreshUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,7 +97,7 @@ export default function AcceptInvitationClient() {
     if (pageState !== 'confirm') return;
     const effectiveUser = currentUser ?? authUser;
     if (!effectiveUser) {
-      setErrorMessage('Please sign in or register before joining the group.');
+      setErrorMessage(t('auth.authRequired'));
       setPageState('auth');
     } else if (!currentUser && authUser) {
       setCurrentUser(authUser);
@@ -132,8 +134,8 @@ export default function AcceptInvitationClient() {
       console.error('Auth failed:', error);
       setErrorMessage(
         authMode === 'signin'
-          ? 'Invalid username or password. Please try again.'
-          : 'Registration failed. Username may already be taken.',
+          ? t('auth.signInFailed')
+          : t('auth.registerFailed'),
       );
     }
   };
@@ -141,7 +143,7 @@ export default function AcceptInvitationClient() {
   const handleJoin = async () => {
     const joinUser = currentUser ?? authUser;
     if (!joinUser || !groupId || !token) {
-      setErrorMessage('Please sign in or register before joining the group.');
+      setErrorMessage(t('auth.authRequired'));
       setPageState('auth');
       return;
     }
@@ -171,9 +173,7 @@ export default function AcceptInvitationClient() {
       router.push('/manage_group');
     } catch (error) {
       console.error('Failed to join group:', error);
-      setErrorMessage(
-        'Something went wrong while joining the group. Please try again.',
-      );
+      setErrorMessage(t('error.joinFailed'));
       setPageState('error');
     }
   };
@@ -192,7 +192,7 @@ export default function AcceptInvitationClient() {
     if (currentUser ?? authUser) {
       setPageState('confirm');
     } else {
-      setErrorMessage('Please sign in or register before joining the group.');
+      setErrorMessage(t('auth.authRequired'));
       setPageState('auth');
     }
   };

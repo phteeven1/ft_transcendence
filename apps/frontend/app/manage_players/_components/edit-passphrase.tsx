@@ -9,6 +9,7 @@ the phrase is prefilled on opening, but not the answer. States are:
 */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 import { Button } from '../../components/ui/button';
@@ -21,13 +22,14 @@ type Props = {
 };
 
 export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
+  const t = useTranslations('players');
+  const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [passQuestion, setPassQuestion] = useState('');
   const [passAnswer, setPassAnswer] = useState('');
 
   const isActive = selectedPlayer !== null;
 
-  // prefills passQuestion but clears passAnswer, then sets modal to open
   const handleOpen = () => {
     if (!selectedPlayer) return;
     setPassQuestion(selectedPlayer.passQuestion);
@@ -35,9 +37,6 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
     setIsOpen(true);
   };
 
-  // guards against no player, and empty fields. POSTs both question and answer to backend
-  // on success, calls onUpdated(updated) with full updated player returned from backend,
-  // then resets and closes
   const handleSave = async () => {
     if (!selectedPlayer || !passQuestion.trim() || !passAnswer.trim()) return;
     try {
@@ -57,7 +56,6 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
 
   const canSave = passQuestion.trim() !== '' && passAnswer.trim() !== '';
 
-  // buttons have both active and inactive states. 'Cancel' doesn't reset fields, just closes modal
   return (
     <>
       <Button
@@ -67,32 +65,32 @@ export default function EditPassphrase({ selectedPlayer, onUpdated }: Props) {
         onClick={handleOpen}
         disabled={!isActive}
       >
-        Edit PassPhrase
+        {t('editPassphraseButton')}
       </Button>
 
       {selectedPlayer && (
         <Dialog
           open={isOpen}
           onClose={() => setIsOpen(false)}
-          title={`Edit PassPhrase for ${selectedPlayer.name}`}
-          confirmLabel="Save"
+          title={t('editPassphrase.title', { name: selectedPlayer.name })}
+          confirmLabel={tCommon('save')}
           onConfirm={handleSave}
           confirmDisabled={!canSave}
         >
           <div className="space-y-4">
             <Input
-              label="Secret Question"
+              label={t('editPassphrase.secretQuestionLabel')}
               type="text"
               value={passQuestion}
               onChange={(e) => setPassQuestion(e.target.value)}
               autoComplete="new-password"
             />
             <Input
-              label="Answer"
+              label={t('editPassphrase.answerLabel')}
               type="text"
               value={passAnswer}
               onChange={(e) => setPassAnswer(e.target.value)}
-              placeholder="New answer"
+              placeholder={t('editPassphrase.answerPlaceholder')}
               autoComplete="new-password"
             />
           </div>

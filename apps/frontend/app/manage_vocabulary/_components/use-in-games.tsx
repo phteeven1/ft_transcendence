@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
+  const t = useTranslations('vocabulary');
   const { group, user } = useAuth();
 
   const isActive = selectedVocabulary !== null && selectedVocabulary.id !== group?.currentVocabulary;
@@ -37,7 +39,7 @@ export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
       onClick={handleClick}
       disabled={!isActive}
     >
-      Use in Games
+      {t('useInGames')}
     </Button>
   );
 }

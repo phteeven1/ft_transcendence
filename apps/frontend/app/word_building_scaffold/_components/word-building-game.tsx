@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
@@ -44,6 +45,7 @@ const EMPTY_COURT = (): CourtCell[][] =>
  * away when the game ends.
  */
 export default function WordBuildingGame() {
+  const t = useTranslations('games.wordBuilding');
   const searchParams = useSearchParams();
   const router = useRouter();
   const { logoutPlayer } = useAuth();
@@ -68,7 +70,7 @@ export default function WordBuildingGame() {
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [isAbandoning,     setIsAbandoning]     = useState(false);
   const [playerNames,      setPlayerNames]      = useState<Map<number, string>>(new Map());
-  const [gameName,         setGameName]         = useState('Word Building');
+  const [gameName,         setGameName]         = useState('');
   const [startedTime,      setStartedTime]      = useState<string | null>(null);
   const [loading,          setLoading]          = useState(true);
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
@@ -406,7 +408,7 @@ export default function WordBuildingGame() {
   if (loading) {
     return (
       <div className="game-shell flex-1 flex items-center justify-center">
-        <p className="text-muted-foreground">Generating crossword…</p>
+        <p className="text-muted-foreground">{t('generating')}</p>
       </div>
     );
   }
@@ -420,13 +422,11 @@ export default function WordBuildingGame() {
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         <div className="flex items-center gap-4 mb-2">
           <p className="text-xs text-muted-foreground">
-            Click a cell to auto-select direction · Type letters to fill · 
-            Green = correct · Blue = empty · Red = wrong · 
-            <strong className="text-foreground">Space/Tab to toggle direction</strong>
+            {t('instructions')}
           </p>
           {selectedRow !== null && selectedCol !== null && (
             <span className="text-xs font-semibold font-heading px-2 py-1 rounded clay-panel text-foreground">
-              {direction === 'across' ? '→ Across' : '↓ Down'}
+              {direction === 'across' ? t('directionAcross') : t('directionDown')}
             </span>
           )}
         </div>
@@ -477,8 +477,8 @@ export default function WordBuildingGame() {
         <div className="clay-modal-overlay fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
           <div className="clay-modal text-center max-w-sm mx-4">
             <p className="text-5xl mb-3">🎉</p>
-            <p className="font-heading text-2xl font-bold text-primary mb-2">Puzzle Complete!</p>
-            <p className="text-sm text-muted-foreground">Returning to lobby…</p>
+            <p className="font-heading text-2xl font-bold text-primary mb-2">{t('puzzleComplete')}</p>
+            <p className="text-sm text-muted-foreground">{t('returningToLobby')}</p>
           </div>
         </div>
       )}

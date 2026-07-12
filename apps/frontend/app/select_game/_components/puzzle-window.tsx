@@ -7,6 +7,7 @@ Passes the full VocabularyDto down to whichever puzzle component renders.
 If there is no active vocabulary, or all words are too short, shows a skip-only fallback.
 */
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { vocabulariesApi } from '@/lib/api';
@@ -23,6 +24,8 @@ function randomPuzzleIndex(): number {
 }
 
 export default function PuzzleWindow() {
+  const t = useTranslations('games.puzzle');
+  const tCommon = useTranslations('common');
   const { player } = useAuth();
   const [vocabulary, setVocabulary] = useState<VocabularyDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,16 +78,16 @@ export default function PuzzleWindow() {
     if (loading) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-          Loading puzzle…
+          {t('loading')}
         </div>
       );
     }
     if (!vocabulary) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-3">
-          <p className="text-muted-foreground text-sm">No vocabulary list is active yet.</p>
+          <p className="text-muted-foreground text-sm">{t('noVocabulary')}</p>
           <Button variant="ghost" size="sm" onClick={handleSkip}>
-            Skip
+            {tCommon('skip')}
           </Button>
         </div>
       );

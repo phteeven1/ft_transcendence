@@ -9,12 +9,12 @@
 // 3. showResult: shows either successful result or error message. 'OK' button to close.
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
 import { Button, Dialog, Modal } from '../../components/ui';
 
-// defines shape of props that ExpelMember must receive from parent
 type Props = {
   currentGroupMembers: Member[];
   syncAndRefresh: () => Promise<void>;
@@ -24,6 +24,8 @@ export default function ExpelMember({
   currentGroupMembers,
   syncAndRefresh,
 }: Props) {
+  const t = useTranslations('group');
+  const tCommon = useTranslations('common');
   const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -31,7 +33,6 @@ export default function ExpelMember({
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
 
-  // Guard. Returns null if no group
   if (!group || !user) return null;
 
   const nonAdmins = currentGroupMembers.filter((m) => !m.isAdmin);
@@ -40,38 +41,31 @@ export default function ExpelMember({
   const selectedMember =
     currentGroupMembers.find((m) => m.id === selectedId) ?? null;
 
-  // resets selectedId to null and opens selection modal.
   const handleOpen = () => {
     setSelectedId(null);
     setShowModal(true);
   };
 
-  // hides the selection modal and resets selectedId to null
   const handleClose = () => {
     setShowModal(false);
     setSelectedId(null);
   };
 
-  // hides the result modal and clears the result message
   const handleCloseResult = () => {
     setShowResult(false);
     setResultMessage('');
   };
 
-  // toggles the selection of a member. Already selected -> unselected -> selected
   const handleSelect = (memberId: number) => {
     setSelectedId((prev) => (prev === memberId ? null : memberId));
   };
 
-  // guards against no selection, then closes selection modal and opens confirmation modal
   const handleExpelClick = () => {
     if (!selectedId) return;
     setShowModal(false);
     setShowConfirm(true);
   };
 
-  // is called when 'Expel' is clicked in confirmation modal. Guards against no selected group or member
-  // POSTS to /groups/expel with group id and
   const handleConfirmExpel = async () => {
     if (!selectedId || !selectedMember) return;
     try {
@@ -80,13 +74,16 @@ export default function ExpelMember({
       setShowConfirm(false);
       setSelectedId(null);
       setResultMessage(
-        `${selectedMember.name} has been expelled from ${group.name}.`,
+        t('expel.success', {
+          memberName: selectedMember.name,
+          groupName: group.name,
+        }),
       );
       setShowResult(true);
     } catch (error) {
       console.error('Expel failed:', error);
       setShowConfirm(false);
-      setResultMessage('Something went wrong. Please try again.');
+      setResultMessage(t('expel.failed'));
       setShowResult(true);
     }
   };
@@ -99,31 +96,31 @@ export default function ExpelMember({
         fullWidth
         className="clay-action-btn"
       >
-        Expel Member
+        {t('expelMember')}
       </Button>
 
       <Dialog
         open={showModal}
         onClose={handleClose}
-        title="Expel Member"
+        title={t('expel.title')}
         scrollable
         footer={
           <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
             <Button variant="ghost" onClick={handleClose}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleExpelClick}
               disabled={!selectedId}
             >
-              Expel
+              {t('expel.expelButton')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-muted-foreground mb-4">
-          Select a member to expel.
+          {t('expel.selectMember')}
         </p>
         <ul>
           {admins.map((member) => (
@@ -132,7 +129,7 @@ export default function ExpelMember({
               className="flex items-center justify-between py-2 border-b border-border"
             >
               <span className="text-muted-foreground">{member.name}</span>
-              <span className="text-xs text-muted-foreground">Admin</span>
+              <span className="text-xs text-muted-foreground">{tCommon('admin')}</span>
             </li>
           ))}
           {nonAdmins.map((member) => {
@@ -169,17 +166,17 @@ export default function ExpelMember({
           setShowConfirm(false);
           setShowModal(true);
         }}
-        title="Are you sure?"
-        cancelLabel="Back"
-        confirmLabel="Expel"
+        title={t('expel.confirmTitle')}
+        cancelLabel={tCommon('back')}
+        confirmLabel={t('expel.expelButton')}
         onConfirm={handleConfirmExpel}
         confirmVariant="destructive"
         cancelVariant="ghost"
       >
-        This will expel{' '}
-        <span className="font-semibold text-foreground">{selectedMember?.name}</span> from{' '}
-        <span className="font-semibold text-foreground">{group.name}</span>. This cannot
-        be undone.
+        {t('expel.confirmMessage', {
+          memberName: selectedMember?.name ?? '',
+          groupName: group.name,
+        })}
       </Dialog>
 
       <Modal open={showResult} onClose={handleCloseResult}>

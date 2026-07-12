@@ -7,6 +7,7 @@
   The selected member is passed down to MemberProfile.
 */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Member } from '../../types';
 import MemberProfile from './member-profile';
 import GroupChat from './group-chat';
@@ -25,12 +26,13 @@ type Props = {
 };
 
 export default function ActionWindow({ selectedMember, members, chatEntries, isAdmin }: Props) {
+  const t = useTranslations('group');
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'profile', label: 'Member Profile' },
-    { id: 'chat', label: 'Group Chat' },
-    { id: 'games', label: 'Game Session' },
+    { id: 'profile', label: t('tabs.profile') },
+    { id: 'chat', label: t('tabs.chat') },
+    { id: 'games', label: t('tabs.games') },
   ];
 
   return (
@@ -58,7 +60,7 @@ export default function ActionWindow({ selectedMember, members, chatEntries, isA
         {selectedMember ? (
           <MemberProfile member={selectedMember} />
         ) : (
-          <p className="text-sm text-muted-foreground italic">Select a member to view their profile.</p>
+          <p className="text-sm text-muted-foreground italic">{t('selectMemberHint')}</p>
         )}
       </TabPanel>
       <TabPanel

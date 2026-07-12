@@ -15,6 +15,7 @@
 */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { usersApi } from '@/lib/api';
 import { Button } from '../../components/ui/button';
@@ -23,6 +24,8 @@ import { Modal } from '../../components/ui/modal';
 import { Input } from '../../components/ui/input';
 
 export default function UserSettings() {
+  const t = useTranslations('dashboard.settings');
+  const tCommon = useTranslations('common');
   const { user, refreshUser } = useAuth();
 
   // main modal
@@ -105,11 +108,11 @@ export default function UserSettings() {
 
   const handleConfirmPassword = async () => {
     if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match.');
+      setPasswordError(t('passwordMismatch'));
       return;
     }
     if (newPassword.length === 0) {
-      setPasswordError('New password cannot be empty.');
+      setPasswordError(t('passwordEmpty'));
       return;
     }
     try {
@@ -119,11 +122,11 @@ export default function UserSettings() {
         newPassword,
       });
       setShowPasswordModal(false);
-      setResultMessage('Your password was changed successfully.');
+      setResultMessage(t('passwordChangedSuccess'));
       setShowResult(true);
     } catch (error) {
       // backend returns 401 if old password is wrong
-      setPasswordError('Old password is incorrect. Please try again.');
+      setPasswordError(t('oldPasswordIncorrect'));
       console.error('changePassword failed:', error);
     }
   };
@@ -142,20 +145,20 @@ export default function UserSettings() {
         fullWidth
         className="clay-tile min-h-[5rem]"
       >
-        User Settings
+        {t('title')}
       </Button>
 
       <Dialog
         open={showModal}
         onClose={handleCancel}
-        title="User Settings"
+        title={t('title')}
         onConfirm={handleConfirm}
-        confirmLabel="Confirm"
+        confirmLabel={tCommon('confirm')}
         scrollable
       >
         <div className="flex flex-col gap-5">
           <Input
-            label="Username"
+            label={t('usernameLabel')}
             type="text"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
@@ -163,7 +166,7 @@ export default function UserSettings() {
 
           <div>
             <Input
-              label="Real Name"
+              label={t('realNameLabel')}
               type="text"
               value={realName}
               onChange={(e) => setRealName(e.target.value)}
@@ -175,13 +178,13 @@ export default function UserSettings() {
                 onChange={(e) => setShowRealName(e.target.checked)}
                 className="w-4 h-4 accent-[var(--color-accent)]"
               />
-              Show to other users in same group
+              {t('showToGroup')}
             </label>
           </div>
 
           <div>
             <Input
-              label="Email"
+              label={t('emailLabel')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -193,17 +196,17 @@ export default function UserSettings() {
                 onChange={(e) => setShowEmail(e.target.checked)}
                 className="w-4 h-4 accent-[var(--color-accent)]"
               />
-              Show to other users in same group
+              {t('showToGroup')}
             </label>
           </div>
 
           <div>
             <div className="flex items-baseline gap-2 mb-1">
               <span className="block text-sm font-semibold text-foreground">
-                Relationship Comment
+                {t('relationshipCommentLabel')}
               </span>
               <p className="text-xs text-muted-foreground italic">
-                For example: Dana&apos;s Mum
+                {t('relationshipCommentHint')}
               </p>
             </div>
             <Input
@@ -220,16 +223,16 @@ export default function UserSettings() {
                 }
                 className="w-4 h-4 accent-[var(--color-accent)]"
               />
-              Show to other users in same group
+              {t('showToGroup')}
             </label>
           </div>
 
           <div>
             <span className="block text-sm font-semibold text-foreground mb-1">
-              Password
+              {t('passwordLabel')}
             </span>
             <Button variant="secondary" onClick={handleOpenPasswordModal}>
-              Change Password
+              {t('changePassword')}
             </Button>
           </div>
         </div>
@@ -238,25 +241,25 @@ export default function UserSettings() {
       <Dialog
         open={showPasswordModal}
         onClose={handleCancelPassword}
-        title="Change Password"
+        title={t('changePasswordTitle')}
         onConfirm={handleConfirmPassword}
-        confirmLabel="Confirm"
+        confirmLabel={tCommon('confirm')}
       >
         <div className="flex flex-col gap-4">
           <Input
-            label="Old Password"
+            label={t('oldPasswordLabel')}
             type="password"
             value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)}
           />
           <Input
-            label="New Password"
+            label={t('newPasswordLabel')}
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
           <Input
-            label="Confirm New Password"
+            label={t('confirmNewPasswordLabel')}
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -275,9 +278,7 @@ export default function UserSettings() {
         open={showUsernameReminder}
         onClose={() => setShowUsernameReminder(false)}
       >
-        Your username has been changed to{' '}
-        <span className="font-semibold text-foreground">{userName}</span>. Remember to use it
-        next time you sign in.
+        {t('usernameChangedReminder', { username: userName })}
       </Modal>
     </>
   );

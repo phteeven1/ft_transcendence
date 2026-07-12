@@ -4,6 +4,7 @@ Allows a parent to force-clear a player's active browser session and game state.
 On confirm, calls clearSession on the backend and reports back via onCleared.
 */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 import { Button } from '../../components/ui/button';
@@ -15,6 +16,8 @@ type Props = {
 };
 
 export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
+  const t = useTranslations('players');
+  const tCommon = useTranslations('common');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,7 +59,7 @@ export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
       setIsConfirmOpen(false);
       onCleared(updated);
     } catch {
-      setError('Failed to end session. Please try again.');
+      setError(t('endSession.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -71,22 +74,21 @@ export default function EndGameSession({ selectedPlayer, onCleared }: Props) {
         onClick={() => isActive && setIsConfirmOpen(true)}
         disabled={!isActive}
       >
-        End Game Session
+        {t('endGameSession')}
       </Button>
 
       {selectedPlayer && (
         <Dialog
           open={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
-          title="End Game Session"
-          confirmLabel={isLoading ? 'Ending…' : 'End Session'}
+          title={t('endSession.title')}
+          confirmLabel={isLoading ? tCommon('ending') : t('endSession.endSessionButton')}
           confirmVariant="destructive"
           onConfirm={handleConfirm}
           confirmDisabled={isLoading}
         >
           <p className="text-sm">
-            Are you sure you want to end {selectedPlayer.name}&apos;s current
-            play session? They will be logged out immediately.
+            {t('endSession.confirmMessage', { name: selectedPlayer.name })}
           </p>
           {error && <p className="text-destructive text-sm mt-2">{error}</p>}
         </Dialog>

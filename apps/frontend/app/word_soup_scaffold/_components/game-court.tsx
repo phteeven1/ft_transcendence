@@ -12,6 +12,7 @@
 */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
 import { Button } from '../../components/ui/button';
@@ -52,7 +53,14 @@ interface Props {
   onTileClick: (row: number, col: number) => void;
 }
 
+const SIZE_LABEL_KEYS = {
+  S: 'courtSizeSmall',
+  M: 'courtSizeMedium',
+  L: 'courtSizeLarge',
+} as const;
+
 export default function GameCourt({ visibleCourt, onTileClick }: Props) {
+  const t = useTranslations('games.wordSoup');
   const [courtSize, setCourtSize] = useState<CourtSize>(() => getDefaultSize());
 
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
@@ -71,7 +79,7 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
             className="w-8 h-8 p-0"
             onClick={() => setCourtSize(size)}
           >
-            {size}
+            {t(SIZE_LABEL_KEYS[size])}
           </Button>
         ))}
       </div>

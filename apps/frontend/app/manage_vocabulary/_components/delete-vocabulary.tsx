@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { useAuth } from '../../context/auth-context';
@@ -15,6 +16,8 @@ export default function DeleteVocabulary({
   selectedVocabulary,
   onDeleted,
 }: Props) {
+  const t = useTranslations('vocabulary');
+  const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const { group, user } = useAuth();
   const isActive = selectedVocabulary !== null;
@@ -43,22 +46,19 @@ export default function DeleteVocabulary({
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
       >
-        Delete Vocabulary
+        {t('deleteVocabulary')}
       </Button>
 
       {selectedVocabulary && (
         <Dialog
           open={isOpen}
           onClose={() => setIsOpen(false)}
-          title={`Delete ${selectedVocabulary.name}?`}
-          confirmLabel="Delete"
+          title={t('delete.title', { name: selectedVocabulary.name })}
+          confirmLabel={tCommon('delete')}
           confirmVariant="destructive"
           onConfirm={handleDelete}
         >
-          <p>
-            This will permanently delete this vocabulary list. This cannot be
-            undone.
-          </p>
+          <p>{t('delete.confirmMessage')}</p>
         </Dialog>
       )}
     </>

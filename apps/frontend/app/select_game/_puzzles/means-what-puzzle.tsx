@@ -12,6 +12,7 @@ Means-What puzzle: player sees a meaning and picks the matching word from three 
 - Layout: buttons side by side on desktop/landscape, stacked on portrait mobile.
 */
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { Button } from '../../components/ui/button';
 
@@ -80,6 +81,8 @@ function buildPuzzleData(vocabulary: VocabularyDto): PuzzleData {
 }
 
 export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
+  const t = useTranslations('games.puzzle');
+  const tCommon = useTranslations('common');
   const puzzleData = useMemo(() => buildPuzzleData(vocabulary), [vocabulary]);
   const [guessed, setGuessed] = useState(false);
   const [result, setResult] = useState<'success' | 'false' | null>(null);
@@ -134,7 +137,7 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
     <div className="flex flex-col h-full px-4 py-3 select-none">
 
       {/* Prompt */}
-      <p className="text-sm text-muted-foreground mb-1">What best translates…</p>
+      <p className="text-sm text-muted-foreground mb-1">{t('meansWhatPrompt')}</p>
       <p className="text-base font-semibold font-heading text-foreground mb-4 leading-snug">{meaning}</p>
 
       {/* Answer buttons — row on landscape/desktop, column on portrait mobile */}
@@ -161,10 +164,10 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
             result === null ? 'opacity-0' : '',
           ].join(' ')}
         >
-          {result === 'success' ? 'SUCCESS!' : result === 'false' ? 'FALSE' : ''}
+          {result === 'success' ? t('success') : result === 'false' ? t('false') : ''}
         </span>
         <Button variant="ghost" size="sm" onClick={onSkip}>
-          {guessed ? 'Next' : 'Skip'}
+          {guessed ? tCommon('next') : tCommon('skip')}
         </Button>
       </div>
     </div>

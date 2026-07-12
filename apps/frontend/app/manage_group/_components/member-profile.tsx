@@ -10,6 +10,7 @@
 */
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Member, Player, User } from '../../types';
 import { usersApi } from '@/lib/api/users';
 import { playersApi } from '@/lib/api/players';
@@ -20,33 +21,35 @@ type Props = {
   member: Member;
 };
 
-function formatTimeAgo(isoString: string): string {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-}
-
-function formatExpiresIn(isoString: string): string {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  if (diffMs <= 0) return '0 mins';
-  const diffMins = Math.ceil(diffMs / 60000);
-  return `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
-}
-
 export default function MemberProfile({ member }: Props) {
+  const t = useTranslations('group.profile');
+  const tCommon = useTranslations('common');
   const { group } = useAuth();
   const [fullUser, setFullUser] = useState<User | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loadedForMemberId, setLoadedForMemberId] = useState<number | null>(null);
+
+  function formatTimeAgo(isoString: string): string {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return t('justNow');
+    if (diffMins < 60) return t('minutesAgo', { count: diffMins });
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return t('hoursAgo', { count: diffHours });
+    const diffDays = Math.floor(diffHours / 24);
+    return t('daysAgo', { count: diffDays });
+  }
+
+  function formatExpiresIn(isoString: string): string {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    if (diffMs <= 0) return t('zeroMins');
+    const diffMins = Math.ceil(diffMs / 60000);
+    return `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+  }
 
   useEffect(() => {
     if (!group) return;
@@ -74,18 +77,18 @@ export default function MemberProfile({ member }: Props) {
   const loading = !group || loadedForMemberId !== member.id;
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground italic">Loading profile...</p>;
+    return <p className="text-sm text-muted-foreground italic">{t('loading')}</p>;
   }
 
   if (!fullUser) {
-    return <p className="text-sm text-destructive italic">Could not load profile.</p>;
+    return <p className="text-sm text-destructive italic">{t('loadFailed')}</p>;
   }
 
   const userBlock = (
     <div className="flex flex-col gap-1">
       <p className="font-semibold text-foreground">{fullUser.name}</p>
       <p className="text-xs font-medium text-primary">
-        {member.isAdmin ? 'Admin' : 'Member'}
+        {member.isAdmin ? tCommon('admin') : tCommon('member')}
       </p>
       {fullUser.showEmail && (
         <p className="text-xs text-muted-foreground">{fullUser.email}</p>
@@ -102,7 +105,7 @@ export default function MemberProfile({ member }: Props) {
   const playersBlock = (
     <div className="flex flex-col gap-3">
       {players.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">No players in this group.</p>
+        <p className="text-xs text-muted-foreground italic">{t('noPlayers')}</p>
       ) : (
         players.map((p) => {
           const isInSession = p.sessionExpiresAt !== null;
@@ -113,12 +116,12 @@ export default function MemberProfile({ member }: Props) {
               <div className="flex flex-col justify-center">
                 <p className="text-sm font-medium text-foreground">{p.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {isInSession ? 'In Game Session' : 'Currently Offline'}
+                  {isInSession ? t('inGameSession') : t('currentlyOffline')}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {isInSession && p.sessionExpiresAt
-                    ? `expires in ${formatExpiresIn(p.sessionExpiresAt)}`
-                    : `since ${formatTimeAgo(p.lastSignout)}`}
+                    ? t('expiresIn', { time: formatExpiresIn(p.sessionExpiresAt) })
+                    : t('since', { time: formatTimeAgo(p.lastSignout) })}
                 </p>
               </div>
             </div>

@@ -2,6 +2,7 @@
 import { useState, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { usersApi, ApiError } from '@/lib/api';
 import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
@@ -10,6 +11,7 @@ import { Button } from '../components/ui/button';
 import { Modal } from '../components/ui/modal';
 
 export default function Register() {
+  const t = useTranslations('auth.register');
   const [formData, setFormData] = useState({
     userName: '',
     userPassword: '',
@@ -53,53 +55,53 @@ export default function Register() {
   return (
     <PageShell narrow centered>
       <Card className="w-full">
-        <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">Register</h1>
+        <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">{t('title')}</h1>
         <p className="mb-6 text-muted-foreground">
-          Create your account to get started.
+          {t('subtitle')}
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Username"
+            label={t('usernameLabel')}
             type="text"
             id="userName"
             name="userName"
             value={formData.userName}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Choose a username"
+            placeholder={t('usernamePlaceholder')}
             autoComplete="name"
             required
           />
           <Input
-            label="Password"
+            label={t('passwordLabel')}
             type="password"
             id="userPassword"
             name="userPassword"
             value={formData.userPassword}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Create a new password"
+            placeholder={t('passwordPlaceholder')}
             autoComplete="new-password"
             required
           />
           <Input
-            label="Your Email"
+            label={t('emailLabel')}
             type="text"
             id="userEmail"
             name="userEmail"
             value={formData.userEmail}
             onChange={handleChange}
-            placeholder="Enter your email"
+            placeholder={t('emailPlaceholder')}
             required
           />
           <Button type="submit" variant="accent" fullWidth>
-            Create Account
+            {t('submit')}
           </Button>
         </form>
       </Card>
 
       <Modal open={showError} onClose={() => setShowError(false)}>
-        Registration failed. Please try again.
+        {t('failed')}
       </Modal>
     </PageShell>
   );

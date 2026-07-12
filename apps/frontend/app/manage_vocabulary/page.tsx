@@ -11,6 +11,7 @@ isLoading: shows loading state while fetching.
 */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { vocabulariesApi } from '@/lib/api';
@@ -27,6 +28,7 @@ import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
 
 export default function ManageVocabulary() {
+  const t = useTranslations('vocabulary');
   const { user, group, syncGroup } = useAuth();
   const router = useRouter();
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
@@ -119,13 +121,13 @@ export default function ManageVocabulary() {
         {group.name}
       </h1>
       <p className="text-sm text-muted-foreground mb-6 text-center">
-        Manage Vocabulary
+        {t('title')}
       </p>
 
       <div className="md:grid md:grid-cols-3 gap-6">
         <div className="col-span-1 mb-6 md:mb-0">
           <h2 className="font-heading text-lg font-semibold mb-2 text-foreground">
-            Vocabularies
+            {t('vocabulariesHeading')}
           </h2>
           <VocabularyList
             vocabularies={vocabularies}
@@ -160,7 +162,7 @@ export default function ManageVocabulary() {
             className="clay-action-btn"
             onClick={() => router.push('/manage_group')}
           >
-            Back to Group
+            {t('backToGroup')}
           </Button>
         </div>
       </div>

@@ -24,6 +24,7 @@ If all players leave a game before it starts, it is destroyed
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { gamesApi, playersApi } from '@/lib/api';
 import {
   clearPlayerSession,
@@ -72,6 +73,7 @@ type ModalState =
 // pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
 export default function SelectGame() {
+  const t = useTranslations('games.lobby');
   const { player, logoutPlayer, setSessionExpiresAt } = useAuth();
   const router = useRouter();
   useSessionGuard();
@@ -209,10 +211,10 @@ export default function SelectGame() {
     <>
       <PageShell>
         <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
-          Hi, {player.name}!
+          {t('greeting', { name: player.name })}
         </h1>
         <p className="text-sm text-muted-foreground mb-8 text-center">
-          Choose a game to play
+          {t('subtitle')}
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -226,9 +228,9 @@ export default function SelectGame() {
             }
             disabled={hasInitiated('Word Building')}
           >
-            <span className="text-lg font-bold">Word Building</span>
+            <span className="text-lg font-bold">{t('wordBuilding')}</span>
             <span className="text-xs font-normal opacity-90">
-              Create new game
+              {t('createNewGame')}
             </span>
           </Button>
 
@@ -242,9 +244,9 @@ export default function SelectGame() {
             }
             disabled={hasInitiated('Word Soup')}
           >
-            <span className="text-lg font-bold">Word Soup</span>
+            <span className="text-lg font-bold">{t('wordSoup')}</span>
             <span className="text-xs font-normal opacity-90">
-              Create new game
+              {t('createNewGame')}
             </span>
           </Button>
 
@@ -269,7 +271,7 @@ export default function SelectGame() {
 
         <div className="mt-6 text-center">
           <Button variant="ghost" onClick={handleFinishGame}>
-            Exit Games
+            {t('exitGames')}
           </Button>
         </div>
       </PageShell>
