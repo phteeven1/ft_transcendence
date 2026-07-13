@@ -15,8 +15,11 @@ interface Props {
  */
 export default function GameControls({ onLeave, onGameOver }: Props) {
   return (
-    <div className="flex flex-col gap-3 lg:pt-12">
-      <Button variant="primary" fullWidth onClick={onLeave}>
+    <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-300">
+      <Button
+        onClick={onLeave}
+        className="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-3 rounded transition-colors"
+      >
         Leave Game
       </Button>
       <Button variant="destructive" fullWidth onClick={onGameOver}>

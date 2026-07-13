@@ -415,7 +415,7 @@ export default function WordBuildingGame() {
     <div
       ref={containerRef}
       tabIndex={0}
-      className="game-shell flex-1 overflow-x-auto outline-none focus:ring-0"
+      className="min-h-screen bg-emerald-200 overflow-x-hidden outline-none focus:ring-0"
     >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         <div className="flex items-center gap-4 mb-2">
@@ -430,9 +430,9 @@ export default function WordBuildingGame() {
             </span>
           )}
         </div>
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
           {/* Grid */}
-          <main className="flex flex-col gap-2">
+          <main className="flex flex-col gap-2 min-w-0 w-full lg:flex-1 lg:max-w-[600px]">
             <GameCourt
               court={visibleCourt}
               selectedRow={selectedRow}
@@ -444,22 +444,28 @@ export default function WordBuildingGame() {
             />
             {/* Tile rack — drag language-specific tiles onto cells as an alternative to keyboard */}
             <TileRack letters={availableLetters} disabled={solved} />
+          </main>
+
+          {/* Info panel + controls — sticky on desktop, stacked on mobile */}
+          <div className="w-full lg:w-56 lg:shrink-0 flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+            {/* Scrollable clues / scores section */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <GameInfoColumn
+                gameName={gameName}
+                startedTime={startedTime}
+                playerNames={playerNames}
+                scores={scores}
+                cluesAcross={cluesAcross}
+                cluesDown={cluesDown}
+                solved={solved}
+              />
+            </div>
+            {/* Controls always visible at bottom — separated from the active gameplay area */}
             <GameControls
               onLeave={() => setShowAbandonModal(true)}
               onGameOver={handleGameOver}
             />
-          </main>
-
-          {/* Info panel */}
-          <GameInfoColumn
-            gameName={gameName}
-            startedTime={startedTime}
-            playerNames={playerNames}
-            scores={scores}
-            cluesAcross={cluesAcross}
-            cluesDown={cluesDown}
-            solved={solved}
-          />
+          </div>
         </div>
       </div>
 

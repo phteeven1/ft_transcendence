@@ -47,7 +47,7 @@ export function GameInfoColumn({
   const sortedScores = [...scores].sort((a, b) => b.score - a.score);
 
   return (
-    <aside className="flex flex-col gap-4 w-56 text-sm overflow-y-auto max-h-screen">
+    <aside className="flex flex-col gap-4 w-full text-sm">
       {/* Game header */}
       <div>
         <h2 className="font-heading font-bold text-lg text-foreground">{gameName}</h2>
