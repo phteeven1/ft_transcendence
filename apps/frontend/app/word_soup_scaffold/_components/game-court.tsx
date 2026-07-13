@@ -8,13 +8,13 @@
 
   Grid dimensions are controlled by two constants at the top of this file:
   COURT_COLS and COURT_ROWS. Change these to resize the grid for this game.
-  The matching constants in word-building-game.tsx must be kept in sync.
+  The matching constants in word-soup-game.tsx and word-soup.service.ts must be kept in sync.
 */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
-import { Button } from '../../components/ui/button';
+import type { WordCelebration } from './word-soup-celebration';
 
 // ── Grid dimensions ──────────────────────────────────────────────────────────
 const COURT_COLS = 18;
@@ -49,36 +49,83 @@ function getDefaultSize(): CourtSize {
 
 interface Props {
   visibleCourt: CourtCell[][];
-  onTileClick: (row: number, col: number) => void;
+  playerColours: Record<number, string>;
+  selectedCells: Array<{ row: number; col: number }>;
+  foundWordGroups: Array<{ playerId: number; cells: Array<{ row: number; col: number }> }>;
+  isLocalPlayerFrozen: boolean;
+  freezeSecondsLeft: number;
+  wordCelebration: WordCelebration | null;
+  onSelectionStart: (row: number, col: number) => void;
+  onSelectionContinue: (row: number, col: number) => void;
+  onSelectionEnd: () => void;
 }
 
-export default function GameCourt({ visibleCourt, onTileClick }: Props) {
+export default function GameCourt({
+  visibleCourt,
+  playerColours,
+  selectedCells,
+  foundWordGroups,
+  isLocalPlayerFrozen,
+  freezeSecondsLeft,
+  wordCelebration,
+  onSelectionStart,
+  onSelectionContinue,
+  onSelectionEnd,
+}: Props) {
   const [courtSize, setCourtSize] = useState<CourtSize>(() => getDefaultSize());
+
+  // Set the default once on mount — never again automatically.
+  useEffect(() => {
+    setCourtSize(getDefaultSize());
+  }, []);
 
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
   const gridWidth = computeGridWidth(courtSize);
   const gridHeight = computeGridHeight(courtSize);
+
+  const getPeristalticStatus = (row: number, col: number): 'none' | 'leading' | 'trail' => {
+    if (!wordCelebration || wordCelebration.phase !== 'animating') return 'none';
+    const index = wordCelebration.orderedCells.findIndex(
+      (cell) => cell.row === row && cell.col === col,
+    );
+    if (index === -1) return 'none';
+    if (index === wordCelebration.activeIndex) return 'leading';
+    if (index < wordCelebration.activeIndex) return 'trail';
+    return 'none';
+  };
+
+  const interactionDisabled =
+    isLocalPlayerFrozen || wordCelebration?.phase === 'animating' || wordCelebration?.phase === 'banner';
 
   return (
     <div className="flex flex-col gap-2">
       {/* Size selector */}
       <div className="flex gap-2">
         {(['S', 'M', 'L'] as CourtSize[]).map((size) => (
-          <Button
+          <button
             key={size}
-            variant={courtSize === size ? 'accent' : 'ghost'}
-            size="sm"
-            className="w-8 h-8 p-0"
+            type="button"
             onClick={() => setCourtSize(size)}
+            className={[
+              'h-8 w-8 rounded text-sm font-bold transition-colors',
+              courtSize === size
+                ? 'bg-emerald-500 text-white'
+                : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
+            ].join(' ')}
           >
             {size}
-          </Button>
+          </button>
         ))}
       </div>
 
       {/* Court grid — fixed pixel size, scrolls if it doesn't fit */}
       <div
-        className="clay-panel rounded-2xl"
+        className={[
+          'relative rounded-2xl bg-white shadow-xl transition-[filter,transform] duration-300',
+          isLocalPlayerFrozen ? 'word-soup-court-frozen' : '',
+        ].join(' ')}
+        onMouseUp={interactionDisabled ? undefined : onSelectionEnd}
+        onMouseLeave={interactionDisabled ? undefined : onSelectionEnd}
         style={{
           width: `${gridWidth}px`,
           minWidth: `${gridWidth}px`,
@@ -87,7 +134,7 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
         }}
       >
         <div
-          className="grid"
+          className={interactionDisabled ? 'pointer-events-none select-none grid' : 'grid'}
           style={{
             padding: `${padding}px`,
             gap: `${COURT_TILE_GAP}px`,
@@ -105,11 +152,62 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
                 col={colIndex}
                 tileSize={tileSize}
                 fontSize={fontSize}
-                onClick={onTileClick}
+                playerColours={playerColours}
+                foundWordGroups={foundWordGroups}
+                isSelected={selectedCells.some((selected) => selected.row === rowIndex && selected.col === colIndex)}
+                peristalticStatus={getPeristalticStatus(rowIndex, colIndex)}
+                onSelectionStart={onSelectionStart}
+                onSelectionContinue={onSelectionContinue}
               />
             )),
           )}
         </div>
+
+        {wordCelebration?.phase === 'banner' && (
+          <div className="word-soup-found-banner pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl">
+            <div className="mx-4 max-w-sm rounded-2xl border-4 border-emerald-300 bg-white/95 px-6 py-5 text-center shadow-2xl">
+              <p className="text-3xl" aria-hidden="true">🎉</p>
+              <p className="mt-2 text-lg font-extrabold text-emerald-800">
+                {wordCelebration.playerName} found
+              </p>
+              <p className="mt-1 text-2xl font-black tracking-wide text-emerald-900">
+                {wordCelebration.word}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-emerald-700">
+                +{wordCelebration.points} points
+              </p>
+            </div>
+          </div>
+        )}
+
+        {wordCelebration?.phase === 'final-word' && (
+          <div className="word-soup-final-word-banner pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
+            <div className="rounded-full border-2 border-amber-400 bg-amber-50 px-5 py-2 text-center shadow-lg">
+              <p className="text-sm font-extrabold uppercase tracking-wide text-amber-800">
+                Final word!
+              </p>
+              <p className="text-xs font-semibold text-amber-900">
+                Who&apos;s going to find the last one? 🏁
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isLocalPlayerFrozen && (
+          <div className="word-soup-freeze-overlay pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl">
+            <div className="word-soup-freeze-card mx-4 max-w-[260px] rounded-2xl border-4 border-sky-200 bg-white/95 px-5 py-4 text-center shadow-lg">
+              <div className="word-soup-freeze-snowflakes mb-2 text-3xl" aria-hidden="true">
+                <span>🧊</span>
+                <span>❄️</span>
+                <span>🐧</span>
+              </div>
+              <p className="text-lg font-extrabold text-sky-700"> Incorrect guess!</p>
+              <p className="mt-1 text-sm font-semibold text-sky-900">BRRR! You're Frozen! Chill for a bit!</p>
+              <p className="mt-3 text-4xl font-black tabular-nums text-sky-600">{freezeSecondsLeft}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-500">seconds left</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

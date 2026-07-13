@@ -150,6 +150,13 @@ export class GamesService {
       ...gameWithPlayers,
     });
     return game ? toApiGame(game) : undefined;
+  }  
+  
+  async isPlayerInGame(gameId: number, playerId: number): Promise<boolean> {
+    const count = await this.prisma.gamePlayer.count({
+      where: { gameId, playerId },
+    });
+    return count > 0;
   }
 
   /**

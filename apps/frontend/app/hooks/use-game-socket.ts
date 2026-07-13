@@ -2,8 +2,8 @@
 
 /*
   Custom hook for in-game WebSocket communication.
-  Connects to the game room and handles tile reveal, game-finished,
-  and the new game:state / placeLetter events for word building.
+  Connects to the game room and handles shared events plus game-specific payloads
+  for word building and word soup.
   Follows the same pattern as useGroupSocket.
 */
 
@@ -11,18 +11,46 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto } from '@/lib/api/games/word-building.types';
 
-export type RevealedTile = {
-  row: number;
-  col: number;
-  char: string;
+type WordSoupServerGameState = {
+  visibleCourt: Array<Array<{ char: string; revealed: boolean; highlightedByPlayerId?: number }>>;
+  playerScores: Record<number, number>;
+  playerWordCounts: Record<number, number>;
+  playerColours: Record<number, string>;
+  solutionWords: string[];
+  solvedWords: string[];
+  frozenPlayers?: Record<number, number>;
+};
+
+type WordSoupFreezeNotice = {
+  playerId: number;
+  playerName: string;
+  message: string;
+};
+
+type WordSoupWordGuessed = {
+  playerId: number;
+  playerName?: string;
+  word: string;
+  cells: Array<{ row: number; col: number }>;
+  direction?: [number, number];
+  message: string;
+  pointsEarned?: number;
+  playerScores?: Record<number, number>;
+  playerWordCounts?: Record<number, number>;
+  state?: WordSoupServerGameState;
 };
 
 interface GameSocketState {
-  revealedTile: RevealedTile | null;
   gameFinished: boolean;
   isConnected: boolean;
   gameState: IGameStatePayload | null;
   cellLocks: ICellLocksPayload | null;
+  wordGuessed: WordSoupWordGuessed | null;
+  wordGuessedSeq: number;
+  guessResult: { success: boolean; message: string; frozen?: boolean; frozenUntil?: number } | null;
+  serverState: WordSoupServerGameState | null;
+  frozenPlayers: Record<number, number>;
+  freezeNotice: WordSoupFreezeNotice | null;
 }
 
 /**
@@ -36,11 +64,16 @@ interface GameSocketState {
 export function useGameSocket(gameId: number, playerId: number) {
   const socketRef = useRef<Socket | null>(null);
   const [state, setState] = useState<GameSocketState>({
-    revealedTile: null,
     gameFinished: false,
     isConnected: false,
     gameState: null,
     cellLocks: null,
+    wordGuessed: null,
+    wordGuessedSeq: 0,
+    guessResult: null,
+    serverState: null,
+    frozenPlayers: {},
+    freezeNotice: null,
   });
 
   useEffect(() => {
@@ -65,22 +98,78 @@ export function useGameSocket(gameId: number, playerId: number) {
       setState((s) => ({ ...s, isConnected: false }));
     });
 
-    // word_soup: Backend broadcasts this when any player clicks a tile.
-    socket.on('game:tileRevealed', (tile: RevealedTile) => {
+    // word_building: flat payload. word_soup: { state } wrapper.
+    socket.on('game:state', (payload: IGameStatePayload | { state: WordSoupServerGameState }) => {
       if (!active) return;
-      setState((s) => ({ ...s, revealedTile: tile }));
-    });
-
-    // word_building: Backend broadcasts full visible court after every letter placement.
-    socket.on('game:state', (payload: IGameStatePayload) => {
-      if (!active) return;
-      setState((s) => ({ ...s, gameState: payload }));
+      if ('state' in payload) {
+        setState((s) => ({
+          ...s,
+          serverState: payload.state,
+          frozenPlayers: payload.state.frozenPlayers ?? s.frozenPlayers,
+        }));
+      } else {
+        setState((s) => ({ ...s, gameState: payload }));
+      }
     });
 
     // word_building: Backend broadcasts updated cell lock map after any reservation change.
     socket.on('cell:locks', (payload: ICellLocksPayload) => {
       if (!active) return;
       setState((s) => ({ ...s, cellLocks: payload }));
+    });
+
+    // word_soup: Backend broadcasts this when a player guesses a word.
+    socket.on('game:wordGuessed', (payload: WordSoupWordGuessed) => {
+      if (!active) return;
+      setState((s) => ({
+        ...s,
+        wordGuessed: payload,
+        wordGuessedSeq: s.wordGuessedSeq + 1,
+        serverState: payload.state ?? s.serverState,
+        frozenPlayers: payload.state?.frozenPlayers ?? s.frozenPlayers,
+      }));
+    });
+
+    // word_soup: Backend responds to the guessing player with success/failure.
+    socket.on('game:guessResult', (payload: { success: boolean; message: string; frozen?: boolean; frozenUntil?: number }) => {
+      if (!active) return;
+      setState((s) => {
+        const frozenPlayers = { ...s.frozenPlayers };
+        if (payload.frozen && payload.frozenUntil) {
+          frozenPlayers[playerId] = payload.frozenUntil;
+        }
+        return { ...s, guessResult: payload, frozenPlayers };
+      });
+    });
+
+    socket.on('game:playerFrozen', (payload: { playerId: number; playerName: string; frozenUntil: number; durationSeconds: number; message: string }) => {
+      if (!active) return;
+      setState((s) => ({
+        ...s,
+        frozenPlayers: { ...s.frozenPlayers, [payload.playerId]: payload.frozenUntil },
+        freezeNotice: {
+          playerId: payload.playerId,
+          playerName: payload.playerName,
+          message: `${payload.playerName} is frozen for ${payload.durationSeconds}s! 🧊`,
+        },
+      }));
+    });
+
+    socket.on('game:playerUnfrozen', (payload: { playerId: number; playerName: string; message: string }) => {
+      if (!active) return;
+      setState((s) => {
+        const frozenPlayers = { ...s.frozenPlayers };
+        delete frozenPlayers[payload.playerId];
+        return {
+          ...s,
+          frozenPlayers,
+          freezeNotice: {
+            playerId: payload.playerId,
+            playerName: payload.playerName,
+            message: payload.message,
+          },
+        };
+      });
     });
 
     // Backend broadcasts this when the game is marked finished.
@@ -94,16 +183,6 @@ export function useGameSocket(gameId: number, playerId: number) {
       socket.disconnect();
     };
   }, [gameId, playerId]);
-
-  /**
-   * Sends a tile-click event to the server so all clients can update their revealed-tile state.
-   *
-   * @param row Board row of the clicked tile.
-   * @param col Board column of the clicked tile.
-   */
-  const emitTileClick = (row: number, col: number) => {
-    socketRef.current?.emit('tile:click', { gameId, playerId, row, col });
-  };
 
   /**
    * Sends a letter placement to the server and lets the backend broadcast the authoritative state.
@@ -133,6 +212,15 @@ export function useGameSocket(gameId: number, playerId: number) {
     socketRef.current?.emit('cell:unlock', { gameId, playerId, row, col });
   }, [gameId, playerId]);
 
-  return { ...state, emitTileClick, emitPlaceLetter, emitCellLock, emitCellUnlock };
-}
+  const emitSubmitGuess = (selection: Array<{ row: number; col: number }>) => {
+    socketRef.current?.emit('guess:submit', { gameId, playerId, selection });
+  };
 
+  return {
+    ...state,
+    emitPlaceLetter,
+    emitCellLock,
+    emitCellUnlock,
+    emitSubmitGuess,
+  };
+}

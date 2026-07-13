@@ -7,5 +7,6 @@ import { PrismaModule } from '../../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [WordSoupController],
   providers: [WordSoupService],
+  exports: [WordSoupService],
 })
 export class WordSoupModule {}

@@ -5,3 +5,5 @@ node_modules/
 .cursor/skills/
 .cursor/debug*.log
 **/__pycache__/
+
+TODO.md

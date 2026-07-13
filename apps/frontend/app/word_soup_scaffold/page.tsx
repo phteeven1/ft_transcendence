@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import WordSoupPlaceholderClient from './_components/word-soup-game';
+import WordSoupGame from './_components/word-soup-game';
 
 function WordSoupLoading() {
   return (
@@ -12,7 +12,7 @@ function WordSoupLoading() {
 export default function WordSoupPage() {
   return (
     <Suspense fallback={<WordSoupLoading />}>
-      <WordSoupPlaceholderClient />
+      <WordSoupGame />
     </Suspense>
   );
 }
