@@ -3,6 +3,7 @@
 import { PageShell } from '../../components/ui/page-shell';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { useTranslations } from 'next-intl';
 
 interface IInvitationConfirmProps {
   groupName: string;
@@ -15,19 +16,23 @@ export default function InvitationConfirm({
   onJoin,
   onDecline,
 }: IInvitationConfirmProps) {
+  const t = useTranslations('invitation.confirm');
+
   return (
     <PageShell narrow centered>
       <Card className="w-full text-center">
-        <h1 className="font-heading text-2xl font-bold mb-4 text-foreground">Join {groupName}?</h1>
+        <h1 className="font-heading text-2xl font-bold mb-4 text-foreground">
+          {t('title', { groupName })}
+        </h1>
         <p className="mb-8 text-muted-foreground">
-          Would you like to join the learning group {groupName}?
+          {t('message', { groupName })}
         </p>
         <div className="flex gap-4">
           <Button variant="ghost" className="flex-1" onClick={onDecline}>
-            No thanks
+            {t('decline')}
           </Button>
           <Button variant="accent" className="flex-1" onClick={onJoin}>
-            Join Group
+            {t('join')}
           </Button>
         </div>
       </Card>

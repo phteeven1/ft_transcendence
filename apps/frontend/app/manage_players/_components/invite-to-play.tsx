@@ -6,6 +6,7 @@ Play Now checks for an active backend session token before proceeding.
 Create Play Button and Send Invite to Play are not yet implemented.
 */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { ApiError, playersApi } from '@/lib/api';
@@ -22,6 +23,8 @@ type Props = {
 const SESSION_SHORTCUTS = [30, 45, 60];
 
 export default function InviteToPlay({ selectedPlayer }: Props) {
+  const t = useTranslations('players');
+  const tCommon = useTranslations('common');
   const { loginAsPlayer, setSessionExpiresAt, group } = useAuth();
   const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -81,10 +84,10 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         setStartError(
-          `${selectedPlayer.name} already has an active session. End it first.`,
+          t('invite.activeSessionExists', { name: selectedPlayer.name }),
         );
       } else {
-        setStartError('Could not start session. Please try again.');
+        setStartError(t('invite.startFailed'));
       }
     } finally {
       setIsStarting(false);
@@ -110,14 +113,14 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
         onClick={() => isActive && setIsInviteOpen(true)}
         disabled={!isActive}
       >
-        Invite to Play
+        {t('inviteToPlay')}
       </Button>
 
       {selectedPlayer && (
         <Dialog
           open={isInviteOpen}
           onClose={closeInvite}
-          title={`Invite ${selectedPlayer.name} to Play`}
+          title={t('invite.title', { name: selectedPlayer.name })}
           footer={
             <div className="flex flex-col gap-3 shrink-0 border-t border-border pt-4">
               <Button
@@ -126,24 +129,23 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
                 onClick={handlePlayNow}
                 disabled={isChecking}
               >
-                {isChecking ? 'Checking…' : 'Play Now'}
+                {isChecking ? tCommon('checking') : t('invite.playNow')}
               </Button>
               <Button variant="ghost" fullWidth disabled>
-                Create Play Button
+                {t('invite.createPlayButton')}
               </Button>
               <Button variant="ghost" fullWidth disabled>
-                Send Invite to Play
+                {t('invite.sendInviteToPlay')}
               </Button>
               <Button variant="ghost" fullWidth onClick={closeInvite}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
             </div>
           }
         >
           {hasActiveSession && (
             <p className="text-destructive text-sm">
-              {selectedPlayer.name} already has an active play session.
-              Please end it first using the End Game Session button.
+              {t('invite.activeSessionWarning', { name: selectedPlayer.name })}
             </p>
           )}
         </Dialog>
@@ -153,7 +155,7 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
         <Dialog
           open={isSessionOpen}
           onClose={() => setIsSessionOpen(false)}
-          title={`How long can ${selectedPlayer.name} play?`}
+          title={t('invite.sessionDurationTitle', { name: selectedPlayer.name })}
           footer={
             <div className="flex gap-3 shrink-0 border-t border-border pt-4">
               <Button
@@ -162,7 +164,7 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
                 onClick={() => setIsSessionOpen(false)}
                 disabled={isStarting}
               >
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button
                 variant="accent"
@@ -170,19 +172,19 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
                 onClick={handleSessionStart}
                 disabled={!canStart}
               >
-                {isStarting ? 'Starting…' : 'Start'}
+                {isStarting ? tCommon('starting') : tCommon('start')}
               </Button>
             </div>
           }
         >
           <div className="space-y-2">
             <Input
-              label="Minutes"
+              label={t('invite.minutesLabel')}
               type="number"
               min="1"
               value={sessionMinutes}
               onChange={(e) => setSessionMinutes(e.target.value)}
-              placeholder="Enter minutes"
+              placeholder={t('invite.minutesPlaceholder')}
             />
             <div className="flex gap-2 pt-1">
               {SESSION_SHORTCUTS.map((mins) => (

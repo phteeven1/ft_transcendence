@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
 import type { Game, Player } from '../../types';
 import { useSessionGuard } from '../../hooks/use-session-guard';
@@ -47,6 +48,7 @@ async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
 }
 
 export default function WordSoupGame() {
+  const tCommon = useTranslations('common');
   const searchParams = useSearchParams();
   const router = useRouter();
   const { logoutPlayer } = useAuth();
@@ -177,7 +179,7 @@ export default function WordSoupGame() {
   if (loadingGame || !game) {
     return (
       <div className="game-shell flex-1 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading game...</p>
+        <p className="text-muted-foreground">{tCommon('loadingGame')}</p>
       </div>
     );
   }

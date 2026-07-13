@@ -5,6 +5,7 @@ import { PageShell } from '../../components/ui/page-shell';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
+import { useTranslations } from 'next-intl';
 
 type AuthMode = 'signin' | 'register';
 
@@ -29,14 +30,16 @@ export default function InvitationAuth({
   onKeyDown,
   onSubmit,
 }: IInvitationAuthProps) {
+  const t = useTranslations('invitation.auth');
+
   return (
     <PageShell narrow centered>
       <Card className="w-full">
         <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
-          You have been invited to join {groupName}
+          {t('title', { groupName })}
         </h1>
         <p className="mb-6 text-muted-foreground text-center">
-          Please sign in or register to continue.
+          {t('subtitle')}
         </p>
 
         <div className="flex gap-2 mb-6">
@@ -46,7 +49,7 @@ export default function InvitationAuth({
             className="flex-1"
             onClick={() => onAuthModeChange('signin')}
           >
-            Sign In
+            {t('signInTab')}
           </Button>
           <Button
             type="button"
@@ -54,42 +57,42 @@ export default function InvitationAuth({
             className="flex-1"
             onClick={() => onAuthModeChange('register')}
           >
-            Register
+            {t('registerTab')}
           </Button>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <Input
-            label="Username"
+            label={t('usernameLabel')}
             type="text"
             id="userName"
             name="userName"
             value={formData.userName}
             onChange={onChange}
             onKeyDown={onKeyDown}
-            placeholder="Enter your username"
+            placeholder={t('usernamePlaceholder')}
             required
           />
           <Input
-            label="Password"
+            label={t('passwordLabel')}
             type="password"
             id="userPassword"
             name="userPassword"
             value={formData.userPassword}
             onChange={onChange}
             onKeyDown={onKeyDown}
-            placeholder="Enter your password"
+            placeholder={t('passwordPlaceholder')}
             required
           />
           {authMode === 'register' && (
             <Input
-              label="Email"
+              label={t('emailLabel')}
               type="email"
               id="userEmail"
               name="userEmail"
               value={formData.userEmail}
               onChange={onChange}
-              placeholder="Enter your email"
+              placeholder={t('emailPlaceholder')}
               required
             />
           )}
@@ -97,7 +100,7 @@ export default function InvitationAuth({
             <p className="text-destructive text-sm">{errorMessage}</p>
           )}
           <Button type="submit" variant="accent" fullWidth>
-            Submit
+            {t('submit')}
           </Button>
         </form>
       </Card>

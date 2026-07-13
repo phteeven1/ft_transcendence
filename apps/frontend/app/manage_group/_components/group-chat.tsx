@@ -21,11 +21,28 @@
 */
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ChatEntryType, GroupChatEntryDto } from '@/lib/api/chat';
 import type { Member } from '../../types';
 import { Chip, Panel } from '../../components/ui';
 
 // ─── Log entry rendering ──────────────────────────────────────────────────────
+
+const EVENT_KEY_TO_I18N: Record<string, string> = {
+  CREATE_GROUP: 'createGroup',
+  JOIN_GROUP: 'joinGroup',
+  LEAVE_GROUP: 'leaveGroup',
+  PROMOTE_ADMIN: 'promoteAdmin',
+  RESIGN_ADMIN: 'resignAdmin',
+  RENAME_GROUP: 'renameGroup',
+  EXPEL_MEMBER: 'expelMember',
+  DELETE_GROUP: 'deleteGroup',
+  UPLOAD_VOCABULARY: 'uploadVocabulary',
+  SET_ACTIVE_VOCABULARY: 'setActiveVocabulary',
+  RENAME_VOCABULARY: 'renameVocabulary',
+  DELETE_VOCABULARY: 'deleteVocabulary',
+  SEND_INVITE: 'sendInvite',
+};
 
 /**
  * Converts a LOG entry's eventKey into a human-readable sentence.
@@ -35,23 +52,38 @@ function renderLogSentence(
   entry: GroupChatEntryDto,
   authorEl: React.ReactNode,
   targetEl: React.ReactNode,
+  t: ReturnType<typeof useTranslations>,
 ): React.ReactNode {
-  switch (entry.eventKey) {
-    case 'CREATE_GROUP':          return <>{authorEl} created the group</>;
-    case 'JOIN_GROUP':            return <>{authorEl} joined the group</>;
-    case 'LEAVE_GROUP':           return <>{authorEl} left the group</>;
-    case 'PROMOTE_ADMIN':         return <>{authorEl} promoted {targetEl} to Admin</>;
-    case 'RESIGN_ADMIN':          return <>{authorEl} resigned as Admin</>;
-    case 'RENAME_GROUP':          return <>{authorEl} renamed the group to &quot;{entry.content ?? '?'}&quot;</>;
-    case 'EXPEL_MEMBER':          return <>{authorEl} expelled {targetEl}</>;
-    case 'DELETE_GROUP':          return <>{authorEl} deleted the group</>;
-    case 'UPLOAD_VOCABULARY':     return <>{authorEl} uploaded vocabulary &quot;{entry.content ?? '?'}&quot;</>;
-    case 'SET_ACTIVE_VOCABULARY': return <>{authorEl} set &quot;{entry.content ?? '?'}&quot; as the active vocabulary</>;
-    case 'RENAME_VOCABULARY':     return <>{authorEl} renamed a vocabulary to &quot;{entry.content ?? '?'}&quot;</>;
-    case 'DELETE_VOCABULARY':     return <>{authorEl} deleted vocabulary &quot;{entry.content ?? '?'}&quot;</>;
-    case 'SEND_INVITE':           return <>{authorEl} sent an invitation</>;
-    default:                      return <>{authorEl} performed an unknown action</>;
+  const content = entry.content ?? '?';
+  const i18nKey = EVENT_KEY_TO_I18N[entry.eventKey ?? ''] ?? 'unknown';
+  const key = `logEvents.${i18nKey}` as const;
+
+  const authorTag = (_chunks: React.ReactNode) => authorEl;
+  const targetTag = (_chunks: React.ReactNode) => targetEl;
+
+  if (entry.eventKey === 'PROMOTE_ADMIN' || entry.eventKey === 'EXPEL_MEMBER') {
+    return t.rich(key, {
+      author: authorTag,
+      target: targetTag,
+    });
   }
+
+  if (
+    entry.eventKey === 'RENAME_GROUP' ||
+    entry.eventKey === 'UPLOAD_VOCABULARY' ||
+    entry.eventKey === 'SET_ACTIVE_VOCABULARY' ||
+    entry.eventKey === 'RENAME_VOCABULARY' ||
+    entry.eventKey === 'DELETE_VOCABULARY'
+  ) {
+    return t.rich(key, {
+      author: authorTag,
+      content,
+    });
+  }
+
+  return t.rich(key, {
+    author: authorTag,
+  });
 }
 
 // ─── Timestamp formatting ─────────────────────────────────────────────────────
@@ -66,15 +98,6 @@ function formatTimestamp(isoString: string): string {
   return `${yyyy}-${mm}-${dd}|${hh}:${min}`;
 }
 
-// ─── Type filter colours and labels ──────────────────────────────────────────
-
-const TYPE_LABELS: Record<ChatEntryType, string> = {
-  LOG: 'Log',
-  ADM: 'Adm',
-  GEN: 'Gen',
-  MEM: 'Mem',
-};
-
 const TYPE_COLOURS: Record<ChatEntryType, { active: string; inactive: string }> = {
   LOG: { active: 'bg-foreground text-background', inactive: 'clay-chip-inactive' },
   ADM: { active: 'bg-destructive text-on-primary border-destructive', inactive: 'clay-chip-inactive' },
@@ -86,6 +109,13 @@ const TYPE_COLOURS: Record<ChatEntryType, { active: string; inactive: string }> 
 const ADMIN_TYPES: ChatEntryType[] = ['LOG', 'ADM', 'GEN', 'MEM'];
 const MEMBER_TYPES: ChatEntryType[] = ['LOG', 'GEN'];
 
+const FILTER_KEYS: Record<ChatEntryType, 'log' | 'adm' | 'gen' | 'mem'> = {
+  LOG: 'log',
+  ADM: 'adm',
+  GEN: 'gen',
+  MEM: 'mem',
+};
+
 // ─── Single chat entry row ────────────────────────────────────────────────────
 
 function ChatEntryRow({
@@ -95,6 +125,7 @@ function ChatEntryRow({
   entry: GroupChatEntryDto;
   memberIds: Set<number>;
 }) {
+  const t = useTranslations('chat');
   const colours = TYPE_COLOURS[entry.type];
   const isLog   = entry.type === 'LOG';
 
@@ -118,13 +149,13 @@ function ChatEntryRow({
 
       {/* Type badge */}
       <span className={`shrink-0 rounded px-1 text-xs font-bold ${colours.active}`}>
-        {TYPE_LABELS[entry.type]}
+        {t(`filters.${FILTER_KEYS[entry.type]}`)}
       </span>
 
       {/* Content */}
       {isLog ? (
         <span className="text-foreground">
-          {renderLogSentence(entry, authorEl, targetEl)}
+          {renderLogSentence(entry, authorEl, targetEl, t)}
         </span>
       ) : (
         <span className="text-foreground">
@@ -145,6 +176,7 @@ type Props = {
 };
 
 export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
+  const t = useTranslations('chat');
   const visibleTypes = isAdmin ? ADMIN_TYPES : MEMBER_TYPES;
 
   const [activeFilters, setFilters] = useState<Set<ChatEntryType>>(
@@ -194,7 +226,7 @@ export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
               onClick={() => toggleFilter(type)}
               className={isActive ? colours.active : colours.inactive}
             >
-              {TYPE_LABELS[type]}
+              {t(`filters.${FILTER_KEYS[type]}`)}
             </Chip>
           );
         })}
@@ -203,7 +235,7 @@ export default function GroupChat({ members, chatEntries, isAdmin }: Props) {
       {/* Chat scroll area */}
       <Panel className="h-48 overflow-y-auto p-2 bg-muted">
         {visibleEntries.length === 0 && (
-          <p className="text-sm text-muted-foreground italic">No entries to show.</p>
+          <p className="text-sm text-muted-foreground italic">{t('noEntries')}</p>
         )}
         {visibleEntries.map((entry) => (
           <ChatEntryRow

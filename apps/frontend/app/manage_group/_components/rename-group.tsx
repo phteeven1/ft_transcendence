@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Button, Dialog, Input, Modal } from '../../components/ui';
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export default function RenameGroup({ syncAndRefresh }: Props) {
+  const t = useTranslations('group');
+  const tCommon = useTranslations('common');
   const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
@@ -31,7 +34,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
     if (!newName.trim()) return;
     if (newName.trim() === group.name) {
       setShowModal(false);
-      setResultMessage('The group name was not changed.');
+      setResultMessage(t('rename.unchanged'));
       setShowResult(true);
       return;
     }
@@ -44,12 +47,12 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
       });
       await syncAndRefresh();
       setShowModal(false);
-      setResultMessage(`Group successfully renamed to ${newName.trim()}.`);
+      setResultMessage(t('rename.success', { name: newName.trim() }));
       setShowResult(true);
     } catch (error) {
       console.error('Rename failed:', error);
       setShowModal(false);
-      setResultMessage('Something went wrong. Please try again.');
+      setResultMessage(t('rename.failed'));
       setShowResult(true);
     }
   };
@@ -67,26 +70,26 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
         fullWidth
         className="clay-action-btn"
       >
-        Rename Group
+        {t('renameGroup')}
       </Button>
 
       <Dialog
         open={showModal}
         onClose={handleClose}
-        title="Rename Group"
-        cancelLabel="Cancel"
-        confirmLabel="Rename"
+        title={t('rename.title')}
+        cancelLabel={tCommon('cancel')}
+        confirmLabel={tCommon('rename')}
         onConfirm={handleRename}
         confirmVariant="primary"
         cancelVariant="ghost"
         confirmDisabled={!newName.trim()}
       >
         <Input
-          label="New Group Name"
+          label={t('rename.newNameLabel')}
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder="Enter new group name"
+          placeholder={t('rename.newNamePlaceholder')}
           autoFocus
         />
       </Dialog>

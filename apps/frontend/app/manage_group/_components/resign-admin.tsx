@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Button, Modal } from '../../components/ui';
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default function ResignAdmin({ syncAndRefresh }: Props) {
+  const t = useTranslations('group');
   const { user, group } = useAuth();
   const [showResult, setShowResult] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
@@ -19,28 +21,24 @@ export default function ResignAdmin({ syncAndRefresh }: Props) {
 
   const handleResign = async () => {
     if (isOnlyAdmin) {
-      setResultMessage(
-        'You are the only admin of this group. Promote another member to admin before resigning.',
-      );
+      setResultMessage(t('resign.onlyAdminWarning'));
       setShowResult(true);
       return;
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to resign as admin of ${group.name}? You will become a regular member.`,
+      t('resign.confirm', { groupName: group.name }),
     );
     if (!confirmed) return;
 
     try {
       await groupsApi.demote({ groupId: group.id, userId: user.id, authorId: user.id });
       await syncAndRefresh();
-      setResultMessage(
-        `You have successfully resigned as admin of ${group.name}. You are now a regular member.`,
-      );
+      setResultMessage(t('resign.success', { groupName: group.name }));
       setShowResult(true);
     } catch (error) {
       console.error('Resign failed:', error);
-      setResultMessage('Something went wrong. Please try again.');
+      setResultMessage(t('resign.failed'));
       setShowResult(true);
     }
   };
@@ -58,7 +56,7 @@ export default function ResignAdmin({ syncAndRefresh }: Props) {
         fullWidth
         className="clay-action-btn"
       >
-        Resign as Admin
+        {t('resignAdmin')}
       </Button>
 
       <Modal open={showResult} onClose={handleCloseResult}>

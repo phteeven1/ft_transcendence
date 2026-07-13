@@ -11,6 +11,7 @@ export { invitationsApi } from './invitations';
 export { wordBuildingApi } from './games/word-building.api';
 export { wordSoupApi } from './games/word-soup.api';
 export { chatApi } from './chat';
+export { healthApi } from './health';
 export type {
   ChatEntryType,
   ChatEventKey,
@@ -54,3 +55,4 @@ export type {
   SendInvitationInput,
   AcceptInvitationInput,
 } from './invitations';
+export type { HealthResponse, HealthCheckResult, HealthCheckStatus } from './health';

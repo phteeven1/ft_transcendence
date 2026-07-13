@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { useAuth } from '../../context/auth-context';
@@ -16,6 +17,8 @@ export default function RenameVocabulary({
   selectedVocabulary,
   onRenamed,
 }: Props) {
+  const t = useTranslations('vocabulary');
+  const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const { group, user } = useAuth();
@@ -53,15 +56,15 @@ export default function RenameVocabulary({
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
       >
-        Rename Vocabulary
+        {t('renameVocabulary')}
       </Button>
 
       {selectedVocabulary && (
         <Dialog
           open={isOpen}
           onClose={handleClose}
-          title={`Rename ${selectedVocabulary.name}`}
-          confirmLabel="Rename"
+          title={t('rename.title', { name: selectedVocabulary.name })}
+          confirmLabel={tCommon('rename')}
           onConfirm={handleRename}
           confirmDisabled={!newName.trim()}
         >
@@ -69,7 +72,7 @@ export default function RenameVocabulary({
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="New name"
+            placeholder={t('rename.placeholder')}
             autoComplete="off"
           />
         </Dialog>

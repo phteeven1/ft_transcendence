@@ -10,6 +10,7 @@ how much time remains until automatic start
 */
 
 import { useSyncExternalStore } from 'react';
+import { useTranslations } from 'next-intl';
 import { Game } from '../../types';
 import { Button } from '../../components/ui/button';
 
@@ -45,7 +46,19 @@ function formatElapsed(initiatedTime: string, now: number): string {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
+function getLocalizedGameName(
+  name: string,
+  tLobby: (key: 'wordBuilding' | 'wordSoup') => string,
+): string {
+  const normalized = name.trim().toLowerCase();
+  if (normalized === 'word building') return tLobby('wordBuilding');
+  if (normalized === 'word soup') return tLobby('wordSoup');
+  return name;
+}
+
 export default function PendingGameButton({ game, currentPlayerId, onClick, onForceStart }: Props) {
+  const t = useTranslations('games.pending');
+  const tLobby = useTranslations('games.lobby');
   const now = useSyncExternalStore(
     subscribeToClock,
     getClockSnapshot,
@@ -57,15 +70,15 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
 
   let middleLabel: string;
   if (isInitiator) {
-    middleLabel = 'Click to Start';
+    middleLabel = t('clickToStart');
   } else if (alreadyJoined) {
-    middleLabel = 'Waiting...';
+    middleLabel = t('waiting');
   } else {
-    middleLabel = 'Click to Join';
+    middleLabel = t('clickToJoin');
   }
 
   const elapsed = now > 0 ? formatElapsed(game.initiatedTime, now) : '0:00';
-  const bottomLabel = `${game.players.length} player${game.players.length !== 1 ? 's' : ''}, ${elapsed}`;
+  const bottomLabel = t('playerCount', { count: game.players.length, elapsed });
 
   const isDisabled = !isInitiator && alreadyJoined;
 
@@ -88,7 +101,7 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
       disabled={isDisabled}
       className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
     >
-      <div className="font-semibold">{game.name}</div>
+      <div className="font-semibold">{getLocalizedGameName(game.name, tLobby)}</div>
       <div className="text-xs mt-1 opacity-90">{middleLabel}</div>
       <div className="text-sm font-bold mt-0.5">{bottomLabel}</div>
     </Button>

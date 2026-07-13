@@ -1,13 +1,14 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { invitationsApi, ApiError } from '@/lib/api';
 import { Button, Dialog, Input, Modal } from '../../components/ui';
 
-const DEFAULT_INVITE_TEXT = (groupName: string) =>
-  `Hi, I want to invite you to join the Dictée App, where your child can learn vocabulary lists in a fun and interactive way. Click the link below to join the learning group ${groupName} which I am also part of.`;
-
 export default function SendInvite() {
+  const t = useTranslations('group');
+  const tInvitation = useTranslations('invitation');
+  const tCommon = useTranslations('common');
   const { group, user } = useAuth();
 
   const [showModal, setShowModal] = useState(false);
@@ -21,7 +22,7 @@ export default function SendInvite() {
   if (!group || !user) return null;
 
   const handleOpen = () => {
-    setInviteText(DEFAULT_INVITE_TEXT(group.name));
+    setInviteText(tInvitation('defaultInviteText', { groupName: group.name }));
     setInviteEmail('');
     setInviteStatus('idle');
     setInviteError('');
@@ -53,7 +54,7 @@ export default function SendInvite() {
           ? error.message
           : error instanceof Error
             ? error.message
-            : 'Unknown error',
+            : tCommon('unknownError'),
       );
       setInviteStatus('error');
     }
@@ -67,32 +68,32 @@ export default function SendInvite() {
         fullWidth
         className="clay-action-btn"
       >
-        Send Invite
+        {t('sendInvite')}
       </Button>
 
       {inviteStatus === 'success' ? (
-        <Modal open={showModal} onClose={handleClose} confirmLabel="Close">
+        <Modal open={showModal} onClose={handleClose} confirmLabel={tCommon('close')}>
           <p className="text-primary font-medium">
-            Invitation successfully sent to {inviteEmail}.
+            {t('sendInviteModal.success', { email: inviteEmail })}
           </p>
         </Modal>
       ) : (
         <Dialog
           open={showModal}
           onClose={handleClose}
-          title="Send Invitation"
+          title={t('sendInviteModal.title')}
           wide
           footer={
             <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
               <Button variant="ghost" onClick={handleClose}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button
                 variant="primary"
                 onClick={handleSend}
                 disabled={inviteStatus === 'sending' || !inviteEmail}
               >
-                {inviteStatus === 'sending' ? 'Sending...' : 'Submit'}
+                {inviteStatus === 'sending' ? tCommon('sendingEllipsis') : tCommon('submit')}
               </Button>
             </div>
           }
@@ -100,7 +101,7 @@ export default function SendInvite() {
           <div className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1">
-                Invitation
+                {t('sendInviteModal.invitationLabel')}
               </label>
               <textarea
                 value={inviteText}
@@ -110,16 +111,16 @@ export default function SendInvite() {
               />
             </div>
             <Input
-              label="Email"
+              label={tCommon('email')}
               type="email"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="recipient@example.com"
+              placeholder={t('sendInviteModal.emailPlaceholder')}
             />
 
             {inviteStatus === 'error' && (
               <p className="text-destructive text-sm">
-                Sending invitation failed: {inviteError}
+                {t('sendInviteModal.failedPrefix')} {inviteError}
               </p>
             )}
           </div>

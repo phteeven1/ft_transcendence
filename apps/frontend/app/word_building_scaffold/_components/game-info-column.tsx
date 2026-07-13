@@ -6,6 +6,7 @@
 //   - Clue list (across / down)
 //   - "Puzzle solved!" banner
 
+import { useTranslations } from 'next-intl';
 import type { ClueEntry } from '@/lib/api/games/word-building.types';
 
 type ScoreEntry = {
@@ -44,16 +45,27 @@ export function GameInfoColumn({
   cluesDown,
   solved,
 }: GameInfoColumnProps) {
+  const t = useTranslations('games.wordBuilding');
+  const tInfo = useTranslations('games.info');
+  const tCommon = useTranslations('common');
+  const tLobby = useTranslations('games.lobby');
   const sortedScores = [...scores].sort((a, b) => b.score - a.score);
+  const normalizedGameName = gameName.trim().toLowerCase();
+  const displayGameName =
+    normalizedGameName === 'word building'
+      ? tLobby('wordBuilding')
+      : normalizedGameName === 'word soup'
+        ? tLobby('wordSoup')
+        : gameName;
 
   return (
     <aside className="flex flex-col gap-4 w-56 text-sm overflow-y-auto max-h-screen">
       {/* Game header */}
       <div>
-        <h2 className="font-heading font-bold text-lg text-foreground">{gameName}</h2>
+        <h2 className="font-heading font-bold text-lg text-foreground">{displayGameName}</h2>
         {startedTime && (
           <p className="text-muted-foreground text-xs">
-            Started {new Date(startedTime).toLocaleTimeString()}
+            {tInfo('startedAt', { time: new Date(startedTime).toLocaleTimeString() })}
           </p>
         )}
       </div>
@@ -61,20 +73,20 @@ export function GameInfoColumn({
       {/* Solved banner */}
       {solved && (
         <div className="clay-panel px-3 py-2 text-primary font-semibold font-heading">
-          🎉 Puzzle solved!
+          {t('puzzleSolved')}
         </div>
       )}
 
       {/* Scoreboard */}
       <section>
-        <h3 className="font-semibold font-heading text-foreground mb-1">Scores</h3>
+        <h3 className="font-semibold font-heading text-foreground mb-1">{t('scores')}</h3>
         {sortedScores.length === 0 ? (
-          <p className="text-muted-foreground italic">No points yet</p>
+          <p className="text-muted-foreground italic">{t('noPointsYet')}</p>
         ) : (
           <ul className="space-y-0.5">
             {sortedScores.map(({ playerId, score }) => (
               <li key={playerId} className="flex justify-between text-foreground">
-                <span>{playerNames.get(playerId) ?? `Player ${playerId}`}</span>
+                <span>{playerNames.get(playerId) ?? tCommon('playerNumber', { id: playerId })}</span>
                 <span className="font-mono font-bold">{score}</span>
               </li>
             ))}
@@ -85,7 +97,7 @@ export function GameInfoColumn({
       {/* Clue list — across */}
       {cluesAcross.length > 0 && (
         <section>
-          <h3 className="font-semibold font-heading text-foreground mb-1">Across</h3>
+          <h3 className="font-semibold font-heading text-foreground mb-1">{t('across')}</h3>
           <ol className="space-y-1 list-none">
             {cluesAcross
               .slice()
@@ -103,7 +115,7 @@ export function GameInfoColumn({
       {/* Clue list — down */}
       {cluesDown.length > 0 && (
         <section>
-          <h3 className="font-semibold font-heading text-foreground mb-1">Down</h3>
+          <h3 className="font-semibold font-heading text-foreground mb-1">{t('down')}</h3>
           <ol className="space-y-1 list-none">
             {cluesDown
               .slice()

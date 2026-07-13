@@ -11,6 +11,7 @@
 */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
@@ -25,6 +26,8 @@ export default function PromoteToAdmin({
   currentGroupMembers,
   syncAndRefresh,
 }: Props) {
+  const t = useTranslations('group');
+  const tCommon = useTranslations('common');
   const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -59,15 +62,13 @@ export default function PromoteToAdmin({
     );
   };
 
-  // guards against no members selected - then skips fetch and shows "no members selected"
   const handlePromote = async () => {
     if (selectedIds.length === 0) {
       setShowModal(false);
-      setResultMessage('No members were selected for promotion to admin.');
+      setResultMessage(t('promote.noSelection'));
       setShowResult(true);
       return;
     }
-    // POSTs all requests at once using Promise.all
     try {
       await Promise.all(
         selectedIds.map((userId) =>
@@ -75,33 +76,32 @@ export default function PromoteToAdmin({
         ),
       );
 
-      // finds names of every one who was promoted
       const promotedNames = currentGroupMembers
         .filter((m) => selectedIds.includes(m.id))
         .map((m) => m.name);
 
-      // formats to differentiate between one and several promotions
-      const namesString =
+      const message =
         promotedNames.length === 1
-          ? promotedNames[0]
-          : promotedNames.slice(0, -1).join(', ') +
-            ' and ' +
-            promotedNames[promotedNames.length - 1];
+          ? t('promote.successOne', {
+              name: promotedNames[0],
+              groupName: group.name,
+            })
+          : t('promote.successMany', {
+              names:
+                promotedNames.slice(0, -1).join(', ') +
+                ` ${tCommon('and')} ` +
+                promotedNames[promotedNames.length - 1],
+              groupName: group.name,
+            });
 
-      const wasWere = promotedNames.length === 1 ? 'was' : 'were';
-      const adminText = promotedNames.length === 1 ? 'an admin' : 'admins';
-
-      // update state and show result
       await syncAndRefresh();
       setShowModal(false);
-      setResultMessage(
-        `${namesString} ${wasWere} promoted to ${adminText} in group ${group.name}.`,
-      );
+      setResultMessage(message);
       setShowResult(true);
     } catch (error) {
       console.error('Promotion failed:', error);
       setShowModal(false);
-      setResultMessage('Something went wrong. Please try again.');
+      setResultMessage(t('promote.failed'));
       setShowResult(true);
     }
   };
@@ -114,27 +114,27 @@ export default function PromoteToAdmin({
         fullWidth
         className="clay-action-btn"
       >
-        Promote to Admin
+        {t('promoteToAdmin')}
       </Button>
 
       <Dialog
         open={showModal}
         onClose={handleClose}
-        title="Promote to Admin"
+        title={t('promote.title')}
         scrollable
         footer={
           <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
             <Button variant="ghost" onClick={handleClose}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button variant="accent" onClick={handlePromote}>
-              Promote
+              {t('promote.promoteButton')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-muted-foreground mb-4">
-          Select members to promote.
+          {t('promote.selectMembers')}
         </p>
         <ul>
           {admins.map((member) => (
@@ -143,7 +143,7 @@ export default function PromoteToAdmin({
               className="flex items-center justify-between py-2 border-b border-border"
             >
               <span className="text-muted-foreground">{member.name}</span>
-              <span className="text-xs text-muted-foreground">Admin</span>
+              <span className="text-xs text-muted-foreground">{tCommon('admin')}</span>
             </li>
           ))}
           {nonAdmins.map((member) => {

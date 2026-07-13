@@ -8,6 +8,7 @@ players always belong to both a group and a user
 */
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { playersApi } from '@/lib/api';
@@ -23,6 +24,7 @@ import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
 
 export default function ManagePlayers() {
+  const t = useTranslations('players');
   const { user, group, player } = useAuth();
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -97,7 +99,7 @@ export default function ManagePlayers() {
       <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
         {group.name}
       </h1>
-      <p className="text-sm text-muted-foreground mb-6 text-center">Manage Players</p>
+      <p className="text-sm text-muted-foreground mb-6 text-center">{t('title')}</p>
 
       <div className="md:grid md:grid-cols-3 gap-6">
         <div className="col-span-1 mb-6 md:mb-0">
@@ -133,7 +135,7 @@ export default function ManagePlayers() {
             className="clay-action-btn"
             onClick={() => router.push('/manage_group')}
           >
-            Back to Group
+            {t('backToGroup')}
           </Button>
         </div>
       </div>

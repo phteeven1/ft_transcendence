@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
@@ -10,19 +11,10 @@ type Props = {
   onImported: (vocabulary: Vocabulary) => void;
 };
 
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'it', name: 'Italian' },
-  { code: 'pt', name: 'Portuguese' },
-  { code: 'ru', name: 'Russian' },
-  { code: 'zh', name: 'Chinese' },
-  { code: 'ja', name: 'Japanese' },
-];
+const LANGUAGE_CODES = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja'] as const;
 
 export default function ImportVocabulary({ onImported }: Props) {
+  const t = useTranslations('vocabulary');
   const { user, group } = useAuth();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -40,8 +32,8 @@ export default function ImportVocabulary({ onImported }: Props) {
     if (!selectedFile || !user || !group) return;
     setIsExtracting(true);
     try {
-      const fromLangName = LANGUAGES.find(l => l.code === fromLanguage)?.name || fromLanguage;
-      const toLangName = LANGUAGES.find(l => l.code === toLanguage)?.name || toLanguage;
+      const fromLangName = t(`languages.${fromLanguage}` as 'languages.en');
+      const toLangName = t(`languages.${toLanguage}` as 'languages.en');
       const data = await vocabulariesApi.extract(selectedFile, fromLangName, toLangName);
 
       const created = await vocabulariesApi.create({
@@ -57,9 +49,7 @@ export default function ImportVocabulary({ onImported }: Props) {
     } catch (error: unknown) {
       console.error('AI extraction failed', error);
       const message =
-        error instanceof Error
-          ? error.message
-          : 'AI extraction failed. Please ensure the file has at least 5 words and try again.';
+        error instanceof Error ? error.message : t('extractionFailed');
       alert(message);
     } finally {
       setIsExtracting(false);
@@ -68,30 +58,30 @@ export default function ImportVocabulary({ onImported }: Props) {
 
   return (
     <Card className="col-span-2 space-y-4">
-      <h2 className="font-heading text-lg font-semibold text-foreground">AI Vocabulary Import</h2>
+      <h2 className="font-heading text-lg font-semibold text-foreground">{t('importTitle')}</h2>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-foreground mb-1">From Language</label>
+          <label className="block text-sm font-semibold text-foreground mb-1">{t('fromLanguage')}</label>
           <select
             value={fromLanguage}
             onChange={(e) => setFromLanguage(e.target.value)}
             className="clay-input w-full text-sm"
           >
-            {LANGUAGES.map(lang => (
-              <option key={lang.code} value={lang.code}>{lang.name}</option>
+            {LANGUAGE_CODES.map((code) => (
+              <option key={code} value={code}>{t(`languages.${code}`)}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-foreground mb-1">To Language</label>
+          <label className="block text-sm font-semibold text-foreground mb-1">{t('toLanguage')}</label>
           <select
             value={toLanguage}
             onChange={(e) => setToLanguage(e.target.value)}
             className="clay-input w-full text-sm"
           >
-            {LANGUAGES.map(lang => (
-              <option key={lang.code} value={lang.code}>{lang.name}</option>
+            {LANGUAGE_CODES.map((code) => (
+              <option key={code} value={code}>{t(`languages.${code}`)}</option>
             ))}
           </select>
         </div>
@@ -113,9 +103,9 @@ export default function ImportVocabulary({ onImported }: Props) {
         {isExtracting ? (
           <span className="flex items-center justify-center">
             <svg className="animate-spin h-5 w-5 mr-3 border-2 border-current border-t-transparent rounded-full" viewBox="0 0 24 24"></svg>
-            AI is reading your file...
+            {t('aiReading')}
           </span>
-        ) : 'Extract and Save with AI'}
+        ) : t('extractAndSave')}
       </Button>
     </Card>
   );

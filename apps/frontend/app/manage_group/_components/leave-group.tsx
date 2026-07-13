@@ -10,6 +10,7 @@
   4. error: shown if backend call fails.
 */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,8 @@ type ModalState =
   | 'error';
 
 export default function LeaveGroup() {
+  const t = useTranslations('group');
+  const tCommon = useTranslations('common');
   const { user, group, refreshUser, leaveGroup } = useAuth();
   const router = useRouter();
   const [modal, setModal] = useState<ModalState>('none');
@@ -34,14 +37,10 @@ export default function LeaveGroup() {
     group.admins.includes(user.id) && group.admins.length === 1;
   const isLastMember = totalMembers === 1;
 
-  // opens initial confirmation modal
   const handleClick = () => {
     setModal('confirmLeave');
   };
 
-  // checks which scenario applies. If user is only admin, shows onlyAdmin modal.
-  // if user is last member, shows confirmLastMember modal.
-  // otherwise, calls executeLeave
   const handleConfirmLeave = () => {
     if (isOnlyAdmin && !isLastMember) {
       setModal('onlyAdmin');
@@ -54,8 +53,6 @@ export default function LeaveGroup() {
     executeLeave();
   };
 
-  // POSTs to /groups/leave then refreshes the user in auth context
-  // and clears the group from auth context via leaveGroup(), then navigates to /dashboard
   const executeLeave = async () => {
     if (!user || !group) return;
     try {
@@ -77,49 +74,47 @@ export default function LeaveGroup() {
         fullWidth
         className="clay-action-btn"
       >
-        Leave Group
+        {t('leaveGroup')}
       </Button>
 
       <Dialog
         open={modal === 'confirmLeave'}
         onClose={() => setModal('none')}
-        title="Leave Group?"
-        cancelLabel="Cancel"
-        confirmLabel="Leave"
+        title={t('leave.confirmTitle')}
+        cancelLabel={tCommon('cancel')}
+        confirmLabel={tCommon('leave')}
         onConfirm={handleConfirmLeave}
         confirmVariant="primary"
         cancelVariant="ghost"
       >
-        Are you sure you want to permanently leave {group.name}?
+        {t('leave.confirmMessage', { groupName: group.name })}
       </Dialog>
 
       <Modal
         open={modal === 'onlyAdmin'}
         onClose={() => setModal('none')}
       >
-        You are the only admin of this group. Before leaving, you need to
-        make another member admin.
+        {t('leave.onlyAdminBlock')}
       </Modal>
 
       <Dialog
         open={modal === 'confirmLastMember'}
         onClose={() => setModal('none')}
-        title="Group will be deleted"
-        cancelLabel="Cancel"
-        confirmLabel="Leave"
+        title={t('leave.lastMemberTitle')}
+        cancelLabel={tCommon('cancel')}
+        confirmLabel={tCommon('leave')}
         onConfirm={executeLeave}
         confirmVariant="primary"
         cancelVariant="ghost"
       >
-        You are the last member of {group.name}. If you leave, the group
-        will be permanently removed.
+        {t('leave.lastMemberMessage', { groupName: group.name })}
       </Dialog>
 
       <Modal
         open={modal === 'error'}
         onClose={() => setModal('none')}
       >
-        Something went wrong. Please try again.
+        {t('leave.failed')}
       </Modal>
     </>
   );

@@ -11,10 +11,12 @@ Deep dives for modules claimed at 42 evaluation. Summary table: [README.md](../.
 | Web Minor — ORM (Prisma + PostgreSQL) | 1 | [orm-prisma.md](./orm-prisma.md) |
 | Web Minor — File upload | 1 | [file-upload.md](./file-upload.md) |
 | Web Minor — Custom design system | 1 | [design-system.md](./design-system.md) |
+| Web Minor — i18n (3 languages) | 1 | [i18n.md](./i18n.md) |
 | User Major — Organization system (groups) | 2 | [groups-and-chat.md](./groups-and-chat.md) |
 | AI Minor — Image recognition (OCR) | 1 | [image-recognition.md](./image-recognition.md) |
 | Gaming Major — Word Building game | 2 | [gaming-word-building.md](./gaming-word-building.md) |
 | Gaming Major — Remote players | 2 | [gaming-remote-players.md](./gaming-remote-players.md) |
 | Gaming Major — Multiplayer 3+ | 2 | [gaming-multiplayer-3-plus.md](./gaming-multiplayer-3-plus.md) |
+| Devops Minor — Health check | 1 | [health-check.md](./health-check.md) |
 
-**Total: 16 points**
+**Total: 18 points**

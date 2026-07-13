@@ -7,6 +7,7 @@
   - isLoading: controls loading state
   - onSelect: callback to the parent when player is clicked
 */
+import { useTranslations } from 'next-intl';
 import { Player } from '../../types';
 
 type Props = {
@@ -22,16 +23,19 @@ export default function PlayerList({
   isLoading,
   onSelect,
 }: Props) {
+  const t = useTranslations('players');
+  const tCommon = useTranslations('common');
+
   return (
     <ul className="clay-panel overflow-y-auto max-h-64 md:max-h-full md:h-full">
       <li className="border-b border-border px-3 py-2">
-        <span className="font-heading text-lg font-semibold text-foreground">Your Players</span>
+        <span className="font-heading text-lg font-semibold text-foreground">{t('yourPlayers')}</span>
       </li>
       {isLoading && (
-        <li className="px-3 py-2 text-muted-foreground text-sm">Loading...</li>
+        <li className="px-3 py-2 text-muted-foreground text-sm">{tCommon('loadingEllipsis')}</li>
       )}
       {!isLoading && players.length === 0 && (
-        <li className="px-3 py-2 text-muted-foreground text-sm italic">No players yet.</li>
+        <li className="px-3 py-2 text-muted-foreground text-sm italic">{t('noPlayers')}</li>
       )}
       {!isLoading && players.map((player) => (
         <li key={player.id} className="border-b border-border last:border-b-0">

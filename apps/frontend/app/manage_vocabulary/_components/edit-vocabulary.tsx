@@ -1,5 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { Button } from '../../components/ui/button';
@@ -19,6 +20,8 @@ export default function EditVocabulary({
   selectedVocabulary,
   onEdited,
 }: Props) {
+  const t = useTranslations('vocabulary');
+  const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
   const wordRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -86,7 +89,7 @@ export default function EditVocabulary({
     const validEntries = entries.filter(e => e.word.trim() !== '' || e.meaning.trim() !== '');
 
     if (validEntries.length < 5) {
-      alert("A vocabulary list must have at least 5 words.");
+      alert(t('minimumWordsAlert'));
       return;
     }
 
@@ -115,33 +118,33 @@ export default function EditVocabulary({
         onClick={handleOpen}
         disabled={!isActive}
       >
-        Edit Vocabulary
+        {t('editVocabulary')}
       </Button>
 
       {selectedVocabulary && (
         <Dialog
           open={isOpen}
           onClose={() => setIsOpen(false)}
-          title={`Edit: ${selectedVocabulary.name}`}
+          title={t('edit.title', { name: selectedVocabulary.name })}
           wide
           scrollable
           footer={
             <div className="flex gap-3 shrink-0 border-t border-border pt-4">
               <Button variant="accent" fullWidth onClick={handleCommit}>
-                Commit Changes
+                {t('commitChanges')}
               </Button>
               <Button variant="ghost" fullWidth onClick={() => setIsOpen(false)}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
             </div>
           }
         >
           <div className="grid grid-cols-[1fr_1fr_40px] gap-x-4 gap-y-2 items-center">
             <div className="font-semibold text-muted-foreground text-sm pb-1">
-              Word
+              {t('wordColumn')}
             </div>
             <div className="font-semibold text-muted-foreground text-sm pb-1">
-              Meaning
+              {t('meaningColumn')}
             </div>
             <div></div>
 
@@ -172,7 +175,7 @@ export default function EditVocabulary({
                 <button
                   onClick={() => handleDeleteRow(index)}
                   disabled={entries.length <= 5}
-                  title={entries.length <= 5 ? "Minimum 5 words required" : "Delete word"}
+                  title={entries.length <= 5 ? t('minimumWordsTitle') : t('deleteWordTitle')}
                   className={`text-lg font-bold rounded-full w-8 h-8 flex items-center justify-center transition-colors ${
                     entries.length <= 5
                       ? 'text-muted-foreground cursor-not-allowed'
@@ -189,7 +192,7 @@ export default function EditVocabulary({
             onClick={handleAddRow}
             className="mt-4 flex items-center gap-2 text-sm text-primary hover:text-accent font-medium"
           >
-            <span className="text-xl">+</span> Add Word Pair
+            <span className="text-xl">+</span> {t('addWordPair')}
           </button>
         </Dialog>
       )}

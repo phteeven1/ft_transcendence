@@ -12,6 +12,7 @@ Three responsive tiers:
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../types';
 import MemberList from './_components/member-list';
@@ -34,6 +35,7 @@ import MemberToAdmin from './_components/member-to-admin';
 import { PageShell } from '../components/ui';
 
 export default function ManageGroup() {
+  const t = useTranslations('group');
   const { user, group, syncGroup, leaveGroup } = useAuth();
   const router = useRouter();
   const [currentGroupMembers, setCurrentGroupMembers] = useState<Member[]>([]);
@@ -200,7 +202,7 @@ export default function ManageGroup() {
         <div className="hidden lg:block text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground">{group.name}</h1>
           <p className="text-sm text-muted-foreground">
-            You are {isAdmin ? 'an admin' : 'a member'} of this group.
+            {isAdmin ? t('roleAdmin') : t('roleMember')}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-6">

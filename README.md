@@ -41,6 +41,8 @@ Make language homework engaging by turning shared vocabulary lists into live, gr
 | **Lobby** | Real-time game list, pre-game puzzles (Scramble, Means-What) |
 | **Word Building** | Multiplayer crossword, WebSockets, scores, cell locking, drag-and-drop tiles |
 | **Design** | Claymorphism UI, 14 reusable components, design tokens | `components/ui/`, [design-system.md](./docs/modules/design-system.md) |
+| **i18n** | English, German, French via next-intl + flag switcher | [i18n.md](./docs/modules/i18n.md) |
+| **Health** | `GET /health` API + `/status` dashboard | [health-check.md](./docs/modules/health-check.md) |
 | **DevOps** | Docker Compose, GitHub Actions CI, local dev script |
 
 See [PRODUCT_DESCRIPTION.md](./PRODUCT_DESCRIPTION.md) for the full product vision and [EVAL_MODULES.md](./EVAL_MODULES.md) for eval planning notes.
@@ -137,13 +139,15 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | ORM | Minor (Web) | 1 | Prisma 7 + PostgreSQL | [orm-prisma.md](./docs/modules/orm-prisma.md) |
 | File upload | Minor (Web) | 1 | Multer, type/size validation, vocab import | [file-upload.md](./docs/modules/file-upload.md) |
 | Custom design system | Minor (Web) | 1 | Claymorphism, 14 UI components, tokens | [design-system.md](./docs/modules/design-system.md) |
+| i18n (3 languages) | Minor (Accessibility) | 1 | next-intl, en/de/fr, flag switcher | [i18n.md](./docs/modules/i18n.md) |
+| Health check | Minor (Devops) | 1 | `GET /health`, `/status` page, DB probe | [health-check.md](./docs/modules/health-check.md) |
 | Organization system | Major (User) | 2 | Groups, roles, invitations | [groups-and-chat.md](./docs/modules/groups-and-chat.md) |
 | Image recognition | Minor (AI) | 1 | Tesseract OCR + GPT-4o structuring | [image-recognition.md](./docs/modules/image-recognition.md) |
 | Complete web-based game | Major (Gaming) | 2 | Word Building crossword | [gaming-word-building.md](./docs/modules/gaming-word-building.md) |
 | Remote players | Major (Gaming) | 2 | Live sync over WebSockets | [gaming-remote-players.md](./docs/modules/gaming-remote-players.md) |
 | Multiplayer 3+ | Major (Gaming) | 2 | Multiple `GamePlayer` records per game | [gaming-multiplayer-3-plus.md](./docs/modules/gaming-multiplayer-3-plus.md) |
 
-**Total: 16 points** (above the 14-point minimum)
+**Total: 18 points** (above the 14-point minimum)
 
 ### Close / not yet claimed
 
@@ -152,19 +156,19 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | SSR | 1 | Next.js App Router; most pages are client components |
 | LLM interface | 2 | GPT-4o extraction works; no streaming/rate-limit UI yet |
 | Gamification | 1 | Live scores only; no badges/XP/leaderboard |
-| Health check | 1 | Postgres healthcheck in Docker; no app `/health` yet |
 | User interaction (chat + profile + **friends**) | 2 | Chat + profiles yes; **no friends system** |
-| i18n (3 languages) | 1 | Flag switcher only; UI not translated |
 | Standard user management | 2 | Missing avatars, friends, online status; passwords not hashed |
 
 ### Point calculation
 
 ```
-Web:     Frameworks (2) + WebSockets (2) + ORM (1) + File upload (1) + Design system (1) = 7
+Web:     Frameworks (2) + WebSockets (2) + ORM (1) + File upload (1) + Design system (1)
+         + i18n (1) = 8
 User:    Organization / groups (2)                                       = 2
 AI:      Image recognition (1)                                           = 1
 Gaming:  Game (2) + Remote (2) + Multiplayer 3+ (2)                     = 6
-                                                              Total = 16
+Devops:  Health check (1)                                                = 1
+                                                              Total = 18
 ```
 
 ---
@@ -298,9 +302,8 @@ These items are **not yet production-ready** and may block parts of the eval if 
 1. **Password hashing** — passwords stored/compared in plain text; hashing planned
 2. **No JWT auth guards** on API routes — parent auth is client-side context
 3. **Friends system** — not implemented (groups used instead)
-4. **Full i18n** — language flag only; UI strings are mostly English
-5. **Word Soup** — scaffold/placeholder only
-6. **Redis** — in Docker Compose but not used by application logic yet
+4. **Word Soup** — scaffold/placeholder only
+5. **Redis** — in Docker Compose but not used by application logic yet
 
 ---
 

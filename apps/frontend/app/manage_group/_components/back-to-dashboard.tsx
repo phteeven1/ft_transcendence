@@ -1,8 +1,12 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '../../components/ui';
 
 export default function BackToDashboard() {
+  const t = useTranslations('group');
   const { leaveGroup } = useAuth();
   const router = useRouter();
 
@@ -19,7 +23,7 @@ export default function BackToDashboard() {
       fullWidth
       className="clay-action-btn"
     >
-      Back to Dashboard
+      {t('backToDashboard')}
     </Button>
   );
 }
