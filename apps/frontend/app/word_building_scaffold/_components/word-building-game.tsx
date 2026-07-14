@@ -430,9 +430,9 @@ export default function WordBuildingGame() {
             </span>
           )}
         </div>
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
           {/* Grid */}
-          <main className="flex flex-col gap-2">
+          <main className="flex flex-col gap-2 min-w-0 w-full lg:flex-1 lg:max-w-[600px]">
             <GameCourt
               court={visibleCourt}
               selectedRow={selectedRow}
@@ -444,22 +444,28 @@ export default function WordBuildingGame() {
             />
             {/* Tile rack — drag language-specific tiles onto cells as an alternative to keyboard */}
             <TileRack letters={availableLetters} disabled={solved} />
+          </main>
+
+          {/* Info panel + controls — sticky on desktop, stacked on mobile */}
+          <div className="w-full lg:w-56 lg:shrink-0 flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+            {/* Scrollable clues / scores section */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <GameInfoColumn
+                gameName={gameName}
+                startedTime={startedTime}
+                playerNames={playerNames}
+                scores={scores}
+                cluesAcross={cluesAcross}
+                cluesDown={cluesDown}
+                solved={solved}
+              />
+            </div>
+            {/* Controls always visible at bottom — separated from the active gameplay area */}
             <GameControls
               onLeave={() => setShowAbandonModal(true)}
               onGameOver={handleGameOver}
             />
-          </main>
-
-          {/* Info panel */}
-          <GameInfoColumn
-            gameName={gameName}
-            startedTime={startedTime}
-            playerNames={playerNames}
-            scores={scores}
-            cluesAcross={cluesAcross}
-            cluesDown={cluesDown}
-            solved={solved}
-          />
+          </div>
         </div>
       </div>
 

@@ -44,8 +44,8 @@ export function GameCourt({ court, selectedRow, selectedCol, onCellClick, onCell
 
   return (
     <div
-      className="inline-grid gap-px bg-gray-500 border border-gray-500 rounded overflow-hidden"
-      style={{ gridTemplateColumns: `repeat(${cols}, 2rem)` }}
+      className="w-full grid gap-px bg-gray-500 border border-gray-500 rounded overflow-hidden"
+      style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
     >
       {court.map((row, r) =>
         row.map((cell, c) => {
