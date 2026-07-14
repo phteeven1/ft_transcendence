@@ -47,14 +47,28 @@ import {
 const COURT_COLS = 18;
 /** Fixed board height - must match game-court.tsx COURT_ROWS */
 const COURT_ROWS = 18;
-/** Minimum fraction of vocabulary that must be placed (0.5 = 50%) */
-const MIN_PLACEMENT_RATIO = 0.5;
+/** Quality guarantee: Generate up to 3 puzzles and pick the densest one */
+const CANDIDATE_COUNT = 3;
+/** Early exit threshold: Stop generating if placement ratio >= 80% */
+const EARLY_EXIT_PLACEMENT_RATIO = 0.8;
+/** Persist mid-game state every N placements to prevent data loss on server crash */
+const PERSISTENCE_INTERVAL = 5;
+
+/**
+ * Extended state interface that caches expensive computations.
+ * This prevents recomputing board offsets and clue maps on every single keystroke.
+ */
+interface InternalLiveGameState extends ILiveGameState {
+  offsetRow: number;
+  offsetCol: number;
+  clueNumberMap: Map<string, number>;
+}
 
 @Injectable()
 export class WordBuildingService {
   private readonly logger = new Logger(WordBuildingService.name);
   /** In-memory live state, keyed by gameId. Evicted on puzzle completion. */
-  private readonly liveGames = new Map<number, ILiveGameState>();
+  private readonly liveGames = new Map<number, InternalLiveGameState>();
   /** Timer handles for auto-expiring soft cell locks. Key: "gameId:row:col" */
   private readonly lockTimers = new Map<string, NodeJS.Timeout>();
 
@@ -105,28 +119,35 @@ export class WordBuildingService {
       clue: vocab.meanings[i] ?? '',
     }));
 
-    // Quality guarantee: generate puzzle, retry once if too sparse
-    const engine1 = new WordBuildingPuzzleEngine(Math.min(COURT_COLS, COURT_ROWS), 80, 12);
-    const result1 = engine1.generate(entries);
-    
-    let result = result1;
-    const placementRatio = result1.placements.length / entries.length;
-    
-    if (placementRatio < MIN_PLACEMENT_RATIO) {
-      this.logger.warn(
-        `Puzzle quality below threshold (${(placementRatio * 100).toFixed(1)}%). Retrying with fresh seed...`,
-      );
-      const engine2 = new WordBuildingPuzzleEngine(Math.min(COURT_COLS, COURT_ROWS), 80, 12);
-      const result2 = engine2.generate(entries);
-      
-      // Keep better result (more placements)
-      result = result2.placements.length > result1.placements.length ? result2 : result1;
-      
+    // Quality guarantee: generate multiple puzzles and pick the best one
+    let bestResult: ReturnType<typeof WordBuildingPuzzleEngine.prototype.generate> | null = null;
+    let maxPlacedWords = -1;
+
+    for (let i = 0; i < CANDIDATE_COUNT; i++) {
+      const engine = new WordBuildingPuzzleEngine(Math.min(COURT_COLS, COURT_ROWS), 80, 12);
+      const result = engine.generate(entries);
+
+      const placedCount = result.placements.length;
+      const placementRatio = placedCount / entries.length;
+
       this.logger.log(
-        `Retry complete: ${result1.placements.length} → ${result2.placements.length} placements. ` +
-        `Using ${result === result2 ? 'retry' : 'original'}.`,
+        `Candidate ${i + 1}/${CANDIDATE_COUNT}: ${placedCount} words placed ` +
+        `(${(placementRatio * 100).toFixed(1)}% of vocabulary)`,
       );
+
+      if (placedCount > maxPlacedWords) {
+        maxPlacedWords = placedCount;
+        bestResult = result;
+      }
+
+      // Early exit: stop if we achieve 80%+ placement ratio
+      if (placementRatio >= EARLY_EXIT_PLACEMENT_RATIO) {
+        this.logger.log(`Early exit: ${(placementRatio * 100).toFixed(1)}% threshold met`);
+        break;
+      }
     }
+
+    const result = bestResult!;
 
     // Pad trimmed puzzle to fixed board size (centered)
     const solution   = this.padGrid(result.solution, COURT_ROWS, COURT_COLS);
@@ -197,10 +218,16 @@ export class WordBuildingService {
   async placeLetter(dto: IPlaceLetterDto): Promise<IGameStatePayload | null> {
     const { gameId, playerId, row, col, letter } = dto;
     
-    // Normalize letter: identical pipeline to prepareEntries() in the puzzle engine so
-    // comparison against the stored solution is always consistent (e.g. ß → SS).
-    const normalized = letter.normalize('NFC').toUpperCase().replace(/[^\p{L}]/gu, '');
-    if (!normalized || normalized.length !== 1) return null;
+  // Normalize letter: identical pipeline to prepareEntries() in the puzzle engine so
+  // comparison against the stored solution is always consistent.
+  // Custom mapping preserves 'ß' as a single character — .toUpperCase() would expand it to 'SS'.
+  const normalized = letter
+    .normalize('NFC')
+    .split('')
+    .map(char => (char === 'ß' || char === 'ẞ') ? 'ß' : char.toUpperCase())
+    .join('')
+    .replace(/[^\p{L}]/gu, '');
+  if (!normalized || normalized.length !== 1) return null;
 
     // Load live state (from memory or hydrate from database)
     const state = await this.loadOrHydrate(gameId);
@@ -238,6 +265,12 @@ export class WordBuildingService {
     // Build payload with current state
     const payload = this.buildPayload(state);
 
+    // Persist mid-game state periodically to prevent data loss on server restart
+    if (state.revision % PERSISTENCE_INTERVAL === 0) {
+      await this.persistMidGameState(gameId, state);
+      this.logger.debug(`Mid-game state persisted at revision ${state.revision}`);
+    }
+
     // Persist completion if puzzle is fully solved
     if (payload.solved) {
       await this.persistCompletion(gameId, state);
@@ -269,21 +302,21 @@ export class WordBuildingService {
 
   /**
    * Builds the live payload sent to the client after a letter placement or reconnect.
-   * This keeps clue numbers, scores, and solved state in sync with the authoritative grid.
-   *
-   * @param state Current in-memory crossword state.
-   * @returns The websocket payload broadcast to the game room.
+   * 
+   * OPTIMIZATION:
+   * This method is called on EVERY keystroke (via WebSocket). To prevent redundant computation,
+   * it relies on `offsetRow`, `offsetCol`, and `clueNumberMap` being pre-calculated and cached 
+   * in the `InternalLiveGameState` during `loadOrHydrate()`. This reduces the per-keystroke 
+   * complexity from O(rows × cols + clues) down to just the O(rows × cols) grid scan required 
+   * to build the `visibleCourt` array.
+   * 
+   * @param state The current in-memory crossword state (with cached offsets and clue map).
+   * @returns The WebSocket payload broadcast to the game room.
    */
-  private buildPayload(state: ILiveGameState): IGameStatePayload {
-    const { solution, playerGrid, creditGrid, scores, revision, clues } = state;
+  private buildPayload(state: InternalLiveGameState): IGameStatePayload {
+    const { solution, playerGrid, creditGrid, scores, revision, clueNumberMap } = state;
     const rows = solution.length;
     const cols = solution[0]?.length ?? 0;
-
-    const { offsetRow, offsetCol } = this.getBoardOffset(solution);
-    const clueNumberMap = new Map<string, number>();
-    for (const entry of [...clues.across, ...clues.down]) {
-      clueNumberMap.set(`${entry.row + offsetRow},${entry.col + offsetCol}`, entry.number);
-    }
 
     let allCorrect = true;
     const visibleCourt: CourtCell[][] = [];
@@ -320,6 +353,25 @@ export class WordBuildingService {
       solved:  allCorrect,
       revision,
     };
+  }
+
+  /**
+   * Persists the current mid-game state to the database.
+   * Called periodically (every PERSISTENCE_INTERVAL revisions) to ensure that if the 
+   * Node process crashes, players only lose a few letters of progress rather than the whole game.
+   * 
+   * @param gameId The ID of the game being played.
+   * @param state The current live game state.
+   */
+  private async persistMidGameState(gameId: number, state: InternalLiveGameState): Promise<void> {
+    await this.prisma.crossword.update({
+      where: { gameId },
+      data: {
+        playerGrid: state.playerGrid as unknown as object,
+        creditGrid: state.creditGrid as unknown as object,
+        revision:   state.revision,
+      },
+    });
   }
 
   /**
@@ -461,7 +513,19 @@ export class WordBuildingService {
    * @param gameId Game whose state should be loaded.
    * @returns The mutable in-memory state used by placement and state refresh paths.
    */
-  private async loadOrHydrate(gameId: number): Promise<ILiveGameState> {
+  /**
+   * Loads the live state from memory or hydrates it from the database on demand.
+   * 
+   * OPTIMIZATION:
+   * When hydrating from the DB, it pre-calculates the `offsetRow`, `offsetCol`, and 
+   * `clueNumberMap` and stores them in the `InternalLiveGameState`. This ensures that 
+   * subsequent calls to `buildPayload()` (which happen on every keystroke) do not have 
+   * to recalculate these static values.
+   * 
+   * @param gameId Game whose state should be loaded.
+   * @returns The mutable in-memory state used by placement and state refresh paths.
+   */
+  private async loadOrHydrate(gameId: number): Promise<InternalLiveGameState> {
     if (this.liveGames.has(gameId)) return this.liveGames.get(gameId)!;
 
     const crossword = await this.prisma.crossword.findUniqueOrThrow({
@@ -471,8 +535,16 @@ export class WordBuildingService {
 
     const solution   = crossword.solution   as (string | null)[][];
     const playerGrid = crossword.playerGrid as (string | null)[][];
+    const clues      = crossword.clues      as ClueMap;
     const rows = solution.length;
     const cols = solution[0]?.length ?? 0;
+
+    // Pre-calculate and cache static offsets and clue maps for fast payload building
+    const { offsetRow, offsetCol } = this.getBoardOffset(solution);
+    const clueNumberMap = new Map<string, number>();
+    for (const entry of [...clues.across, ...clues.down]) {
+      clueNumberMap.set(`${entry.row + offsetRow},${entry.col + offsetCol}`, entry.number);
+    }
 
     const creditGrid: (number | null)[][] = crossword.creditGrid
       ? (crossword.creditGrid as (number | null)[][])
@@ -483,14 +555,17 @@ export class WordBuildingService {
       scores.set(gp.playerId, gp.score);
     }
 
-    const state: ILiveGameState = {
+    const state: InternalLiveGameState = {
       solution,
       playerGrid,
       creditGrid,
       scores,
-      clues:    crossword.clues as ClueMap,
+      clues,
       revision: crossword.revision,
       locks:    new Map(),   // soft cell reservations — always empty on hydration
+      offsetRow,
+      offsetCol,
+      clueNumberMap,
     };
 
     this.liveGames.set(gameId, state);
@@ -504,7 +579,7 @@ export class WordBuildingService {
    * @param gameId Game being completed.
    * @param state Final crossword state.
    */
-  private async persistCompletion(gameId: number, state: ILiveGameState): Promise<void> {
+  private async persistCompletion(gameId: number, state: InternalLiveGameState): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.crossword.update({
         where: { gameId },

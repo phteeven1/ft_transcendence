@@ -18,13 +18,13 @@ export default function GameControls({ onLeave, onGameOver }: Props) {
   const t = useTranslations('games.controls');
 
   return (
-    <div className="flex flex-col gap-3 lg:pt-12">
+    <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-300">
       <Button variant="primary" fullWidth onClick={onLeave}>
         {t('leaveGame')}
       </Button>
       <Button variant="destructive" fullWidth onClick={onGameOver}>
         {t('gameOver')}
-      </Button>
+			</Button>
     </div>
   );
 }
