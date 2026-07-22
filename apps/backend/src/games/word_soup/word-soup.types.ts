@@ -1,13 +1,20 @@
+export const FREEZE_DURATION_SECONDS = 5;
+export const POINTS_PER_WORD = 10;
+
 export type CourtCell = {
   char: string;
   revealed: boolean;
   highlightedByPlayerId?: number;
 };
 
-export const FREEZE_DURATION_SECONDS = 5;
-export const POINTS_PER_WORD = 10;
-
 export type Direction = [number, number];
+
+export type FoundWord = {
+  playerId: number;
+  cells: Position[];
+  direction: Direction;
+  word: string;
+};
 
 export type GuessResult =
   | {
@@ -17,7 +24,8 @@ export type GuessResult =
       direction: Direction;
       message: string;
       playerScores: Record<number, number>;
-      state: WordSoupStateSnapshot;
+      state: WordSoupGameState;
+      solved: boolean;
     }
   | {
       success: false;
@@ -38,23 +46,19 @@ export type SharedWordSoupCourt = {
   playerScores: Record<number, number>;
   playerWordCounts: Record<number, number>;
   solutionWords: string[];
-  solvedWords: string[];
+  foundWords: FoundWord[];
   frozenUntil: Record<number, number>;
+  isIntroAlreadyShown: Record<number, boolean>;
 };
 
-export interface InitCourtResponse {
-  visibleCourt: CourtCell[][];
-  playerColours: Record<number, string>;
-  playerWordCounts: Record<number, number>;
-  solutionWords: string[];
-}
-
-export type WordSoupStateSnapshot = {
+export interface WordSoupGameState {
   visibleCourt: CourtCell[][];
   playerScores: Record<number, number>;
   playerWordCounts: Record<number, number>;
   playerColours: Record<number, string>;
   solutionWords: string[];
-  solvedWords: string[];
+  foundWords: FoundWord[];
   frozenPlayers: Record<number, number>;
-};
+  hasPlayerSeenIntro: boolean;
+  isComplete: boolean;
+}

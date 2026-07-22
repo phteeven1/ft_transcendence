@@ -13,20 +13,27 @@ interface Props {
   tileSize: number;
   fontSize: number;
   playerColours: Record<number, string>;
-  foundWordGroups: Array<{ playerId: number; cells: Array<{ row: number; col: number }> ; direction?: [number, number] }>;
+  foundWordGroups: Array<{
+    playerId: number;
+    cells: Array<{ row: number; col: number }>;
+    direction?: [number, number];
+  }>;
   isSelected: boolean;
-  peristalticStatus?: 'none' | 'leading' | 'trail';
+  celebrationHighlight?: {
+    playerId: number;
+    status: 'filled' | 'leading';
+  };
   onSelectionStart: (row: number, col: number) => void;
   onSelectionContinue: (row: number, col: number) => void;
 }
 
-// Lighten a hex color by a percentage
 function lightenHexColor(hex: string, percent: number = 40): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
-  const lighten = (val: number) => Math.round(Math.min(255, val + (255 - val) * (percent / 100)));
+  const lighten = (val: number) =>
+    Math.round(Math.min(255, val + (255 - val) * (percent / 100)));
 
   const lr = lighten(r);
   const lg = lighten(g);
@@ -81,41 +88,46 @@ export default function CourtTile({
   playerColours,
   foundWordGroups,
   isSelected,
-  peristalticStatus = 'none',
+  celebrationHighlight,
   onSelectionStart,
   onSelectionContinue,
 }: Props) {
-  const borderColor = cell.highlightedByPlayerId !== undefined
-    ? playerColours[cell.highlightedByPlayerId] ?? '#F59E0B'
-    : isSelected
-      ? '#10B981'
-      : '#E5E7EB';
+  const borderColor =
+    cell.highlightedByPlayerId !== undefined
+      ? playerColours[cell.highlightedByPlayerId] ?? '#F59E0B'
+      : isSelected
+        ? '#10B981'
+        : '#E5E7EB';
 
-  // Find all words that contain this cell
   const containingWords = foundWordGroups.filter((group) =>
-    group.cells.some((cellPosition) => cellPosition.row === row && cellPosition.col === col),
+    group.cells.some(
+      (cellPosition) => cellPosition.row === row && cellPosition.col === col,
+    ),
   );
 
-  // During celebration, defer permanent found-word styling until the wave finishes.
-  const showFoundWordStyle = containingWords.length > 0 && peristalticStatus === 'none';
+  // Permanent found-word style only when not mid-celebration on this cell.
+  const showFoundWordStyle =
+    containingWords.length > 0 && celebrationHighlight === undefined;
 
-  // Determine the background: lighter color(s) for found words
+  const celebrationPlayerColor =
+    celebrationHighlight !== undefined
+      ? playerColours[celebrationHighlight.playerId] ?? '#F59E0B'
+      : undefined;
+
   let finalBackgroundColor = 'white';
   let backgroundImage = 'none';
 
   if (showFoundWordStyle) {
     if (containingWords.length === 1) {
-      // Single word: use lighter shade of player's color
-      const playerColor = playerColours[containingWords[0].playerId] ?? '#F59E0B';
+      const playerColor =
+        playerColours[containingWords[0].playerId] ?? '#F59E0B';
       finalBackgroundColor = lightenHexColor(playerColor, 50);
     } else {
-      // Multiple words: create multicolor gradient with lighter shades
       const lightColors = containingWords.map((word) => {
         const playerColor = playerColours[word.playerId] ?? '#F59E0B';
         return lightenHexColor(playerColor, 50);
       });
 
-      // Use conic gradient to show all colors in sections
       const gradientStops = lightColors.map((color, idx) => {
         const start = (idx / lightColors.length) * 100;
         const end = ((idx + 1) / lightColors.length) * 100;
@@ -124,6 +136,8 @@ export default function CourtTile({
       backgroundImage = `conic-gradient(from 0deg, ${gradientStops.join(', ')})`;
       finalBackgroundColor = 'white';
     }
+  } else if (celebrationPlayerColor) {
+    finalBackgroundColor = lightenHexColor(celebrationPlayerColor, 50);
   }
 
   let borderTop = 'none';
@@ -147,8 +161,8 @@ export default function CourtTile({
     if (uniqueSides.includes('left')) borderLeft = '3px solid black';
   }
 
-  // Selection outline should always show while selecting, even for found words
   const selectionOutline = isSelected ? '2px solid #10B981' : undefined;
+  const isLeading = celebrationHighlight?.status === 'leading';
 
   return (
     <button
@@ -160,9 +174,10 @@ export default function CourtTile({
       onMouseEnter={() => onSelectionContinue(row, col)}
       title={`Row ${row + 1}, Column ${col + 1}`}
       className={[
-        'flex items-center justify-center rounded-lg border border-gray-200 bg-white font-bold leading-none text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)] transition-transform hover:scale-[1.02]',
-        peristalticStatus === 'leading' ? 'word-soup-tile-peristaltic-leading' : '',
-        peristalticStatus === 'trail' ? 'word-soup-tile-peristaltic-trail' : '',
+        'flex items-center justify-center rounded-lg border border-gray-200 bg-white font-bold leading-none text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
+        isLeading
+          ? 'word-soup-tile-ripple'
+          : 'transition-[transform,background-color] duration-150 hover:scale-[1.02]',
       ].join(' ')}
       style={{
         backgroundColor: finalBackgroundColor,

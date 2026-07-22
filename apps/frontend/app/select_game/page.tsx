@@ -30,6 +30,7 @@ import {
   getPlayerSession,
   isSessionExpired,
 } from '@/lib/player-session';
+import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
@@ -72,12 +73,13 @@ type ModalState =
 // pendingGames is kept in sync by lobby:update events pushed from the backend
 // modal tracks modal state
 export default function SelectGame() {
-  const { player, logoutPlayer, setSessionExpiresAt } = useAuth();
+  const { player, logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
   const router = useRouter();
   useSessionGuard();
 
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
   const [sessionReady, setSessionReady] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(true);
 
   const { markIntentionalExit } = usePlayerSessionExitGuard({
     enabled: sessionReady && player !== null,
@@ -89,38 +91,66 @@ export default function SelectGame() {
   });
 
   useEffect(() => {
-    if (!player) {
-      router.push('/');
-      return;
-    }
+    let cancelled = false;
 
-    const stored = getPlayerSession();
-    if (
-      !stored ||
-      stored.playerId !== player.id ||
-      isSessionExpired(stored.expiresAt)
-    ) {
-      clearPlayerSession();
-      logoutPlayer();
-      router.push('/');
-      return;
-    }
+    const bootstrap = async () => {
+      const stored = getPlayerSession();
 
-    (async () => {
+      if (!player) {
+        const restored = await restorePlayerFromSession({
+          loginAsPlayer,
+          setSessionExpiresAt,
+        });
+
+        if (cancelled) return;
+
+        if (!restored) {
+          setBootstrapping(false);
+          router.push('/');
+          return;
+        }
+
+        setSessionReady(true);
+        setBootstrapping(false);
+        return;
+      }
+
+      if (
+        !stored ||
+        stored.playerId !== player.id ||
+        isSessionExpired(stored.expiresAt)
+      ) {
+        clearPlayerSession();
+        logoutPlayer();
+        setBootstrapping(false);
+        router.push('/');
+        return;
+      }
+
       try {
         const result = await playersApi.validateSession({
           playerId: player.id,
           token: stored.token,
         });
+        if (cancelled) return;
         setSessionExpiresAt(new Date(result.expiresAt).getTime());
         setSessionReady(true);
+        setBootstrapping(false);
       } catch {
+        if (cancelled) return;
         clearPlayerSession();
         logoutPlayer();
+        setBootstrapping(false);
         router.push('/');
       }
-    })();
-  }, [player, logoutPlayer, router, setSessionExpiresAt]);
+    };
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [player, loginAsPlayer, logoutPlayer, router, setSessionExpiresAt]);
 
   // connect to the group's WebSocket room
   // pendingGames is updated automatically when the backend emits lobby:update
@@ -198,7 +228,10 @@ export default function SelectGame() {
     router.push('/register');
   };
 
-  if (!player || !sessionReady) return null;
+  if (!player || !sessionReady) {
+    if (bootstrapping) return null;
+    return null;
+  }
 
   // layout. a greeting for the player, then a grid of buttons:
   // 'Word Building' and 'Word Soup' buttons open initiateGameModal to create new game

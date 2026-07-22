@@ -4,10 +4,9 @@ import {
   CourtCell,
   SharedWordSoupCourt,
   Direction,
-  InitCourtResponse,
   Position,
   GuessResult,
-  WordSoupStateSnapshot,
+  WordSoupGameState,
   FREEZE_DURATION_SECONDS,
   POINTS_PER_WORD,
 } from './word-soup.types';
@@ -40,16 +39,26 @@ const DIRECTIONS: Direction[] = [R, D];
 
 @Injectable()
 export class WordSoupService {
+  
   constructor(private readonly prisma: PrismaService) {}
 
   private readonly sharedCourts = new Map<number, SharedWordSoupCourt>();
   private readonly freezeTimers = new Map<string, NodeJS.Timeout>();
 
-  async initCourt(gameId: number): Promise<InitCourtResponse> {
+  /* 
+    Initialise the game court if no game court exists for gameId
+    Otherwise return the existing game court from sharedCourts 
+
+    Return : WordSoupGameState
+  */ 
+  async initCourt(gameId: number, playerId: number): Promise<WordSoupGameState> {
+    
     const game = await this.loadGame(gameId);
     const cached = this.sharedCourts.get(gameId);
+    
     if (cached) {
-      return this.buildInitResponse(cached);
+      this.ensureFreezeTimers(gameId, cached);
+      return this.buildGameState(cached, playerId);
     }
 
     const playerIds = this.getPlayerIds(game);
@@ -60,6 +69,7 @@ export class WordSoupService {
     const selectedWords = this.selectWords(game);
     const trueCourt = this.generateTrueCourt(selectedWords);
     const visibleCourt = this.generateVisibleCourt(trueCourt);
+    const isIntroAlreadyShown = this.createIntroShownState(playerIds);
 
     const sharedCourt: SharedWordSoupCourt = {
       trueCourt,
@@ -68,12 +78,14 @@ export class WordSoupService {
       playerScores,
       playerWordCounts,
       solutionWords: selectedWords,
-      solvedWords: [],
+      foundWords: [],
       frozenUntil: {},
+      isIntroAlreadyShown,
     };
 
     this.sharedCourts.set(gameId, sharedCourt);
-    return this.buildInitResponse(sharedCourt);
+
+    return this.buildGameState(sharedCourt, playerId);
   }
 
   private addScoreForPlayer(
@@ -85,17 +97,6 @@ export class WordSoupService {
       cached.playerScores[playerId] = 0;
     }
     cached.playerScores[playerId] += points;
-  }
-
-  private buildInitResponse(
-    sharedCourt: SharedWordSoupCourt,
-  ): InitCourtResponse {
-    return {
-      visibleCourt: this.cloneCourt(sharedCourt.visibleCourt),
-      playerColours: this.clonePlayerColours(sharedCourt.playerColours),
-      playerWordCounts: { ...sharedCourt.playerWordCounts },
-      solutionWords: [...sharedCourt.solutionWords],
-    };
   }
 
   private canPlace(
@@ -139,6 +140,13 @@ export class WordSoupService {
         char: '',
         revealed: false,
       })),
+    );
+  }
+
+  private createIntroShownState(playerIds: number[]) {
+    
+    return Object.fromEntries(
+      playerIds.map((id, hasPlayerSeenIntro) => [id, false]),
     );
   }
 
@@ -217,9 +225,9 @@ export class WordSoupService {
     return game.gamePlayers.map((gp) => gp.playerId).sort((a, b) => a - b);
   }
 
-  private getSelectionDirection(
-    selection: Array<{ row: number; col: number }>,
-  ): [number, number] | null {
+  private getSelectionDirection( selection: Array<{ row: number; col: number }>,)
+    : [number, number] | null 
+  {  
     if (selection.length < 2) return null;
 
     const [first, second] = selection;
@@ -253,6 +261,7 @@ export class WordSoupService {
   }
 
   private async loadGame(gameId: number) {
+    
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
       include: {
@@ -379,8 +388,7 @@ export class WordSoupService {
     }
 
     const normalisedWord = word.toUpperCase();
-
-    if (court.solvedWords.includes(normalisedWord)) {
+    if (court.foundWords.some(found => found.word === normalisedWord)) {
       return { success: false, message: 'Already found' };
     }
 
@@ -407,7 +415,12 @@ export class WordSoupService {
       return this.penalizeIncorrectGuess(gameId, playerId, onPlayerUnfrozen);
     }
 
-    court.solvedWords.push(normalisedWord);
+    court.foundWords.push({
+      word: normalisedWord,
+      playerId,
+      cells: normalisedSelection,
+      direction,
+    });
     this.addScoreForPlayer(court, playerId, POINTS_PER_WORD);
     court.playerWordCounts[playerId] =
       (court.playerWordCounts[playerId] ?? 0) + 1;
@@ -420,6 +433,10 @@ export class WordSoupService {
       };
     });
 
+    const solved =
+      court.solutionWords.length > 0 &&
+      court.foundWords.length >= court.solutionWords.length;
+
     return {
       success: true,
       word: normalisedWord,
@@ -427,7 +444,8 @@ export class WordSoupService {
       direction,
       message: `Correct! +${POINTS_PER_WORD} points`,
       playerScores: court.playerScores,
-      state: this.createStateSnapshot(court),
+      solved,
+      state: this.buildGameState(court, playerId),
     };
   }
 
@@ -479,6 +497,16 @@ export class WordSoupService {
     return Math.max(1, Math.ceil((until - Date.now()) / 1000));
   }
 
+  markIntroShown(
+    gameId : number, 
+    playerId: number){
+      const court = this.sharedCourts.get(gameId);
+      if (!court) {
+        throw new Error(`Court ${gameId} not initialized`);
+      }
+      court.isIntroAlreadyShown[playerId] = true;
+  }
+
   freezePlayer(
     gameId: number,
     playerId: number,
@@ -518,15 +546,59 @@ export class WordSoupService {
     };
   }
 
-  createStateSnapshot(court: SharedWordSoupCourt): WordSoupStateSnapshot {
+  private ensureFreezeTimers(
+    gameId: number,
+    court: SharedWordSoupCourt,
+  ): void {
+    const now = Date.now();
+
+    for (const [playerIdStr, until] of Object.entries(court.frozenUntil)) {
+      const playerId = Number(playerIdStr);
+
+      if (until <= now) {
+        delete court.frozenUntil[playerId];
+        this.cancelFreezeTimer(gameId, playerId);
+        continue;
+      }
+
+      const key = this.freezeTimerKey(gameId, playerId);
+      if (this.freezeTimers.has(key)) {
+        continue;
+      }
+
+      const remainingMs = until - now;
+      const timer = setTimeout(() => {
+        this.freezeTimers.delete(key);
+        delete court.frozenUntil[playerId];
+      }, remainingMs);
+      this.freezeTimers.set(key, timer);
+    }
+  }
+
+  private buildGameState(
+    court: SharedWordSoupCourt, 
+    playerId: number
+  ): WordSoupGameState {
     return {
       visibleCourt: this.cloneCourt(court.visibleCourt),
+      playerColours: this.clonePlayerColours(court.playerColours),
       playerScores: { ...court.playerScores },
       playerWordCounts: { ...court.playerWordCounts },
-      playerColours: this.clonePlayerColours(court.playerColours),
       solutionWords: [...court.solutionWords],
-      solvedWords: [...court.solvedWords],
+      foundWords: court.foundWords.map(found => ({
+        word: found.word,
+        playerId: found.playerId,
+        cells: found.cells.map(cell => ({
+          row: cell.row,
+          col: cell.col,
+        })),
+        direction: [...found.direction] as Direction,
+      })),
       frozenPlayers: this.getActiveFrozenPlayers(court),
+      hasPlayerSeenIntro: court.isIntroAlreadyShown[playerId] ?? false,
+      isComplete:
+        court.solutionWords.length > 0 &&
+        court.foundWords.length >= court.solutionWords.length,
     };
   }
 }

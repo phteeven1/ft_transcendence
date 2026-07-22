@@ -40,7 +40,7 @@ export default function PlayGameClient() {
       return;
     }
     const load = async () => {
-      const loadedGame = await gamesApi.getById(gameId).catch(() => null);
+      const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
       if (!loadedGame) {
         router.push('/');
         return;
@@ -56,7 +56,7 @@ export default function PlayGameClient() {
   useEffect(() => {
     if (!gameId) return;
     const interval = setInterval(async () => {
-      const updatedGame = await gamesApi.getById(gameId).catch(() => null);
+      const updatedGame = await gamesApi.getById({ gameId }).catch(() => null);
       if (!updatedGame || updatedGame.isFinished) {
         router.push('/select_game');
       }

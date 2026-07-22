@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
-import type { WordCelebration } from './word-soup-celebration';
+import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
 
 // ── Grid dimensions ──────────────────────────────────────────────────────────
 const COURT_COLS = 18;
@@ -83,15 +83,22 @@ export default function GameCourt({
   const gridWidth = computeGridWidth(courtSize);
   const gridHeight = computeGridHeight(courtSize);
 
-  const getPeristalticStatus = (row: number, col: number): 'none' | 'leading' | 'trail' => {
-    if (!wordCelebration || wordCelebration.phase !== 'animating') return 'none';
+  const getCelebrationHighlight = (
+    row: number,
+    col: number,
+  ): { playerId: number; status: 'filled' | 'leading' } | undefined => {
+    if (!wordCelebration || wordCelebration.phase !== 'animating') return undefined;
+
     const index = wordCelebration.orderedCells.findIndex(
       (cell) => cell.row === row && cell.col === col,
     );
-    if (index === -1) return 'none';
-    if (index === wordCelebration.activeIndex) return 'leading';
-    if (index < wordCelebration.activeIndex) return 'trail';
-    return 'none';
+    if (index === -1) return undefined;
+    if (index > wordCelebration.activeIndex) return undefined;
+
+    return {
+      playerId: wordCelebration.playerId,
+      status: index === wordCelebration.activeIndex ? 'leading' : 'filled',
+    };
   };
 
   const interactionDisabled =
@@ -144,22 +151,33 @@ export default function GameCourt({
           }}
         >
           {visibleCourt.map((row, rowIndex) =>
-            row.map((cell, colIndex) => (
-              <CourtTile
-                key={`${rowIndex}-${colIndex}`}
-                cell={cell}
-                row={rowIndex}
-                col={colIndex}
-                tileSize={tileSize}
-                fontSize={fontSize}
-                playerColours={playerColours}
-                foundWordGroups={foundWordGroups}
-                isSelected={selectedCells.some((selected) => selected.row === rowIndex && selected.col === colIndex)}
-                peristalticStatus={getPeristalticStatus(rowIndex, colIndex)}
-                onSelectionStart={onSelectionStart}
-                onSelectionContinue={onSelectionContinue}
-              />
-            )),
+            row.map((cell, colIndex) => {
+              const celebrationHighlight = getCelebrationHighlight(rowIndex, colIndex);
+              const isLeading = celebrationHighlight?.status === 'leading';
+
+              return (
+                <CourtTile
+                  key={
+                    isLeading
+                      ? `${rowIndex}-${colIndex}-ripple-${wordCelebration?.activeIndex}`
+                      : `${rowIndex}-${colIndex}`
+                  }
+                  cell={cell}
+                  row={rowIndex}
+                  col={colIndex}
+                  tileSize={tileSize}
+                  fontSize={fontSize}
+                  playerColours={playerColours}
+                  foundWordGroups={foundWordGroups}
+                  isSelected={selectedCells.some(
+                    (selected) => selected.row === rowIndex && selected.col === colIndex,
+                  )}
+                  celebrationHighlight={celebrationHighlight}
+                  onSelectionStart={onSelectionStart}
+                  onSelectionContinue={onSelectionContinue}
+                />
+              );
+            }),
           )}
         </div>
 

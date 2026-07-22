@@ -76,7 +76,7 @@ export class GameGateway implements OnGatewayDisconnect {
     client.data.playerId = data.playerId;
   }
 
-
+  
   @SubscribeMessage('guess:submit')
   async handleSubmitGuess(
     @ConnectedSocket() client: Socket,
@@ -109,9 +109,7 @@ export class GameGateway implements OnGatewayDisconnect {
 
     if (result.success) {
       const playerName = await this.getPlayerName(data.gameId, data.playerId);
-      this.server
-        .to(`game:${data.gameId}`)
-        .emit('game:state', { state: result.state });
+      this.server.to(`game:${data.gameId}`).emit('game:state', { state: result.state });
       this.server.to(`game:${data.gameId}`).emit('game:wordGuessed', {
         playerId: data.playerId,
         playerName,
@@ -124,6 +122,10 @@ export class GameGateway implements OnGatewayDisconnect {
         playerWordCounts: result.state.playerWordCounts,
         state: result.state,
       });
+
+      if (result.solved) {
+        await this.gamesService.finish(data.gameId);
+      }
       return;
     }
 

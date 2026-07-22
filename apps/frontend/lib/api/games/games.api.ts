@@ -14,8 +14,8 @@ export const gamesApi = {
     });
   },
 
-  getById(gameId: number): Promise<GameDto> {
-    return apiRequest<GameDto>(`/games/${gameId}`);
+  getById(input: GameIdInput): Promise<GameDto> {
+    return apiRequest<GameDto>(`/games/${input.gameId}`);
   },
 
   findByGroup(groupId: number): Promise<GameDto[]> {
