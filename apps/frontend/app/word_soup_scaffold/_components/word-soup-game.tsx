@@ -12,6 +12,7 @@ import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
 import GameRulesInfo from './game-rules-info';
+import WordSoupIntroOverlay from './word-soup-intro-overlay';
 
 export default function WordSoupGame() {
   useSessionGuard();
@@ -103,24 +104,24 @@ export default function WordSoupGame() {
                 foundWordGroups={ws.foundWords}
                 isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
                 freezeSecondsLeft={ws.freezeSecondsLeft}
+                lettersVisible={ws.gameReady || !ws.showIntro}
                 wordCelebration={ws.wordCelebration}
                 onSelectionStart={ws.handleSelectionStart}
                 onSelectionContinue={ws.handleSelectionContinue}
                 onSelectionEnd={ws.handleSelectionEnd}
+                overlay={
+                  ws.showIntro ? (
+                    <WordSoupIntroOverlay
+                      phase={ws.introPhase}
+                      bubbleText={ws.introBubbleText}
+                      bubbleVisible={ws.introBubbleVisible}
+                      wordRevealIndex={ws.wordRevealIndex}
+                      totalWords={ws.introTotalWords}
+                      countdownValue={ws.introCountdownValue}
+                    />
+                  ) : null
+                }
               />
-              {ws.showWordReveal && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-emerald-950/70 backdrop-blur-sm">
-                  <div className="mx-4 max-w-[280px] rounded-2xl border border-white/20 bg-white/95 px-6 py-5 text-center shadow-xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-700">Word Soup</p>
-                    <p className="mt-3 text-2xl font-semibold text-emerald-900">{ws.solutionWords[ws.wordRevealIndex] ?? 'Ready!'}</p>
-                    <p className="mt-2 text-sm text-gray-600">
-                      {ws.solutionWords.length > 0
-                        ? `Word ${ws.wordRevealIndex + 1} of ${ws.solutionWords.length}`
-                        : 'Get ready...'}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2 rounded-xl border border-emerald-200 bg-white/90 p-3 text-center text-sm shadow-sm">

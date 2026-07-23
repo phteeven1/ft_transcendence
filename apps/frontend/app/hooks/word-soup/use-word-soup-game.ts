@@ -75,7 +75,16 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     initialFrozenPlayers,
   } = useWordSoupInit(gameId, playerId);
 
-  const { gameReady, showWordReveal, wordRevealIndex } = useWordSoupIntro({
+  const {
+    gameReady,
+    showIntro,
+    phase: introPhase,
+    bubbleText: introBubbleText,
+    bubbleVisible: introBubbleVisible,
+    wordRevealIndex,
+    countdownValue: introCountdownValue,
+    totalWords: introTotalWords,
+  } = useWordSoupIntro({
     gameId,
     playerId,
     courtReady,
@@ -358,8 +367,14 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     sortedPlayers,
     solutionWords,
     gameReady,
-    showWordReveal,
+    showIntro,
+    introPhase,
+    introBubbleText,
+    introBubbleVisible,
     wordRevealIndex,
+    introCountdownValue,
+    introTotalWords,
+    showWordReveal: showIntro,
     showAbandonModal,
     isAbandoning,
     wordsFound,

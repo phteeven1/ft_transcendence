@@ -19,6 +19,7 @@ interface Props {
     direction?: [number, number];
   }>;
   isSelected: boolean;
+  hideLetter?: boolean;
   celebrationHighlight?: {
     playerId: number;
     status: 'filled' | 'leading';
@@ -88,6 +89,7 @@ export default function CourtTile({
   playerColours,
   foundWordGroups,
   isSelected,
+  hideLetter = false,
   celebrationHighlight,
   onSelectionStart,
   onSelectionContinue,
@@ -208,7 +210,7 @@ export default function CourtTile({
         flexShrink: 0,
       }}
     >
-      {cell.char}
+      {hideLetter ? '' : cell.char}
     </button>
   );
 }

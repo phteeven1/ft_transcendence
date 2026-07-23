@@ -11,7 +11,7 @@
   The matching constants in word-soup-game.tsx and word-soup.service.ts must be kept in sync.
 */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import CourtTile from './court-tile';
 import type { CourtCell } from './court-tile';
 import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
@@ -54,7 +54,9 @@ interface Props {
   foundWordGroups: Array<{ playerId: number; cells: Array<{ row: number; col: number }> }>;
   isLocalPlayerFrozen: boolean;
   freezeSecondsLeft: number;
+  lettersVisible?: boolean;
   wordCelebration: WordCelebration | null;
+  overlay?: ReactNode;
   onSelectionStart: (row: number, col: number) => void;
   onSelectionContinue: (row: number, col: number) => void;
   onSelectionEnd: () => void;
@@ -67,7 +69,9 @@ export default function GameCourt({
   foundWordGroups,
   isLocalPlayerFrozen,
   freezeSecondsLeft,
+  lettersVisible = true,
   wordCelebration,
+  overlay = null,
   onSelectionStart,
   onSelectionContinue,
   onSelectionEnd,
@@ -102,7 +106,10 @@ export default function GameCourt({
   };
 
   const interactionDisabled =
-    isLocalPlayerFrozen || wordCelebration?.phase === 'animating' || wordCelebration?.phase === 'banner';
+    !lettersVisible ||
+    isLocalPlayerFrozen ||
+    wordCelebration?.phase === 'animating' ||
+    wordCelebration?.phase === 'banner';
 
   return (
     <div className="flex flex-col gap-2">
@@ -172,6 +179,7 @@ export default function GameCourt({
                   isSelected={selectedCells.some(
                     (selected) => selected.row === rowIndex && selected.col === colIndex,
                   )}
+                  hideLetter={!lettersVisible}
                   celebrationHighlight={celebrationHighlight}
                   onSelectionStart={onSelectionStart}
                   onSelectionContinue={onSelectionContinue}
@@ -226,6 +234,8 @@ export default function GameCourt({
             </div>
           </div>
         )}
+
+        {overlay}
       </div>
     </div>
   );

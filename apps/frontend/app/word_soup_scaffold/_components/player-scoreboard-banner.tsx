@@ -1,6 +1,7 @@
 'use client';
 
 import type { Player } from '@/app/types';
+import SoupHostCharacter from './soup-host-character';
 
 export type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
 
@@ -151,13 +152,13 @@ export default function PlayerScoreboardBanner({
             className={[
               'inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 shadow-sm transition-colors',
               STATUS_BOX_CLASS[status],
+              status === 'left' ? 'opacity-75' : '',
             ].join(' ')}
           >
-            <span
-              className="h-8 w-8 shrink-0 rounded-md border border-black/10 shadow-inner"
-              style={{ backgroundColor: colour }}
+            <SoupHostCharacter
+              clothesColor={colour}
+              className="h-9 w-9 shrink-0"
               title={`${player.name} avatar`}
-              aria-hidden="true"
             />
 
             <div className="min-w-0 max-w-[5.5rem] sm:max-w-[7rem]">
