@@ -26,6 +26,9 @@ type UseWordSoupGameArgs = {
     serverState: WordSoup.GameStateDto | null;
     frozenPlayers: Record<number, number>;
     freezeNotice: WordSoup.FreezeNoticeDto | null;
+    leftPlayers: Record<number, string>;
+    playerLeftNotice: { playerId: number; playerName: string } | null;
+    playerStreaks: Record<number, number>;
     emitSubmitGuess: (cells: Array<{ row: number; col: number }>) => void;
   };
 };
@@ -42,6 +45,9 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     serverState,
     frozenPlayers: frozenPlayersFromSocket,
     freezeNotice,
+    leftPlayers: leftPlayersFromSocket,
+    playerLeftNotice,
+    playerStreaks: playerStreaksFromSocket,
     emitSubmitGuess,
   } = socket;
 
@@ -49,7 +55,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     loading,
     courtReady,
     game,
-    players,
+    players: initialPlayers,
     visibleCourt,
     setVisibleCourt,
     playerColours,
@@ -57,6 +63,10 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     setPlayerScores,
     playerWordCounts,
     setPlayerWordCounts,
+    playerStreaks,
+    setPlayerStreaks,
+    leftPlayers: initialLeftPlayers,
+    setLeftPlayers,
     solutionWords,
     foundWords,
     setFoundWords,
@@ -83,11 +93,54 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     [initialFrozenPlayers, frozenPlayersFromSocket, serverState?.frozenPlayers],
   );
 
-  const { isLocalPlayerFrozen, freezeSecondsLeft, statusBanner } = useWordSoupFreeze({
-    playerId,
-    frozenPlayers: mergedFrozenPlayers,
-    freezeNotice,
-  });
+  const leftPlayers = useMemo(
+    () => ({
+      ...initialLeftPlayers,
+      ...leftPlayersFromSocket,
+      ...(serverState?.leftPlayers ?? {}),
+    }),
+    [initialLeftPlayers, leftPlayersFromSocket, serverState?.leftPlayers],
+  );
+
+  const livePlayerStreaks = useMemo(
+    () => ({
+      ...playerStreaks,
+      ...playerStreaksFromSocket,
+      ...(serverState?.playerStreaks ?? {}),
+    }),
+    [playerStreaks, playerStreaksFromSocket, serverState?.playerStreaks],
+  );
+
+  const players = useMemo(() => {
+    const byId = new Map(initialPlayers.map((player) => [player.id, player]));
+    for (const [id, name] of Object.entries(leftPlayers)) {
+      const playerIdNum = Number(id);
+      if (!byId.has(playerIdNum)) {
+        const template = initialPlayers[0];
+        byId.set(playerIdNum, {
+          ...(template ?? {
+            inGroup: 0,
+            ofUser: 0,
+            passQuestion: '',
+            currentGameId: null,
+            lastSignout: '',
+            sessionExpiresAt: null,
+          }),
+          id: playerIdNum,
+          name,
+        });
+      }
+    }
+    return Array.from(byId.values());
+  }, [initialPlayers, leftPlayers]);
+
+  const { isLocalPlayerFrozen, freezeSecondsLeft, freezeSecondsByPlayer, statusBanner } =
+    useWordSoupFreeze({
+      playerId,
+      frozenPlayers: mergedFrozenPlayers,
+      freezeNotice,
+      playerLeftNotice,
+    });
 
   const isGameOver = Boolean(
     game?.isFinished ||
@@ -123,6 +176,39 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   });
 
   const isCelebrating = wordCelebration !== null;
+
+  // game:state (isComplete) can arrive before game:wordGuessed, which briefly flashes
+  // the game-over overlay. Hold it until the completing celebration has finished —
+  // or until a short grace period if no celebration is coming (e.g. rejoin).
+  const [allowGameOverOverlay, setAllowGameOverOverlay] = useState(false);
+  const sawCompletionCelebrationRef = useRef(false);
+
+  useEffect(() => {
+    if (!isGameOver) {
+      setAllowGameOverOverlay(false);
+      sawCompletionCelebrationRef.current = false;
+      return;
+    }
+
+    if (isCelebrating) {
+      sawCompletionCelebrationRef.current = true;
+      setAllowGameOverOverlay(false);
+      return;
+    }
+
+    if (sawCompletionCelebrationRef.current) {
+      setAllowGameOverOverlay(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (!celebrationActiveRef.current) {
+        setAllowGameOverOverlay(true);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isGameOver, isCelebrating, celebrationActiveRef]);
 
   const handleGuessSubmitted = useCallback(() => {
     pendingGuessRef.current = true;
@@ -171,6 +257,12 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
     setPlayerScores(serverState.playerScores);
     setPlayerWordCounts(serverState.playerWordCounts);
+    if (serverState.playerStreaks) {
+      setPlayerStreaks(serverState.playerStreaks);
+    }
+    if (serverState.leftPlayers) {
+      setLeftPlayers(serverState.leftPlayers);
+    }
 
     // Defer found-word / court updates while the celebration ripple is running,
     // otherwise tiles paint in the player colour immediately and hide the wave.
@@ -181,7 +273,17 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
     setFoundWords(serverState.foundWords);
     setVisibleCourt(serverState.visibleCourt);
-  }, [serverState, setFoundWords, setPlayerScores, setPlayerWordCounts, setVisibleCourt, celebrationActiveRef, pendingCourtRef]);
+  }, [
+    serverState,
+    setFoundWords,
+    setPlayerScores,
+    setPlayerWordCounts,
+    setPlayerStreaks,
+    setLeftPlayers,
+    setVisibleCourt,
+    celebrationActiveRef,
+    pendingCourtRef,
+  ]);
 
   useEffect(() => {
     if (!gameFinished) return;
@@ -230,7 +332,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     }
   }, [gameId, playerId, logoutPlayer, router]);
 
-  const showGameOverOverlay = isGameOver && !isCelebrating;
+  const showGameOverOverlay = isGameOver && allowGameOverOverlay && !isCelebrating;
 
   return {
     game,
@@ -240,10 +342,14 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     playerColours,
     playerScores,
     playerWordCounts,
+    playerStreaks: livePlayerStreaks,
+    leftPlayers,
     foundWords,
     selection,
     isLocalPlayerFrozen,
     freezeSecondsLeft,
+    freezeSecondsByPlayer,
+    frozenPlayers: mergedFrozenPlayers,
     isGameOver,
     showGameOverOverlay,
     selectionMessage,

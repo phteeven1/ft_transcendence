@@ -153,12 +153,14 @@ export class GameGateway implements OnGatewayDisconnect {
     message: string,
   ): Promise<void> {
     const playerName = await this.getPlayerName(gameId, playerId);
+    const meta = this.wordSoupService.getScoreboardMeta(gameId);
     this.server.to(`game:${gameId}`).emit('game:playerFrozen', {
       playerId,
       playerName,
       frozenUntil,
       durationSeconds: FREEZE_DURATION_SECONDS,
       message,
+      playerStreaks: meta?.playerStreaks,
     });
   }
 
@@ -305,6 +307,24 @@ export class GameGateway implements OnGatewayDisconnect {
    */
   emitGameFinished(gameId: number) {
     this.server.to(`game:${gameId}`).emit('game:finished');
+  }
+
+  /**
+   * Broadcasts that a player has left the game room mid-play.
+   *
+   * @param gameId The game room to notify.
+   * @param playerId The player who left.
+   * @param playerName Display name captured before leave.
+   */
+  emitPlayerLeft(gameId: number, playerId: number, playerName: string) {
+    const state = this.wordSoupService.markPlayerLeft(gameId, playerId, playerName);
+    this.server.to(`game:${gameId}`).emit('game:playerLeft', {
+      playerId,
+      playerName,
+      leftPlayers: state?.leftPlayers ?? { [playerId]: playerName },
+      playerStreaks: state?.playerStreaks,
+      state: state ?? undefined,
+    });
   }
 
   /**

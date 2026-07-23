@@ -57,6 +57,12 @@ export class WordSoupService {
     const cached = this.sharedCourts.get(gameId);
     
     if (cached) {
+      if (!cached.playerStreaks) {
+        cached.playerStreaks = {};
+      }
+      if (!cached.leftPlayers) {
+        cached.leftPlayers = {};
+      }
       this.ensureFreezeTimers(gameId, cached);
       return this.buildGameState(cached, playerId);
     }
@@ -65,6 +71,7 @@ export class WordSoupService {
     const playerColours = this.createPlayerColours(playerIds);
     const playerScores = this.createPlayerScores(playerIds);
     const playerWordCounts = this.createPlayerWordCounts(playerIds);
+    const playerStreaks = this.createPlayerStreaks(playerIds);
 
     const selectedWords = this.selectWords(game);
     const trueCourt = this.generateTrueCourt(selectedWords);
@@ -77,6 +84,8 @@ export class WordSoupService {
       playerColours,
       playerScores,
       playerWordCounts,
+      playerStreaks,
+      leftPlayers: {},
       solutionWords: selectedWords,
       foundWords: [],
       frozenUntil: {},
@@ -164,6 +173,36 @@ export class WordSoupService {
 
   private createPlayerWordCounts(playerIds: number[]): Record<number, number> {
     return Object.fromEntries(playerIds.map((id) => [id, 0]));
+  }
+
+  private createPlayerStreaks(playerIds: number[]): Record<number, number> {
+    return Object.fromEntries(playerIds.map((id) => [id, 0]));
+  }
+
+  /**
+   * Marks a player as having left mid-game so the scoreboard can show them as gone.
+   */
+  markPlayerLeft(gameId: number, playerId: number, playerName: string): WordSoupGameState | null {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return null;
+
+    court.leftPlayers[playerId] = playerName;
+    court.playerStreaks[playerId] = 0;
+    this.cancelFreezeTimer(gameId, playerId);
+    delete court.frozenUntil[playerId];
+
+    return this.buildGameState(court, playerId);
+  }
+
+  getScoreboardMeta(
+    gameId: number,
+  ): { playerStreaks: Record<number, number>; leftPlayers: Record<number, string> } | null {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return null;
+    return {
+      playerStreaks: { ...court.playerStreaks },
+      leftPlayers: { ...court.leftPlayers },
+    };
   }
 
   private extractWord(trueCourt: CourtCell[][], selection: Position[]): string {
@@ -424,6 +463,7 @@ export class WordSoupService {
     this.addScoreForPlayer(court, playerId, POINTS_PER_WORD);
     court.playerWordCounts[playerId] =
       (court.playerWordCounts[playerId] ?? 0) + 1;
+    court.playerStreaks[playerId] = (court.playerStreaks[playerId] ?? 0) + 1;
 
     normalisedSelection.forEach(({ row, col }) => {
       court.visibleCourt[row][col] = {
@@ -537,6 +577,10 @@ export class WordSoupService {
     playerId: number,
     onPlayerUnfrozen?: () => void,
   ): GuessResult {
+    const court = this.sharedCourts.get(gameId);
+    if (court) {
+      court.playerStreaks[playerId] = 0;
+    }
     const frozenUntil = this.freezePlayer(gameId, playerId, onPlayerUnfrozen);
     return {
       success: false,
@@ -584,6 +628,8 @@ export class WordSoupService {
       playerColours: this.clonePlayerColours(court.playerColours),
       playerScores: { ...court.playerScores },
       playerWordCounts: { ...court.playerWordCounts },
+      playerStreaks: { ...court.playerStreaks },
+      leftPlayers: { ...court.leftPlayers },
       solutionWords: [...court.solutionWords],
       foundWords: court.foundWords.map(found => ({
         word: found.word,

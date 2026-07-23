@@ -23,6 +23,9 @@ interface GameSocketState {
   serverState: WordSoup.GameStateDto | null;
   frozenPlayers: Record<number, number>;
   freezeNotice: WordSoup.FreezeNoticeDto | null;
+  leftPlayers: Record<number, string>;
+  playerLeftNotice: { playerId: number; playerName: string } | null;
+  playerStreaks: Record<number, number>;
 }
 
 /**
@@ -46,6 +49,9 @@ export function useGameSocket(gameId: number, playerId: number) {
     serverState: null,
     frozenPlayers: {},
     freezeNotice: null,
+    leftPlayers: {},
+    playerLeftNotice: null,
+    playerStreaks: {},
   });
 
   useEffect(() => {
@@ -78,6 +84,8 @@ export function useGameSocket(gameId: number, playerId: number) {
           ...s,
           serverState: payload.state,
           frozenPlayers: payload.state.frozenPlayers ?? s.frozenPlayers,
+          leftPlayers: payload.state.leftPlayers ?? s.leftPlayers,
+          playerStreaks: payload.state.playerStreaks ?? s.playerStreaks,
         }));
       } else {
         setState((s) => ({ ...s, gameState: payload }));
@@ -99,6 +107,8 @@ export function useGameSocket(gameId: number, playerId: number) {
         wordGuessedSeq: s.wordGuessedSeq + 1,
         serverState: payload.state ?? s.serverState,
         frozenPlayers: payload.state?.frozenPlayers ?? s.frozenPlayers,
+        leftPlayers: payload.state?.leftPlayers ?? s.leftPlayers,
+        playerStreaks: payload.state?.playerStreaks ?? s.playerStreaks,
       }));
     });
 
@@ -114,11 +124,22 @@ export function useGameSocket(gameId: number, playerId: number) {
       });
     });
 
-    socket.on('game:playerFrozen', (payload: { playerId: number; playerName: string; frozenUntil: number; durationSeconds: number; message: string }) => {
+    socket.on('game:playerFrozen', (payload: {
+      playerId: number;
+      playerName: string;
+      frozenUntil: number;
+      durationSeconds: number;
+      message: string;
+      playerStreaks?: Record<number, number>;
+    }) => {
       if (!active) return;
       setState((s) => ({
         ...s,
         frozenPlayers: { ...s.frozenPlayers, [payload.playerId]: payload.frozenUntil },
+        playerStreaks: payload.playerStreaks ?? {
+          ...s.playerStreaks,
+          [payload.playerId]: 0,
+        },
         freezeNotice: {
           playerId: payload.playerId,
           playerName: payload.playerName,
@@ -142,6 +163,29 @@ export function useGameSocket(gameId: number, playerId: number) {
           },
         };
       });
+    });
+
+    socket.on('game:playerLeft', (payload: {
+      playerId: number;
+      playerName: string;
+      leftPlayers?: Record<number, string>;
+      playerStreaks?: Record<number, number>;
+      state?: WordSoup.GameStateDto;
+    }) => {
+      if (!active) return;
+      setState((s) => ({
+        ...s,
+        leftPlayers: payload.leftPlayers ?? {
+          ...s.leftPlayers,
+          [payload.playerId]: payload.playerName,
+        },
+        playerStreaks: payload.playerStreaks ?? payload.state?.playerStreaks ?? s.playerStreaks,
+        serverState: payload.state ?? s.serverState,
+        playerLeftNotice: {
+          playerId: payload.playerId,
+          playerName: payload.playerName,
+        },
+      }));
     });
 
     // Backend broadcasts this when the game is marked finished.

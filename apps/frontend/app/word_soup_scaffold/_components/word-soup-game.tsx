@@ -10,6 +10,8 @@ import GameInfoColumn from './game-info-column';
 import GameCourt from './game-court';
 import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
+import PlayerScoreboardBanner from './player-scoreboard-banner';
+import GameRulesInfo from './game-rules-info';
 
 export default function WordSoupGame() {
   useSessionGuard();
@@ -77,6 +79,22 @@ export default function WordSoupGame() {
           <GameInfoColumn game={ws.game} players={ws.players} playerId={playerId} />
 
           <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <PlayerScoreboardBanner
+                  players={ws.players}
+                  localPlayerId={playerId}
+                  playerColours={ws.playerColours}
+                  playerScores={ws.playerScores}
+                  playerStreaks={ws.playerStreaks}
+                  leftPlayers={ws.leftPlayers}
+                  frozenPlayers={ws.frozenPlayers}
+                  freezeSecondsByPlayer={ws.freezeSecondsByPlayer}
+                />
+              </div>
+              <GameRulesInfo />
+            </div>
+
             <div className="relative flex">
               <GameCourt
                 visibleCourt={ws.visibleCourt}
@@ -105,57 +123,18 @@ export default function WordSoupGame() {
               )}
             </div>
 
-            <div className="rounded-xl border border-emerald-200 bg-white/90 p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Scoreboard</h2>
-                <span className="text-xs text-gray-500">Points</span>
+            <div className="grid grid-cols-3 gap-2 rounded-xl border border-emerald-200 bg-white/90 p-3 text-center text-sm shadow-sm">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-500">Total</p>
+                <p className="font-semibold text-gray-800">{ws.solutionWords.length}</p>
               </div>
-
-              <div className="mb-3 grid grid-cols-3 gap-2 rounded-lg bg-emerald-50/70 p-3 text-center text-sm">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500">Total</p>
-                  <p className="font-semibold text-gray-800">{ws.solutionWords.length}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500">Found</p>
-                  <p className="font-semibold text-gray-800">{ws.wordsFound}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500">Left</p>
-                  <p className="font-semibold text-gray-800">{ws.wordsLeft}</p>
-                </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-500">Found</p>
+                <p className="font-semibold text-gray-800">{ws.wordsFound}</p>
               </div>
-
-              <ul className="space-y-2">
-                {ws.players.map((player) => (
-                  <li key={player.id} className="flex flex-col gap-2 rounded-lg bg-emerald-50/70 px-3 py-2 sm:flex-row sm:justify-between sm:items-center">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-3.5 w-3.5 rounded-sm border border-gray-200"
-                        style={{ backgroundColor: ws.playerColours[player.id] ?? '#E5E7EB' }}
-                      />
-                      <span className="text-sm font-medium text-gray-800">{player.name}</span>
-                      {player.id === playerId && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                          You
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-700">
-                      <span className="font-semibold">{ws.playerScores[player.id] ?? 0} pts</span>
-                      <span>{ws.playerWordCounts[player.id] ?? 0} words</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-sm text-gray-700">
-                <p className="font-semibold text-emerald-800">Rules</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>Select a contiguous word on the grid.</li>
-                  <li>Submit your guess to score points.</li>
-                  <li>Found words are highlighted in your player colour.</li>
-                </ul>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-500">Left</p>
+                <p className="font-semibold text-gray-800">{ws.wordsLeft}</p>
               </div>
             </div>
           </div>

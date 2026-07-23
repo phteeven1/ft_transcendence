@@ -38,6 +38,8 @@ export function useWordSoupInit(gameId: number, playerId: number) {
   const [playerColours, setPlayerColours] = useState<Record<number, string>>({});
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
   const [playerWordCounts, setPlayerWordCounts] = useState<Record<number, number>>({});
+  const [playerStreaks, setPlayerStreaks] = useState<Record<number, number>>({});
+  const [leftPlayers, setLeftPlayers] = useState<Record<number, string>>({});
   const [solutionWords, setSolutionWords] = useState<string[]>([]);
   const [foundWords, setFoundWords] = useState<WordSoup.FoundWord[]>([]);
   const [hasPlayerSeenIntro, setHasPlayerSeenIntro] = useState(false);
@@ -91,6 +93,8 @@ export function useWordSoupInit(gameId: number, playerId: number) {
         setPlayerColours(result.playerColours);
         setPlayerScores(result.playerScores);
         setPlayerWordCounts(result.playerWordCounts);
+        setPlayerStreaks(result.playerStreaks ?? {});
+        setLeftPlayers(result.leftPlayers ?? {});
         setSolutionWords(result.solutionWords);
         setFoundWords(result.foundWords);
         setHasPlayerSeenIntro(result.hasPlayerSeenIntro);
@@ -121,6 +125,10 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     setPlayerScores,
     playerWordCounts,
     setPlayerWordCounts,
+    playerStreaks,
+    setPlayerStreaks,
+    leftPlayers,
+    setLeftPlayers,
     solutionWords,
     foundWords,
     setFoundWords,

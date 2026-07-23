@@ -134,8 +134,13 @@ export class GamesService {
    * @param playerId Player ending the session.
    */
   async abandonPlay(gameId: number, playerId: number): Promise<void> {
+    const roster = await this.findPlayersForGame(gameId);
+    const playerName =
+      roster.find((player) => player.id === playerId)?.name ?? `Player #${playerId}`;
+
     await this.leave(gameId, playerId);
     await this.playersService.clearSession(playerId);
+    this.gateway.emitPlayerLeft(gameId, playerId, playerName);
   }
 
   /**

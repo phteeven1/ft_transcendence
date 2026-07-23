@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Player } from '@/app/types';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 
@@ -121,7 +121,7 @@ export function useWordSoupCelebration({
     };
   },[]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     
     if (!wordGuessedSeq) { return; }
     if ( lastProcessedGuessSeqRef.current === wordGuessedSeq ){ return; }

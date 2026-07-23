@@ -21,6 +21,8 @@ export namespace WordSoup {
     playerColours: Record<number, string>;
     playerScores: Record<number, number>;
     playerWordCounts: Record<number, number>;
+    playerStreaks?: Record<number, number>;
+    leftPlayers?: Record<number, string>;
     solutionWords: string[];
     foundWords: FoundWord[];
     frozenPlayers: Record<number, number>;

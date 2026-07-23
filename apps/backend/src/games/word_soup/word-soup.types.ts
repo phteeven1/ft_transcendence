@@ -45,6 +45,9 @@ export type SharedWordSoupCourt = {
   playerColours: Record<number, string>;
   playerScores: Record<number, number>;
   playerWordCounts: Record<number, number>;
+  playerStreaks: Record<number, number>;
+  /** Players who abandoned mid-game: playerId → display name */
+  leftPlayers: Record<number, string>;
   solutionWords: string[];
   foundWords: FoundWord[];
   frozenUntil: Record<number, number>;
@@ -55,6 +58,8 @@ export interface WordSoupGameState {
   visibleCourt: CourtCell[][];
   playerScores: Record<number, number>;
   playerWordCounts: Record<number, number>;
+  playerStreaks: Record<number, number>;
+  leftPlayers: Record<number, string>;
   playerColours: Record<number, string>;
   solutionWords: string[];
   foundWords: FoundWord[];
