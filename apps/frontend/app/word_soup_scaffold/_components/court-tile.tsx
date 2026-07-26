@@ -1,7 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import { lightenHexColor } from '../_lib/color-utils';
 
 type CourtCell = WordSoup.CourtCell;
 
@@ -27,58 +28,6 @@ interface Props {
   onSelectionContinue: (row: number, col: number) => void;
 }
 
-function lightenHexColor(hex: string, percent: number = 40): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  const lighten = (val: number) =>
-    Math.round(Math.min(255, val + (255 - val) * (percent / 100)));
-
-  const lr = lighten(r);
-  const lg = lighten(g);
-  const lb = lighten(b);
-
-  return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`.toUpperCase();
-}
-
-type BorderSide = 'top' | 'right' | 'bottom' | 'left';
-
-function getBorderSidesForWord(
-  row: number,
-  col: number,
-  wordCells: Array<{ row: number; col: number }>,
-  direction?: [number, number],
-): BorderSide[] {
-  if (!direction) {
-    return [];
-  }
-
-  const [dr, dc] = direction;
-  const projection = row * dr + col * dc;
-  const projections = wordCells.map((cell) => cell.row * dr + cell.col * dc);
-  const minProjection = Math.min(...projections);
-  const maxProjection = Math.max(...projections);
-  const isStart = projection === minProjection;
-  const isEnd = projection === maxProjection;
-
-  if (dr === 0) {
-    const sides: BorderSide[] = ['top', 'bottom'];
-    if (isStart) sides.push('left');
-    if (isEnd) sides.push('right');
-    return sides;
-  }
-
-  if (dc === 0) {
-    const sides: BorderSide[] = ['left', 'right'];
-    if (isStart) sides.push('top');
-    if (isEnd) sides.push('bottom');
-    return sides;
-  }
-
-  return [];
-}
-
 export default function CourtTile({
   cell,
   row,
@@ -93,8 +42,6 @@ export default function CourtTile({
   onSelectionStart,
   onSelectionContinue,
 }: Props) {
-  const t = useTranslations('games.wordSoup');
-
   const borderColor =
     cell.highlightedByPlayerId !== undefined
      ? playerColours[cell.highlightedByPlayerId] ?? '#F59E0B'
@@ -143,36 +90,39 @@ export default function CourtTile({
     finalBackgroundColor = lightenHexColor(celebrationPlayerColor, 50);
   }
 
-  let borderTop = 'none';
-  let borderRight = 'none';
-  let borderBottom = 'none';
-  let borderLeft = 'none';
-
-  if (showFoundWordStyle) {
-    const sides = containingWords.flatMap((word) =>
-      getBorderSidesForWord(row, col, word.cells, word.direction),
-    );
-
-    const uniqueSides = Array.from(new Set(sides));
-    if (uniqueSides.includes('top')) borderTop = '3px solid black';
-    if (uniqueSides.includes('right')) borderRight = '3px solid black';
-    if (uniqueSides.includes('bottom')) borderBottom = '3px solid black';
-    if (uniqueSides.includes('left')) borderLeft = '3px solid black';
-  }
-
   const selectionOutline = isSelected ? '2px solid #10B981' : undefined;
   const isLeading = celebrationHighlight?.status === 'leading';
+  const letterLabel = hideLetter ? 'hidden' : cell.char || 'empty';
 
+  // Found-word tiles keep the tinted background only. A per-side black outline
+  // used to be set in code but was overridden by borderWidth: 0 — keep that look.
+  // Use one border API at a time so React does not warn about shorthand conflicts.
+  const borderStyle: CSSProperties = showFoundWordStyle
+    ? { borderStyle: 'solid', borderWidth: 0, borderColor: 'transparent' }
+    : {
+        borderStyle: 'solid',
+        borderColor,
+        borderWidth:
+          cell.highlightedByPlayerId !== undefined ? 3 : isSelected ? 2 : 1,
+      };
 
   return (
     <button
       type="button"
+      aria-label={`Row ${row + 1}, column ${col + 1}, ${letterLabel}`}
+      aria-pressed={isSelected}
+      data-court-tile
+      data-row={row}
+      data-col={col}
       onMouseDown={(event) => {
         event.preventDefault();
         onSelectionStart(row, col);
       }}
       onMouseEnter={() => onSelectionContinue(row, col)}
-      title={`Row ${row + 1}, Column ${col + 1}`}
+      onTouchStart={(event) => {
+        event.preventDefault();
+        onSelectionStart(row, col);
+      }}
       className={[
         'flex items-center justify-center rounded-lg border border-gray-200 bg-white font-bold leading-none text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
         isLeading
@@ -182,19 +132,7 @@ export default function CourtTile({
       style={{
         backgroundColor: finalBackgroundColor,
         backgroundImage,
-        borderTop,
-        borderRight,
-        borderBottom,
-        borderLeft,
-        borderColor: !showFoundWordStyle ? borderColor : undefined,
-        borderWidth:
-          !showFoundWordStyle && cell.highlightedByPlayerId !== undefined
-            ? 3
-            : !showFoundWordStyle && isSelected
-              ? 2
-              : !showFoundWordStyle
-                ? 1
-                : 0,
+        ...borderStyle,
         outline: selectionOutline,
         outlineOffset: selectionOutline ? '-2px' : undefined,
         boxSizing: 'border-box',
@@ -202,6 +140,8 @@ export default function CourtTile({
         height: `${tileSize}px`,
         fontSize: `${fontSize}px`,
         flexShrink: 0,
+        touchAction: 'none',
+        userSelect: 'none',
       }}
     >
       {hideLetter ? '' : cell.char}

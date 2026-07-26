@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 import type { Game, Player } from '@/app/types';
-import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_components/court-size';
+import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
 function createEmptyCourt(): WordSoup.CourtCell[][] {
   return Array.from({ length: COURT_ROWS }, () =>
@@ -24,11 +24,22 @@ async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
   return results.filter((player): player is Player => player !== null);
 }
 
+function formatInitError(error: unknown): string {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return 'Could not load the Word Soup board.';
+}
+
 export function useWordSoupInit(gameId: number, playerId: number) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [courtReady, setCourtReady] = useState(false);
+  const [courtInitError, setCourtInitError] = useState<string | null>(null);
+  const [courtRetryToken, setCourtRetryToken] = useState(0);
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [visibleCourt, setVisibleCourt] = useState<WordSoup.CourtCell[][]>(createEmptyCourt);
@@ -80,6 +91,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
 
     let isMounted = true;
     setCourtReady(false);
+    setCourtInitError(null);
 
     const init = async () => {
       try {
@@ -99,9 +111,12 @@ export function useWordSoupInit(gameId: number, playerId: number) {
         setIntroStartedAt(result.introStartedAt ?? Date.now());
         setIsComplete(result.isComplete ?? false);
         setInitialFrozenPlayers(result.frozenPlayers ?? {});
+        setCourtInitError(null);
         setCourtReady(true);
       } catch (error) {
-        console.error('useWordSoupInit: failed to init court', error);
+        if (!isMounted) return;
+        setCourtReady(false);
+        setCourtInitError(formatInitError(error));
       }
     };
 
@@ -110,11 +125,17 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     return () => {
       isMounted = false;
     };
-  }, [game, gameId, playerId]);
+  }, [game, gameId, playerId, courtRetryToken]);
+
+  const retryInitCourt = useCallback(() => {
+    setCourtRetryToken((token) => token + 1);
+  }, []);
 
   return {
     loading,
     courtReady,
+    courtInitError,
+    retryInitCourt,
     game,
     players,
     visibleCourt,

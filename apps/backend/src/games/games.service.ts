@@ -3,6 +3,7 @@ import { gameWithPlayers, toApiGame } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
 import { GameGateway } from './game.gateway';
+import { WordSoupService } from './word_soup/word-soup.service';
 
 export type Game = {
   id: number;
@@ -23,6 +24,7 @@ export class GamesService {
     private readonly playersService: PlayersService,
     @Inject(forwardRef(() => GameGateway))
     private readonly gateway: GameGateway,
+    private readonly wordSoupService: WordSoupService,
   ) {}
 
   /**
@@ -327,6 +329,8 @@ export class GamesService {
     await this.emitLobbyUpdate(game.inGroup);
     // Notify all players inside the game room that the game has ended.
     this.gateway.emitGameFinished(gameId);
+    // Word Soup keeps an in-memory court + freeze timers — evict on finish.
+    this.wordSoupService.clearCourt(gameId);
     return result;
   }
 }

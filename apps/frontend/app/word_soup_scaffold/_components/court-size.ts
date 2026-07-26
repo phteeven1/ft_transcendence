@@ -2,9 +2,13 @@
 
 export type CourtSize = 'S' | 'M' | 'L';
 
-export const COURT_COLS = 18;
-export const COURT_ROWS = 10;
-export const COURT_TILE_GAP = 4;
+import {
+  COURT_COLS,
+  COURT_ROWS,
+  COURT_TILE_GAP,
+} from '../_lib/word-soup-constants';
+
+export { COURT_COLS, COURT_ROWS, COURT_TILE_GAP };
 
 export const COURT_SIZE_ORDER: CourtSize[] = ['L', 'M', 'S'];
 

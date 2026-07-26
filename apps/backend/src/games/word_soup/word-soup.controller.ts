@@ -1,24 +1,33 @@
-import { Controller, Post, Param, Body } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  ParseIntPipe,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { WordSoupService } from './word-soup.service';
-
-type PlayerRequestBody = {
-  playerId: number;
-};
+import { WordSoupPlayerBodyDto } from './word-soup.dto';
 
 @Controller('games')
+@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class WordSoupController {
   constructor(private readonly wordSoupService: WordSoupService) {}
 
   @Post(':id/initWordSoupCourt')
-  initCourt(@Param('id') id: string, @Body() body: PlayerRequestBody) {
-    return this.wordSoupService.initCourt(Number(id), Number(body.playerId));
+  initCourt(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: WordSoupPlayerBodyDto,
+  ) {
+    return this.wordSoupService.initCourt(id, body.playerId);
   }
 
   @Post(':gameId/markWordSoupIntroShown')
   markIntroShown(
-    @Param('gameId') gameId: string,
-    @Body() body: PlayerRequestBody,
+    @Param('gameId', ParseIntPipe) gameId: number,
+    @Body() body: WordSoupPlayerBodyDto,
   ) {
-    return this.wordSoupService.markIntroShown(Number(gameId), Number(body.playerId));
+    return this.wordSoupService.markIntroShown(gameId, body.playerId);
   }
 }

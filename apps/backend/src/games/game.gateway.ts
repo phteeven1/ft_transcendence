@@ -1,4 +1,4 @@
-import { forwardRef, Inject } from '@nestjs/common';
+import { forwardRef, Inject, OnModuleInit } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -27,7 +27,7 @@ interface SocketData {
 type TypedSocket = Socket<any, any, any, SocketData>;
 
 @WebSocketGateway({ cors: { origin: '*' } })
-export class GameGateway implements OnGatewayDisconnect {
+export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
   @WebSocketServer()
   server!: Server;
 
@@ -37,6 +37,12 @@ export class GameGateway implements OnGatewayDisconnect {
     private readonly wordBuildingService: WordBuildingService,
     private readonly wordSoupService: WordSoupService,
   ) {}
+
+  onModuleInit(): void {
+    this.wordSoupService.setUnfreezeHandler((gameId, playerId) => {
+      void this.broadcastPlayerUnfrozen(gameId, playerId);
+    });
+  }
 
   /**
    * Joins a client to the lobby room for a group and returns the current lobby state.
@@ -102,9 +108,6 @@ export class GameGateway implements OnGatewayDisconnect {
       data.gameId,
       data.playerId,
       data.selection,
-      () => {
-        void this.broadcastPlayerUnfrozen(data.gameId, data.playerId);
-      },
     );
 
     if (result.success) {
@@ -119,6 +122,13 @@ export class GameGateway implements OnGatewayDisconnect {
         pointsEarned: POINTS_PER_WORD,
         playerScores: result.playerScores,
         state: result.state,
+      });
+      // Always ack the guessing client so FE submitting state cannot stick
+      // if celebration / wordGuessed handling fails.
+      client.emit('game:guessResult', {
+        success: true,
+        message: `Found ${result.word}!`,
+        word: result.word,
       });
 
       if (result.solved) {
@@ -156,6 +166,7 @@ export class GameGateway implements OnGatewayDisconnect {
       frozenUntil,
       durationSeconds: FREEZE_DURATION_SECONDS,
       playerStreaks: meta?.playerStreaks,
+      kind: 'freeze',
     });
   }
 
@@ -163,11 +174,15 @@ export class GameGateway implements OnGatewayDisconnect {
     gameId: number,
     playerId: number,
   ): Promise<void> {
+    // Court may already be cleared after solve; still notify the room.
     const playerName = await this.getPlayerName(gameId, playerId);
+    const meta = this.wordSoupService.getScoreboardMeta(gameId);
     this.server.to(`game:${gameId}`).emit('game:playerUnfrozen', {
       playerId,
       playerName,
       message: `${playerName} is back in the game! 🎉`,
+      kind: 'unfreeze',
+      playerStreaks: meta?.playerStreaks,
     });
   }
 

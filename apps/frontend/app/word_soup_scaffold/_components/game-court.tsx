@@ -8,8 +8,7 @@
   Grid dimensions live in court-size.ts and must stay in sync with the backend.
 */
 
-import type { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import type { PointerEvent as ReactPointerEvent, ReactNode, TouchEvent as ReactTouchEvent } from 'react';
 import CourtTile from './court-tile';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
@@ -39,6 +38,21 @@ interface Props {
   onSelectionEnd: () => void;
 }
 
+function continueFromPoint(
+  clientX: number,
+  clientY: number,
+  onSelectionContinue: (row: number, col: number) => void,
+) {
+  const el = document.elementFromPoint(clientX, clientY);
+  const tile = el?.closest<HTMLElement>('[data-court-tile]');
+  if (!tile) return;
+  const row = Number(tile.dataset.row);
+  const col = Number(tile.dataset.col);
+  if (Number.isInteger(row) && Number.isInteger(col)) {
+    onSelectionContinue(row, col);
+  }
+}
+
 export default function GameCourt({
   courtSize,
   visibleCourt,
@@ -54,7 +68,6 @@ export default function GameCourt({
   onSelectionContinue,
   onSelectionEnd,
 }: Props) {
-  const t = useTranslations('games.wordSoup');
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
   const gridWidth = computeGridWidth(courtSize);
   const gridHeight = computeGridHeight(courtSize);
@@ -82,6 +95,22 @@ export default function GameCourt({
     isLocalPlayerFrozen ||
     wordCelebration !== null;
 
+  const handleTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (interactionDisabled) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    event.preventDefault();
+    continueFromPoint(touch.clientX, touch.clientY, onSelectionContinue);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Mouse uses tile mouseEnter; this path covers touch/pen after court capture.
+    if (interactionDisabled) return;
+    if (event.pointerType === 'mouse') return;
+    if (event.buttons === 0) return;
+    continueFromPoint(event.clientX, event.clientY, onSelectionContinue);
+  };
+
   return (
     <div
       className={[
@@ -90,11 +119,16 @@ export default function GameCourt({
       ].join(' ')}
       onMouseUp={interactionDisabled ? undefined : onSelectionEnd}
       onMouseLeave={interactionDisabled ? undefined : onSelectionEnd}
+      onTouchEnd={interactionDisabled ? undefined : onSelectionEnd}
+      onTouchCancel={interactionDisabled ? undefined : onSelectionEnd}
+      onTouchMove={interactionDisabled ? undefined : handleTouchMove}
+      onPointerMove={interactionDisabled ? undefined : handlePointerMove}
       style={{
         width: `${gridWidth}px`,
         minWidth: `${gridWidth}px`,
         height: `${gridHeight}px`,
         flexShrink: 0,
+        touchAction: 'none',
       }}
     >
       <div
@@ -110,15 +144,10 @@ export default function GameCourt({
         {visibleCourt.map((row, rowIndex) =>
           row.map((cell, colIndex) => {
             const celebrationHighlight = getCelebrationHighlight(rowIndex, colIndex);
-            const isLeading = celebrationHighlight?.status === 'leading';
 
             return (
               <CourtTile
-                key={
-                  isLeading
-                    ? `${rowIndex}-${colIndex}-ripple-${wordCelebration?.activeIndex}`
-                    : `${rowIndex}-${colIndex}`
-                }
+                key={`${rowIndex}-${colIndex}`}
                 cell={cell}
                 row={rowIndex}
                 col={colIndex}
@@ -140,7 +169,11 @@ export default function GameCourt({
       </div>
 
       {isLocalPlayerFrozen && (
-        <div className="word-soup-freeze-overlay pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl">
+        <div
+          className="word-soup-freeze-overlay pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl"
+          role="status"
+          aria-live="assertive"
+        >
           <div className="word-soup-freeze-card mx-4 max-w-[260px] rounded-2xl border-4 border-sky-200 bg-white/95 px-5 py-4 text-center shadow-lg">
             <div className="word-soup-freeze-snowflakes mb-2 text-3xl" aria-hidden="true">
               <span>🧊</span>

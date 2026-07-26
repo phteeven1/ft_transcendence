@@ -37,6 +37,16 @@ export namespace WordSoup {
     playerId: number;
     playerName: string;
     message: string;
+    /** Structured event kind from the socket (preferred over parsing `message`). */
+    kind?: 'freeze' | 'unfreeze';
+  };
+
+  export type GuessResultDto = {
+    success: boolean;
+    message: string;
+    frozen?: boolean;
+    frozenUntil?: number;
+    word?: string;
   };
 
   /** Broadcast when a word is found — scores/court details live on `state`. */

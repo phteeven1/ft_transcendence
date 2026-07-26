@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CourtCell,
@@ -10,95 +14,138 @@ import {
   FREEZE_DURATION_SECONDS,
   POINTS_PER_WORD,
 } from './word-soup.types';
+import {
+  COURT_COLS,
+  COURT_ROWS,
+  PLAYER_COLOURS,
+  WORDS_IN_GAME,
+} from './word-soup.constants';
+import {
+  generateTrueCourt,
+  normalizeVocabularyWords,
+} from './word-soup-placement-engine';
 
 type LoadedGame = Awaited<ReturnType<WordSoupService['loadGame']>>;
 
-// ── Grid dimensions — must match COURT_COLS / COURT_ROWS in game-court.tsx ──
-const COURT_COLS = 18;
-const COURT_ROWS = 10;
-
-const WORDS_IN_GAME = 10; // number of words from the vocabulary to be used in a game of Word Soup
-/** How many words (after the first) may deliberately share letters with earlier ones. */
-const CROSSING_WORD_BUDGET = 2;
-
-const PLAYER_COLOURS = [
-  '#e74c3c',
-  '#3498db',
-  '#c0ee19',
-  '#f39c12',
-  '#9b59b6',
-  '#1abc9c',
-  '#e67eed',
-  '#34495e',
-];
-
-const R: Direction = [0, 1]; // right
-const D: Direction = [1, 0]; // down
-
-const DIRECTIONS: Direction[] = [R, D];
+type UnfreezeHandler = (gameId: number, playerId: number) => void;
 
 @Injectable()
 export class WordSoupService {
-  
   constructor(private readonly prisma: PrismaService) {}
 
   private readonly sharedCourts = new Map<number, SharedWordSoupCourt>();
   private readonly freezeTimers = new Map<string, NodeJS.Timeout>();
+  /** Per-game singleflight so concurrent initCourt calls share one board. */
+  private readonly initInFlight = new Map<number, Promise<SharedWordSoupCourt>>();
+  private unfreezeHandler: UnfreezeHandler | null = null;
 
-  /* 
-    Initialise the game court if no game court exists for gameId
-    Otherwise return the existing game court from sharedCourts 
+  /**
+   * Registers the gateway callback used when freeze timers expire
+   * (including timers restored after reconnect / initCourt).
+   */
+  setUnfreezeHandler(handler: UnfreezeHandler): void {
+    this.unfreezeHandler = handler;
+  }
 
-    Return : WordSoupGameState
-  */ 
+  /**
+   * Initialise the game court if none exists for gameId; otherwise return the
+   * existing shared court. Concurrent callers are coalesced via singleflight.
+   */
   async initCourt(gameId: number, playerId: number): Promise<WordSoupGameState> {
-    
-    const game = await this.loadGame(gameId);
+    const court = await this.getOrCreateCourt(gameId);
+
+    if (!court.playerColours[playerId] && !(playerId in court.playerScores)) {
+      const isMember = await this.prisma.gamePlayer.count({
+        where: { gameId, playerId },
+      });
+      if (!isMember) {
+        throw new BadRequestException('You are not a player in this game.');
+      }
+    }
+
+    this.ensureFreezeTimers(gameId, court);
+    return this.buildGameState(court, playerId);
+  }
+
+  private async getOrCreateCourt(gameId: number): Promise<SharedWordSoupCourt> {
     const cached = this.sharedCourts.get(gameId);
-    
     if (cached) {
-      if (!cached.playerStreaks) {
-        cached.playerStreaks = {};
-      }
-      if (!cached.leftPlayers) {
-        cached.leftPlayers = {};
-      }
-      if (!cached.introStartedAt) {
-        cached.introStartedAt = Date.now();
-      }
-      this.ensureFreezeTimers(gameId, cached);
-      return this.buildGameState(cached, playerId);
+      this.ensureCourtDefaults(cached);
+      return cached;
+    }
+
+    const inflight = this.initInFlight.get(gameId);
+    if (inflight) {
+      return inflight;
+    }
+
+    const createPromise = this.createCourt(gameId).finally(() => {
+      this.initInFlight.delete(gameId);
+    });
+    this.initInFlight.set(gameId, createPromise);
+    return createPromise;
+  }
+
+  private ensureCourtDefaults(court: SharedWordSoupCourt): void {
+    if (!court.playerStreaks) court.playerStreaks = {};
+    if (!court.leftPlayers) court.leftPlayers = {};
+    if (!court.introStartedAt) court.introStartedAt = Date.now();
+  }
+
+  private async createCourt(gameId: number): Promise<SharedWordSoupCourt> {
+    const existing = this.sharedCourts.get(gameId);
+    if (existing) {
+      this.ensureCourtDefaults(existing);
+      return existing;
+    }
+
+    const game = await this.loadGame(gameId);
+
+    if (game.isFinished) {
+      throw new BadRequestException('This game has already finished.');
     }
 
     const playerIds = this.getPlayerIds(game);
-    const playerColours = this.createPlayerColours(playerIds);
-    const playerScores = this.createPlayerScores(playerIds);
-    const playerWordCounts = this.createPlayerWordCounts(playerIds);
-    const playerStreaks = this.createPlayerStreaks(playerIds);
-
     const selectedWords = this.selectWords(game);
-    const trueCourt = this.generateTrueCourt(selectedWords);
+    const { trueCourt, placedWords } = generateTrueCourt(selectedWords);
+
+    if (placedWords.length === 0) {
+      throw new BadRequestException(
+        'Could not place any vocabulary words on the board.',
+      );
+    }
+
     const visibleCourt = this.generateVisibleCourt(trueCourt);
-    const isIntroAlreadyShown = this.createIntroShownState(playerIds);
 
     const sharedCourt: SharedWordSoupCourt = {
       trueCourt,
       visibleCourt,
-      playerColours,
-      playerScores,
-      playerWordCounts,
-      playerStreaks,
+      playerColours: this.createPlayerColours(playerIds),
+      playerScores: this.createPlayerScores(playerIds),
+      playerWordCounts: this.createPlayerWordCounts(playerIds),
+      playerStreaks: this.createPlayerStreaks(playerIds),
       leftPlayers: {},
-      solutionWords: selectedWords,
+      solutionWords: placedWords,
       foundWords: [],
       frozenUntil: {},
-      isIntroAlreadyShown,
+      isIntroAlreadyShown: this.createIntroShownState(playerIds),
       introStartedAt: Date.now(),
     };
 
     this.sharedCourts.set(gameId, sharedCourt);
+    return sharedCourt;
+  }
 
-    return this.buildGameState(sharedCourt, playerId);
+  /** Evict in-memory court and cancel freeze timers for a finished/abandoned game. */
+  clearCourt(gameId: number): void {
+    const court = this.sharedCourts.get(gameId);
+    if (court) {
+      for (const playerIdStr of Object.keys(court.frozenUntil)) {
+        this.cancelFreezeTimer(gameId, Number(playerIdStr));
+      }
+    }
+    this.sharedCourts.delete(gameId);
+    this.initInFlight.delete(gameId);
   }
 
   private addScoreForPlayer(
@@ -110,145 +157,6 @@ export class WordSoupService {
       cached.playerScores[playerId] = 0;
     }
     cached.playerScores[playerId] += points;
-  }
-
-  private canPlace(
-    trueCourt: CourtCell[][],
-    word: string,
-    row: number,
-    col: number,
-    [dx, dy]: [number, number],
-  ): boolean {
-    for (let i = 0; i < word.length; i++) {
-      const r = row + i * dx;
-      const c = col + i * dy;
-
-      if (r < 0 || c < 0 || r >= COURT_ROWS || c >= COURT_COLS) return false;
-
-      const cell = trueCourt[r][c];
-      if (cell.char !== '' && cell.char !== word[i]) return false;
-    }
-
-    return true;
-  }
-
-  /** How many letters of `word` would land on matching letters already on the court. */
-  private countLetterOverlaps(
-    trueCourt: CourtCell[][],
-    word: string,
-    row: number,
-    col: number,
-    [dx, dy]: [number, number],
-  ): number {
-    let overlaps = 0;
-    for (let i = 0; i < word.length; i++) {
-      const cell = trueCourt[row + i * dx][col + i * dy];
-      if (cell.char === word[i]) overlaps += 1;
-    }
-    return overlaps;
-  }
-
-  private collectValidPlacements(
-    trueCourt: CourtCell[][],
-    word: string,
-  ): Array<{ row: number; col: number; direction: Direction; overlaps: number }> {
-    const placements: Array<{
-      row: number;
-      col: number;
-      direction: Direction;
-      overlaps: number;
-    }> = [];
-
-    for (const direction of DIRECTIONS) {
-      const [dx, dy] = direction;
-      const maxRow = dx === 0 ? COURT_ROWS - 1 : COURT_ROWS - word.length;
-      const maxCol = dy === 0 ? COURT_COLS - 1 : COURT_COLS - word.length;
-      if (maxRow < 0 || maxCol < 0) continue;
-
-      for (let row = 0; row <= maxRow; row++) {
-        for (let col = 0; col <= maxCol; col++) {
-          if (!this.canPlace(trueCourt, word, row, col, direction)) continue;
-          placements.push({
-            row,
-            col,
-            direction,
-            overlaps: this.countLetterOverlaps(trueCourt, word, row, col, direction),
-          });
-        }
-      }
-    }
-
-    return placements;
-  }
-
-  private pickPlacement(
-    placements: Array<{ row: number; col: number; direction: Direction; overlaps: number }>,
-    mode: 'centre' | 'prefer-cross' | 'avoid-cross',
-  ): { row: number; col: number; direction: Direction; overlaps: number } | null {
-    if (placements.length === 0) return null;
-
-    let candidates = placements;
-
-    if (mode === 'prefer-cross') {
-      const crossing = placements.filter((placement) => placement.overlaps > 0);
-      if (crossing.length > 0) {
-        const maxOverlaps = Math.max(...crossing.map((placement) => placement.overlaps));
-        candidates = crossing.filter((placement) => placement.overlaps === maxOverlaps);
-      }
-    } else if (mode === 'avoid-cross') {
-      const isolated = placements.filter((placement) => placement.overlaps === 0);
-      if (isolated.length > 0) {
-        candidates = isolated;
-      }
-    } else {
-      // First word: bias toward the centre so later words have room to cross.
-      const centreRow = (COURT_ROWS - 1) / 2;
-      const centreCol = (COURT_COLS - 1) / 2;
-      let bestDistance = Number.POSITIVE_INFINITY;
-      for (const placement of placements) {
-        const distance =
-          Math.abs(placement.row - centreRow) + Math.abs(placement.col - centreCol);
-        if (distance < bestDistance) bestDistance = distance;
-      }
-      const nearCentre = placements.filter((placement) => {
-        const distance =
-          Math.abs(placement.row - centreRow) + Math.abs(placement.col - centreCol);
-        return distance <= bestDistance + 2;
-      });
-      candidates = nearCentre.length > 0 ? nearCentre : placements;
-    }
-
-    return this.shuffle(candidates)[0] ?? null;
-  }
-
-  private generateTrueCourt(words: string[]): CourtCell[][] {
-    const trueCourt = this.createEmptyCourt();
-    // Longer words first: they form anchors that a few later words can cross.
-    const orderedWords = [...words].sort((a, b) => b.length - a.length || a.localeCompare(b));
-    let crossingsUsed = 0;
-
-    for (let index = 0; index < orderedWords.length; index++) {
-      const word = orderedWords[index];
-      if (!word) continue;
-
-      const placements = this.collectValidPlacements(trueCourt, word);
-      const mode =
-        index === 0
-          ? 'centre'
-          : crossingsUsed < CROSSING_WORD_BUDGET
-            ? 'prefer-cross'
-            : 'avoid-cross';
-      const chosen = this.pickPlacement(placements, mode);
-      if (!chosen) continue;
-
-      if (mode === 'prefer-cross' && chosen.overlaps > 0) {
-        crossingsUsed += 1;
-      }
-
-      this.placeWord(trueCourt, word, chosen.row, chosen.col, chosen.direction);
-    }
-
-    return trueCourt;
   }
 
   private cloneCourt(court: CourtCell[][]): CourtCell[][] {
@@ -266,23 +174,12 @@ export class WordSoupService {
     );
   }
 
-  private createEmptyCourt(): CourtCell[][] {
-    return Array.from({ length: COURT_ROWS }, () =>
-      Array.from({ length: COURT_COLS }, () => ({
-        char: '',
-      })),
-    );
-  }
-
   private createIntroShownState(playerIds: number[]) {
-    
-    return Object.fromEntries(
-      playerIds.map((id, hasPlayerSeenIntro) => [id, false]),
-    );
+    return Object.fromEntries(playerIds.map((id) => [id, false]));
   }
 
   private createPlayerColours(playerIds: number[]) {
-    const colours = this.shuffle(PLAYER_COLOURS);
+    const colours = this.shuffle([...PLAYER_COLOURS]);
 
     return Object.fromEntries(
       playerIds.map((id, index) => [id, colours[index % colours.length]]),
@@ -303,8 +200,13 @@ export class WordSoupService {
 
   /**
    * Marks a player as having left mid-game so the scoreboard can show them as gone.
+   * Evicts the court when every rostered player has left.
    */
-  markPlayerLeft(gameId: number, playerId: number, playerName: string): WordSoupGameState | null {
+  markPlayerLeft(
+    gameId: number,
+    playerId: number,
+    playerName: string,
+  ): WordSoupGameState | null {
     const court = this.sharedCourts.get(gameId);
     if (!court) return null;
 
@@ -313,12 +215,25 @@ export class WordSoupService {
     this.cancelFreezeTimer(gameId, playerId);
     delete court.frozenUntil[playerId];
 
-    return this.buildGameState(court, playerId);
+    const state = this.buildGameState(court, playerId);
+
+    const rosterIds = Object.keys(court.playerScores).map(Number);
+    const allLeft =
+      rosterIds.length > 0 &&
+      rosterIds.every((id) => Boolean(court.leftPlayers[id]));
+    if (allLeft) {
+      this.clearCourt(gameId);
+    }
+
+    return state;
   }
 
   getScoreboardMeta(
     gameId: number,
-  ): { playerStreaks: Record<number, number>; leftPlayers: Record<number, string> } | null {
+  ): {
+    playerStreaks: Record<number, number>;
+    leftPlayers: Record<number, string>;
+  } | null {
     const court = this.sharedCourts.get(gameId);
     if (!court) return null;
     return {
@@ -350,9 +265,7 @@ export class WordSoupService {
 
   private generateVisibleCourt(trueCourt: CourtCell[][]): CourtCell[][] {
     const visibleCourt = this.cloneCourt(trueCourt);
-
     this.fillRandom(visibleCourt);
-
     return visibleCourt;
   }
 
@@ -360,9 +273,9 @@ export class WordSoupService {
     return game.gamePlayers.map((gp) => gp.playerId).sort((a, b) => a - b);
   }
 
-  private getSelectionDirection( selection: Array<{ row: number; col: number }>,)
-    : [number, number] | null 
-  {  
+  private getSelectionDirection(
+    selection: Array<{ row: number; col: number }>,
+  ): [number, number] | null {
     if (selection.length < 2) return null;
 
     const [first, second] = selection;
@@ -396,7 +309,6 @@ export class WordSoupService {
   }
 
   private async loadGame(gameId: number) {
-    
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
       include: {
@@ -414,44 +326,26 @@ export class WordSoupService {
     });
 
     if (!game) {
-      throw new Error(`Game ${gameId} not found.`);
+      throw new NotFoundException(`Game ${gameId} not found.`);
     }
 
     return game;
   }
 
-  private placeWord(
-    trueCourt: CourtCell[][],
-    word: string,
-    row: number,
-    col: number,
-    [dx, dy]: [number, number],
-  ): boolean {
-    if (!this.canPlace(trueCourt, word, row, col, [dx, dy])) return false;
-
-    for (let i = 0; i < word.length; i++) {
-      const r = row + i * dx;
-      const c = col + i * dy;
-      trueCourt[r][c] = {
-        ...trueCourt[r][c],
-        char: word[i],
-      };
-    }
-
-    return true;
-  }
-
-  // Select a random subset of words from the vocabulary to be used in the game
-  // TODO : Need to consider size of vocabulary list and number of words to be used in the game (WORDS_IN_GAME) to avoid errors
   private selectWords(game: LoadedGame): string[] {
-    const vocabulary = (game.group.currentVocabulary?.words ?? [])
-      .map((word) => word.trim().toUpperCase())
-      .filter(Boolean);
+    const vocabulary = normalizeVocabularyWords(
+      game.group.currentVocabulary?.words ?? [],
+    );
+
+    if (vocabulary.length === 0) {
+      throw new BadRequestException(
+        'Vocabulary has no placeable words (need A–Z letters that fit the board).',
+      );
+    }
 
     return this.shuffle(vocabulary).slice(0, WORDS_IN_GAME);
   }
 
-  // Function to shuffle an array using the Fisher-Yates algorithm
   private shuffle<T>(array: T[]): T[] {
     const result = [...array];
     for (let i = result.length - 1; i > 0; i--) {
@@ -461,16 +355,26 @@ export class WordSoupService {
     return result;
   }
 
+  private isCourtComplete(court: SharedWordSoupCourt): boolean {
+    return (
+      court.solutionWords.length > 0 &&
+      court.foundWords.length >= court.solutionWords.length
+    );
+  }
+
   async submitGuess(
     gameId: number,
     playerId: number,
     selection: Position[],
-    onPlayerUnfrozen?: () => void,
   ): Promise<GuessResult> {
     const court = this.sharedCourts.get(gameId);
 
     if (!court) {
       return { success: false, message: 'Game not found' };
+    }
+
+    if (this.isCourtComplete(court)) {
+      return { success: false, message: 'This game is already complete.' };
     }
 
     if (this.isPlayerFrozen(court, playerId)) {
@@ -518,25 +422,23 @@ export class WordSoupService {
     const word = this.extractWord(court.visibleCourt, normalisedSelection).trim();
 
     if (!word) {
-      return this.penalizeIncorrectGuess(gameId, playerId, onPlayerUnfrozen);
+      return this.penalizeIncorrectGuess(gameId, playerId);
     }
 
     const normalisedWord = word.toUpperCase();
-    if (court.foundWords.some(found => found.word === normalisedWord)) {
+    if (court.foundWords.some((found) => found.word === normalisedWord)) {
       return { success: false, message: 'Already found' };
     }
 
-    // Ensure exact match with one of the solution words (defensive: avoid prefix/suffix matches)
     const matchedSolution = court.solutionWords.find(
       (s) => s === normalisedWord,
     );
     if (!matchedSolution) {
-      return this.penalizeIncorrectGuess(gameId, playerId, onPlayerUnfrozen);
+      return this.penalizeIncorrectGuess(gameId, playerId);
     }
 
-    // Extra defensive checks: lengths must match and each character must match the solution
     if (normalisedWord.length !== normalisedSelection.length) {
-      return this.penalizeIncorrectGuess(gameId, playerId, onPlayerUnfrozen);
+      return this.penalizeIncorrectGuess(gameId, playerId);
     }
 
     const exactCharMatch = normalisedSelection.every(({ row, col }, idx) => {
@@ -546,7 +448,7 @@ export class WordSoupService {
     });
 
     if (!exactCharMatch) {
-      return this.penalizeIncorrectGuess(gameId, playerId, onPlayerUnfrozen);
+      return this.penalizeIncorrectGuess(gameId, playerId);
     }
 
     court.foundWords.push({
@@ -567,9 +469,7 @@ export class WordSoupService {
       };
     });
 
-    const solved =
-      court.solutionWords.length > 0 &&
-      court.foundWords.length >= court.solutionWords.length;
+    const solved = this.isCourtComplete(court);
 
     return {
       success: true,
@@ -630,51 +530,55 @@ export class WordSoupService {
     return Math.max(1, Math.ceil((until - Date.now()) / 1000));
   }
 
-  markIntroShown(
-    gameId : number, 
-    playerId: number){
-      const court = this.sharedCourts.get(gameId);
-      if (!court) {
-        throw new Error(`Court ${gameId} not initialized`);
-      }
-      court.isIntroAlreadyShown[playerId] = true;
-  }
-
-  freezePlayer(
-    gameId: number,
-    playerId: number,
-    onUnfreeze?: () => void,
-  ): number {
+  markIntroShown(gameId: number, playerId: number): void {
     const court = this.sharedCourts.get(gameId);
     if (!court) {
-      throw new Error(`Court ${gameId} not initialized`);
+      throw new NotFoundException(`Court ${gameId} not initialized`);
+    }
+    court.isIntroAlreadyShown[playerId] = true;
+  }
+
+  freezePlayer(gameId: number, playerId: number): number {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) {
+      throw new NotFoundException(`Court ${gameId} not initialized`);
     }
 
     const frozenUntil = Date.now() + FREEZE_DURATION_SECONDS * 1000;
     court.frozenUntil[playerId] = frozenUntil;
 
+    this.scheduleUnfreeze(gameId, playerId, FREEZE_DURATION_SECONDS * 1000, () => {
+      delete court.frozenUntil[playerId];
+      this.unfreezeHandler?.(gameId, playerId);
+    });
+
+    return frozenUntil;
+  }
+
+  private scheduleUnfreeze(
+    gameId: number,
+    playerId: number,
+    delayMs: number,
+    onFire: () => void,
+  ): void {
     this.cancelFreezeTimer(gameId, playerId);
     const key = this.freezeTimerKey(gameId, playerId);
     const timer = setTimeout(() => {
       this.freezeTimers.delete(key);
-      delete court.frozenUntil[playerId];
-      onUnfreeze?.();
-    }, FREEZE_DURATION_SECONDS * 1000);
+      onFire();
+    }, delayMs);
     this.freezeTimers.set(key, timer);
-
-    return frozenUntil;
   }
 
   private penalizeIncorrectGuess(
     gameId: number,
     playerId: number,
-    onPlayerUnfrozen?: () => void,
   ): GuessResult {
     const court = this.sharedCourts.get(gameId);
     if (court) {
       court.playerStreaks[playerId] = 0;
     }
-    const frozenUntil = this.freezePlayer(gameId, playerId, onPlayerUnfrozen);
+    const frozenUntil = this.freezePlayer(gameId, playerId);
     return {
       success: false,
       message: 'Oops! Wrong word — chill for a bit! 🧊',
@@ -683,6 +587,10 @@ export class WordSoupService {
     };
   }
 
+  /**
+   * Recreate missing freeze timers after process restart / late init.
+   * Uses the registered unfreeze handler so clients still get `game:playerUnfrozen`.
+   */
   private ensureFreezeTimers(
     gameId: number,
     court: SharedWordSoupCourt,
@@ -704,17 +612,16 @@ export class WordSoupService {
       }
 
       const remainingMs = until - now;
-      const timer = setTimeout(() => {
-        this.freezeTimers.delete(key);
+      this.scheduleUnfreeze(gameId, playerId, remainingMs, () => {
         delete court.frozenUntil[playerId];
-      }, remainingMs);
-      this.freezeTimers.set(key, timer);
+        this.unfreezeHandler?.(gameId, playerId);
+      });
     }
   }
 
   private buildGameState(
-    court: SharedWordSoupCourt, 
-    playerId: number
+    court: SharedWordSoupCourt,
+    playerId: number,
   ): WordSoupGameState {
     return {
       visibleCourt: this.cloneCourt(court.visibleCourt),
@@ -724,10 +631,10 @@ export class WordSoupService {
       playerStreaks: { ...court.playerStreaks },
       leftPlayers: { ...court.leftPlayers },
       solutionWords: [...court.solutionWords],
-      foundWords: court.foundWords.map(found => ({
+      foundWords: court.foundWords.map((found) => ({
         word: found.word,
         playerId: found.playerId,
-        cells: found.cells.map(cell => ({
+        cells: found.cells.map((cell) => ({
           row: cell.row,
           col: cell.col,
         })),
@@ -736,9 +643,7 @@ export class WordSoupService {
       frozenPlayers: this.getActiveFrozenPlayers(court),
       hasPlayerSeenIntro: court.isIntroAlreadyShown[playerId] ?? false,
       introStartedAt: court.introStartedAt,
-      isComplete:
-        court.solutionWords.length > 0 &&
-        court.foundWords.length >= court.solutionWords.length,
+      isComplete: this.isCourtComplete(court),
     };
   }
 }

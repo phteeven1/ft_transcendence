@@ -34,6 +34,8 @@ function SpeechBubble({
           'min-h-[1.5em] text-center font-bold leading-snug text-teal-950',
           emphasize ? 'text-2xl tracking-[0.12em] sm:text-3xl' : 'text-base sm:text-lg',
         ].join(' ')}
+        aria-live="polite"
+        aria-atomic="true"
       >
         <span>{text}</span>
         {visible && (

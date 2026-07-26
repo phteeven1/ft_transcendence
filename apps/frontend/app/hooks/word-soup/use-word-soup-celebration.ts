@@ -3,9 +3,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Player } from '@/app/types';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
-
-const WORD_SOUP_TILE_ANIM_MS = 150;
-const POINTS_PER_WORD = 10;
+import {
+  POINTS_PER_WORD,
+  WORD_SOUP_TILE_ANIM_MS,
+} from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
 type WordGuessed = WordSoup.WordGuessedDto;
 

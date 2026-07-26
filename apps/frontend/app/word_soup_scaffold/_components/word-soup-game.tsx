@@ -52,14 +52,48 @@ export default function WordSoupGame() {
     );
   }
 
+  if (ws.courtInitError) {
+    return (
+      <div className="game-shell flex-1 flex items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-lg">
+          <h2 className="text-lg font-semibold text-rose-800">Couldn&apos;t start Word Soup</h2>
+          <p className="mt-2 text-sm text-gray-600">{ws.courtInitError}</p>
+          <button
+            type="button"
+            onClick={ws.retryInitCourt}
+            className="mt-5 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="game-shell flex-1 overflow-x-auto">
+      {!ws.isConnected && (
+        <div
+          className="sticky top-0 z-40 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-900"
+          role="status"
+          aria-live="polite"
+        >
+          Reconnecting to the game server…
+        </div>
+      )}
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
         {ws.showGameOverOverlay && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-emerald-950/80 px-4 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-emerald-950/80 px-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="word-soup-game-over-title"
+          >
             <div className="animate-[fadeIn_250ms_ease-out] w-full max-w-lg rounded-3xl border border-white/20 bg-white p-8 text-center shadow-2xl">
-              <div className="mb-4 text-5xl drop-shadow-sm">🎉</div>
-              <h2 className="text-3xl font-semibold text-emerald-800">Game complete!</h2>
+              <div className="mb-4 text-5xl drop-shadow-sm" aria-hidden="true">🎉</div>
+              <h2 id="word-soup-game-over-title" className="text-3xl font-semibold text-emerald-800">
+                Game complete!
+              </h2>
               <p className="mt-3 text-sm text-gray-600">
                 Everyone solved the board. What a brilliant round of Word Soup!
               </p>

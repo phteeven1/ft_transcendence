@@ -19,7 +19,7 @@ interface GameSocketState {
   cellLocks: ICellLocksPayload | null;
   wordGuessed: WordSoup.WordGuessedDto | null;
   wordGuessedSeq: number;
-  guessResult: { success: boolean; message: string; frozen?: boolean; frozenUntil?: number } | null;
+  guessResult: WordSoup.GuessResultDto | null;
   serverState: WordSoup.GameStateDto | null;
   frozenPlayers: Record<number, number>;
   freezeNotice: WordSoup.FreezeNoticeDto | null;
@@ -113,14 +113,17 @@ export function useGameSocket(gameId: number, playerId: number) {
     });
 
     // word_soup: Backend responds to the guessing player with success/failure.
-    socket.on('game:guessResult', (payload: { success: boolean; message: string; frozen?: boolean; frozenUntil?: number }) => {
+    socket.on('game:guessResult', (payload: WordSoup.GuessResultDto) => {
       if (!active) return;
       setState((s) => {
         const frozenPlayers = { ...s.frozenPlayers };
+        const playerStreaks = { ...s.playerStreaks };
         if (payload.frozen && payload.frozenUntil) {
           frozenPlayers[playerId] = payload.frozenUntil;
+          // Wrong guess ends the streak immediately for the local player.
+          playerStreaks[playerId] = 0;
         }
-        return { ...s, guessResult: payload, frozenPlayers };
+        return { ...s, guessResult: payload, frozenPlayers, playerStreaks };
       });
     });
 
@@ -130,24 +133,33 @@ export function useGameSocket(gameId: number, playerId: number) {
       frozenUntil: number;
       durationSeconds: number;
       playerStreaks?: Record<number, number>;
+      kind?: 'freeze';
     }) => {
       if (!active) return;
       setState((s) => ({
         ...s,
         frozenPlayers: { ...s.frozenPlayers, [payload.playerId]: payload.frozenUntil },
-        playerStreaks: payload.playerStreaks ?? {
-          ...s.playerStreaks,
+        playerStreaks: {
+          ...(payload.playerStreaks ?? s.playerStreaks),
+          // Always clear the frozen player's streak even if meta is partial.
           [payload.playerId]: 0,
         },
         freezeNotice: {
           playerId: payload.playerId,
           playerName: payload.playerName,
           message: `${payload.playerName} is frozen for ${payload.durationSeconds}s! 🧊`,
+          kind: 'freeze',
         },
       }));
     });
 
-    socket.on('game:playerUnfrozen', (payload: { playerId: number; playerName: string; message: string }) => {
+    socket.on('game:playerUnfrozen', (payload: {
+      playerId: number;
+      playerName: string;
+      message: string;
+      kind?: 'unfreeze';
+      playerStreaks?: Record<number, number>;
+    }) => {
       if (!active) return;
       setState((s) => {
         const frozenPlayers = { ...s.frozenPlayers };
@@ -155,10 +167,16 @@ export function useGameSocket(gameId: number, playerId: number) {
         return {
           ...s,
           frozenPlayers,
+          playerStreaks: {
+            ...(payload.playerStreaks ?? s.playerStreaks),
+            // Streak was broken by the freeze — keep it cleared after thaw.
+            [payload.playerId]: 0,
+          },
           freezeNotice: {
             playerId: payload.playerId,
             playerName: payload.playerName,
             message: payload.message,
+            kind: 'unfreeze',
           },
         };
       });
@@ -227,9 +245,9 @@ export function useGameSocket(gameId: number, playerId: number) {
     socketRef.current?.emit('cell:unlock', { gameId, playerId, row, col });
   }, [gameId, playerId]);
 
-  const emitSubmitGuess = (selection: Array<{ row: number; col: number }>) => {
+  const emitSubmitGuess = useCallback((selection: Array<{ row: number; col: number }>) => {
     socketRef.current?.emit('guess:submit', { gameId, playerId, selection });
-  };
+  }, [gameId, playerId]);
 
   return {
     ...state,
