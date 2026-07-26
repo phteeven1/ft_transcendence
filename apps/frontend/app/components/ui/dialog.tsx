@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from './button';
 
 type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive';
@@ -28,7 +29,7 @@ export function Dialog({
   children,
   footer,
   confirmLabel,
-  cancelLabel = 'Cancel',
+  cancelLabel,
   onConfirm,
   confirmVariant = 'accent',
   cancelVariant = 'ghost',
@@ -36,6 +37,9 @@ export function Dialog({
   wide = false,
   scrollable = false,
 }: DialogProps) {
+  const t = useTranslations('common');
+  const resolvedCancelLabel = cancelLabel ?? t('cancel');
+
   if (!open) return null;
 
   const showDefaultFooter = footer === undefined && (onConfirm !== undefined || confirmLabel);
@@ -73,7 +77,7 @@ export function Dialog({
         {showDefaultFooter && (
           <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
             <Button variant={cancelVariant} onClick={onClose}>
-              {cancelLabel}
+              {resolvedCancelLabel}
             </Button>
             {onConfirm && confirmLabel && (
               <Button

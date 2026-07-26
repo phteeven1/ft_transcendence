@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-
+import { useTranslations } from 'next-intl';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
 import { useWordSoupGame } from '../../hooks/word-soup/use-word-soup-game';
@@ -22,6 +22,7 @@ import { useCourtSize } from './use-court-size';
 const MAX_COURT_FRAME_WIDTH = computeGridWidth('L');
 
 export default function WordSoupGame() {
+  const tCommon = useTranslations('common');
   useSessionGuard();
 
   const searchParams = useSearchParams();
@@ -46,7 +47,7 @@ export default function WordSoupGame() {
   if (ws.loading || !ws.game) {
     return (
       <div className="game-shell flex-1 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading game...</p>
+        <p className="text-muted-foreground">{tCommon('loadingGame')}</p>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from './button';
 
 export interface ModalProps {
@@ -16,8 +17,11 @@ export function Modal({
   onClose,
   title,
   children,
-  confirmLabel = 'OK',
+  confirmLabel,
 }: ModalProps) {
+  const t = useTranslations('common');
+  const resolvedConfirmLabel = confirmLabel ?? t('ok');
+
   if (!open) return null;
 
   return (
@@ -36,7 +40,7 @@ export function Modal({
         <div className="text-muted-foreground mb-6">{children}</div>
         <div className="flex justify-end">
           <Button variant="accent" onClick={onClose}>
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </div>
       </div>

@@ -5,6 +5,7 @@
   Message is limited to 300 characters.
 */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { chatApi } from '@/lib/api/chat';
 import { Button, Dialog } from '../../components/ui';
@@ -16,6 +17,8 @@ type Props = {
 };
 
 export default function MemberToAdmin({ syncAndRefresh }: Props) {
+  const t = useTranslations('group');
+  const tCommon = useTranslations('common');
   const { group, user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage]     = useState('');
@@ -60,24 +63,22 @@ export default function MemberToAdmin({ syncAndRefresh }: Props) {
         fullWidth
         className="clay-action-btn"
       >
-        Ask Admin
+        {t('askAdmin')}
       </Button>
 
       <Dialog
         open={showModal}
         onClose={handleClose}
-        title="Message Admin"
-        cancelLabel="Cancel"
-        confirmLabel={isSending ? 'Sending…' : 'Confirm'}
+        title={t('messageAdminModal.title')}
+        cancelLabel={tCommon('cancel')}
+        confirmLabel={isSending ? tCommon('sending') : tCommon('confirm')}
         onConfirm={handleConfirm}
         confirmVariant="accent"
         cancelVariant="ghost"
         confirmDisabled={!message.trim() || isSending}
       >
         <p className="text-sm text-muted-foreground mb-4">
-          Write a question or concern to the admins of group{' '}
-          <span className="font-semibold text-foreground">{group.name}</span>.
-          It will be visible in the Group Chat, but only to the admins of the group.
+          {t('messageAdminModal.description', { groupName: group.name })}
         </p>
 
         <textarea
@@ -85,11 +86,14 @@ export default function MemberToAdmin({ syncAndRefresh }: Props) {
           onChange={(e) => setMessage(e.target.value.slice(0, MAX_CHARS))}
           rows={4}
           autoFocus
-          placeholder="Your message…"
+          placeholder={t('messageAdminModal.placeholder')}
           className="clay-input w-full resize-none text-sm mb-1"
         />
         <p className="text-xs text-muted-foreground text-right">
-          {message.length} / {MAX_CHARS}
+          {t('messageAdminModal.charCount', {
+            current: message.length,
+            max: MAX_CHARS,
+          })}
         </p>
       </Dialog>
     </>

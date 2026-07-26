@@ -1,0 +1,819 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "ok": "OK",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "loading": "Chargement…",
+    "back": "Retour",
+    "close": "Fermer",
+    "yes": "Oui",
+    "no": "Non",
+    "error": "Erreur",
+    "success": "Succès",
+    "submit": "Envoyer",
+    "rename": "Renommer",
+    "create": "Créer",
+    "start": "Démarrer",
+    "join": "Rejoindre",
+    "leave": "Quitter",
+    "stay": "Rester",
+    "skip": "Passer",
+    "next": "Suivant",
+    "sending": "Envoi…",
+    "sendingEllipsis": "Envoi...",
+    "checking": "Vérification…",
+    "starting": "Démarrage…",
+    "leaving": "Départ…",
+    "ending": "Fin…",
+    "loadingGame": "Chargement du jeu...",
+    "loadingEllipsis": "Chargement...",
+    "admin": "Admin",
+    "member": "Membre",
+    "you": "toi",
+    "active": "Actif",
+    "unknownError": "Erreur inconnue",
+    "somethingWentWrong": "Une erreur s'est produite. Veuillez réessayer.",
+    "emDash": "—",
+    "playerNumber": "Joueur #{id}",
+    "and": "et",
+    "word": "Mot",
+    "meaning": "Signification",
+    "minutes": "Minutes",
+    "email": "E-mail"
+  },
+  "nav": {
+    "brand": "Dicteé",
+    "playingAs": "Joue en tant que",
+    "inGroup": "dans le groupe",
+    "minLeft": "{minutes} min restantes",
+    "signedInAs": "Connecté en tant que",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "register": "S'inscrire",
+    "selectLanguage": "Choisir la langue",
+    "footerTagline": "© {year} Dicteé — jeux de vocabulaire pour les enfants",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "systemStatus": "État du système",
+    "legalNav": "Mentions légales",
+    "languages": {
+      "en": "English",
+      "de": "Deutsch",
+      "fr": "Français"
+    }
+  },
+  "home": {
+    "metaTitle": "Dicteé",
+    "metaDescription": "Transformez les listes de vocabulaire en jeux d'apprentissage amusants pour les enfants",
+    "tagline": "Apprendre des mots en jouant",
+    "title": "Dicteé",
+    "description": "Bienvenue sur Dicteé — l'application ludique qui transforme les listes de vocabulaire en jeux d'apprentissage. Téléchargez des listes de mots, invitez d'autres parents de la classe, puis configurez un lien direct pour que votre enfant joue avec ses amis.",
+    "getStarted": "Commencer",
+    "signIn": "Se connecter",
+    "featureUploadTitle": "Télécharger des listes",
+    "featureUploadText": "Importer du vocabulaire depuis des PDF ou des photos",
+    "featureInviteTitle": "Inviter des parents",
+    "featureInviteText": "Créer un groupe pour votre classe",
+    "featurePlayTitle": "Les enfants jouent",
+    "featurePlayText": "Des jeux de mots qui ressemblent à des jouets"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Se connecter",
+      "subtitle": "Bon retour ! Veuillez vous connecter pour continuer.",
+      "usernameLabel": "Nom d'utilisateur",
+      "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "submit": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "registerLink": "Inscrivez-vous ici",
+      "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide. Veuillez réessayer."
+    },
+    "register": {
+      "title": "S'inscrire",
+      "subtitle": "Créez votre compte pour commencer.",
+      "usernameLabel": "Nom d'utilisateur",
+      "usernamePlaceholder": "Choisissez un nom d'utilisateur",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Créez un nouveau mot de passe",
+      "emailLabel": "Votre e-mail",
+      "emailPlaceholder": "Entrez votre e-mail",
+      "submit": "Créer un compte",
+      "failed": "Inscription échouée. Veuillez réessayer."
+    }
+  },
+  "invitation": {
+    "validating": "Validation de l'invitation...",
+    "invalid": {
+      "title": "Invitation invalide",
+      "message": "Ce lien d'invitation est invalide ou a expiré. Veuillez demander une nouvelle invitation."
+    },
+    "auth": {
+      "title": "Vous avez été invité à rejoindre {groupName}",
+      "subtitle": "Veuillez vous connecter ou vous inscrire pour continuer.",
+      "signInTab": "Se connecter",
+      "registerTab": "S'inscrire",
+      "usernameLabel": "Nom d'utilisateur",
+      "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "Entrez votre e-mail",
+      "submit": "Envoyer",
+      "signInFailed": "Nom d'utilisateur ou mot de passe invalide. Veuillez réessayer.",
+      "registerFailed": "Inscription échouée. Le nom d'utilisateur est peut-être déjà pris.",
+      "authRequired": "Veuillez vous connecter ou vous inscrire avant de rejoindre le groupe."
+    },
+    "confirm": {
+      "title": "Rejoindre {groupName} ?",
+      "message": "Souhaitez-vous rejoindre le groupe d'apprentissage {groupName} ?",
+      "decline": "Non merci",
+      "join": "Rejoindre le groupe"
+    },
+    "joining": "Adhésion à {groupName}...",
+    "error": {
+      "title": "Une erreur s'est produite",
+      "retry": "Réessayer",
+      "joinFailed": "Une erreur s'est produite lors de l'adhésion au groupe. Veuillez réessayer."
+    },
+    "alreadyMember": {
+      "title": "Déjà membre",
+      "message": "Vous êtes déjà membre de {groupName}.",
+      "goToGroup": "Aller au groupe"
+    },
+    "defaultInviteText": "Bonjour, je souhaite vous inviter à rejoindre l'application Dicteé, où votre enfant pourra apprendre des listes de vocabulaire de manière ludique et interactive. Cliquez sur le lien ci-dessous pour rejoindre le groupe d'apprentissage {groupName} dont je fais également partie."
+  },
+  "dashboard": {
+    "title": "Gérer les groupes",
+    "welcome": "Bon retour, {name} !",
+    "userSettings": "Paramètres utilisateur",
+    "createNewGroup": "Créer un nouveau groupe",
+    "settings": {
+      "title": "Paramètres utilisateur",
+      "usernameLabel": "Nom d'utilisateur",
+      "realNameLabel": "Nom réel",
+      "emailLabel": "E-mail",
+      "relationshipCommentLabel": "Commentaire de relation",
+      "relationshipCommentHint": "Par exemple : Maman de Dana",
+      "showToGroup": "Afficher aux autres utilisateurs du même groupe",
+      "passwordLabel": "Mot de passe",
+      "changePassword": "Changer le mot de passe",
+      "changePasswordTitle": "Changer le mot de passe",
+      "oldPasswordLabel": "Ancien mot de passe",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "confirmNewPasswordLabel": "Confirmer le nouveau mot de passe",
+      "passwordChangedSuccess": "Votre mot de passe a été modifié avec succès.",
+      "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "passwordEmpty": "Le nouveau mot de passe ne peut pas être vide.",
+      "oldPasswordIncorrect": "L'ancien mot de passe est incorrect. Veuillez réessayer.",
+      "usernameChangedReminder": "Votre nom d'utilisateur a été changé en {username}. N'oubliez pas de l'utiliser lors de votre prochaine connexion."
+    },
+    "createGroup": {
+      "title": "Créer un nouveau groupe",
+      "subtitle": "Choisissez un nom pour votre nouveau groupe.",
+      "groupNameLabel": "Nom du groupe",
+      "groupNamePlaceholder": "Entrez un nom de groupe",
+      "submit": "Créer le groupe",
+      "backToDashboard": "Retour au tableau de bord",
+      "failed": "Échec de la création du groupe. Veuillez réessayer."
+    }
+  },
+  "group": {
+    "roleAdmin": "Vous êtes administrateur de ce groupe.",
+    "roleMember": "Vous êtes membre de ce groupe.",
+    "members": "Membres",
+    "selectMemberHint": "Sélectionnez un membre pour voir son profil.",
+    "tabs": {
+      "profile": "Profil du membre",
+      "chat": "Chat de groupe",
+      "games": "Session de jeu"
+    },
+    "managePlayers": "Gérer les joueurs",
+    "manageVocabulary": "Gérer le vocabulaire",
+    "promoteToAdmin": "Promouvoir admin",
+    "resignAdmin": "Démissionner comme admin",
+    "sendInvite": "Envoyer une invitation",
+    "expelMember": "Exclure un membre",
+    "messageAdmins": "Contacter les admins",
+    "messageGroup": "Contacter le groupe",
+    "askAdmin": "Demander à l'admin",
+    "renameGroup": "Renommer le groupe",
+    "leaveGroup": "Quitter le groupe",
+    "deleteGroup": "Supprimer le groupe",
+    "backToDashboard": "Retour au tableau de bord",
+    "gameSessionOverviewComingSoon": "Aperçu des sessions de jeu bientôt disponible.",
+    "profile": {
+      "loading": "Chargement du profil...",
+      "loadFailed": "Impossible de charger le profil.",
+      "noPlayers": "Aucun joueur dans ce groupe.",
+      "inGameSession": "En session de jeu",
+      "currentlyOffline": "Actuellement hors ligne",
+      "expiresIn": "expire dans {time}",
+      "since": "depuis {time}",
+      "justNow": "à l'instant",
+      "minutesAgo": "{count, plural, one {il y a # min} other {il y a # min}}",
+      "hoursAgo": "{count, plural, one {il y a # heure} other {il y a # heures}}",
+      "daysAgo": "{count, plural, one {il y a # jour} other {il y a # jours}}",
+      "zeroMins": "0 min"
+    },
+    "sendInviteModal": {
+      "title": "Envoyer une invitation",
+      "invitationLabel": "Invitation",
+      "emailPlaceholder": "destinataire@exemple.com",
+      "submit": "Envoyer",
+      "success": "Invitation envoyée avec succès à {email}.",
+      "failedPrefix": "Échec de l'envoi de l'invitation :"
+    },
+    "promote": {
+      "title": "Promouvoir admin",
+      "selectMembers": "Sélectionnez les membres à promouvoir.",
+      "promoteButton": "Promouvoir",
+      "noSelection": "Aucun membre n'a été sélectionné pour la promotion au rang d'admin.",
+      "successOne": "{name} a été promu admin dans le groupe {groupName}.",
+      "successMany": "{names} ont été promus admins dans le groupe {groupName}.",
+      "failed": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "resign": {
+      "onlyAdminWarning": "Vous êtes le seul admin de ce groupe. Promouvez un autre membre admin avant de démissionner.",
+      "confirm": "Êtes-vous sûr de vouloir démissionner comme admin de {groupName} ? Vous deviendrez un membre ordinaire.",
+      "success": "Vous avez démissionné avec succès comme admin de {groupName}. Vous êtes maintenant un membre ordinaire.",
+      "failed": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "rename": {
+      "title": "Renommer le groupe",
+      "newNameLabel": "Nouveau nom du groupe",
+      "newNamePlaceholder": "Entrez le nouveau nom du groupe",
+      "unchanged": "Le nom du groupe n'a pas été modifié.",
+      "success": "Groupe renommé avec succès en {name}.",
+      "failed": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "expel": {
+      "title": "Exclure un membre",
+      "selectMember": "Sélectionnez un membre à exclure.",
+      "expelButton": "Exclure",
+      "confirmTitle": "Êtes-vous sûr ?",
+      "confirmMessage": "Cela exclura {memberName} de {groupName}. Cette action est irréversible.",
+      "success": "{memberName} a été exclu de {groupName}.",
+      "failed": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "delete": {
+      "title": "Supprimer {groupName} ?",
+      "confirmMessage": "Cela supprimera définitivement le groupe et tous les profils de joueurs qui lui appartiennent. Cette action est irréversible.",
+      "otherAdminsBlock": "Vous ne pouvez pas supprimer {groupName} tant qu'il y a d'autres admins. Veuillez d'abord rétrograder tous les autres admins.",
+      "failed": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "leave": {
+      "confirmTitle": "Quitter le groupe ?",
+      "confirmMessage": "Êtes-vous sûr de vouloir quitter définitivement {groupName} ?",
+      "onlyAdminBlock": "Vous êtes le seul admin de ce groupe. Avant de partir, vous devez nommer un autre membre admin.",
+      "lastMemberTitle": "Le groupe sera supprimé",
+      "lastMemberMessage": "Vous êtes le dernier membre de {groupName}. Si vous partez, le groupe sera définitivement supprimé.",
+      "failed": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "messageAdminsModal": {
+      "title": "Contacter les admins",
+      "description": "Écrivez un message à tous les autres admins du groupe {groupName}. Il apparaîtra dans le chat de groupe, visible uniquement par les admins.",
+      "placeholder": "Votre message…",
+      "charCount": "{current} / {max}"
+    },
+    "messageGroupModal": {
+      "title": "Contacter le groupe",
+      "description": "Écrivez un message à tous les admins et membres du groupe {groupName}. Il apparaîtra dans le chat de groupe, visible par tous les membres du groupe.",
+      "placeholder": "Votre message…",
+      "charCount": "{current} / {max}"
+    },
+    "messageAdminModal": {
+      "title": "Contacter l'admin",
+      "description": "Écrivez une question ou une préoccupation aux admins du groupe {groupName}. Elle sera visible dans le chat de groupe, mais uniquement par les admins du groupe.",
+      "placeholder": "Votre message…",
+      "charCount": "{current} / {max}"
+    }
+  },
+  "chat": {
+    "filters": {
+      "log": "Journal",
+      "adm": "Adm",
+      "gen": "Gén",
+      "mem": "Mbr"
+    },
+    "noEntries": "Aucune entrée à afficher.",
+    "logEvents": {
+      "createGroup": "<author></author> a créé le groupe",
+      "joinGroup": "<author></author> a rejoint le groupe",
+      "leaveGroup": "<author></author> a quitté le groupe",
+      "promoteAdmin": "<author></author> a promu <target></target> au rang d'admin",
+      "resignAdmin": "<author></author> a démissionné comme admin",
+      "renameGroup": "<author></author> a renommé le groupe en \"{content}\"",
+      "expelMember": "<author></author> a exclu <target></target>",
+      "deleteGroup": "<author></author> a supprimé le groupe",
+      "uploadVocabulary": "<author></author> a téléchargé le vocabulaire \"{content}\"",
+      "setActiveVocabulary": "<author></author> a défini \"{content}\" comme vocabulaire actif",
+      "renameVocabulary": "<author></author> a renommé un vocabulaire en \"{content}\"",
+      "deleteVocabulary": "<author></author> a supprimé le vocabulaire \"{content}\"",
+      "sendInvite": "<author></author> a envoyé une invitation",
+      "unknown": "<author></author> a effectué une action inconnue"
+    }
+  },
+  "players": {
+    "title": "Gérer les joueurs",
+    "backToGroup": "Retour au groupe",
+    "yourPlayers": "Vos joueurs",
+    "noPlayers": "Aucun joueur pour le moment.",
+    "createPlayer": "Créer un joueur",
+    "renamePlayer": "Renommer le joueur",
+    "editPassphraseButton": "Modifier la PassPhrase",
+    "deletePlayer": "Supprimer le joueur",
+    "inviteToPlay": "Inviter à jouer",
+    "endGameSession": "Terminer la session de jeu",
+    "create": {
+      "title": "Créer un profil de joueur",
+      "playerNameLabel": "Nom du joueur",
+      "playerNamePlaceholder": "ex. Adam",
+      "secretQuestionLabel": "Question secrète",
+      "secretQuestionPlaceholder": "ex. Comment s'appelle ton chien ?",
+      "answerLabel": "Réponse",
+      "answerPlaceholder": "ex. Rex",
+      "allFieldsRequired": "Tous les champs sont obligatoires.",
+      "failed": "Échec de la création du joueur. Veuillez réessayer."
+    },
+    "rename": {
+      "title": "Renommer {name}",
+      "placeholder": "Nouveau nom"
+    },
+    "editPassphrase": {
+      "title": "Modifier la PassPhrase pour {name}",
+      "secretQuestionLabel": "Question secrète",
+      "answerLabel": "Réponse",
+      "answerPlaceholder": "Nouvelle réponse"
+    },
+    "delete": {
+      "title": "Supprimer {name} ?",
+      "confirmMessage": "Cela supprimera définitivement ce profil de joueur. Cette action est irréversible."
+    },
+    "invite": {
+      "title": "Inviter {name} à jouer",
+      "playNow": "Jouer maintenant",
+      "createPlayButton": "Créer un bouton de jeu",
+      "sendInviteToPlay": "Envoyer une invitation à jouer",
+      "activeSessionWarning": "{name} a déjà une session de jeu active. Veuillez d'abord la terminer avec le bouton Terminer la session de jeu.",
+      "sessionDurationTitle": "Combien de temps {name} peut-il/elle jouer ?",
+      "minutesLabel": "Minutes",
+      "minutesPlaceholder": "Entrez les minutes",
+      "activeSessionExists": "{name} a déjà une session active. Terminez-la d'abord.",
+      "startFailed": "Impossible de démarrer la session. Veuillez réessayer."
+    },
+    "endSession": {
+      "title": "Terminer la session de jeu",
+      "confirmMessage": "Êtes-vous sûr de vouloir terminer la session de jeu en cours de {name} ? La personne sera déconnectée immédiatement.",
+      "endSessionButton": "Terminer la session",
+      "failed": "Échec de la fin de session. Veuillez réessayer."
+    }
+  },
+  "vocabulary": {
+    "title": "Gérer le vocabulaire",
+    "vocabulariesHeading": "Vocabulaires",
+    "noVocabularies": "Aucun vocabulaire pour le moment.",
+    "active": "Actif",
+    "backToGroup": "Retour au groupe",
+    "importTitle": "Import de vocabulaire par IA",
+    "fromLanguage": "Langue source",
+    "toLanguage": "Langue cible",
+    "extractAndSave": "Extraire et enregistrer avec l'IA",
+    "aiReading": "L'IA lit votre fichier...",
+    "useInGames": "Utiliser dans les jeux",
+    "renameVocabulary": "Renommer le vocabulaire",
+    "editVocabulary": "Modifier le vocabulaire",
+    "shareVocabulary": "Partager le vocabulaire",
+    "deleteVocabulary": "Supprimer le vocabulaire",
+    "wordColumn": "Mot",
+    "meaningColumn": "Signification",
+    "commitChanges": "Enregistrer les modifications",
+    "addWordPair": "Ajouter une paire de mots",
+    "deleteWordTitle": "Supprimer le mot",
+    "minimumWordsTitle": "Minimum 5 mots requis",
+    "minimumWordsAlert": "Une liste de vocabulaire doit contenir au moins 5 mots.",
+    "extractionFailed": "L'extraction par IA a échoué. Veuillez vous assurer que le fichier contient au moins 5 mots et réessayer.",
+    "rename": {
+      "title": "Renommer {name}",
+      "placeholder": "Nouveau nom"
+    },
+    "edit": {
+      "title": "Modifier : {name}"
+    },
+    "delete": {
+      "title": "Supprimer {name} ?",
+      "confirmMessage": "Cela supprimera définitivement cette liste de vocabulaire. Cette action est irréversible."
+    },
+    "languages": {
+      "en": "Anglais",
+      "fr": "Français",
+      "de": "Allemand",
+      "es": "Espagnol",
+      "it": "Italien",
+      "pt": "Portugais",
+      "ru": "Russe",
+      "zh": "Chinois",
+      "ja": "Japonais"
+    },
+    "testListName": "Liste de test Anglais - Allemand"
+  },
+  "games": {
+    "lobby": {
+      "greeting": "Salut, {name} !",
+      "subtitle": "Choisis un jeu",
+      "wordBuilding": "Construction de mots",
+      "wordSoup": "Soupe de mots",
+      "createNewGame": "Créer un nouveau jeu",
+      "exitGames": "Quitter les jeux"
+    },
+    "initiate": {
+      "message": "Veux-tu démarrer une nouvelle session ? D'autres membres de ton groupe peuvent rejoindre avant qu'elle ne commence."
+    },
+    "join": {
+      "title": "Rejoindre {gameName} ?",
+      "message": "Ce jeu commencera {timing}. Veux-tu rejoindre ?",
+      "timingIn": "dans {minutes}m {seconds}s",
+      "timingSoon": "bientôt",
+      "timingOneMore": "quand un joueur de plus rejoindra",
+      "timingMorePlayers": "quand {count} joueurs de plus rejoindront"
+    },
+    "forceStart": {
+      "message": "Veux-tu interrompre l'attente et démarrer {gameName} avec {count, plural, one {# joueur} other {# joueurs}} ?"
+    },
+    "pending": {
+      "clickToStart": "Cliquer pour démarrer",
+      "waiting": "En attente...",
+      "clickToJoin": "Cliquer pour rejoindre",
+      "playerCount": "{count, plural, one {# joueur} other {# joueurs}}, {elapsed}"
+    },
+    "puzzle": {
+      "loading": "Chargement du puzzle…",
+      "noVocabulary": "Aucune liste de vocabulaire n'est encore active.",
+      "scrambleInstruction": "Déplace les lettres mélangées pour trouver la signification du mot…",
+      "success": "SUCCÈS !",
+      "false": "FAUX",
+      "meansWhatPrompt": "Quelle traduction correspond le mieux…",
+      "correctionTitle": "Puzzle de correction",
+      "correctionSubtitle": "Trouve et corrige l'erreur"
+    },
+    "info": {
+      "game": "Jeu",
+      "gameNumber": "Jeu #{id}",
+      "started": "Démarré",
+      "initiatedBy": "Initié par",
+      "players": "Joueurs",
+      "startedAt": "Démarré {time}"
+    },
+    "controls": {
+      "leaveGame": "Quitter le jeu",
+      "gameOver": "Partie terminée"
+    },
+    "abandon": {
+      "title": "Quitter ce jeu ?",
+      "stayInGame": "Rester dans le jeu",
+      "leaveGame": "Quitter le jeu",
+      "message": "Si tu pars maintenant, ta session de jeu se terminera immédiatement. Tu ne pourras pas rejoindre à nouveau — un parent devra démarrer une nouvelle session pour toi."
+    },
+    "wordBuilding": {
+      "defaultName": "Construction de mots",
+      "generating": "Génération de la grille…",
+      "instructions": "Clique sur une case pour sélectionner automatiquement la direction · Tape des lettres pour remplir · Vert = correct · Bleu = vide · Rouge = faux · Espace/Tab pour changer de direction",
+      "directionAcross": "→ Horizontal",
+      "directionDown": "↓ Vertical",
+      "scores": "Scores",
+      "noPointsYet": "Aucun point pour le moment",
+      "across": "Horizontal",
+      "down": "Vertical",
+      "puzzleSolved": "🎉 Puzzle résolu !",
+      "puzzleComplete": "Puzzle terminé !",
+      "returningToLobby": "Retour au lobby…"
+    },
+    "wordSoup": {
+      "courtSizeSmall": "S",
+      "courtSizeMedium": "M",
+      "courtSizeLarge": "L",
+      "cellTitle": "Ligne {row}, Colonne {col}"
+    }
+  },
+  "session": {
+    "over": {
+      "title": "Session terminée !",
+      "messageWithName": "Bravo {name} ! Ta session est terminée.",
+      "messageGeneric": "Ta session est terminée.",
+      "askParent": "Demande à un parent de démarrer une nouvelle session quand tu voudras rejouer."
+    },
+    "alreadyInGame": {
+      "title": "Déjà dans un jeu",
+      "message": "Tu joues déjà dans un autre onglet. Retourne dans cet onglet pour continuer."
+    }
+  },
+  "legal": {
+    "header": "Mentions légales",
+    "lastUpdated": "Dernière mise à jour : {date}",
+    "footerQuestions": "Des questions sur ces politiques ? Contactez l'administrateur de votre groupe ou l'équipe du projet Dicteé via votre école ou organisation.",
+    "seeAlso": "Voir aussi :",
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "metaTitle": "Politique de confidentialité — Dicteé",
+      "metaDescription": "Comment Dicteé collecte, utilise et protège les informations personnelles.",
+      "lastUpdated": "30 juin 2026",
+      "sections": {
+        "introduction": {
+          "title": "1. Introduction",
+          "paragraphs": [
+            "Dicteé (« nous », « notre ») est une application web qui aide les familles et les groupes scolaires à transformer les listes de vocabulaire en jeux d'apprentissage multijoueurs. Cette Politique de confidentialité explique quelles informations nous collectons, pourquoi nous les collectons, comment nous les utilisons et les choix qui s'offrent à vous.",
+            "Dicteé est conçu pour être utilisé par les parents et tuteurs (« Utilisateurs ») qui gèrent les groupes et le vocabulaire, et par les enfants qui jouent sous supervision parentale via des profils « Joueur » distincts. En créant un compte ou en utilisant le service, vous acceptez cette politique."
+          ]
+        },
+        "informationWeCollect": {
+          "title": "2. Informations que nous collectons",
+          "accountInfo": {
+            "title": "2.1 Informations de compte (Utilisateurs / parents)",
+            "items": [
+              "Nom d'utilisateur et mot de passe choisis lors de l'inscription",
+              "Adresse e-mail (utilisée pour les invitations de groupe et les messages liés au compte)",
+              "Champs de profil optionnels que vous choisissez de partager avec les membres du groupe (ex. nom d'affichage)",
+              "Appartenance au groupe, rôle d'administrateur et historique des invitations"
+            ]
+          },
+          "playerProfiles": {
+            "title": "2.2 Profils de joueurs (enfants)",
+            "items": [
+              "Nom d'affichage du joueur et passphrase optionnelle pour l'accès à la session",
+              "Association au groupe, participation aux jeux et scores pendant les sessions actives",
+              "Les sessions de joueur utilisent des jetons à courte durée de vie stockés dans la session du navigateur jusqu'à la fin ou l'expiration de la session"
+            ]
+          },
+          "contentYouUpload": {
+            "title": "2.3 Contenu que vous téléchargez ou créez",
+            "items": [
+              "Listes de vocabulaire (mots, traductions, notes) que vous importez ou saisissez manuellement",
+              "Fichiers que vous téléchargez pour l'extraction de vocabulaire (ex. PDF, photos de listes de mots). Les images peuvent être traitées par OCR et structurées par IA pour créer des entrées de vocabulaire",
+              "Messages de chat de groupe et entrées de journal système visibles au sein de votre groupe",
+              "État de jeu, coups et scores générés pendant les sessions multijoueurs"
+            ]
+          },
+          "technicalData": {
+            "title": "2.4 Données techniques et d'utilisation",
+            "items": [
+              "Type de navigateur, informations sur l'appareil et adresse IP dans le cadre des journaux normaux du serveur web et de l'API",
+              "Préférence linguistique stockée localement dans votre navigateur (localStorage)",
+              "Métadonnées de connexion WebSocket nécessaires au fonctionnement des jeux en temps réel et des mises à jour de groupe"
+            ]
+          }
+        },
+        "howWeUse": {
+          "title": "3. Comment nous utilisons vos informations",
+          "intro": "Nous utilisons les informations collectées pour :",
+          "items": [
+            "Créer et gérer les comptes Utilisateur et Joueur",
+            "Exploiter les groupes, invitations, bibliothèques de vocabulaire et jeux multijoueurs",
+            "Envoyer des e-mails d'invitation lorsqu'un admin de groupe invite un parent par e-mail",
+            "Extraire le vocabulaire des documents et images téléchargés",
+            "Afficher le chat, les journaux d'activité et les résultats de jeu au sein de votre groupe",
+            "Maintenir la sécurité, résoudre les erreurs et améliorer la fiabilité",
+            "Respecter les obligations légales applicables"
+          ],
+          "noSell": "Nous ne vendons pas vos informations personnelles. Nous n'utilisons pas vos données à des fins de publicité tierce."
+        },
+        "childrensPrivacy": {
+          "title": "4. Confidentialité des enfants",
+          "paragraphs": [
+            "Les comptes Joueur sont destinés à être créés et gérés par un parent ou tuteur via un compte Utilisateur. Les enfants ne doivent pas créer de compte Utilisateur sans le consentement parental.",
+            "Nous ne collectons que les informations nécessaires au jeu et à la participation au groupe (nom du joueur, activité de jeu, scores). Les parents contrôlent le groupe auquel un enfant adhère via les invitations et peuvent mettre fin aux sessions de joueur depuis le tableau de bord parental.",
+            "Si vous pensez que nous avons collecté des informations personnelles d'un enfant sans consentement approprié, contactez-nous afin que nous puissions examiner et supprimer le compte si nécessaire."
+          ]
+        },
+        "sharing": {
+          "title": "5. Partage et services tiers",
+          "intro": "Nous pouvons partager des informations dans ces situations limitées :",
+          "items": [
+            {
+              "label": "Au sein de votre groupe :",
+              "text": "Les autres membres du même groupe peuvent voir les noms d'utilisateur, le vocabulaire partagé, les messages de chat (selon les règles de visibilité) et l'activité de jeu"
+            },
+            {
+              "label": "Prestataires de services :",
+              "text": "Nous utilisons une infrastructure et des outils pour faire fonctionner l'application, y compris l'hébergement, la livraison d'e-mails (SMTP) et les services IA/OCR pour l'extraction de vocabulaire à partir des fichiers téléchargés. Ces prestataires traitent les données uniquement pour exécuter le service en notre nom"
+            },
+            {
+              "label": "Exigences légales :",
+              "text": "Nous pouvons divulguer des informations si la loi l'exige ou pour protéger les droits, la sécurité et la protection des utilisateurs et du service"
+            }
+          ],
+          "uploadWarning": "Lorsque vous téléchargez des images ou des documents pour l'import de vocabulaire, le contenu du fichier peut être envoyé à des services de reconnaissance automatisée pour détecter et structurer les mots. Ne téléchargez pas de documents contenant des données personnelles sensibles sans rapport avec l'apprentissage du vocabulaire."
+        },
+        "dataRetention": {
+          "title": "6. Conservation des données",
+          "paragraphs": [
+            "Nous conservons les données de compte et de groupe tant que votre compte ou groupe existe, sauf si vous demandez la suppression ou si nous devons les supprimer pour des raisons légales. Les journaux de chat et l'historique des jeux peuvent être conservés pour soutenir l'administration du groupe et les dossiers d'apprentissage.",
+            "Les jetons d'invitation expirent après une période limitée. Les jetons de session de joueur expirent lorsque la session se termine ou expire."
+          ]
+        },
+        "security": {
+          "title": "7. Sécurité",
+          "paragraphs": [
+            "Nous prenons des mesures raisonnables pour protéger les informations contre l'accès non autorisé, la perte ou l'utilisation abusive, y compris des contrôles d'accès sur les données de groupe et un transport sécurisé (HTTPS en production).",
+            "Aucun service en ligne n'est totalement sécurisé. Vous êtes responsable de la confidentialité de votre mot de passe et de la supervision de l'utilisation des sessions Joueur par les enfants."
+          ]
+        },
+        "yourChoices": {
+          "title": "8. Vos choix et droits",
+          "intro": "Selon votre localisation, vous pouvez avoir le droit de :",
+          "items": [
+            "Accéder à vos informations de profil Utilisateur ou les mettre à jour",
+            "Quitter un groupe ou supprimer un groupe que vous administrez (sous réserve des règles d'administration dans l'application)",
+            "Demander la correction ou la suppression des données personnelles que nous détenons à votre sujet",
+            "Retirer votre consentement lorsque le traitement est basé sur le consentement"
+          ],
+          "contact": "Pour exercer ces droits, utilisez les fonctionnalités de gestion de compte et de groupe dans l'application ou contactez l'administrateur de votre groupe."
+        },
+        "international": {
+          "title": "9. Utilisateurs internationaux",
+          "paragraphs": [
+            "Dicteé peut être hébergé et exploité depuis des serveurs dans la région choisie par votre déploiement ou votre école. Si vous utilisez le service depuis l'extérieur de cette région, vos informations peuvent être transférées et traitées à cet endroit."
+          ]
+        },
+        "changes": {
+          "title": "10. Modifications de cette politique",
+          "paragraphs": [
+            "Nous pouvons mettre à jour cette Politique de confidentialité de temps à autre. Nous publierons la version révisée sur cette page et mettrons à jour la date « Dernière mise à jour ». L'utilisation continue de Dicteé après l'entrée en vigueur des modifications constitue l'acceptation de la politique mise à jour."
+          ]
+        }
+      }
+    },
+    "terms": {
+      "title": "Conditions d'utilisation",
+      "metaTitle": "Conditions d'utilisation — Dicteé",
+      "metaDescription": "Conditions générales d'utilisation de la plateforme d'apprentissage du vocabulaire Dicteé.",
+      "lastUpdated": "30 juin 2026",
+      "privacyPolicyLink": "Politique de confidentialité",
+      "sections": {
+        "agreement": {
+          "title": "1. Accord",
+          "paragraphs": [
+            "Les présentes Conditions d'utilisation (« Conditions ») régissent votre accès à et votre utilisation de Dicteé, y compris notre site web, API, jeux multijoueurs, fonctionnalités de groupe et services associés (« Service »). En créant un compte, en rejoignant un groupe ou en utilisant le Service de quelque manière que ce soit, vous acceptez ces Conditions et notre <link>Politique de confidentialité</link>.",
+            "Si vous n'acceptez pas, n'utilisez pas le Service. Si vous acceptez ces Conditions au nom d'un enfant ou d'une organisation, vous déclarez avoir l'autorité pour le faire."
+          ]
+        },
+        "whoMayUse": {
+          "title": "2. Qui peut utiliser Dicteé",
+          "items": [
+            {
+              "label": "Utilisateurs (parents/tuteurs) :",
+              "text": "Doivent être suffisamment âgés pour conclure un contrat contraignant dans leur juridiction (généralement 18 ans ou l'âge de la majorité). Les Utilisateurs gèrent les groupes, le vocabulaire, les invitations et les profils Joueur."
+            },
+            {
+              "label": "Joueurs (enfants) :",
+              "text": "Peuvent utiliser des profils Joueur créés sous un compte Utilisateur. Les Joueurs accèdent aux jeux via des liens de session ou des passphrases fournis par un parent ou un admin de groupe."
+            },
+            {
+              "label": "Groupes :",
+              "text": "L'accès se fait uniquement sur invitation. Vous ne pouvez rejoindre que les groupes auxquels vous avez été invité ou que vous créez vous-même."
+            }
+          ]
+        },
+        "accountsAndSecurity": {
+          "title": "3. Comptes et sécurité",
+          "intro": "Vous acceptez de :",
+          "items": [
+            "Fournir des informations d'inscription exactes et les maintenir à jour",
+            "Maintenir la confidentialité de votre mot de passe et de vos identifiants de session de joueur",
+            "Notifier l'admin de votre groupe ou le propriétaire du compte si vous suspectez un accès non autorisé",
+            "Accepter la responsabilité de l'activité sous votre compte, sauf si vous signalez rapidement une utilisation abusive"
+          ],
+          "suspension": "Nous pouvons suspendre ou résilier les comptes qui violent ces Conditions ou présentent un risque pour les autres utilisateurs."
+        },
+        "acceptableUse": {
+          "title": "4. Utilisation acceptable",
+          "intro": "Vous ne pouvez pas utiliser Dicteé pour :",
+          "items": [
+            "Harceler, intimider ou menacer d'autres utilisateurs, en particulier les mineurs",
+            "Télécharger du contenu illégal, offensant ou sexuellement explicite",
+            "Télécharger des données personnelles de tiers sans autorisation (au-delà des supports d'apprentissage du vocabulaire)",
+            "Tenter de contourner la sécurité, extraire des données du Service ou perturber les jeux ou serveurs",
+            "Usurper l'identité d'une autre personne ou fausser votre affiliation à un groupe",
+            "Utiliser des bots automatisés pour jouer ou spammer le chat de groupe",
+            "Rétro-ingénierie ou revendre le Service, sauf autorisation par les licences open source applicables"
+          ],
+          "moderation": "Les admins de groupe peuvent exclure les membres qui enfreignent les règles du groupe. Nous pouvons supprimer du contenu ou restreindre l'accès à notre discrétion pour protéger la communauté."
+        },
+        "userContent": {
+          "title": "5. Contenu utilisateur et vocabulaire",
+          "paragraphs": [
+            "Vous conservez la propriété des listes de vocabulaire, messages et autres contenus que vous soumettez (« Contenu utilisateur »). En soumettant du Contenu utilisateur, vous accordez à Dicteé une licence non exclusive et mondiale pour héberger, stocker, afficher et traiter ce contenu uniquement pour exploiter le Service pour vous et votre groupe — y compris l'extraction assistée par OCR et IA lorsque vous téléchargez des fichiers.",
+            "Vous déclarez avoir le droit de télécharger du Contenu utilisateur et qu'il ne viole pas les droits de propriété intellectuelle ou de confidentialité de tiers."
+          ]
+        },
+        "groupsAndInvitations": {
+          "title": "6. Groupes, invitations et actions d'administration",
+          "paragraphs": [
+            "Les créateurs de groupes deviennent administrateurs avec des outils pour inviter des membres, gérer le vocabulaire, modérer la visibilité du chat et exclure des membres. Les actions d'administration (expulsions, promotions, suppression de groupe) sont enregistrées dans le fil d'activité du groupe lorsque configuré.",
+            "Les invitations envoyées par e-mail incluent un lien unique. Ne partagez pas les liens d'invitation publiquement ; ils sont destinés à des destinataires spécifiques invités dans votre groupe de classe ou de famille."
+          ]
+        },
+        "gamesAndMultiplayer": {
+          "title": "7. Jeux et fonctionnalités multijoueurs",
+          "paragraphs": [
+            "Les jeux multijoueurs reposent sur des connexions en temps réel. Nous ne garantissons pas une disponibilité ininterrompue. Les scores et résultats de jeu sont stockés pour affichage au sein de votre session de groupe. Les règles de jeu sont définies dans l'application ; les litiges entre joueurs doivent être résolus par les parents ou les admins de groupe.",
+            "Les sessions de joueur « Jouer maintenant » sont limitées dans le temps. Les parents sont responsables de la fin des sessions et de la supervision du jeu en ligne."
+          ]
+        },
+        "thirdPartyServices": {
+          "title": "8. Services tiers",
+          "paragraphs": [
+            "Le Service peut intégrer la livraison d'e-mails, la reconnaissance optique de caractères et des modèles de langage pour traiter les supports de vocabulaire téléchargés. Votre utilisation de ces fonctionnalités est également soumise aux politiques des fournisseurs sous-jacents le cas échéant."
+          ]
+        },
+        "disclaimer": {
+          "title": "9. Exclusion de garanties",
+          "paragraphs": [
+            "LE SERVICE EST FOURNI « EN L'ÉTAT » ET « SELON DISPONIBILITÉ » SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU IMPLICITE, Y COMPRIS LES GARANTIES IMPLICITES DE QUALITÉ MARCHANDE, D'ADÉQUATION À UN USAGE PARTICULIER ET DE NON-CONTREFAÇON.",
+            "Nous ne garantissons pas que le Service sera exempt d'erreurs, sécurisé ou adapté à tout contexte éducatif. Le vocabulaire extrait automatiquement à partir de photos ou de PDF peut contenir des erreurs ; vérifiez toujours les listes importées avant de les utiliser en classe ou pour les devoirs."
+          ]
+        },
+        "limitationOfLiability": {
+          "title": "10. Limitation de responsabilité",
+          "paragraphs": [
+            "DANS LA MESURE MAXIMALE PERMISE PAR LA LOI, DICTEÉ ET SES CONTRIBUTEURS NE SERONT PAS RESPONSABLES DE TOUT DOMMAGE INDIRECT, ACCESSOIRE, SPÉCIAL, CONSÉCUTIF OU PUNITIF, NI DE TOUTE PERTE DE DONNÉES, DE PROFITS OU DE RÉPUTATION, DÉCOULANT DE VOTRE UTILISATION DU SERVICE.",
+            "Notre responsabilité totale pour toute réclamation relative au Service est limitée au montant que vous nous avez payé pour le Service dans les douze mois précédant la réclamation, ou zéro si le Service est fourni gratuitement."
+          ]
+        },
+        "termination": {
+          "title": "11. Résiliation",
+          "paragraphs": [
+            "Vous pouvez cesser d'utiliser le Service à tout moment. Les admins de groupe peuvent supprimer les groupes qu'ils gèrent. Nous pouvons suspendre ou résilier l'accès si vous violez ces Conditions ou si la poursuite de l'exploitation présente des risques juridiques ou de sécurité.",
+            "Les sections qui, par leur nature, doivent survivre à la résiliation (y compris les exclusions de garantie, la limitation de responsabilité et le droit applicable) resteront en vigueur."
+          ]
+        },
+        "changesToTerms": {
+          "title": "12. Modifications du Service et des Conditions",
+          "paragraphs": [
+            "Nous pouvons modifier les fonctionnalités ou ces Conditions de temps à autre. Les modifications importantes seront publiées sur cette page avec une date mise à jour. Votre utilisation continue après l'entrée en vigueur des modifications constitue l'acceptation des Conditions révisées."
+          ]
+        },
+        "governingLaw": {
+          "title": "13. Droit applicable",
+          "paragraphs": [
+            "Ces Conditions sont régies par les lois applicables dans la juridiction de l'organisation exploitant ce déploiement Dicteé, sans égard aux principes de conflit de lois. Les tribunaux de cette juridiction auront compétence exclusive pour les litiges, sauf si les lois impératives de protection des consommateurs de votre pays en disposent autrement."
+          ]
+        },
+        "contact": {
+          "title": "14. Contact",
+          "paragraphs": [
+            "Pour toute question concernant ces Conditions, contactez l'administrateur de votre groupe ou l'équipe responsable de l'hébergement de cette instance Dicteé."
+          ]
+        }
+      }
+    }
+  },
+  "status": {
+    "title": "État du système",
+    "subtitle": "Contrôle de santé en direct de l'API Dicteé",
+    "overall": "Global",
+    "healthy": "Opérationnel",
+    "degraded": "Dégradé",
+    "unreachable": "Injoignable",
+    "version": "Version de l'API",
+    "uptime": "Durée de fonctionnement",
+    "uptimeSeconds": "{seconds} s",
+    "timestamp": "Dernière vérification",
+    "database": "PostgreSQL",
+    "up": "En ligne",
+    "down": "Hors ligne",
+    "latency": "Temps de réponse : {ms} ms",
+    "refresh": "Actualiser",
+    "loadError": "Impossible d'atteindre le point de contrôle de santé."
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "unknown": "Erreur inconnue",
+    "signInFailed": "Nom d'utilisateur ou mot de passe invalide. Veuillez réessayer.",
+    "registrationFailed": "Inscription échouée. Veuillez réessayer.",
+    "registrationUsernameTaken": "Inscription échouée. Le nom d'utilisateur est peut-être déjà pris.",
+    "createGroupFailed": "Échec de la création du groupe. Veuillez réessayer.",
+    "createPlayerFailed": "Échec de la création du joueur. Veuillez réessayer.",
+    "endSessionFailed": "Échec de la fin de session. Veuillez réessayer.",
+    "startSessionFailed": "Impossible de démarrer la session. Veuillez réessayer.",
+    "activeSessionExists": "{name} a déjà une session active. Terminez-la d'abord.",
+    "activePlaySessionExists": "{name} a déjà une session de jeu active. Veuillez d'abord la terminer avec le bouton Terminer la session de jeu.",
+    "invitationSendFailed": "Échec de l'envoi de l'invitation : {error}",
+    "vocabularyMinimumWords": "Une liste de vocabulaire doit contenir au moins 5 mots.",
+    "vocabularyExtractionFailed": "L'extraction par IA a échoué. Veuillez vous assurer que le fichier contient au moins 5 mots et réessayer.",
+    "joinGroupFailed": "Une erreur s'est produite lors de l'adhésion au groupe. Veuillez réessayer.",
+    "authRequiredForJoin": "Veuillez vous connecter ou vous inscrire avant de rejoindre le groupe.",
+    "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+    "passwordEmpty": "Le nouveau mot de passe ne peut pas être vide.",
+    "oldPasswordIncorrect": "L'ancien mot de passe est incorrect. Veuillez réessayer.",
+    "allFieldsRequired": "Tous les champs sont obligatoires.",
+    "loadProfileFailed": "Impossible de charger le profil.",
+    "leaveGroupFailed": "Une erreur s'est produite. Veuillez réessayer.",
+    "promoteNoSelection": "Aucun membre n'a été sélectionné pour la promotion au rang d'admin.",
+    "deleteGroupOtherAdmins": "Vous ne pouvez pas supprimer {groupName} tant qu'il y a d'autres admins. Veuillez d'abord rétrograder tous les autres admins.",
+    "resignOnlyAdmin": "Vous êtes le seul admin de ce groupe. Promouvez un autre membre admin avant de démissionner.",
+    "leaveOnlyAdmin": "Vous êtes le seul admin de ce groupe. Avant de partir, vous devez nommer un autre membre admin."
+  }
+}

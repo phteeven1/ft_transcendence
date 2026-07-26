@@ -9,6 +9,7 @@ export { vocabulariesApi } from './vocabularies';
 export { gamesApi, wordBuildingApi, wordSoupApi } from './games';
 export { invitationsApi } from './invitations';
 export { chatApi } from './chat';
+export { healthApi } from './health';
 export type {
   ChatEntryType,
   ChatEventKey,
@@ -59,3 +60,4 @@ export type {
   SendInvitationInput,
   AcceptInvitationInput,
 } from './invitations';
+export type { HealthResponse, HealthCheckResult, HealthCheckStatus } from './health';

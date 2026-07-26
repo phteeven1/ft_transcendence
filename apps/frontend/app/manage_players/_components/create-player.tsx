@@ -8,6 +8,7 @@ opens modal form, using the following states:
 */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
@@ -20,6 +21,8 @@ type Props = {
 };
 
 export default function CreatePlayer({ onCreated }: Props) {
+  const t = useTranslations('players');
+  const tCommon = useTranslations('common');
   const { user, group } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [playerName, setPlayerName] = useState('');
@@ -27,13 +30,10 @@ export default function CreatePlayer({ onCreated }: Props) {
   const [passAnswer, setPassAnswer] = useState('');
   const [error, setError] = useState('');
 
-  // guards against no user or group, then validates that all three form fields are non-empty
-  // POSTs to backend with player data, on success calls onCreated(created) to add new player to the parent's list
-  // then calls handleClose. On failure, sets error message
   const handleCreate = async () => {
     if (!user || !group) return;
     if (!playerName.trim() || !passQuestion.trim() || !passAnswer.trim()) {
-      setError('All fields are required.');
+      setError(t('create.allFieldsRequired'));
       return;
     }
     try {
@@ -48,12 +48,10 @@ export default function CreatePlayer({ onCreated }: Props) {
       handleClose();
     } catch (error) {
       console.error('createPlayer failed:', error);
-      setError('Failed to create player. Please try again.');
+      setError(t('create.failed'));
     }
   };
 
-  // resets all state back to empty and closes modal. Ensures that next time form
-  // is opened, it is not pre filled with old data
   const handleClose = () => {
     setIsOpen(false);
     setPlayerName('');
@@ -67,7 +65,6 @@ export default function CreatePlayer({ onCreated }: Props) {
     passQuestion.trim() !== '' &&
     passAnswer.trim() !== '';
 
-  // renders two things. CreatePlayer button is always visible. modal is only rendered when isOpen === true
   return (
     <>
       <Button
@@ -76,40 +73,40 @@ export default function CreatePlayer({ onCreated }: Props) {
         className="clay-action-btn"
         onClick={() => setIsOpen(true)}
       >
-        Create Player
+        {t('createPlayer')}
       </Button>
 
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        title="Create Player Profile"
-        confirmLabel="Create"
+        title={t('create.title')}
+        confirmLabel={tCommon('create')}
         onConfirm={handleCreate}
         confirmDisabled={!canCreate}
       >
         <div className="space-y-4">
           <Input
-            label="Player Name"
+            label={t('create.playerNameLabel')}
             type="text"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="e.g. Adam"
+            placeholder={t('create.playerNamePlaceholder')}
             autoComplete="new-password"
           />
           <Input
-            label="Secret Question"
+            label={t('create.secretQuestionLabel')}
             type="text"
             value={passQuestion}
             onChange={(e) => setPassQuestion(e.target.value)}
-            placeholder="e.g. What is your dog's name?"
+            placeholder={t('create.secretQuestionPlaceholder')}
             autoComplete="new-password"
           />
           <Input
-            label="Answer"
+            label={t('create.answerLabel')}
             type="text"
             value={passAnswer}
             onChange={(e) => setPassAnswer(e.target.value)}
-            placeholder="e.g. Rex"
+            placeholder={t('create.answerPlaceholder')}
             autoComplete="new-password"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}

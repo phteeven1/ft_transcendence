@@ -2,12 +2,14 @@
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../types';
 import UserSettings from './_components/user-settings';
 import { PageShell, Tile } from '../components/ui';
 
 export default function Dashboard() {
+  const t = useTranslations('dashboard');
   const { user, syncGroup, refreshUser } = useAuth();
   const router = useRouter();
   const [adminGroups, setAdminGroups] = useState<Group[]>([]);
@@ -62,10 +64,10 @@ export default function Dashboard() {
   return (
     <PageShell>
       <h1 className="font-heading text-3xl font-bold mb-2 text-center text-foreground">
-        Manage Groups
+        {t('title')}
       </h1>
       <p className="mb-8 text-muted-foreground text-center">
-        Welcome back, <strong className="text-foreground">{user.name}</strong>!
+        {t('welcome', { name: user.name })}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <UserSettings />
@@ -73,7 +75,7 @@ export default function Dashboard() {
           tileVariant="create"
           onClick={() => router.push('/create_group')}
         >
-          Create New Group
+          {t('createNewGroup')}
         </Tile>
         {adminGroups.map((group) => (
           <Tile

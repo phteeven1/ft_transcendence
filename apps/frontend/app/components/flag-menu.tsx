@@ -1,27 +1,36 @@
-/* Flagmenu starts with English flag. If changed, it stores in local storage.
- * It uses React Context and localStorage to store language. 
- * import { useLanguage } from '/context/language-context.tsx' to access language.
- * layout.tsx is wrapped in LanguageProvider
-*/
+'use client';
 
-'use client'
-
-import { useLanguage, LANGUAGES } from '../context/language-context';
-import { useState } from 'react'
-import Image from 'next/image'
+import { useLanguage, LANGUAGES, useSetLocale } from '../context/language-context';
+import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { Button, Dropdown, DropdownItem } from './ui';
 
 export default function FlagMenu() {
-  const { selected, setSelected } = useLanguage();
+  const { selected } = useLanguage();
+  const setLocale = useSetLocale();
+  const t = useTranslations('nav');
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Select language"
+        aria-label={t('selectLanguage')}
         aria-expanded={isOpen}
       >
         <Image src={selected.flag} alt={selected.label} width={24} height={18} />
@@ -32,7 +41,10 @@ export default function FlagMenu() {
           {LANGUAGES.map((lang) => (
             <DropdownItem
               key={lang.code}
-              onClick={() => { setSelected(lang); setIsOpen(false); }}
+              onClick={() => {
+                setLocale(lang);
+                setIsOpen(false);
+              }}
             >
               <Image src={lang.flag} alt={lang.label} width={24} height={18} />
               <span>{lang.label}</span>

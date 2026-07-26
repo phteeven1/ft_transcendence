@@ -50,11 +50,11 @@ type CourtTileProps = {
  * @param onClick Callback fired when the cell is clicked.
  * @param lockedByName Display name of the player currently editing this cell (others only).
  * @param onTileDrop Callback invoked when a letter tile from the rack is dropped here.
- * @returns A tile sized for the crossword grid.
+ * @returns A responsive tile that fills its CSS Grid cell with a square aspect ratio.
  */
 export function CourtTile({ cell, isSelected, onClick, lockedByName, onTileDrop }: CourtTileProps) {
   if (cell.status === 'none') {
-    return <div className="w-8 h-8 bg-gray-900" />;
+    return <div className="aspect-square bg-gray-900" />;
   }
 
   const isDroppable = cell.status === 'empty' || cell.status === 'wrong';
@@ -76,8 +76,8 @@ export function CourtTile({ cell, isSelected, onClick, lockedByName, onTileDrop 
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       className={[
-        'relative w-8 h-8 flex items-center justify-center overflow-hidden',
-        'text-sm font-bold border cursor-pointer select-none',
+        'relative aspect-square flex items-center justify-center overflow-hidden',
+        'font-bold border cursor-pointer select-none',
         'transition-colors duration-150',
         STATUS_BG[cell.status],
         STATUS_TEXT[cell.status],
@@ -93,7 +93,7 @@ export function CourtTile({ cell, isSelected, onClick, lockedByName, onTileDrop 
       )}
 
       {/* The letter */}
-      <span className="mt-1.5 text-[0.9rem] leading-none">{cell.char}</span>
+      <span className="text-xs leading-none">{cell.char}</span>
 
       {/* Live activity indicator — shown only when another player holds the lock */}
       {lockedByName && (

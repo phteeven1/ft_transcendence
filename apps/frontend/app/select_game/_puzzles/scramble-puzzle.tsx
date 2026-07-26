@@ -13,6 +13,7 @@ Scramble puzzle: player drags letter tiles to reconstruct a word from its meanin
   and Skip becomes Next.
 */
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { Button } from '../../components/ui/button';
 
@@ -79,6 +80,8 @@ const TILE_GAP = 4;   // px between tiles
 
 // components sho
 export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
+  const t = useTranslations('games.puzzle');
+  const tCommon = useTranslations('common');
   const basePuzzle = useMemo(() => {
     const picked = pickEntry(vocabulary);
     if (!picked) return null;
@@ -231,7 +234,7 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
 
       {/* Instruction + meaning */}
       <p className="text-sm text-muted-foreground mb-3 leading-snug">
-        Move the scrambled letters, to find the word meaning…{' '}
+        {t('scrambleInstruction')}{' '}
         <span className="font-semibold text-foreground">{meaning}</span>
       </p>
 
@@ -291,10 +294,10 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
             success ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
         >
-          SUCCESS!
+          {t('success')}
         </span>
         <Button variant="ghost" size="sm" onClick={onSkip}>
-          {success ? 'Next' : 'Skip'}
+          {success ? tCommon('next') : tCommon('skip')}
         </Button>
       </div>
     </div>

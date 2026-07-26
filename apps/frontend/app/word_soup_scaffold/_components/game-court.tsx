@@ -9,6 +9,7 @@
 */
 
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import CourtTile from './court-tile';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
@@ -53,6 +54,7 @@ export default function GameCourt({
   onSelectionContinue,
   onSelectionEnd,
 }: Props) {
+  const t = useTranslations('games.wordSoup');
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
   const gridWidth = computeGridWidth(courtSize);
   const gridHeight = computeGridHeight(courtSize);

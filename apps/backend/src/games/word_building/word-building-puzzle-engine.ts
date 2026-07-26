@@ -13,6 +13,16 @@ type CrosswordCell = string | null;
 type Direction = 'across' | 'down';
 
 /**
+ * Represents a vocabulary entry with its normalized form, clue, and original casing.
+ * Used throughout the puzzle generation pipeline to track words for placement.
+ */
+type VocabularyEntry = {
+  word:         string; // Normalized uppercase form for grid placement
+  clue:         string; // Hint shown to players
+  originalWord: string; // Original casing/form for user-facing rejection messages
+};
+
+/**
  * Represents a potential word placement with its position, direction, and score.
  */
 type CandidatePlacement = {
@@ -150,32 +160,38 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
    * 4. Reject words shorter than MIN_WORD_LENGTH or longer than grid size
    * 5. Deduplicate (ignore case-normalized duplicates)
    * 6. Sort strategically by length and letter frequency
+   * 7. Track originalWord for better rejection reports
    * 
    * @param rawEntries Candidate words and clues from the vocabulary (may be dirty).
    * @returns Valid entries sorted by placement priority, plus list of rejected words.
    */
   private prepareEntries(rawEntries: Array<{ word: string; clue: string }>): {
-    sortedEntries: Array<{ word: string; clue: string }>;
+    sortedEntries: VocabularyEntry[];
     rejectedWords: string[];
   } {
     const rejectedWords: string[] = [];
     const seen = new Set<string>();
-    const validEntries: Array<{ word: string; clue: string }> = [];
+    const validEntries: VocabularyEntry[] = [];
 
     for (const entry of rawEntries) {
+      const originalWord = entry.word;
+      // Custom mapping preserves 'ß' (Eszett) as a single character.
+      // Native .toUpperCase() expands ß → SS, breaking the 1-to-1 grid cell mapping.
       const normalized = entry.word
         .normalize('NFC')
-        .toUpperCase()
+        .split('')
+        .map(char => (char === 'ß' || char === 'ẞ') ? 'ß' : char.toUpperCase())
+        .join('')
         .replace(/[^\p{L}]/gu, '');
 
       if (normalized.length < MIN_WORD_LENGTH || normalized.length > this.GRID_SIZE) {
-        rejectedWords.push(normalized || entry.word);
+        rejectedWords.push(originalWord);
         continue;
       }
       if (seen.has(normalized)) continue;
 
       seen.add(normalized);
-      validEntries.push({ word: normalized, clue: entry.clue });
+      validEntries.push({ word: normalized, clue: entry.clue, originalWord });
     }
 
     return { sortedEntries: this.sortEntriesStrategically(validEntries), rejectedWords };
@@ -199,8 +215,8 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
    * @returns The same entries sorted by optimal placement order.
    */
   private sortEntriesStrategically(
-    entries: Array<{ word: string; clue: string }>,
-  ): Array<{ word: string; clue: string }> {
+    entries: VocabularyEntry[],
+  ): VocabularyEntry[] {
     const freq = new Map<string, number>();
     for (const e of entries) {
       for (const letter of e.word) {
@@ -253,11 +269,12 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
    */
   private placeAnchorWord(
     context: PlacementContext,
-    entries: Array<{ word: string; clue: string }>,
+    entries: VocabularyEntry[],
   ): CandidatePlacement[] {
     const first = entries[0];
     const candidate: CandidatePlacement = {
-      ...first,
+      word:      first.word,
+      clue:      first.clue,
       row:       Math.floor(context.gridSize / 2),
       col:       Math.floor((context.gridSize - first.word.length) / 2),
       direction: 'across',
@@ -295,7 +312,7 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
    */
   private runPlacementLoop(
     context: PlacementContext,
-    entries: Array<{ word: string; clue: string }>,
+    entries: VocabularyEntry[],
     placed:  CandidatePlacement[],
   ): void {
     for (
@@ -338,12 +355,12 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
   private buildResult(
     context:       PlacementContext,
     placed:        CandidatePlacement[],
-    validEntries:  Array<{ word: string; clue: string }>,
+    validEntries:  VocabularyEntry[],
     rejectedWords: string[],
   ): IEngineResult & { unplacedWords: string[] } {
     const unplacedWords = [
       ...rejectedWords,
-      ...validEntries.filter(e => !context.placedWordsSet.has(e.word)).map(e => e.word),
+      ...validEntries.filter(e => !context.placedWordsSet.has(e.word)).map(e => e.originalWord),
     ];
 
     const { trimmed, offsetRow, offsetCol } = this.trimGrid(context.grid);
@@ -371,8 +388,8 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
    */
   private findAllPlacements(
     context:    PlacementContext,
-    entry:      { word: string; clue: string },
-    allEntries: Array<{ word: string; clue: string }>,
+    entry:      VocabularyEntry,
+    allEntries: VocabularyEntry[],
   ): CandidatePlacement[] {
     const candidates:    CandidatePlacement[] = [];
     const checkedStarts = new Set<string>();
@@ -476,7 +493,7 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
   private scorePlacement(
     context:    PlacementContext,
     candidate:  CandidatePlacement,
-    allEntries: Array<{ word: string; clue: string }>,
+    allEntries: VocabularyEntry[],
   ): number {
     let score = 0;
     score += this.countFutureIntersections(context, candidate, allEntries) * FUTURE_INTERSECTION_WEIGHT;
@@ -490,42 +507,30 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
   }
 
   /**
-   * Estimates how many future words could intersect with this candidate after placement.
+   * Estimates how many future words could intersect with this candidate after it is placed.
    * 
-   * OPTIMIZATION: This is a completely rewritten version that eliminates the expensive
-   * grid copy + index rebuild that the original performed for every candidate scored.
+   * ALGORITHM & OPTIMIZATION:
+   * Instead of copying the entire grid and rebuilding the letter index (which would be O(gridSize²) 
+   * per candidate), this method uses a logical O(V × L) check. It iterates through all unplaced 
+   * words and checks if they share at least one letter with the *candidate word being scored*.
    * 
-   * Original behavior (REMOVED):
-   * - Created a full grid copy (324 cells for 18×18)
-   * - Rebuilt the entire letter index from scratch
-   * - Performed these operations ONCE PER CANDIDATE (50-100+ times per word)
+   * WHY ONLY CHECK THE CANDIDATE WORD?
+   * A previous iteration attempted to check if unplaced words shared letters with the *existing board* 
+   * OR the candidate. However, this caused "overcounting": an unplaced word that shares letters with 
+   * the board but NOT the candidate would be counted as a future intersection for the candidate, 
+   * even though it could never actually intersect with the candidate itself. By strictly checking 
+   * only the candidate's letters, we ensure the score accurately reflects the candidate's true 
+   * potential to unlock future placements.
    * 
-   * New behavior:
-   * - Checks if unplaced words share letters with EITHER:
-   *   a) The existing board (via context.letterIndex lookup)
-   *   b) The candidate word being scored (via word.includes())
-   * - No grid copies, no index rebuilds
-   * - Performance: O(vocab × word.length) vs O(grid² × vocab)
-   * 
-   * This also fixes a logic gap where the original only counted intersections with
-   * the candidate word, ignoring potential intersections with the existing board.
-   * 
-   * Example:
-   * - Board has: "CAT"
-   * - Candidate: "DOG"
-   * - Unplaced: "CATTLE"
-   * - Old: shared(DOG, CATTLE) = {} → not counted ❌
-   * - New: CATTLE shares C/A/T with board → counted ✓
-   * 
-   * @param context Current working grid with letter index.
-   * @param candidate Placement being evaluated.
-   * @param allEntries Full vocabulary (used to check which words remain unplaced).
-   * @returns Count of unplaced words that could potentially intersect.
+   * @param context Current working grid and tracking structures.
+   * @param candidate The placement being evaluated.
+   * @param allEntries Full vocabulary list (used to identify unplaced words).
+   * @returns The count of unplaced words that share at least one letter with the candidate.
    */
   private countFutureIntersections(
     context:    PlacementContext,
     candidate:  CandidatePlacement,
-    allEntries: Array<{ word: string; clue: string }>,
+    allEntries: VocabularyEntry[],
   ): number {
     const { word } = candidate;
     let count = 0;
@@ -533,9 +538,9 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
     for (const entry of allEntries) {
       if (entry.word === word || context.placedWordsSet.has(entry.word)) continue;
 
-      // Check if the unplaced word shares a letter with the existing board OR the candidate word
+      // Check if the unplaced word shares a letter with the candidate word ONLY
       for (const letter of entry.word) {
-        if (context.letterIndex.has(letter) || word.includes(letter)) {
+        if (word.includes(letter)) {
           count++;
           break; // Found at least one shared letter, no need to check the rest of this entry
         }

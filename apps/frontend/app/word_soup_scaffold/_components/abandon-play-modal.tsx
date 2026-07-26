@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
@@ -9,22 +10,21 @@ type Props = {
 };
 
 export default function AbandonPlayModal({ onStay, onLeave, isLeaving }: Props) {
+  const t = useTranslations('games.abandon');
+  const tCommon = useTranslations('common');
+
   return (
     <Dialog
       open
       onClose={onStay}
-      title="Leave this game?"
-      cancelLabel="Stay in game"
-      confirmLabel={isLeaving ? 'Leaving…' : 'Leave game'}
+      title={t('title')}
+      cancelLabel={t('stayInGame')}
+      confirmLabel={isLeaving ? tCommon('leaving') : t('leaveGame')}
       onConfirm={onLeave}
       confirmVariant="destructive"
       confirmDisabled={isLeaving}
     >
-      <p className="leading-relaxed">
-        If you leave now, your play session will end immediately. You will{' '}
-        <strong className="text-foreground">not</strong> be able to join again — a parent must start a new
-        session for you.
-      </p>
+      <p className="leading-relaxed">{t('message')}</p>
     </Dialog>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 // This page is shown when a player tries to open a second tab while already in a game.
 // It is intentionally a dead end — the player cannot navigate anywhere from here.
 //
@@ -12,12 +14,14 @@ import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
 
 export default function AlreadyInGame() {
+  const t = useTranslations('session.alreadyInGame');
+
   return (
     <PageShell narrow centered>
       <Card className="w-full text-center">
-        <h1 className="font-heading text-xl font-bold mb-3 text-foreground">Already in a game</h1>
+        <h1 className="font-heading text-xl font-bold mb-3 text-foreground">{t('title')}</h1>
         <p className="text-muted-foreground text-sm">
-          You are already playing a game in another tab. Please go back to that tab to continue.
+          {t('message')}
         </p>
       </Card>
     </PageShell>

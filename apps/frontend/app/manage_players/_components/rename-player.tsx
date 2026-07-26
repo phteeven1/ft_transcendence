@@ -8,6 +8,7 @@ renders button and one input field. Three states:
 */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
 import { Button } from '../../components/ui/button';
@@ -20,14 +21,13 @@ type Props = {
 };
 
 export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
+  const t = useTranslations('players');
+  const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [renameName, setRenameName] = useState('');
 
   const isActive = selectedPlayer !== null;
 
-  // guards against no selectedPlayer and empty input field
-  // POSTs playerId and new playerName to backend
-  // on success, calls onRenamed(updated) with full updated player from backend
   const handleRename = async () => {
     if (!selectedPlayer || !renameName.trim()) return;
     try {
@@ -48,7 +48,6 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
     setRenameName('');
   };
 
-  // Rename button is disabled until player is selected
   return (
     <>
       <Button
@@ -58,15 +57,15 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
       >
-        Rename Player
+        {t('renamePlayer')}
       </Button>
 
       {selectedPlayer && (
         <Dialog
           open={isOpen}
           onClose={handleClose}
-          title={`Rename ${selectedPlayer.name}`}
-          confirmLabel="Rename"
+          title={t('rename.title', { name: selectedPlayer.name })}
+          confirmLabel={tCommon('rename')}
           onConfirm={handleRename}
           confirmDisabled={!renameName.trim()}
         >
@@ -74,7 +73,7 @@ export default function RenamePlayer({ selectedPlayer, onRenamed }: Props) {
             type="text"
             value={renameName}
             onChange={(e) => setRenameName(e.target.value)}
-            placeholder="New name"
+            placeholder={t('rename.placeholder')}
             autoComplete="new-password"
           />
         </Dialog>

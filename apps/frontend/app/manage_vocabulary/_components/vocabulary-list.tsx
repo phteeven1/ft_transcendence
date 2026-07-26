@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { Vocabulary } from '../../types';
 
 type Props = {
@@ -16,12 +17,15 @@ export default function VocabularyList({
   isLoading,
   onSelect,
 }: Props) {
+  const t = useTranslations('vocabulary');
+  const tCommon = useTranslations('common');
+
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Loading...</p>;
+    return <p className="text-muted-foreground text-sm">{tCommon('loadingEllipsis')}</p>;
   }
   if (vocabularies.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm italic">No vocabularies yet.</p>
+      <p className="text-muted-foreground text-sm italic">{t('noVocabularies')}</p>
     );
   }
 
@@ -39,7 +43,7 @@ export default function VocabularyList({
           >
             <span>{vocabulary.name}</span>
             {vocabulary.id === currentVocabulary && (
-              <span className="text-xs font-semibold text-primary">Active</span>
+              <span className="text-xs font-semibold text-primary">{t('active')}</span>
             )}
           </button>
         </li>

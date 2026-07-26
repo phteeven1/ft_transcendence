@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 
 type CourtCell = WordSoup.CourtCell;
@@ -92,12 +93,14 @@ export default function CourtTile({
   onSelectionStart,
   onSelectionContinue,
 }: Props) {
+  const t = useTranslations('games.wordSoup');
+
   const borderColor =
     cell.highlightedByPlayerId !== undefined
-      ? playerColours[cell.highlightedByPlayerId] ?? '#F59E0B'
-      : isSelected
-        ? '#10B981'
-        : '#E5E7EB';
+     ? playerColours[cell.highlightedByPlayerId] ?? '#F59E0B'
+     : isSelected
+       ? '#10B981'
+       : '#E5E7EB';
 
   const containingWords = foundWordGroups.filter((group) =>
     group.cells.some(
@@ -159,6 +162,7 @@ export default function CourtTile({
 
   const selectionOutline = isSelected ? '2px solid #10B981' : undefined;
   const isLeading = celebrationHighlight?.status === 'leading';
+
 
   return (
     <button

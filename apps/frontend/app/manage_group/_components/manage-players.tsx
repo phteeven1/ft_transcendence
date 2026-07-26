@@ -1,8 +1,10 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button } from '../../components/ui';
 
 export default function ManagePlayers() {
+  const t = useTranslations('group');
   const router = useRouter();
 
   return (
@@ -12,7 +14,7 @@ export default function ManagePlayers() {
       fullWidth
       className="clay-action-btn"
     >
-      Manage Players
+      {t('managePlayers')}
     </Button>
   );
 }

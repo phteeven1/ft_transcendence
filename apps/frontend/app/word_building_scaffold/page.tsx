@@ -1,4 +1,7 @@
+'use client';
+
 import { Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import WordBuildingPlaceholderClient from './_components/word-building-game';
 
 /**
@@ -7,9 +10,11 @@ import WordBuildingPlaceholderClient from './_components/word-building-game';
  * @returns A minimal loading screen that matches the game background.
  */
 function WordBuildingLoading() {
+  const t = useTranslations('common');
+
   return (
     <div className="game-shell flex-1 flex items-center justify-center">
-      <p className="text-muted-foreground">Loading game...</p>
+      <p className="text-muted-foreground">{t('loadingGame')}</p>
     </div>
   );
 }

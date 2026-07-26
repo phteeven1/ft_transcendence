@@ -4,8 +4,10 @@ import AuthButton from './auth-button';
 import { useAuth } from '../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export default function TopBar() {
+  const t = useTranslations('nav');
   const { user, group, player, sessionExpiresAt } = useAuth();
   const [playerGroupName, setPlayerGroupName] = useState<string | null>(null);
   const [minutesLeft, setMinutesLeft] = useState<number | null>(null);
@@ -43,27 +45,29 @@ export default function TopBar() {
   return (
     <header className="clay-topbar flex items-center justify-between px-4 md:px-6 py-3">
       <div className="flex items-center gap-4 min-w-0">
-        <span className="font-heading font-bold text-xl text-primary shrink-0">Dicteé</span>
+        <span className="font-heading font-bold text-xl text-primary shrink-0">{t('brand')}</span>
         {player ? (
           <span className="text-sm text-muted-foreground truncate">
-            Playing as <strong className="text-foreground">{player.name}</strong>
+            {t('playingAs')} <strong className="text-foreground">{player.name}</strong>
             {displayedGroupName && (
               <span>
                 {' '}
-                in group <strong className="text-foreground">{displayedGroupName}</strong>
+                {t('inGroup')} <strong className="text-foreground">{displayedGroupName}</strong>
               </span>
             )}
             {displayedMinutesLeft !== null && (
-              <span className="ml-2 text-xs opacity-75">{displayedMinutesLeft} min left</span>
+              <span className="ml-2 text-xs opacity-75">
+                {t('minLeft', { minutes: displayedMinutesLeft })}
+              </span>
             )}
           </span>
         ) : user ? (
           <span className="text-sm text-muted-foreground truncate">
-            Signed in as <strong className="text-foreground">{user.name}</strong>
+            {t('signedInAs')} <strong className="text-foreground">{user.name}</strong>
             {group && (
               <span>
                 {' '}
-                in group <strong className="text-foreground">{group.name}</strong>
+                {t('inGroup')} <strong className="text-foreground">{group.name}</strong>
               </span>
             )}
           </span>
