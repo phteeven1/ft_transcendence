@@ -150,7 +150,6 @@ export function useWordSoupSelection({
   return {
     selection,
     selectionMessage,
-    isSelecting,
     isSubmittingGuess,
     handleSelectionStart,
     handleSelectionContinue,

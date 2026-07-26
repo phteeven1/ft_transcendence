@@ -18,8 +18,8 @@ const COURT_COLS = 18;
 const COURT_ROWS = 10;
 
 const WORDS_IN_GAME = 10; // number of words from the vocabulary to be used in a game of Word Soup
-
-const MAX_PLACEMENT_ATTEMPTS = 200;
+/** How many words (after the first) may deliberately share letters with earlier ones. */
+const CROSSING_WORD_BUDGET = 2;
 
 const PLAYER_COLOURS = [
   '#e74c3c',
@@ -63,6 +63,9 @@ export class WordSoupService {
       if (!cached.leftPlayers) {
         cached.leftPlayers = {};
       }
+      if (!cached.introStartedAt) {
+        cached.introStartedAt = Date.now();
+      }
       this.ensureFreezeTimers(gameId, cached);
       return this.buildGameState(cached, playerId);
     }
@@ -90,6 +93,7 @@ export class WordSoupService {
       foundWords: [],
       frozenUntil: {},
       isIntroAlreadyShown,
+      introStartedAt: Date.now(),
     };
 
     this.sharedCourts.set(gameId, sharedCourt);
@@ -128,6 +132,125 @@ export class WordSoupService {
     return true;
   }
 
+  /** How many letters of `word` would land on matching letters already on the court. */
+  private countLetterOverlaps(
+    trueCourt: CourtCell[][],
+    word: string,
+    row: number,
+    col: number,
+    [dx, dy]: [number, number],
+  ): number {
+    let overlaps = 0;
+    for (let i = 0; i < word.length; i++) {
+      const cell = trueCourt[row + i * dx][col + i * dy];
+      if (cell.char === word[i]) overlaps += 1;
+    }
+    return overlaps;
+  }
+
+  private collectValidPlacements(
+    trueCourt: CourtCell[][],
+    word: string,
+  ): Array<{ row: number; col: number; direction: Direction; overlaps: number }> {
+    const placements: Array<{
+      row: number;
+      col: number;
+      direction: Direction;
+      overlaps: number;
+    }> = [];
+
+    for (const direction of DIRECTIONS) {
+      const [dx, dy] = direction;
+      const maxRow = dx === 0 ? COURT_ROWS - 1 : COURT_ROWS - word.length;
+      const maxCol = dy === 0 ? COURT_COLS - 1 : COURT_COLS - word.length;
+      if (maxRow < 0 || maxCol < 0) continue;
+
+      for (let row = 0; row <= maxRow; row++) {
+        for (let col = 0; col <= maxCol; col++) {
+          if (!this.canPlace(trueCourt, word, row, col, direction)) continue;
+          placements.push({
+            row,
+            col,
+            direction,
+            overlaps: this.countLetterOverlaps(trueCourt, word, row, col, direction),
+          });
+        }
+      }
+    }
+
+    return placements;
+  }
+
+  private pickPlacement(
+    placements: Array<{ row: number; col: number; direction: Direction; overlaps: number }>,
+    mode: 'centre' | 'prefer-cross' | 'avoid-cross',
+  ): { row: number; col: number; direction: Direction; overlaps: number } | null {
+    if (placements.length === 0) return null;
+
+    let candidates = placements;
+
+    if (mode === 'prefer-cross') {
+      const crossing = placements.filter((placement) => placement.overlaps > 0);
+      if (crossing.length > 0) {
+        const maxOverlaps = Math.max(...crossing.map((placement) => placement.overlaps));
+        candidates = crossing.filter((placement) => placement.overlaps === maxOverlaps);
+      }
+    } else if (mode === 'avoid-cross') {
+      const isolated = placements.filter((placement) => placement.overlaps === 0);
+      if (isolated.length > 0) {
+        candidates = isolated;
+      }
+    } else {
+      // First word: bias toward the centre so later words have room to cross.
+      const centreRow = (COURT_ROWS - 1) / 2;
+      const centreCol = (COURT_COLS - 1) / 2;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      for (const placement of placements) {
+        const distance =
+          Math.abs(placement.row - centreRow) + Math.abs(placement.col - centreCol);
+        if (distance < bestDistance) bestDistance = distance;
+      }
+      const nearCentre = placements.filter((placement) => {
+        const distance =
+          Math.abs(placement.row - centreRow) + Math.abs(placement.col - centreCol);
+        return distance <= bestDistance + 2;
+      });
+      candidates = nearCentre.length > 0 ? nearCentre : placements;
+    }
+
+    return this.shuffle(candidates)[0] ?? null;
+  }
+
+  private generateTrueCourt(words: string[]): CourtCell[][] {
+    const trueCourt = this.createEmptyCourt();
+    // Longer words first: they form anchors that a few later words can cross.
+    const orderedWords = [...words].sort((a, b) => b.length - a.length || a.localeCompare(b));
+    let crossingsUsed = 0;
+
+    for (let index = 0; index < orderedWords.length; index++) {
+      const word = orderedWords[index];
+      if (!word) continue;
+
+      const placements = this.collectValidPlacements(trueCourt, word);
+      const mode =
+        index === 0
+          ? 'centre'
+          : crossingsUsed < CROSSING_WORD_BUDGET
+            ? 'prefer-cross'
+            : 'avoid-cross';
+      const chosen = this.pickPlacement(placements, mode);
+      if (!chosen) continue;
+
+      if (mode === 'prefer-cross' && chosen.overlaps > 0) {
+        crossingsUsed += 1;
+      }
+
+      this.placeWord(trueCourt, word, chosen.row, chosen.col, chosen.direction);
+    }
+
+    return trueCourt;
+  }
+
   private cloneCourt(court: CourtCell[][]): CourtCell[][] {
     return court.map((row) => row.map((cell) => ({ ...cell })));
   }
@@ -147,7 +270,6 @@ export class WordSoupService {
     return Array.from({ length: COURT_ROWS }, () =>
       Array.from({ length: COURT_COLS }, () => ({
         char: '',
-        revealed: false,
       })),
     );
   }
@@ -219,37 +341,11 @@ export class WordSoupService {
         if (court[r][c].char === '') {
           court[r][c] = {
             char: letters[Math.floor(Math.random() * letters.length)],
-            revealed: false,
           };
         }
       }
     }
     return court;
-  }
-
-  private generateTrueCourt(words: string[]): CourtCell[][] {
-    const trueCourt = this.createEmptyCourt();
-
-    for (const word of words) {
-      let placed = false;
-
-      for (
-        let attempt = 0;
-        attempt < MAX_PLACEMENT_ATTEMPTS && !placed;
-        attempt++
-      ) {
-        const row = Math.floor(Math.random() * COURT_ROWS);
-        const col = Math.floor(Math.random() * COURT_COLS);
-        const direction =
-          DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
-
-        if (this.canPlace(trueCourt, word, row, col, direction)) {
-          this.placeWord(trueCourt, word, row, col, direction);
-          placed = true;
-        }
-      }
-    }
-    return trueCourt;
   }
 
   private generateVisibleCourt(trueCourt: CourtCell[][]): CourtCell[][] {
@@ -339,7 +435,6 @@ export class WordSoupService {
       trueCourt[r][c] = {
         ...trueCourt[r][c],
         char: word[i],
-        revealed: false,
       };
     }
 
@@ -468,7 +563,6 @@ export class WordSoupService {
     normalisedSelection.forEach(({ row, col }) => {
       court.visibleCourt[row][col] = {
         ...court.visibleCourt[row][col],
-        revealed: true,
         highlightedByPlayerId: playerId,
       };
     });
@@ -482,7 +576,6 @@ export class WordSoupService {
       word: normalisedWord,
       cells: normalisedSelection,
       direction,
-      message: `Correct! +${POINTS_PER_WORD} points`,
       playerScores: court.playerScores,
       solved,
       state: this.buildGameState(court, playerId),
@@ -642,6 +735,7 @@ export class WordSoupService {
       })),
       frozenPlayers: this.getActiveFrozenPlayers(court),
       hasPlayerSeenIntro: court.isIntroAlreadyShown[playerId] ?? false,
+      introStartedAt: court.introStartedAt,
       isComplete:
         court.solutionWords.length > 0 &&
         court.foundWords.length >= court.solutionWords.length,

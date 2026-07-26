@@ -20,10 +20,3 @@ export const wordSoupApi = {
     });
   },
 };
-
-/* 
-TODO
-wordSoupApi.getVisibleCourt()
-wordSoupApi.getReplay(...)
-wordSoupApi.getStatistics(...)
-*/ 

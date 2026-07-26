@@ -25,6 +25,8 @@ type UseWordSoupIntroProps = {
   courtReady: boolean;
   solutionWords: string[];
   hasPlayerSeenIntro: boolean;
+  /** Shared server timeline start (epoch ms) so all clients stay in sync. */
+  introStartedAt: number | null;
   skipIntro?: boolean;
 };
 
@@ -40,53 +42,161 @@ const WELCOME_TEXT = 'Welcome to Word Soup!';
 const BRIEFING_TEXT = 'In this game, you have to find words in the grid.';
 const WORDS_INTRO_TEXT = 'Here are the words...';
 
+const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
+
+type IntroFrame = {
+  phase: IntroPhase;
+  bubbleText: string;
+  typedLength: number;
+  bubbleVisible: boolean;
+  wordRevealIndex: number;
+  countdownValue: IntroCountdownValue;
+  done: boolean;
+};
+
+function typedLengthAt(localMs: number, text: string, charMs: number): number {
+  if (text.length === 0) return 0;
+  return Math.min(text.length, Math.floor(Math.max(0, localMs) / charMs));
+}
+
+function speechBlockMs(text: string, charMs: number): number {
+  return text.length * charMs + HOLD_AFTER_TYPE_MS;
+}
+
+/**
+ * Pure timeline: map wall-clock elapsed ms → intro frame.
+ * Background tabs can catch up instantly because this does not rely on throttled timers.
+ */
+function getIntroFrameAt(elapsedMs: number, solutionWords: string[]): IntroFrame {
+  if (elapsedMs < 0) {
+    return {
+      phase: 'idle',
+      bubbleText: '',
+      typedLength: 0,
+      bubbleVisible: false,
+      wordRevealIndex: 0,
+      countdownValue: null,
+      done: false,
+    };
+  }
+
+  let t = 0;
+
+  const runSpeech = (
+    phase: IntroPhase,
+    gapPhase: IntroPhase,
+    text: string,
+    charMs: number,
+    wordRevealIndex: number,
+  ): IntroFrame | null => {
+    const speechMs = speechBlockMs(text, charMs);
+    if (elapsedMs < t + speechMs) {
+      const local = elapsedMs - t;
+      return {
+        phase,
+        bubbleText: text,
+        typedLength: typedLengthAt(local, text, charMs),
+        bubbleVisible: true,
+        wordRevealIndex,
+        countdownValue: null,
+        done: false,
+      };
+    }
+    t += speechMs;
+
+    if (elapsedMs < t + GAP_DURATION_MS) {
+      return {
+        phase: gapPhase,
+        bubbleText: text,
+        typedLength: text.length,
+        bubbleVisible: false,
+        wordRevealIndex,
+        countdownValue: null,
+        done: false,
+      };
+    }
+    t += GAP_DURATION_MS;
+    return null;
+  };
+
+  let hit = runSpeech('welcome', 'welcome-gap', WELCOME_TEXT, CHAR_MS, 0);
+  if (hit) return hit;
+
+  hit = runSpeech('briefing', 'briefing-gap', BRIEFING_TEXT, CHAR_MS, 0);
+  if (hit) return hit;
+
+  hit = runSpeech('words-intro', 'words-intro-gap', WORDS_INTRO_TEXT, CHAR_MS, 0);
+  if (hit) return hit;
+
+  for (let index = 0; index < solutionWords.length; index += 1) {
+    const word = solutionWords[index] ?? '';
+    hit = runSpeech('word', 'word-gap', word, WORD_CHAR_MS, index);
+    if (hit) return hit;
+  }
+
+  const countdownSteps: Array<{ value: IntroCountdownValue; hold: number }> = [
+    { value: 3, hold: COUNTDOWN_STEP_MS },
+    { value: 2, hold: COUNTDOWN_STEP_MS },
+    { value: 1, hold: COUNTDOWN_STEP_MS },
+    { value: 'GO!', hold: GO_HOLD_MS },
+  ];
+
+  for (const step of countdownSteps) {
+    if (elapsedMs < t + step.hold) {
+      return {
+        phase: 'countdown',
+        bubbleText: '',
+        typedLength: 0,
+        bubbleVisible: false,
+        wordRevealIndex: Math.max(0, solutionWords.length - 1),
+        countdownValue: step.value,
+        done: false,
+      };
+    }
+    t += step.hold;
+  }
+
+  return {
+    phase: 'done',
+    bubbleText: '',
+    typedLength: 0,
+    bubbleVisible: false,
+    wordRevealIndex: Math.max(0, solutionWords.length - 1),
+    countdownValue: null,
+    done: true,
+  };
+}
+
+const IDLE_FRAME: IntroFrame = {
+  phase: 'idle',
+  bubbleText: '',
+  typedLength: 0,
+  bubbleVisible: false,
+  wordRevealIndex: 0,
+  countdownValue: null,
+  done: false,
+};
+
 export function useWordSoupIntro({
   gameId,
   playerId,
   courtReady,
   solutionWords,
   hasPlayerSeenIntro,
+  introStartedAt,
   skipIntro = false,
 }: UseWordSoupIntroProps) {
-  const [phase, setPhase] = useState<IntroPhase>('idle');
-  const [bubbleText, setBubbleText] = useState('');
-  const [bubbleVisible, setBubbleVisible] = useState(false);
-  const [typedLength, setTypedLength] = useState(0);
-  const [wordRevealIndex, setWordRevealIndex] = useState(0);
-  const [countdownValue, setCountdownValue] = useState<IntroCountdownValue>(null);
+  const [frame, setFrame] = useState<IntroFrame>(IDLE_FRAME);
   const [gameReady, setGameReady] = useState(false);
 
-  const introStartedRef = useRef(false);
-  const timersRef = useRef<number[]>([]);
-  const intervalsRef = useRef<number[]>([]);
-  const wordIndexRef = useRef(0);
-  const runIdRef = useRef(0);
-
-  const clearTimers = () => {
-    timersRef.current.forEach((id) => window.clearTimeout(id));
-    intervalsRef.current.forEach((id) => window.clearInterval(id));
-    timersRef.current = [];
-    intervalsRef.current = [];
-  };
-
-  const schedule = (fn: () => void, delay: number) => {
-    const id = window.setTimeout(fn, delay);
-    timersRef.current.push(id);
-    return id;
-  };
+  const markedIntroRef = useRef(false);
+  const wordsRef = useRef(solutionWords);
+  wordsRef.current = solutionWords;
 
   useEffect(() => {
-    introStartedRef.current = false;
-    runIdRef.current += 1;
-    clearTimers();
-    setPhase('idle');
-    setBubbleText('');
-    setBubbleVisible(false);
-    setTypedLength(0);
-    setWordRevealIndex(0);
-    setCountdownValue(null);
+    markedIntroRef.current = false;
+    setFrame(IDLE_FRAME);
     setGameReady(false);
-    wordIndexRef.current = 0;
   }, [gameId]);
 
   useLayoutEffect(() => {
@@ -94,151 +204,81 @@ export function useWordSoupIntro({
 
     if (hasPlayerSeenIntro || skipIntro) {
       setGameReady(true);
-      setPhase('done');
-      setBubbleVisible(false);
-      setCountdownValue(null);
+      setFrame({
+        ...IDLE_FRAME,
+        phase: 'done',
+        done: true,
+      });
       return;
     }
 
-    if (introStartedRef.current) return;
     if (solutionWords.length === 0) return;
+    if (introStartedAt == null) return;
 
-    introStartedRef.current = true;
-    const runId = ++runIdRef.current;
+    markedIntroRef.current = false;
     setGameReady(false);
-    wordIndexRef.current = 0;
-    setWordRevealIndex(0);
-    setCountdownValue(null);
 
-    const stillActive = () => runId === runIdRef.current;
+    let rafId = 0;
+    let cancelled = false;
 
-    const startTypewriter = (
-      text: string,
-      perCharMs: number,
-      onComplete: () => void,
-    ) => {
-      setBubbleText(text);
-      setBubbleVisible(true);
-      setTypedLength(0);
+    const applyElapsed = () => {
+      if (cancelled) return;
+      const elapsed = Date.now() - introStartedAt;
+      const next = getIntroFrameAt(elapsed, wordsRef.current);
+      setFrame(next);
 
-      let length = 0;
-      const intervalId = window.setInterval(() => {
-        if (!stillActive()) {
-          window.clearInterval(intervalId);
-          return;
-        }
-        length += 1;
-        setTypedLength(length);
-        if (length >= text.length) {
-          window.clearInterval(intervalId);
-          schedule(onComplete, HOLD_AFTER_TYPE_MS);
-        }
-      }, perCharMs);
-      intervalsRef.current.push(intervalId);
-    };
-
-    const fadeBubbleThen = (next: () => void) => {
-      setBubbleVisible(false);
-      schedule(next, BUBBLE_FADE_MS + GAP_MS);
-    };
-
-    const startCountdown = () => {
-      if (!stillActive()) return;
-      setPhase('countdown');
-      setBubbleVisible(false);
-      setBubbleText('');
-      setTypedLength(0);
-
-      const steps: IntroCountdownValue[] = [3, 2, 1, 'GO!'];
-      let step = 0;
-
-      const tick = () => {
-        if (!stillActive()) return;
-        if (step >= steps.length) {
-          setCountdownValue(null);
-          setPhase('done');
-          setGameReady(true);
+      if (next.done) {
+        setGameReady(true);
+        if (!markedIntroRef.current) {
+          markedIntroRef.current = true;
           void wordSoupApi.markIntroShown({ gameId, playerId }).catch((error) => {
             console.error('Failed to mark intro shown', error);
           });
-          return;
         }
-
-        setCountdownValue(steps[step]);
-        const hold = steps[step] === 'GO!' ? GO_HOLD_MS : COUNTDOWN_STEP_MS;
-        step += 1;
-        schedule(tick, hold);
-      };
-
-      tick();
-    };
-
-    const revealNextWord = () => {
-      if (!stillActive()) return;
-      const index = wordIndexRef.current;
-      if (index >= solutionWords.length) {
-        startCountdown();
         return;
       }
 
-      setPhase('word');
-      setWordRevealIndex(index);
-      const word = solutionWords[index] ?? '';
-      wordIndexRef.current = index + 1;
-
-      startTypewriter(word, WORD_CHAR_MS, () => {
-        if (!stillActive()) return;
-        setPhase('word-gap');
-        fadeBubbleThen(revealNextWord);
-      });
+      rafId = window.requestAnimationFrame(applyElapsed);
     };
 
-    const startWordsIntro = () => {
-      if (!stillActive()) return;
-      setPhase('words-intro');
-      startTypewriter(WORDS_INTRO_TEXT, CHAR_MS, () => {
-        if (!stillActive()) return;
-        setPhase('words-intro-gap');
-        fadeBubbleThen(revealNextWord);
-      });
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        window.cancelAnimationFrame(rafId);
+        applyElapsed();
+      }
     };
 
-    const startBriefing = () => {
-      if (!stillActive()) return;
-      setPhase('briefing');
-      startTypewriter(BRIEFING_TEXT, CHAR_MS, () => {
-        if (!stillActive()) return;
-        setPhase('briefing-gap');
-        fadeBubbleThen(startWordsIntro);
-      });
-    };
-
-    setPhase('welcome');
-    startTypewriter(WELCOME_TEXT, CHAR_MS, () => {
-      if (!stillActive()) return;
-      setPhase('welcome-gap');
-      fadeBubbleThen(startBriefing);
-    });
+    applyElapsed();
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      runIdRef.current += 1;
-      clearTimers();
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [courtReady, gameId, playerId, solutionWords, hasPlayerSeenIntro, skipIntro]);
+  }, [
+    courtReady,
+    gameId,
+    playerId,
+    solutionWords,
+    hasPlayerSeenIntro,
+    introStartedAt,
+    skipIntro,
+  ]);
 
   const showIntro =
     courtReady && !gameReady && !hasPlayerSeenIntro && !skipIntro;
 
-  const displayedText = bubbleText.slice(0, typedLength);
+  const displayedText = frame.bubbleText.slice(0, frame.typedLength);
 
   return {
     gameReady,
     showIntro,
-    phase,
+    phase: frame.phase,
     bubbleText: displayedText,
-    bubbleVisible,
-    wordRevealIndex,
-    countdownValue,
+    bubbleVisible: frame.bubbleVisible,
+    wordRevealIndex: frame.wordRevealIndex,
+    countdownValue: frame.countdownValue,
     totalWords: solutionWords.length,
   };
 }

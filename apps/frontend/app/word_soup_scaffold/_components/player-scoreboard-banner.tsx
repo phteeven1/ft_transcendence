@@ -3,7 +3,7 @@
 import type { Player } from '@/app/types';
 import SoupHostCharacter from './soup-host-character';
 
-export type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
+type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
 
 type PlayerScoreboardBannerProps = {
   players: Player[];
@@ -14,6 +14,10 @@ type PlayerScoreboardBannerProps = {
   leftPlayers: Record<number, string>;
   frozenPlayers: Record<number, number>;
   freezeSecondsByPlayer: Record<number, number>;
+  /** Brief +points float over the scoring player's card. */
+  scorePopup?: { playerId: number; points: number; id: number } | null;
+  /** Vertical stack for the left rail; horizontal wrap for compact rows. */
+  orientation?: 'horizontal' | 'vertical';
 };
 
 function getPlayerStatus(
@@ -130,10 +134,18 @@ export default function PlayerScoreboardBanner({
   leftPlayers,
   frozenPlayers,
   freezeSecondsByPlayer,
+  scorePopup = null,
+  orientation = 'horizontal',
 }: PlayerScoreboardBannerProps) {
+  const isVertical = orientation === 'vertical';
+
   return (
     <div
-      className="flex w-full justify-start gap-2 overflow-x-auto pb-1"
+      className={
+        isVertical
+          ? 'flex w-full flex-col items-stretch gap-1.5'
+          : 'flex w-full flex-wrap justify-start gap-1.5 sm:gap-2'
+      }
       role="list"
       aria-label="Player scoreboard"
     >
@@ -144,42 +156,82 @@ export default function PlayerScoreboardBanner({
         const streak = playerStreaks[player.id] ?? 0;
         const freezeSeconds = freezeSecondsByPlayer[player.id] ?? 0;
         const isYou = player.id === localPlayerId;
+        const showPointsPopup =
+          scorePopup !== null && Number(scorePopup.playerId) === Number(player.id);
+
+        const pts = Number.isFinite(Number(scorePopup?.points))
+          ? Number(scorePopup?.points)
+          : 10;
 
         return (
           <div
             key={player.id}
             role="listitem"
             className={[
-              'inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 shadow-sm transition-colors',
+              'relative isolate inline-flex items-center gap-1.5 overflow-hidden rounded-xl border px-2 py-1.5 shadow-sm transition-colors sm:px-2.5 sm:py-2',
+              isVertical ? 'w-full max-w-none' : 'max-w-full shrink',
               STATUS_BOX_CLASS[status],
               status === 'left' ? 'opacity-75' : '',
             ].join(' ')}
           >
+            {showPointsPopup && (
+              <div
+                key={scorePopup.id}
+                className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] bg-emerald-600"
+                aria-hidden="true"
+              />
+            )}
+
             <SoupHostCharacter
               clothesColor={colour}
-              className="h-9 w-9 shrink-0"
+              className="relative z-10 h-8 w-8 shrink-0 sm:h-9 sm:w-9"
               title={`${player.name} avatar`}
             />
 
-            <div className="min-w-0 max-w-[5.5rem] sm:max-w-[7rem]">
+            <div
+              className={[
+                'relative z-10 min-w-0',
+                isVertical ? 'flex-1' : 'max-w-[4.5rem] sm:max-w-[7rem]',
+              ].join(' ')}
+            >
               <div className="flex items-center gap-1">
-                <span className="truncate text-sm font-semibold" title={player.name}>
+                <span
+                  className={[
+                    'truncate text-xs font-semibold sm:text-sm',
+                    showPointsPopup ? 'text-white' : '',
+                  ].join(' ')}
+                  title={player.name}
+                >
                   {player.name}
                 </span>
                 {isYou && (
-                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide opacity-70">
+                  <span
+                    className={[
+                      'hidden shrink-0 text-[10px] font-bold uppercase tracking-wide sm:inline',
+                      showPointsPopup ? 'text-white/80' : 'opacity-70',
+                    ].join(' ')}
+                  >
                     You
                   </span>
                 )}
               </div>
-              <p className="text-base font-bold tabular-nums leading-tight">{score}</p>
+              <p
+                className={[
+                  'text-sm font-black tabular-nums leading-tight sm:text-base',
+                  showPointsPopup ? 'text-amber-200' : '',
+                ].join(' ')}
+              >
+                {showPointsPopup ? `+${pts}` : score}
+              </p>
             </div>
 
-            <StatusSymbol
-              status={status}
-              streak={streak}
-              freezeSeconds={freezeSeconds}
-            />
+            <div className="relative z-10">
+              <StatusSymbol
+                status={status}
+                streak={streak}
+                freezeSeconds={freezeSeconds}
+              />
+            </div>
           </div>
         );
       })}

@@ -31,8 +31,13 @@ export function useWordSoupFreeze({
   freezeNotice,
   playerLeftNotice = null,
 }: UseWordSoupFreezeArgs) {
-  const [statusBanner, setStatusBanner] = useState('');
   const [freezeSecondsByPlayer, setFreezeSecondsByPlayer] = useState<Record<number, number>>({});
+  const [latestFreezeNotice, setLatestFreezeNotice] =
+    useState<WordSoup.FreezeNoticeDto | null>(null);
+  const [latestPlayerLeft, setLatestPlayerLeft] = useState<{
+    playerId: number;
+    playerName: string;
+  } | null>(null);
 
   const frozenUntil = frozenPlayers[playerId] ?? 0;
   const isLocalPlayerFrozen = frozenUntil > Date.now();
@@ -70,24 +75,19 @@ export function useWordSoupFreeze({
 
   useEffect(() => {
     if (!freezeNotice) return;
-
-    setStatusBanner(freezeNotice.message);
-    const timeoutId = window.setTimeout(() => setStatusBanner(''), 4000);
-    return () => window.clearTimeout(timeoutId);
+    setLatestFreezeNotice(freezeNotice);
   }, [freezeNotice]);
 
   useEffect(() => {
     if (!playerLeftNotice) return;
-
-    setStatusBanner(`${playerLeftNotice.playerName} left the game`);
-    const timeoutId = window.setTimeout(() => setStatusBanner(''), 4000);
-    return () => window.clearTimeout(timeoutId);
+    setLatestPlayerLeft(playerLeftNotice);
   }, [playerLeftNotice]);
 
   return {
     isLocalPlayerFrozen,
     freezeSecondsLeft,
     freezeSecondsByPlayer,
-    statusBanner,
+    latestFreezeNotice,
+    latestPlayerLeft,
   };
 }

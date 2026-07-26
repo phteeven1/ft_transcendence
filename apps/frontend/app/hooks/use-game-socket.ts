@@ -129,7 +129,6 @@ export function useGameSocket(gameId: number, playerId: number) {
       playerName: string;
       frozenUntil: number;
       durationSeconds: number;
-      message: string;
       playerStreaks?: Record<number, number>;
     }) => {
       if (!active) return;

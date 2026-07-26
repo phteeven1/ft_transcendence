@@ -3,7 +3,6 @@ export const POINTS_PER_WORD = 10;
 
 export type CourtCell = {
   char: string;
-  revealed: boolean;
   highlightedByPlayerId?: number;
 };
 
@@ -22,7 +21,6 @@ export type GuessResult =
       word: string;
       cells: { row: number; col: number }[];
       direction: Direction;
-      message: string;
       playerScores: Record<number, number>;
       state: WordSoupGameState;
       solved: boolean;
@@ -52,6 +50,8 @@ export type SharedWordSoupCourt = {
   foundWords: FoundWord[];
   frozenUntil: Record<number, number>;
   isIntroAlreadyShown: Record<number, boolean>;
+  /** Wall-clock ms when the shared intro timeline began (for synced playback). */
+  introStartedAt: number;
 };
 
 export interface WordSoupGameState {
@@ -65,5 +65,7 @@ export interface WordSoupGameState {
   foundWords: FoundWord[];
   frozenPlayers: Record<number, number>;
   hasPlayerSeenIntro: boolean;
+  /** Shared intro timeline start (epoch ms). */
+  introStartedAt: number;
   isComplete: boolean;
 }

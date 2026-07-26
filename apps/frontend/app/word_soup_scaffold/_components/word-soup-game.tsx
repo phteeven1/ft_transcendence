@@ -6,13 +6,20 @@ import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
 import { useWordSoupGame } from '../../hooks/word-soup/use-word-soup-game';
 
-import GameInfoColumn from './game-info-column';
 import GameCourt from './game-court';
-import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
-import GameRulesInfo from './game-rules-info';
 import WordSoupIntroOverlay from './word-soup-intro-overlay';
+import WordSoupEventBannerView from './word-soup-event-banner';
+import WordSoupTitle from './word-soup-title';
+import CourtControls from './court-controls';
+import WordStats from './word-stats';
+import SessionActions from './session-actions';
+import SubmitGuessButton from './submit-guess-button';
+import { computeGridWidth } from './court-size';
+import { useCourtSize } from './use-court-size';
+
+const MAX_COURT_FRAME_WIDTH = computeGridWidth('L');
 
 export default function WordSoupGame() {
   useSessionGuard();
@@ -22,6 +29,19 @@ export default function WordSoupGame() {
   const playerId = Number(searchParams.get('playerId'));
   const socket = useGameSocket(gameId, playerId);
   const ws = useWordSoupGame({ gameId, playerId, socket });
+  const { courtSize, courtWidthPx, frameRef, onCourtSizeChange } = useCourtSize();
+
+  const scoreboardProps = {
+    players: ws.players,
+    localPlayerId: playerId,
+    playerColours: ws.playerColours,
+    playerScores: ws.playerScores,
+    playerStreaks: ws.playerStreaks,
+    leftPlayers: ws.leftPlayers,
+    frozenPlayers: ws.frozenPlayers,
+    freezeSecondsByPlayer: ws.freezeSecondsByPlayer,
+    scorePopup: ws.scorePopup,
+  };
 
   if (ws.loading || !ws.game) {
     return (
@@ -33,7 +53,7 @@ export default function WordSoupGame() {
 
   return (
     <div className="game-shell flex-1 overflow-x-auto">
-      <div className="mx-auto max-w-[1600px] px-4 py-4">
+      <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
         {ws.showGameOverOverlay && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-emerald-950/80 px-4 backdrop-blur-sm">
             <div className="animate-[fadeIn_250ms_ease-out] w-full max-w-lg rounded-3xl border border-white/20 bg-white p-8 text-center shadow-2xl">
@@ -49,17 +69,28 @@ export default function WordSoupGame() {
                   <span className="animate-bounce [animation-delay:120ms]">🎊</span>
                   <span className="animate-bounce [animation-delay:240ms]">✨</span>
                 </div>
-                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Final scores</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                  Final scores
+                </h3>
                 <ul className="mt-3 space-y-2 text-left">
                   {ws.sortedPlayers.map((player, index) => (
-                    <li key={player.id} className="flex flex-col gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm text-gray-700 shadow-sm sm:flex-row sm:justify-between">
+                    <li
+                      key={player.id}
+                      className="flex flex-col gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm text-gray-700 shadow-sm sm:flex-row sm:justify-between"
+                    >
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600">#{index + 1}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                          #{index + 1}
+                        </span>
                         <span>{player.name}</span>
                       </div>
                       <div className="flex items-center gap-3 text-right text-sm">
-                        <span className="font-semibold text-emerald-800">{ws.playerScores[player.id] ?? 0} pts</span>
-                        <span className="text-gray-600">{ws.playerWordCounts[player.id] ?? 0} words</span>
+                        <span className="font-semibold text-emerald-800">
+                          {ws.playerScores[player.id] ?? 0} pts
+                        </span>
+                        <span className="text-gray-600">
+                          {ws.playerWordCounts[player.id] ?? 0} words
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -76,90 +107,138 @@ export default function WordSoupGame() {
           </div>
         )}
 
-        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(180px,220px)] lg:items-start">
-          <GameInfoColumn game={ws.game} players={ws.players} playerId={playerId} />
-
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-2">
-              <div className="min-w-0 flex-1">
-                <PlayerScoreboardBanner
-                  players={ws.players}
-                  localPlayerId={playerId}
-                  playerColours={ws.playerColours}
-                  playerScores={ws.playerScores}
-                  playerStreaks={ws.playerStreaks}
-                  leftPlayers={ws.leftPlayers}
-                  frozenPlayers={ws.frozenPlayers}
-                  freezeSecondsByPlayer={ws.freezeSecondsByPlayer}
-                />
-              </div>
-              <GameRulesInfo />
-            </div>
-
-            <div className="relative flex">
-              <GameCourt
-                visibleCourt={ws.visibleCourt}
-                playerColours={ws.playerColours}
-                selectedCells={ws.selection}
-                foundWordGroups={ws.foundWords}
-                isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
-                freezeSecondsLeft={ws.freezeSecondsLeft}
-                lettersVisible={ws.gameReady || !ws.showIntro}
-                wordCelebration={ws.wordCelebration}
-                onSelectionStart={ws.handleSelectionStart}
-                onSelectionContinue={ws.handleSelectionContinue}
-                onSelectionEnd={ws.handleSelectionEnd}
-                overlay={
-                  ws.showIntro ? (
-                    <WordSoupIntroOverlay
-                      phase={ws.introPhase}
-                      bubbleText={ws.introBubbleText}
-                      bubbleVisible={ws.introBubbleVisible}
-                      wordRevealIndex={ws.wordRevealIndex}
-                      totalWords={ws.introTotalWords}
-                      countdownValue={ws.introCountdownValue}
-                    />
-                  ) : null
-                }
+        <div
+          className="w-full min-w-0"
+          style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_FRAME_WIDTH}px)` }}
+        >
+          {/*
+            Desktop:
+              row1: [title] [message banner + S/M/L/info]  (controls right edge = court)
+              row2: [players + word stats] [court]         (stats bottom = court bottom)
+              row3: [leave / game over] [submit]           (button tops/bottoms align)
+          */}
+          <div className="grid w-full grid-cols-1 items-stretch gap-x-4 gap-y-2 sm:gap-y-2.5 lg:grid-cols-[11.5rem_minmax(0,1fr)]">
+            {/* Title — top left, above scorecards */}
+            <div className="lg:col-start-1 lg:row-start-1">
+              <WordSoupTitle
+                wordsFound={ws.wordsFound}
+                totalWords={ws.solutionWords.length}
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-2 rounded-xl border border-emerald-200 bg-white/90 p-3 text-center text-sm shadow-sm">
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-gray-500">Total</p>
-                <p className="font-semibold text-gray-800">{ws.solutionWords.length}</p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-gray-500">Found</p>
-                <p className="font-semibold text-gray-800">{ws.wordsFound}</p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-gray-500">Left</p>
-                <p className="font-semibold text-gray-800">{ws.wordsLeft}</p>
+            {/* Message + court controls — right edge flush with court */}
+            <div className="lg:col-start-2 lg:row-start-1">
+              <div
+                className="flex items-center gap-2 sm:gap-3"
+                style={{ width: courtWidthPx, maxWidth: '100%' }}
+              >
+                <div className="min-w-0 flex-1">
+                  <WordSoupEventBannerView
+                    event={ws.eventBanner}
+                    phase={ws.eventBannerPhase}
+                  />
+                </div>
+                <CourtControls
+                  courtSize={courtSize}
+                  onCourtSizeChange={onCourtSizeChange}
+                />
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-3 lg:pt-12">
-            {ws.statusBanner && (
-              <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-900 shadow-sm">
-                {ws.statusBanner}
-              </p>
-            )}
-            <GameControls
-              onLeave={ws.handleLeaveClick}
-              onGameOver={ws.handleGameOver}
-              onSubmitGuess={ws.handleSubmitGuess}
-              selectionCount={ws.selection.length}
-              isSubmittingGuess={ws.isSubmittingGuess}
-              isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
-              freezeSecondsLeft={ws.freezeSecondsLeft}
-            />
-            {ws.selectionMessage && (
-              <p className="rounded border border-emerald-200 bg-white/80 px-3 py-2 text-sm text-gray-700">
-                {ws.selectionMessage}
-              </p>
-            )}
+            {/* Mobile players */}
+            <div className="lg:hidden">
+              <PlayerScoreboardBanner {...scoreboardProps} orientation="horizontal" />
+            </div>
+
+            {/* Players + word stats — bottom of stats = bottom of court */}
+            <aside
+              className="hidden min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:flex"
+              aria-label="Players and word counts"
+            >
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <PlayerScoreboardBanner {...scoreboardProps} orientation="vertical" />
+              </div>
+              <div className="mt-auto shrink-0 pt-3">
+                <WordStats
+                  totalWords={ws.solutionWords.length}
+                  wordsFound={ws.wordsFound}
+                  wordsLeft={ws.wordsLeft}
+                />
+              </div>
+            </aside>
+
+            {/* Court */}
+            <div
+              ref={frameRef}
+              className="min-w-0 lg:col-start-2 lg:row-start-2"
+              style={{ maxWidth: MAX_COURT_FRAME_WIDTH }}
+            >
+              <div style={{ width: courtWidthPx, maxWidth: '100%' }}>
+                <GameCourt
+                  courtSize={courtSize}
+                  visibleCourt={ws.visibleCourt}
+                  playerColours={ws.playerColours}
+                  selectedCells={ws.selection}
+                  foundWordGroups={ws.foundWords}
+                  isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
+                  freezeSecondsLeft={ws.freezeSecondsLeft}
+                  lettersVisible={ws.gameReady || !ws.showIntro}
+                  wordCelebration={ws.wordCelebration}
+                  onSelectionStart={ws.handleSelectionStart}
+                  onSelectionContinue={ws.handleSelectionContinue}
+                  onSelectionEnd={ws.handleSelectionEnd}
+                  overlay={
+                    ws.showIntro ? (
+                      <WordSoupIntroOverlay
+                        phase={ws.introPhase}
+                        bubbleText={ws.introBubbleText}
+                        bubbleVisible={ws.introBubbleVisible}
+                        wordRevealIndex={ws.wordRevealIndex}
+                        totalWords={ws.introTotalWords}
+                        countdownValue={ws.introCountdownValue}
+                      />
+                    ) : null
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Leave / Game Over — height-matched to Submit */}
+            <div className="hidden h-full lg:col-start-1 lg:row-start-3 lg:block">
+              <SessionActions
+                fillHeight
+                onLeave={ws.handleLeaveClick}
+                onGameOver={ws.handleGameOver}
+              />
+            </div>
+
+            {/* Submit */}
+            <div className="lg:col-start-2 lg:row-start-3">
+              <div style={{ width: courtWidthPx, maxWidth: '100%' }} className="h-full">
+                <SubmitGuessButton
+                  fillHeight
+                  courtSize={courtSize}
+                  onSubmitGuess={ws.handleSubmitGuess}
+                  selectionCount={ws.selection.length}
+                  isSubmittingGuess={ws.isSubmittingGuess}
+                  isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
+                  freezeSecondsLeft={ws.freezeSecondsLeft}
+                />
+              </div>
+            </div>
+
+            {/* Mobile: stats + session */}
+            <div className="flex max-w-[11.5rem] flex-col gap-3 lg:hidden">
+              <WordStats
+                totalWords={ws.solutionWords.length}
+                wordsFound={ws.wordsFound}
+                wordsLeft={ws.wordsLeft}
+              />
+              <SessionActions
+                onLeave={ws.handleLeaveClick}
+                onGameOver={ws.handleGameOver}
+              />
+            </div>
           </div>
         </div>
 

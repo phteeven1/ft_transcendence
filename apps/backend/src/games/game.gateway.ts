@@ -116,10 +116,8 @@ export class GameGateway implements OnGatewayDisconnect {
         word: result.word,
         cells: result.cells,
         direction: result.direction,
-        message: result.message,
         pointsEarned: POINTS_PER_WORD,
         playerScores: result.playerScores,
-        playerWordCounts: result.state.playerWordCounts,
         state: result.state,
       });
 
@@ -141,7 +139,6 @@ export class GameGateway implements OnGatewayDisconnect {
         data.gameId,
         data.playerId,
         result.frozenUntil,
-        result.message,
       );
     }
   }
@@ -150,7 +147,6 @@ export class GameGateway implements OnGatewayDisconnect {
     gameId: number,
     playerId: number,
     frozenUntil: number,
-    message: string,
   ): Promise<void> {
     const playerName = await this.getPlayerName(gameId, playerId);
     const meta = this.wordSoupService.getScoreboardMeta(gameId);
@@ -159,7 +155,6 @@ export class GameGateway implements OnGatewayDisconnect {
       playerName,
       frozenUntil,
       durationSeconds: FREEZE_DURATION_SECONDS,
-      message,
       playerStreaks: meta?.playerStreaks,
     });
   }

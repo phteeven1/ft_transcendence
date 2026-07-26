@@ -1,10 +1,9 @@
-// 1. Primitive Sub-Types
+// Word Soup API / socket contracts — keep fields limited to what the client uses.
 
 export namespace WordSoup {
 
-  export type CourtCell = { 
+  export type CourtCell = {
     char: string;
-    revealed: boolean;
     highlightedByPlayerId?: number;
   };
 
@@ -15,7 +14,7 @@ export namespace WordSoup {
     direction?: [number, number];
   };
 
-  // 2. Core Game State
+  /** Full court snapshot from init / state sync. */
   export type Dto = {
     visibleCourt: CourtCell[][];
     playerColours: Record<number, string>;
@@ -25,33 +24,30 @@ export namespace WordSoup {
     leftPlayers?: Record<number, string>;
     solutionWords: string[];
     foundWords: FoundWord[];
-    frozenPlayers: Record<number, number>;
+    frozenPlayers?: Record<number, number>;
     hasPlayerSeenIntro: boolean;
+    /** Shared intro timeline start (epoch ms). */
+    introStartedAt?: number;
     isComplete: boolean;
   };
 
-  // 3. Derived States
-  export type GameStateDto = Omit<Dto, 'frozenPlayers'> & {
-    frozenPlayers?: Record<number, number>;
-  };
+  export type GameStateDto = Dto;
 
-  // 4. Real-time Event DTOs (Socket / API Payloads)
   export type FreezeNoticeDto = {
     playerId: number;
     playerName: string;
     message: string;
   };
 
+  /** Broadcast when a word is found — scores/court details live on `state`. */
   export type WordGuessedDto = {
     playerId: number;
     playerName?: string;
     word: string;
     cells: Array<{ row: number; col: number }>;
     direction?: [number, number];
-    message: string;
     pointsEarned?: number;
     playerScores?: Dto['playerScores'];
-    playerWordCounts?: Dto['playerWordCounts'];
     state?: GameStateDto;
   };
 }

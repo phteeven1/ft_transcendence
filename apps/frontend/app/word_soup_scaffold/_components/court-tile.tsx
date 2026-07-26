@@ -1,10 +1,8 @@
 'use client';
 
-export type CourtCell = {
-  char: string;
-  revealed: boolean;
-  highlightedByPlayerId?: number;
-};
+import type { WordSoup } from '@/lib/api/games/word-soup/types';
+
+type CourtCell = WordSoup.CourtCell;
 
 interface Props {
   cell: CourtCell;
@@ -146,10 +144,6 @@ export default function CourtTile({
   let borderRight = 'none';
   let borderBottom = 'none';
   let borderLeft = 'none';
-  let borderTopLeftRadius = '0.5rem';
-  let borderTopRightRadius = '0.5rem';
-  let borderBottomLeftRadius = '0.5rem';
-  let borderBottomRightRadius = '0.5rem';
 
   if (showFoundWordStyle) {
     const sides = containingWords.flatMap((word) =>
@@ -197,10 +191,6 @@ export default function CourtTile({
               : !showFoundWordStyle
                 ? 1
                 : 0,
-        borderTopLeftRadius,
-        borderTopRightRadius,
-        borderBottomLeftRadius,
-        borderBottomRightRadius,
         outline: selectionOutline,
         outlineOffset: selectionOutline ? '-2px' : undefined,
         boxSizing: 'border-box',

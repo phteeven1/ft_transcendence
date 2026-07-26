@@ -5,22 +5,22 @@ import type { Player } from '@/app/types';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 
 const WORD_SOUP_TILE_ANIM_MS = 150;
-const WORD_SOUP_BANNER_MS = 1200;
-const WORD_SOUP_FINAL_WORD_MS = 4500;
 const POINTS_PER_WORD = 10;
 
 type WordGuessed = WordSoup.WordGuessedDto;
 
-type WordCelebrationPhase = 'animating' | 'banner' | 'final-word';
-
 export type WordCelebration = {
-  phase: WordCelebrationPhase;
+  playerId: number;
+  orderedCells: Array<{ row: number; col: number }>;
+  activeIndex: number;
+};
+
+export type WordFoundCelebrationResult = {
   playerId: number;
   playerName: string;
   word: string;
-  points: number;
-  orderedCells: Array<{ row: number; col: number }>;
-  activeIndex: number;
+  /** True when this find leaves exactly one word remaining. */
+  isPenultimate: boolean;
 };
 
 type UseWordSoupCelebrationProps = {
@@ -48,7 +48,9 @@ type UseWordSoupCelebrationProps = {
   ) => void;
 
   onCelebrationStart?: () => void;
-  onCelebrationEnd?: () => void;
+  /** Fires as soon as scores update (start of tile celebration). */
+  onScoreAwarded?: (result: { playerId: number; points: number }) => void;
+  onWordFound?: (result: WordFoundCelebrationResult) => void;
   clearSelection?: () => void;
   setIsSubmittingGuess?: (value: boolean) => void;
 };
@@ -77,7 +79,8 @@ export function useWordSoupCelebration({
   setFoundWords,
   setVisibleCourt,
   onCelebrationStart,
-  onCelebrationEnd,
+  onScoreAwarded,
+  onWordFound,
   clearSelection,
   setIsSubmittingGuess,
 
@@ -107,28 +110,29 @@ export function useWordSoupCelebration({
   const solutionWordsRef =
     useRef(solutionWords);
 
-  // Keep refs current without causing renders
+  const onWordFoundRef = useRef(onWordFound);
+  const onScoreAwardedRef = useRef(onScoreAwarded);
+
   playersRef.current = players;
   solutionWordsRef.current = solutionWords;
+  onWordFoundRef.current = onWordFound;
+  onScoreAwardedRef.current = onScoreAwarded;
 
-  // Cleanup timers on unmount
   useEffect(() => {
-
     return () => {
       celebrationRunRef.current += 1;
-      celebrationTimeoutsRef.current.forEach( id => window.clearTimeout(id) );
+      celebrationTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
       celebrationTimeoutsRef.current = [];
     };
-  },[]);
+  }, []);
 
   useLayoutEffect(() => {
-    
-    if (!wordGuessedSeq) { return; }
-    if ( lastProcessedGuessSeqRef.current === wordGuessedSeq ){ return; }
-    if (!wordGuessed) { return; }
+    if (!wordGuessedSeq) return;
+    if (lastProcessedGuessSeqRef.current === wordGuessedSeq) return;
+    if (!wordGuessed) return;
 
     lastProcessedGuessSeqRef.current = wordGuessedSeq;
-    celebrationTimeoutsRef.current.forEach( id => window.clearTimeout(id));
+    celebrationTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
     celebrationTimeoutsRef.current = [];
     celebrationActiveRef.current = true;
     onCelebrationStart?.();
@@ -136,60 +140,60 @@ export function useWordSoupCelebration({
     setIsSubmittingGuess?.(false);
 
     const runId = celebrationRunRef.current + 1;
-
     celebrationRunRef.current = runId;
-    
-    pendingCourtRef.current = wordGuessed.state?.visibleCourt ??
-      pendingCourtRef.current;
 
-    if (wordGuessed.playerScores) { setPlayerScores( wordGuessed.playerScores ); }
-    
-    if (wordGuessed.state?.playerWordCounts) { 
-      setPlayerWordCounts( wordGuessed.state.playerWordCounts );
+    pendingCourtRef.current =
+      wordGuessed.state?.visibleCourt ?? pendingCourtRef.current;
+
+    if (wordGuessed.playerScores) {
+      setPlayerScores(wordGuessed.playerScores);
     }
 
-    const playerName = wordGuessed.playerName ?? 
-      playersRef.current.find( p => p.id === wordGuessed.playerId )?.name ??
+    if (wordGuessed.state?.playerWordCounts) {
+      setPlayerWordCounts(wordGuessed.state.playerWordCounts);
+    }
+
+    const playerName =
+      wordGuessed.playerName ??
+      playersRef.current.find((p) => p.id === wordGuessed.playerId)?.name ??
       `Player #${wordGuessed.playerId}`;
 
-    const orderedCells = orderCellsAlongDirection( 
-      wordGuessed.cells, 
-      wordGuessed.direction 
+    const orderedCells = orderCellsAlongDirection(
+      wordGuessed.cells,
+      wordGuessed.direction,
     );
 
     const points = wordGuessed.pointsEarned ?? POINTS_PER_WORD;
 
-    const totalWords = wordGuessed.state?.solutionWords.length ?? 
-      solutionWordsRef.current.length;
-    
-    const solvedCount = wordGuessed.state?.foundWords.length ?? 0;
-    const showFinalWordAfter = totalWords > 1 && solvedCount === totalWords - 1;
+    onScoreAwardedRef.current?.({
+      playerId: Number(wordGuessed.playerId),
+      points,
+    });
 
-    const pendingFoundWord: WordSoup.FoundWord = { 
+    const totalWords =
+      wordGuessed.state?.solutionWords.length ?? solutionWordsRef.current.length;
+
+    const solvedCount = wordGuessed.state?.foundWords.length ?? 0;
+    const isPenultimate = totalWords > 1 && solvedCount === totalWords - 1;
+
+    const pendingFoundWord: WordSoup.FoundWord = {
       playerId: wordGuessed.playerId,
       word: wordGuessed.word,
-      cells: wordGuessed.cells, 
-      direction: wordGuessed.direction, 
+      cells: wordGuessed.cells,
+      direction: wordGuessed.direction,
     };
 
     setWordCelebration({
-      phase: 'animating',
       playerId: wordGuessed.playerId,
-      playerName,
-      word: wordGuessed.word,
-      points,
       orderedCells,
       activeIndex: 0,
     });
 
     const schedule = (callback: () => void, delay: number) => {
       const timeoutId = window.setTimeout(() => {
-        if (celebrationRunRef.current !== runId) {
-          return;
-        }
+        if (celebrationRunRef.current !== runId) return;
         callback();
       }, delay);
-
       celebrationTimeoutsRef.current.push(timeoutId);
     };
 
@@ -198,9 +202,7 @@ export function useWordSoupCelebration({
     for (let index = 1; index <= lastIndex; index += 1) {
       schedule(() => {
         setWordCelebration((current) => {
-          if (current?.phase !== 'animating') {
-            return current;
-          }
+          if (!current) return current;
           return { ...current, activeIndex: index };
         });
       }, index * WORD_SOUP_TILE_ANIM_MS);
@@ -226,42 +228,20 @@ export function useWordSoupCelebration({
       if (pendingCourtRef.current) {
         setVisibleCourt(pendingCourtRef.current);
       }
-      setWordCelebration({
-        phase: 'banner',
+
+      onWordFoundRef.current?.({
         playerId: wordGuessed.playerId,
         playerName,
         word: wordGuessed.word,
-        points,
-        orderedCells,
-        activeIndex: lastIndex,
+        isPenultimate,
       });
-    }, animationEndMs);
 
-    schedule(() => {
-      if (showFinalWordAfter) {
-        setWordCelebration({
-          phase: 'final-word',
-          playerId: wordGuessed.playerId,
-          playerName,
-          word: wordGuessed.word,
-          points,
-          orderedCells,
-          activeIndex: lastIndex,
-        });
-        schedule(() => {
-          setWordCelebration(null);
-          celebrationActiveRef.current = false;
-          pendingCourtRef.current = null;
-          onCelebrationEnd?.();
-        }, WORD_SOUP_FINAL_WORD_MS);
-      } else {
-        setWordCelebration(null);
-        celebrationActiveRef.current = false;
-        pendingCourtRef.current = null;
-        onCelebrationEnd?.();
-      }
-    }, animationEndMs + WORD_SOUP_BANNER_MS);
-  },[ wordGuessedSeq ]);
+      setWordCelebration(null);
+      celebrationActiveRef.current = false;
+      pendingCourtRef.current = null;
+    }, animationEndMs);
+  }, [wordGuessedSeq]);
+
   return {
     wordCelebration,
     celebrationActiveRef,

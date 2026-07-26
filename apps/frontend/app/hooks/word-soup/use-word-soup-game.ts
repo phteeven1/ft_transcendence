@@ -14,6 +14,8 @@ import { useWordSoupIntro } from './use-word-soup-intro';
 import { useWordSoupFreeze } from './use-word-soup-freeze';
 import { useWordSoupSelection } from './use-word-soup-selection';
 import { useWordSoupCelebration } from './use-word-soup-celebration';
+import { useWordSoupEventBanner } from './use-word-soup-event-banner';
+import type { WordFoundCelebrationResult } from './use-word-soup-celebration';
 
 type UseWordSoupGameArgs = {
   gameId: number;
@@ -71,6 +73,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     foundWords,
     setFoundWords,
     hasPlayerSeenIntro,
+    introStartedAt,
     isComplete: initIsComplete,
     initialFrozenPlayers,
   } = useWordSoupInit(gameId, playerId);
@@ -90,6 +93,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     courtReady,
     solutionWords,
     hasPlayerSeenIntro,
+    introStartedAt,
     skipIntro: initIsComplete || Boolean(game?.isFinished),
   });
 
@@ -143,13 +147,46 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     return Array.from(byId.values());
   }, [initialPlayers, leftPlayers]);
 
-  const { isLocalPlayerFrozen, freezeSecondsLeft, freezeSecondsByPlayer, statusBanner } =
-    useWordSoupFreeze({
-      playerId,
-      frozenPlayers: mergedFrozenPlayers,
-      freezeNotice,
-      playerLeftNotice,
-    });
+  const {
+    isLocalPlayerFrozen,
+    freezeSecondsLeft,
+    freezeSecondsByPlayer,
+    latestFreezeNotice,
+    latestPlayerLeft,
+  } = useWordSoupFreeze({
+    playerId,
+    frozenPlayers: mergedFrozenPlayers,
+    freezeNotice,
+    playerLeftNotice,
+  });
+
+  const { eventBanner, eventBannerPhase, pushEvent } = useWordSoupEventBanner();
+  const [scorePopup, setScorePopup] = useState<{
+    id: number;
+    playerId: number;
+    points: number;
+  } | null>(null);
+  const scorePopupTimerRef = useRef<number | null>(null);
+
+  const showScorePopup = useCallback((playerIdForPopup: number, points: number) => {
+    if (scorePopupTimerRef.current !== null) {
+      window.clearTimeout(scorePopupTimerRef.current);
+    }
+    setScorePopup({ id: Date.now(), playerId: playerIdForPopup, points });
+    scorePopupTimerRef.current = window.setTimeout(() => {
+      setScorePopup(null);
+      scorePopupTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (scorePopupTimerRef.current !== null) {
+        window.clearTimeout(scorePopupTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const isGameOver = Boolean(
     game?.isFinished ||
@@ -166,6 +203,33 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     pendingGuessRef.current = false;
   }, []);
 
+  const handleWordFound = useCallback(
+    (result: WordFoundCelebrationResult) => {
+      const colour = playerColours[result.playerId] ?? '#10B981';
+      pushEvent({
+        kind: 'word-found',
+        headline: `${result.playerName} found ${result.word}`,
+        clothesColor: colour,
+      });
+      if (result.isPenultimate) {
+        pushEvent({
+          kind: 'final-word',
+          headline: 'Final word!',
+          detail: "Who's going to find the last one?",
+          clothesColor: '#F59E0B',
+        });
+      }
+    },
+    [playerColours, pushEvent],
+  );
+
+  const handleScoreAwarded = useCallback(
+    (result: { playerId: number; points: number }) => {
+      showScorePopup(result.playerId, result.points);
+    },
+    [showScorePopup],
+  );
+
   const {
     wordCelebration,
     celebrationActiveRef,
@@ -180,11 +244,58 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     setFoundWords,
     setVisibleCourt,
     onCelebrationStart: handleCelebrationStart,
+    onScoreAwarded: handleScoreAwarded,
+    onWordFound: handleWordFound,
     clearSelection: () => clearSelectionRef.current(),
     setIsSubmittingGuess: (value) => setIsSubmittingGuessRef.current(value),
   });
 
   const isCelebrating = wordCelebration !== null;
+
+  const lastFreezeEventKeyRef = useRef('');
+  const lastLeftEventKeyRef = useRef('');
+
+  useEffect(() => {
+    if (!latestFreezeNotice) return;
+    const key = `${latestFreezeNotice.playerId}|${latestFreezeNotice.message}`;
+    if (lastFreezeEventKeyRef.current === key) return;
+    lastFreezeEventKeyRef.current = key;
+
+    const isUnfreeze = /back in the game/i.test(latestFreezeNotice.message);
+    const colour = playerColours[latestFreezeNotice.playerId] ?? '#38BDF8';
+
+    // Local freeze already has the court overlay — only broadcast others' freezes.
+    if (!isUnfreeze && latestFreezeNotice.playerId === playerId) {
+      return;
+    }
+
+    if (isUnfreeze) {
+      pushEvent({
+        kind: 'unfreeze',
+        headline: `${latestFreezeNotice.playerName} is back!`,
+        clothesColor: colour,
+      });
+    } else {
+      pushEvent({
+        kind: 'freeze',
+        headline: `${latestFreezeNotice.playerName} is frozen!`,
+        clothesColor: colour,
+      });
+    }
+  }, [latestFreezeNotice, playerColours, pushEvent, playerId]);
+
+  useEffect(() => {
+    if (!latestPlayerLeft) return;
+    const key = `${latestPlayerLeft.playerId}|${latestPlayerLeft.playerName}`;
+    if (lastLeftEventKeyRef.current === key) return;
+    lastLeftEventKeyRef.current = key;
+
+    pushEvent({
+      kind: 'player-left',
+      headline: `${latestPlayerLeft.playerName} left the game`,
+      clothesColor: playerColours[latestPlayerLeft.playerId] ?? '#9CA3AF',
+    });
+  }, [latestPlayerLeft, playerColours, pushEvent]);
 
   // game:state (isComplete) can arrive before game:wordGuessed, which briefly flashes
   // the game-over overlay. Hold it until the completing celebration has finished —
@@ -249,6 +360,33 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     onGuessSubmitted: handleGuessSubmitted,
     onGuessFailed: handleGuessFailed,
   });
+
+  const lastNoticeKeyRef = useRef('');
+
+  useEffect(() => {
+    if (!selectionMessage) return;
+
+    // Freeze/unfreeze are already announced via the freeze ticker.
+    if (/frozen|chill|🧊|back in the game/i.test(selectionMessage)) {
+      return;
+    }
+
+    const key = selectionMessage;
+    if (lastNoticeKeyRef.current === key) return;
+    lastNoticeKeyRef.current = key;
+
+    pushEvent({
+      kind: 'notice',
+      headline: selectionMessage,
+      clothesColor: '#F59E0B',
+    });
+  }, [selectionMessage, pushEvent]);
+
+  useEffect(() => {
+    if (!selectionMessage) {
+      lastNoticeKeyRef.current = '';
+    }
+  }, [selectionMessage]);
 
   clearSelectionRef.current = clearSelection;
   setIsSubmittingGuessRef.current = setIsSubmittingGuess;
@@ -359,10 +497,10 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     freezeSecondsLeft,
     freezeSecondsByPlayer,
     frozenPlayers: mergedFrozenPlayers,
-    isGameOver,
     showGameOverOverlay,
-    selectionMessage,
-    statusBanner,
+    eventBanner,
+    eventBannerPhase,
+    scorePopup,
     wordCelebration,
     sortedPlayers,
     solutionWords,
@@ -374,7 +512,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     wordRevealIndex,
     introCountdownValue,
     introTotalWords,
-    showWordReveal: showIntro,
     showAbandonModal,
     isAbandoning,
     wordsFound,

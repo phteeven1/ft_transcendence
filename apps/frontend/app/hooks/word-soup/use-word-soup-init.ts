@@ -6,15 +6,12 @@ import { useRouter } from 'next/navigation';
 import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
 import type { WordSoup } from '@/lib/api/games/word-soup/types';
 import type { Game, Player } from '@/app/types';
-
-const COURT_COLS = 18;
-const COURT_ROWS = 10;
+import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_components/court-size';
 
 function createEmptyCourt(): WordSoup.CourtCell[][] {
   return Array.from({ length: COURT_ROWS }, () =>
     Array.from({ length: COURT_COLS }, () => ({
       char: '',
-      revealed: false,
       highlightedByPlayerId: undefined,
     })),
   );
@@ -43,6 +40,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
   const [solutionWords, setSolutionWords] = useState<string[]>([]);
   const [foundWords, setFoundWords] = useState<WordSoup.FoundWord[]>([]);
   const [hasPlayerSeenIntro, setHasPlayerSeenIntro] = useState(false);
+  const [introStartedAt, setIntroStartedAt] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [initialFrozenPlayers, setInitialFrozenPlayers] = useState<Record<number, number>>({});
 
@@ -98,6 +96,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
         setSolutionWords(result.solutionWords);
         setFoundWords(result.foundWords);
         setHasPlayerSeenIntro(result.hasPlayerSeenIntro);
+        setIntroStartedAt(result.introStartedAt ?? Date.now());
         setIsComplete(result.isComplete ?? false);
         setInitialFrozenPlayers(result.frozenPlayers ?? {});
         setCourtReady(true);
@@ -133,6 +132,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     foundWords,
     setFoundWords,
     hasPlayerSeenIntro,
+    introStartedAt,
     isComplete,
     initialFrozenPlayers,
   };
