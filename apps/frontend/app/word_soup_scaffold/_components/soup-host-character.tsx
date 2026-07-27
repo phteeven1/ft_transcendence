@@ -13,7 +13,6 @@ type SoupHostCharacterProps = {
 
 const DEFAULT_CLOTHES = '#5EEAD4';
 
-/** Soft Animal Crossing–style host used in intro + scoreboard avatars. */
 export default function SoupHostCharacter({
   clothesColor = DEFAULT_CLOTHES,
   className = '',
