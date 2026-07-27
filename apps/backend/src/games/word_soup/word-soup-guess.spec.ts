@@ -40,7 +40,9 @@ function getSelectionDirection(
   return [oneStepRow, oneStepCol];
 }
 
-function isCourtComplete(court: Pick<SharedWordSoupCourt, 'solutionWords' | 'foundWords'>) {
+function isCourtComplete(
+  court: Pick<SharedWordSoupCourt, 'solutionWords' | 'foundWords'>,
+) {
   return (
     court.solutionWords.length > 0 &&
     court.foundWords.length >= court.solutionWords.length
@@ -102,7 +104,9 @@ describe('post-complete guard', () => {
       ],
     };
     expect(isCourtComplete(court)).toBe(true);
-    expect(isCourtComplete({ solutionWords: ['CAT'], foundWords: [] })).toBe(false);
+    expect(isCourtComplete({ solutionWords: ['CAT'], foundWords: [] })).toBe(
+      false,
+    );
   });
 
   it('createEmptyCourt matches configured dimensions', () => {

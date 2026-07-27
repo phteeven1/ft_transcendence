@@ -1,10 +1,10 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type { WordSoupCourtCell } from '@/lib/api/games/word-soup/types';
 import { lightenHexColor } from '../_lib/color-utils';
 
-type CourtCell = WordSoup.CourtCell;
+type CourtCell = WordSoupCourtCell;
 
 interface Props {
   cell: CourtCell;

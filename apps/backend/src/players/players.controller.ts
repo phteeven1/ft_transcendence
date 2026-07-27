@@ -32,7 +32,12 @@ export class PlayersController {
 
   @Post('updatePassPhrase')
   updatePassPhrase(
-    @Body() body: { playerId: number; playerPassQuestion: string; playerPassAnswer: string },
+    @Body()
+    body: {
+      playerId: number;
+      playerPassQuestion: string;
+      playerPassAnswer: string;
+    },
   ) {
     return this.playersService.updatePassPhrase(
       body.playerId,
@@ -76,7 +81,10 @@ export class PlayersController {
     @Param('userId') userId: string,
     @Param('groupId') groupId: string,
   ) {
-    return this.playersService.findByParentInGroup(Number(userId), Number(groupId));
+    return this.playersService.findByParentInGroup(
+      Number(userId),
+      Number(groupId),
+    );
   }
 
   @Get('group/:groupId')

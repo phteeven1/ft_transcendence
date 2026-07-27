@@ -6,7 +6,7 @@ import {
   SCORE_POPUP_MS,
 } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 import type { WordSoupEventBanner } from './use-word-soup-event-banner';
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type { WordSoupFreezeNoticeDto } from '@/lib/api/games/word-soup/types';
 
 type ScorePopup = {
   id: number;
@@ -43,7 +43,7 @@ export function useWordSoupScorePopup() {
 
 type FreezeBridgeArgs = {
   playerId: number;
-  latestFreezeNotice: WordSoup.FreezeNoticeDto | null;
+  latestFreezeNotice: WordSoupFreezeNoticeDto | null;
   latestPlayerLeft: { playerId: number; playerName: string } | null;
   playerColours: Record<number, string>;
   pushEvent: (event: Omit<WordSoupEventBanner, 'id'>) => void;
@@ -108,23 +108,30 @@ export function useWordSoupGameOverOverlay(
   celebrationActiveRef: { current: boolean },
 ) {
   const [allowGameOverOverlay, setAllowGameOverOverlay] = useState(false);
-  const sawCompletionCelebrationRef = useRef(false);
+  const [sawCompletionCelebration, setSawCompletionCelebration] = useState(false);
+  const [prevIsGameOver, setPrevIsGameOver] = useState(isGameOver);
+  const [prevIsCelebrating, setPrevIsCelebrating] = useState(isCelebrating);
 
-  useEffect(() => {
+  if (isGameOver !== prevIsGameOver) {
+    setPrevIsGameOver(isGameOver);
     if (!isGameOver) {
       setAllowGameOverOverlay(false);
-      sawCompletionCelebrationRef.current = false;
-      return;
+      setSawCompletionCelebration(false);
     }
+  }
 
-    if (isCelebrating) {
-      sawCompletionCelebrationRef.current = true;
+  if (isCelebrating !== prevIsCelebrating) {
+    setPrevIsCelebrating(isCelebrating);
+    if (isGameOver && isCelebrating) {
+      setSawCompletionCelebration(true);
       setAllowGameOverOverlay(false);
-      return;
-    }
-
-    if (sawCompletionCelebrationRef.current) {
+    } else if (isGameOver && !isCelebrating && sawCompletionCelebration) {
       setAllowGameOverOverlay(true);
+    }
+  }
+
+  useEffect(() => {
+    if (!isGameOver || isCelebrating || sawCompletionCelebration || allowGameOverOverlay) {
       return;
     }
 
@@ -135,7 +142,13 @@ export function useWordSoupGameOverOverlay(
     }, GAME_OVER_OVERLAY_GRACE_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isGameOver, isCelebrating, celebrationActiveRef]);
+  }, [
+    isGameOver,
+    isCelebrating,
+    sawCompletionCelebration,
+    allowGameOverOverlay,
+    celebrationActiveRef,
+  ]);
 
   return allowGameOverOverlay && !isCelebrating;
 }

@@ -7,7 +7,16 @@ export type {
   GameIdInput,
   GameIdPlayerIdInput,
 } from './types';
-export type { WordSoup } from './word-soup/types';
+
+export type { 
+  WordSoupCourtCell,
+  WordSoupFoundWord,
+  WordSoupDto,
+  WordSoupFreezeNoticeDto,
+  WordSoupGuessResultDto,
+  WordSoupWordGuessedDto
+ } from './word-soup/types';
+
 export type {
   ClueEntry,
   ICellLocksPayload,

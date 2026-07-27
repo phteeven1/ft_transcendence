@@ -4,11 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
 import type { Game, Player } from '@/app/types';
 import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
-function createEmptyCourt(): WordSoup.CourtCell[][] {
+function createEmptyCourt(): WordSoupCourtCell[][] {
   return Array.from({ length: COURT_ROWS }, () =>
     Array.from({ length: COURT_COLS }, () => ({
       char: '',
@@ -42,18 +42,26 @@ export function useWordSoupInit(gameId: number, playerId: number) {
   const [courtRetryToken, setCourtRetryToken] = useState(0);
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [visibleCourt, setVisibleCourt] = useState<WordSoup.CourtCell[][]>(createEmptyCourt);
+  const [visibleCourt, setVisibleCourt] = useState<WordSoupCourtCell[][]>(createEmptyCourt);
   const [playerColours, setPlayerColours] = useState<Record<number, string>>({});
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
   const [playerWordCounts, setPlayerWordCounts] = useState<Record<number, number>>({});
   const [playerStreaks, setPlayerStreaks] = useState<Record<number, number>>({});
   const [leftPlayers, setLeftPlayers] = useState<Record<number, string>>({});
   const [solutionWords, setSolutionWords] = useState<string[]>([]);
-  const [foundWords, setFoundWords] = useState<WordSoup.FoundWord[]>([]);
+  const [foundWords, setFoundWords] = useState<WordSoupFoundWord[]>([]);
   const [hasPlayerSeenIntro, setHasPlayerSeenIntro] = useState(false);
   const [introStartedAt, setIntroStartedAt] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [initialFrozenPlayers, setInitialFrozenPlayers] = useState<Record<number, number>>({});
+  const [activeCourtInitKey, setActiveCourtInitKey] = useState(`${gameId}:${playerId}:0`);
+
+  const courtInitKey = `${gameId}:${playerId}:${courtRetryToken}`;
+  if (courtInitKey !== activeCourtInitKey) {
+    setActiveCourtInitKey(courtInitKey);
+    setCourtReady(false);
+    setCourtInitError(null);
+  }
 
   useEffect(() => {
     if (!gameId || !playerId) {
@@ -90,8 +98,6 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     if (!game) return;
 
     let isMounted = true;
-    setCourtReady(false);
-    setCourtInitError(null);
 
     const init = async () => {
       try {

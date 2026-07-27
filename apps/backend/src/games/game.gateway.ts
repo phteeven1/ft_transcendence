@@ -11,7 +11,10 @@ import { Server, Socket } from 'socket.io';
 import { GamesService, Game } from './games.service';
 import { WordBuildingService } from './word_building/word-building.service';
 import { WordSoupService } from './word_soup/word-soup.service';
-import { FREEZE_DURATION_SECONDS, POINTS_PER_WORD } from './word_soup/word-soup.types';
+import {
+  FREEZE_DURATION_SECONDS,
+  POINTS_PER_WORD,
+} from './word_soup/word-soup.types';
 import type {
   IPlaceLetterDto,
   ILockCellDto,
@@ -56,7 +59,7 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     @ConnectedSocket() client: TypedSocket,
     @MessageBody() data: { groupId: number; playerId: number },
   ): Promise<void> {
-    client.join(`group:${data.groupId}`);
+    await client.join(`group:${data.groupId}`);
 
     client.data.groupId = data.groupId;
     client.data.playerId = data.playerId;
@@ -73,16 +76,15 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
    * @param data Game and player identifiers supplied by the client.
    */
   @SubscribeMessage('joinGame')
-  handleJoinGame(
+  async handleJoinGame(
     @ConnectedSocket() client: TypedSocket,
     @MessageBody() data: { gameId: number; playerId: number },
-  ): void {
-    client.join(`game:${data.gameId}`);
+  ): Promise<void> {
+    await client.join(`game:${data.gameId}`);
     client.data.gameId = data.gameId;
     client.data.playerId = data.playerId;
   }
 
-  
   @SubscribeMessage('guess:submit')
   async handleSubmitGuess(
     @ConnectedSocket() client: Socket,
@@ -104,7 +106,7 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
       return;
     }
 
-    const result = await this.wordSoupService.submitGuess(
+    const result = this.wordSoupService.submitGuess(
       data.gameId,
       data.playerId,
       data.selection,
@@ -112,7 +114,9 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
 
     if (result.success) {
       const playerName = await this.getPlayerName(data.gameId, data.playerId);
-      this.server.to(`game:${data.gameId}`).emit('game:state', { state: result.state });
+      this.server
+        .to(`game:${data.gameId}`)
+        .emit('game:state', { state: result.state });
       this.server.to(`game:${data.gameId}`).emit('game:wordGuessed', {
         playerId: data.playerId,
         playerName,
@@ -191,7 +195,10 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     playerId: number,
   ): Promise<string> {
     const players = await this.gamesService.findPlayersForGame(gameId);
-    return players.find((player) => player.id === playerId)?.name ?? `Player #${playerId}`;
+    return (
+      players.find((player) => player.id === playerId)?.name ??
+      `Player #${playerId}`
+    );
   }
 
   /**
@@ -200,10 +207,16 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
    * @param client The disconnected socket.
    */
   handleDisconnect(client: Socket) {
-    const { gameId, playerId } = client.data as { gameId?: number; playerId?: number };
+    const { gameId, playerId } = client.data as {
+      gameId?: number;
+      playerId?: number;
+    };
     if (gameId && playerId) {
       // Word Building: release all locks for this player and notify the room.
-      const payload = this.wordBuildingService.unlockAllForPlayer(gameId, playerId);
+      const payload = this.wordBuildingService.unlockAllForPlayer(
+        gameId,
+        playerId,
+      );
       this.server.to(`game:${gameId}`).emit('cell:locks', payload);
     }
   }
@@ -283,9 +296,15 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
   @SubscribeMessage('cell:unlock')
   handleCellUnlock(
     @ConnectedSocket() client: Socket,
-    @MessageBody() dto: { gameId: number; playerId: number; row: number; col: number },
+    @MessageBody()
+    dto: { gameId: number; playerId: number; row: number; col: number },
   ): void {
-    const payload = this.wordBuildingService.unlockCell(dto.gameId, dto.row, dto.col, dto.playerId);
+    const payload = this.wordBuildingService.unlockCell(
+      dto.gameId,
+      dto.row,
+      dto.col,
+      dto.playerId,
+    );
     this.server.to(`game:${dto.gameId}`).emit('cell:locks', payload);
   }
 
@@ -327,7 +346,11 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
    * @param playerName Display name captured before leave.
    */
   emitPlayerLeft(gameId: number, playerId: number, playerName: string) {
-    const state = this.wordSoupService.markPlayerLeft(gameId, playerId, playerName);
+    const state = this.wordSoupService.markPlayerLeft(
+      gameId,
+      playerId,
+      playerName,
+    );
     this.server.to(`game:${gameId}`).emit('game:playerLeft', {
       playerId,
       playerName,

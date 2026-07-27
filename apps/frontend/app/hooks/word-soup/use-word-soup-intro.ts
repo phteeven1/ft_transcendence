@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 import { wordSoupApi } from '@/lib/api';
 
@@ -187,36 +187,30 @@ export function useWordSoupIntro({
   skipIntro = false,
 }: UseWordSoupIntroProps) {
   const [frame, setFrame] = useState<IntroFrame>(IDLE_FRAME);
-  const [gameReady, setGameReady] = useState(false);
+  const [timelineReady, setTimelineReady] = useState(false);
+  const [activeGameId, setActiveGameId] = useState(gameId);
 
   const markedIntroRef = useRef(false);
   const wordsRef = useRef(solutionWords);
-  wordsRef.current = solutionWords;
 
-  useEffect(() => {
-    markedIntroRef.current = false;
+  const shouldSkipIntro = hasPlayerSeenIntro || skipIntro;
+
+  if (gameId !== activeGameId) {
+    setActiveGameId(gameId);
     setFrame(IDLE_FRAME);
-    setGameReady(false);
-  }, [gameId]);
+    setTimelineReady(false);
+  }
 
   useLayoutEffect(() => {
-    if (!courtReady) return;
+    wordsRef.current = solutionWords;
+  });
 
-    if (hasPlayerSeenIntro || skipIntro) {
-      setGameReady(true);
-      setFrame({
-        ...IDLE_FRAME,
-        phase: 'done',
-        done: true,
-      });
-      return;
-    }
-
+  useLayoutEffect(() => {
+    if (!courtReady || shouldSkipIntro) return;
     if (solutionWords.length === 0) return;
     if (introStartedAt == null) return;
 
     markedIntroRef.current = false;
-    setGameReady(false);
 
     let rafId = 0;
     let cancelled = false;
@@ -228,7 +222,7 @@ export function useWordSoupIntro({
       setFrame(next);
 
       if (next.done) {
-        setGameReady(true);
+        setTimelineReady(true);
         if (!markedIntroRef.current) {
           markedIntroRef.current = true;
           void wordSoupApi.markIntroShown({ gameId, playerId }).catch((error) => {
@@ -244,11 +238,11 @@ export function useWordSoupIntro({
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
         window.cancelAnimationFrame(rafId);
-        applyElapsed();
+        rafId = window.requestAnimationFrame(applyElapsed);
       }
     };
 
-    applyElapsed();
+    rafId = window.requestAnimationFrame(applyElapsed);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
@@ -261,24 +255,34 @@ export function useWordSoupIntro({
     gameId,
     playerId,
     solutionWords,
-    hasPlayerSeenIntro,
     introStartedAt,
-    skipIntro,
+    shouldSkipIntro,
   ]);
+
+  const gameReady = shouldSkipIntro ? courtReady : timelineReady;
+  const displayFrame =
+    shouldSkipIntro && courtReady
+      ? {
+          ...IDLE_FRAME,
+          phase: 'done' as const,
+          done: true,
+          wordRevealIndex: Math.max(0, solutionWords.length - 1),
+        }
+      : frame;
 
   const showIntro =
     courtReady && !gameReady && !hasPlayerSeenIntro && !skipIntro;
 
-  const displayedText = frame.bubbleText.slice(0, frame.typedLength);
+  const displayedText = displayFrame.bubbleText.slice(0, displayFrame.typedLength);
 
   return {
     gameReady,
     showIntro,
-    phase: frame.phase,
+    phase: displayFrame.phase,
     bubbleText: displayedText,
-    bubbleVisible: frame.bubbleVisible,
-    wordRevealIndex: frame.wordRevealIndex,
-    countdownValue: frame.countdownValue,
+    bubbleVisible: displayFrame.bubbleVisible,
+    wordRevealIndex: displayFrame.wordRevealIndex,
+    countdownValue: displayFrame.countdownValue,
     totalWords: solutionWords.length,
   };
 }

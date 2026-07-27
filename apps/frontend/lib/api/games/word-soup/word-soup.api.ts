@@ -1,10 +1,10 @@
 import { apiRequest } from '../../http';
-import type { WordSoup } from './types';
+import type { WordSoupDto } from './types';
 import type { GameIdPlayerIdInput } from '../types';
 
 export const wordSoupApi = {
-  initCourt(input: GameIdPlayerIdInput): Promise<WordSoup.Dto> {
-    return apiRequest<WordSoup.Dto>(
+  initCourt(input: GameIdPlayerIdInput): Promise<WordSoupDto> {
+    return apiRequest<WordSoupDto>(
       `/games/${input.gameId}/initWordSoupCourt`,
       {
         method: 'POST',

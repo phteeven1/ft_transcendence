@@ -43,7 +43,8 @@ describe('generateTrueCourt', () => {
       const found = placements.some((placement) => {
         const [dx, dy] = placement.direction;
         return word.split('').every((ch, i) => {
-          const cell = trueCourt[placement.row + i * dx][placement.col + i * dy];
+          const cell =
+            trueCourt[placement.row + i * dx][placement.col + i * dy];
           return cell.char === ch;
         });
       });
@@ -52,7 +53,16 @@ describe('generateTrueCourt', () => {
   });
 
   it('respects crossing budget by still placing isolated words', () => {
-    const words = ['APPLE', 'PEAR', 'PLUM', 'FIG', 'DATE', 'LIME', 'MELON', 'BERRY'];
+    const words = [
+      'APPLE',
+      'PEAR',
+      'PLUM',
+      'FIG',
+      'DATE',
+      'LIME',
+      'MELON',
+      'BERRY',
+    ];
     const { placedWords } = generateTrueCourt(words, 2);
     expect(placedWords.length).toBeGreaterThanOrEqual(2);
     expect(placedWords.length).toBeLessThanOrEqual(words.length);

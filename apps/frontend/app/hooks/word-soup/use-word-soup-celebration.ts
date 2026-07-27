@@ -2,13 +2,17 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Player } from '@/app/types';
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type { 
+  WordSoupWordGuessedDto,
+  WordSoupFoundWord,
+  WordSoupCourtCell,
+ } from '@/lib/api/games/word-soup/types';
 import {
   POINTS_PER_WORD,
   WORD_SOUP_TILE_ANIM_MS,
 } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
-type WordGuessed = WordSoup.WordGuessedDto;
+type WordGuessed = WordSoupWordGuessedDto;
 
 export type WordCelebration = {
   playerId: number;
@@ -41,11 +45,11 @@ type UseWordSoupCelebrationProps = {
   ) => void;
 
   setFoundWords: React.Dispatch<
-    React.SetStateAction<WordSoup.FoundWord[]>
+    React.SetStateAction<WordSoupFoundWord[]>
   >;
 
   setVisibleCourt: (
-    court: WordSoup.CourtCell[][]
+    court: WordSoupCourtCell[][]
   ) => void;
 
   onCelebrationStart?: () => void;
@@ -103,7 +107,7 @@ export function useWordSoupCelebration({
     useRef(0);
 
   const pendingCourtRef =
-    useRef<WordSoup.CourtCell[][] | null>(null);
+    useRef<WordSoupCourtCell[][] | null>(null);
 
   const playersRef =
     useRef(players);
@@ -113,11 +117,27 @@ export function useWordSoupCelebration({
 
   const onWordFoundRef = useRef(onWordFound);
   const onScoreAwardedRef = useRef(onScoreAwarded);
+  const onCelebrationStartRef = useRef(onCelebrationStart);
+  const clearSelectionRef = useRef(clearSelection);
+  const setIsSubmittingGuessRef = useRef(setIsSubmittingGuess);
+  const setPlayerScoresRef = useRef(setPlayerScores);
+  const setPlayerWordCountsRef = useRef(setPlayerWordCounts);
+  const setFoundWordsRef = useRef(setFoundWords);
+  const setVisibleCourtRef = useRef(setVisibleCourt);
 
-  playersRef.current = players;
-  solutionWordsRef.current = solutionWords;
-  onWordFoundRef.current = onWordFound;
-  onScoreAwardedRef.current = onScoreAwarded;
+  useLayoutEffect(() => {
+    playersRef.current = players;
+    solutionWordsRef.current = solutionWords;
+    onWordFoundRef.current = onWordFound;
+    onScoreAwardedRef.current = onScoreAwarded;
+    onCelebrationStartRef.current = onCelebrationStart;
+    clearSelectionRef.current = clearSelection;
+    setIsSubmittingGuessRef.current = setIsSubmittingGuess;
+    setPlayerScoresRef.current = setPlayerScores;
+    setPlayerWordCountsRef.current = setPlayerWordCounts;
+    setFoundWordsRef.current = setFoundWords;
+    setVisibleCourtRef.current = setVisibleCourt;
+  });
 
   useEffect(() => {
     return () => {
@@ -136,9 +156,9 @@ export function useWordSoupCelebration({
     celebrationTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
     celebrationTimeoutsRef.current = [];
     celebrationActiveRef.current = true;
-    onCelebrationStart?.();
-    clearSelection?.();
-    setIsSubmittingGuess?.(false);
+    onCelebrationStartRef.current?.();
+    clearSelectionRef.current?.();
+    setIsSubmittingGuessRef.current?.(false);
 
     const runId = celebrationRunRef.current + 1;
     celebrationRunRef.current = runId;
@@ -147,11 +167,11 @@ export function useWordSoupCelebration({
       wordGuessed.state?.visibleCourt ?? pendingCourtRef.current;
 
     if (wordGuessed.playerScores) {
-      setPlayerScores(wordGuessed.playerScores);
+      setPlayerScoresRef.current(wordGuessed.playerScores);
     }
 
     if (wordGuessed.state?.playerWordCounts) {
-      setPlayerWordCounts(wordGuessed.state.playerWordCounts);
+      setPlayerWordCountsRef.current(wordGuessed.state.playerWordCounts);
     }
 
     const playerName =
@@ -177,18 +197,12 @@ export function useWordSoupCelebration({
     const solvedCount = wordGuessed.state?.foundWords.length ?? 0;
     const isPenultimate = totalWords > 1 && solvedCount === totalWords - 1;
 
-    const pendingFoundWord: WordSoup.FoundWord = {
+    const pendingFoundWord: WordSoupFoundWord = {
       playerId: wordGuessed.playerId,
       word: wordGuessed.word,
       cells: wordGuessed.cells,
       direction: wordGuessed.direction,
     };
-
-    setWordCelebration({
-      playerId: wordGuessed.playerId,
-      orderedCells,
-      activeIndex: 0,
-    });
 
     const schedule = (callback: () => void, delay: number) => {
       const timeoutId = window.setTimeout(() => {
@@ -197,6 +211,14 @@ export function useWordSoupCelebration({
       }, delay);
       celebrationTimeoutsRef.current.push(timeoutId);
     };
+
+    schedule(() => {
+      setWordCelebration({
+        playerId: wordGuessed.playerId,
+        orderedCells,
+        activeIndex: 0,
+      });
+    }, 0);
 
     const lastIndex = Math.max(orderedCells.length - 1, 0);
 
@@ -212,7 +234,7 @@ export function useWordSoupCelebration({
     const animationEndMs = lastIndex * WORD_SOUP_TILE_ANIM_MS + 180;
 
     schedule(() => {
-      setFoundWords((previous) => {
+      setFoundWordsRef.current((previous) => {
         const exists = previous.some(
           (entry) =>
             entry.playerId === pendingFoundWord.playerId &&
@@ -227,7 +249,7 @@ export function useWordSoupCelebration({
       });
 
       if (pendingCourtRef.current) {
-        setVisibleCourt(pendingCourtRef.current);
+        setVisibleCourtRef.current(pendingCourtRef.current);
       }
 
       onWordFoundRef.current?.({
@@ -241,7 +263,7 @@ export function useWordSoupCelebration({
       celebrationActiveRef.current = false;
       pendingCourtRef.current = null;
     }, animationEndMs);
-  }, [wordGuessedSeq]);
+  }, [wordGuessedSeq, wordGuessed]);
 
   return {
     wordCelebration,

@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import { gamesApi } from '@/lib/api';
 import { clearPlayerSession } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type {
+  WordSoupWordGuessedDto,
+  WordSoupGuessResultDto,
+  WordSoupDto,
+  WordSoupFreezeNoticeDto,
+ } from '@/lib/api/games/word-soup/types';
 
 import { useAuth } from '../../context/auth-context';
 import { useWordSoupInit } from './use-word-soup-init';
@@ -28,12 +33,12 @@ type UseWordSoupGameArgs = {
   socket: {
     gameFinished: boolean;
     isConnected: boolean;
-    wordGuessed: WordSoup.WordGuessedDto | null;
+    wordGuessed: WordSoupWordGuessedDto | null;
     wordGuessedSeq: number;
-    guessResult: WordSoup.GuessResultDto | null;
-    serverState: WordSoup.GameStateDto | null;
+    guessResult: WordSoupGuessResultDto | null;
+    serverState: WordSoupDto | null;
     frozenPlayers: Record<number, number>;
-    freezeNotice: WordSoup.FreezeNoticeDto | null;
+    freezeNotice: WordSoupFreezeNoticeDto | null;
     leftPlayers: Record<number, string>;
     playerLeftNotice: { playerId: number; playerName: string } | null;
     playerStreaks: Record<number, number>;
@@ -322,8 +327,10 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     }
   }, [selectionMessage]);
 
-  clearSelectionRef.current = clearSelection;
-  setIsSubmittingGuessRef.current = setIsSubmittingGuess;
+  useEffect(() => {
+    clearSelectionRef.current = clearSelection;
+    setIsSubmittingGuessRef.current = setIsSubmittingGuess;
+  }, [clearSelection, setIsSubmittingGuess]);
 
   const [isAbandoning, setIsAbandoning] = useState(false);
   const [showAbandonModal, setShowAbandonModal] = useState(false);

@@ -10,19 +10,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto } from '@/lib/api/games/word-building.types';
-import type { WordSoup} from '@/lib/api/games/word-soup/types';
+import type { 
+  WordSoupWordGuessedDto,
+  WordSoupGuessResultDto,
+  WordSoupDto,
+  WordSoupFreezeNoticeDto,
+} from '@/lib/api/games/word-soup/types';
 
 interface GameSocketState {
   gameFinished: boolean;
   isConnected: boolean;
   gameState: IGameStatePayload | null;
   cellLocks: ICellLocksPayload | null;
-  wordGuessed: WordSoup.WordGuessedDto | null;
+  wordGuessed: WordSoupWordGuessedDto | null;
   wordGuessedSeq: number;
-  guessResult: WordSoup.GuessResultDto | null;
-  serverState: WordSoup.GameStateDto | null;
+  guessResult: WordSoupGuessResultDto | null;
+  serverState: WordSoupDto | null;
   frozenPlayers: Record<number, number>;
-  freezeNotice: WordSoup.FreezeNoticeDto | null;
+  freezeNotice: WordSoupFreezeNoticeDto | null;
   leftPlayers: Record<number, string>;
   playerLeftNotice: { playerId: number; playerName: string } | null;
   playerStreaks: Record<number, number>;
@@ -77,7 +82,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     });
 
     // word_building: flat payload. word_soup: { state } wrapper.
-    socket.on('game:state', (payload: IGameStatePayload | { state: WordSoup.GameStateDto }) => {
+    socket.on('game:state', (payload: IGameStatePayload | { state: WordSoupDto }) => {
       if (!active) return;
       if ('state' in payload) {
         setState((s) => ({
@@ -99,7 +104,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     });
 
     // word_soup: Backend broadcasts this when a player guesses a word.
-    socket.on('game:wordGuessed', (payload: WordSoup.WordGuessedDto) => {
+    socket.on('game:wordGuessed', (payload: WordSoupWordGuessedDto) => {
       if (!active) return;
       setState((s) => ({
         ...s,
@@ -113,7 +118,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     });
 
     // word_soup: Backend responds to the guessing player with success/failure.
-    socket.on('game:guessResult', (payload: WordSoup.GuessResultDto) => {
+    socket.on('game:guessResult', (payload: WordSoupGuessResultDto) => {
       if (!active) return;
       setState((s) => {
         const frozenPlayers = { ...s.frozenPlayers };
@@ -187,7 +192,7 @@ export function useGameSocket(gameId: number, playerId: number) {
       playerName: string;
       leftPlayers?: Record<number, string>;
       playerStreaks?: Record<number, number>;
-      state?: WordSoup.GameStateDto;
+      state?: WordSoupDto;
     }) => {
       if (!active) return;
       setState((s) => ({

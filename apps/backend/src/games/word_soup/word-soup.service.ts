@@ -36,7 +36,10 @@ export class WordSoupService {
   private readonly sharedCourts = new Map<number, SharedWordSoupCourt>();
   private readonly freezeTimers = new Map<string, NodeJS.Timeout>();
   /** Per-game singleflight so concurrent initCourt calls share one board. */
-  private readonly initInFlight = new Map<number, Promise<SharedWordSoupCourt>>();
+  private readonly initInFlight = new Map<
+    number,
+    Promise<SharedWordSoupCourt>
+  >();
   private unfreezeHandler: UnfreezeHandler | null = null;
 
   /**
@@ -51,7 +54,10 @@ export class WordSoupService {
    * Initialise the game court if none exists for gameId; otherwise return the
    * existing shared court. Concurrent callers are coalesced via singleflight.
    */
-  async initCourt(gameId: number, playerId: number): Promise<WordSoupGameState> {
+  async initCourt(
+    gameId: number,
+    playerId: number,
+  ): Promise<WordSoupGameState> {
     const court = await this.getOrCreateCourt(gameId);
 
     if (!court.playerColours[playerId] && !(playerId in court.playerScores)) {
@@ -228,9 +234,7 @@ export class WordSoupService {
     return state;
   }
 
-  getScoreboardMeta(
-    gameId: number,
-  ): {
+  getScoreboardMeta(gameId: number): {
     playerStreaks: Record<number, number>;
     leftPlayers: Record<number, string>;
   } | null {
@@ -362,11 +366,11 @@ export class WordSoupService {
     );
   }
 
-  async submitGuess(
+  submitGuess(
     gameId: number,
     playerId: number,
     selection: Position[],
-  ): Promise<GuessResult> {
+  ): GuessResult {
     const court = this.sharedCourts.get(gameId);
 
     if (!court) {
@@ -419,7 +423,10 @@ export class WordSoupService {
       };
     }
 
-    const word = this.extractWord(court.visibleCourt, normalisedSelection).trim();
+    const word = this.extractWord(
+      court.visibleCourt,
+      normalisedSelection,
+    ).trim();
 
     if (!word) {
       return this.penalizeIncorrectGuess(gameId, playerId);
@@ -512,7 +519,10 @@ export class WordSoupService {
     return active;
   }
 
-  private isPlayerFrozen(court: SharedWordSoupCourt, playerId: number): boolean {
+  private isPlayerFrozen(
+    court: SharedWordSoupCourt,
+    playerId: number,
+  ): boolean {
     const until = court.frozenUntil[playerId];
     if (!until) return false;
     if (until <= Date.now()) {
@@ -547,10 +557,15 @@ export class WordSoupService {
     const frozenUntil = Date.now() + FREEZE_DURATION_SECONDS * 1000;
     court.frozenUntil[playerId] = frozenUntil;
 
-    this.scheduleUnfreeze(gameId, playerId, FREEZE_DURATION_SECONDS * 1000, () => {
-      delete court.frozenUntil[playerId];
-      this.unfreezeHandler?.(gameId, playerId);
-    });
+    this.scheduleUnfreeze(
+      gameId,
+      playerId,
+      FREEZE_DURATION_SECONDS * 1000,
+      () => {
+        delete court.frozenUntil[playerId];
+        this.unfreezeHandler?.(gameId, playerId);
+      },
+    );
 
     return frozenUntil;
   }
@@ -591,10 +606,7 @@ export class WordSoupService {
    * Recreate missing freeze timers after process restart / late init.
    * Uses the registered unfreeze handler so clients still get `game:playerUnfrozen`.
    */
-  private ensureFreezeTimers(
-    gameId: number,
-    court: SharedWordSoupCourt,
-  ): void {
+  private ensureFreezeTimers(gameId: number, court: SharedWordSoupCourt): void {
     const now = Date.now();
 
     for (const [playerIdStr, until] of Object.entries(court.frozenUntil)) {

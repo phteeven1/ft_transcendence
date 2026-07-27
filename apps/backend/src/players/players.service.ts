@@ -178,7 +178,9 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     minutes: number,
   ): Promise<PlayerSessionDto> {
     if (!Number.isFinite(minutes) || minutes <= 0) {
-      throw new ConflictException('Session length must be a positive number of minutes');
+      throw new ConflictException(
+        'Session length must be a positive number of minutes',
+      );
     }
 
     const player = await this.prisma.player.findUnique({

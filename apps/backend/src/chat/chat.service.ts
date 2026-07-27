@@ -14,16 +14,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { toApiChatEntry } from '../common/mappers';
 
 export type GroupChatEntry = {
-  groupId:     number;
+  groupId: number;
   entryNumber: number;
-  createdAt:   string;
-  type:        ChatEntryType;
-  authorId:    number;
-  authorName:  string;
-  targetId?:   number;
+  createdAt: string;
+  type: ChatEntryType;
+  authorId: number;
+  authorName: string;
+  targetId?: number;
   targetName?: string;
-  eventKey?:   ChatEventKey;
-  content?:    string;
+  eventKey?: ChatEventKey;
+  content?: string;
 };
 
 const USER_TARGET_EVENTS = new Set<ChatEventKey>([
@@ -68,10 +68,10 @@ export class ChatService {
 
   /** Post a user-written message (ADM, GEN, or MEM). */
   async postMessage(
-    groupId:  number,
+    groupId: number,
     authorId: number,
-    type:     Exclude<ChatEntryType, 'LOG'>,
-    content:  string,
+    type: Exclude<ChatEntryType, 'LOG'>,
+    content: string,
   ): Promise<GroupChatEntry> {
     await this.requireGroupExists(groupId);
     const role = await this.requireMembership(authorId, groupId);
@@ -116,16 +116,17 @@ export class ChatService {
    */
 
   async logEvent(
-    groupId:   number,
-    authorId:  number,
-    eventKey:  ChatEventKey,
+    groupId: number,
+    authorId: number,
+    eventKey: ChatEventKey,
     targetId?: number,
-    content?:  string,
+    content?: string,
   ): Promise<GroupChatEntry> {
     const authorName = await this.resolveUserName(authorId);
-    const targetName = targetId && USER_TARGET_EVENTS.has(eventKey)
-      ? await this.resolveUserName(targetId)
-      : undefined;
+    const targetName =
+      targetId && USER_TARGET_EVENTS.has(eventKey)
+        ? await this.resolveUserName(targetId)
+        : undefined;
     return this.createEntry({
       groupId,
       authorId,
@@ -183,14 +184,14 @@ export class ChatService {
    * as a fallback.
    */
   private async createEntry(data: {
-    groupId:    number;
-    authorId:   number;
+    groupId: number;
+    authorId: number;
     authorName: string;
-    type:       ChatEntryType;
-    eventKey?:  ChatEventKey;
-    targetId?:  number;
+    type: ChatEntryType;
+    eventKey?: ChatEventKey;
+    targetId?: number;
     targetName?: string;
-    content?:   string;
+    content?: string;
   }): Promise<GroupChatEntry> {
     for (let attempt = 1; attempt <= CREATE_ENTRY_MAX_ATTEMPTS; attempt++) {
       try {
@@ -200,7 +201,7 @@ export class ChatService {
           );
 
           const last = await tx.groupChatEntry.findFirst({
-            where:   { groupId: data.groupId },
+            where: { groupId: data.groupId },
             orderBy: { entryNumber: 'desc' },
           });
 
@@ -208,15 +209,15 @@ export class ChatService {
 
           return tx.groupChatEntry.create({
             data: {
-              groupId:    data.groupId,
+              groupId: data.groupId,
               entryNumber,
-              type:       data.type,
-              authorId:   data.authorId,
+              type: data.type,
+              authorId: data.authorId,
               authorName: data.authorName,
-              eventKey:   data.eventKey   ?? null,
-              targetId:   data.targetId   ?? null,
+              eventKey: data.eventKey ?? null,
+              targetId: data.targetId ?? null,
               targetName: data.targetName ?? null,
-              content:    data.content    ?? null,
+              content: data.content ?? null,
             },
           });
         });

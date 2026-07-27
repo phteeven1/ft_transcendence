@@ -10,7 +10,7 @@
 
 import type { PointerEvent as ReactPointerEvent, ReactNode, TouchEvent as ReactTouchEvent } from 'react';
 import CourtTile from './court-tile';
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type { WordSoupCourtCell } from '@/lib/api/games/word-soup/types';
 import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
 import {
   COURT_COLS,
@@ -24,7 +24,7 @@ import {
 
 interface Props {
   courtSize: CourtSize;
-  visibleCourt: WordSoup.CourtCell[][];
+  visibleCourt: WordSoupCourtCell[][];
   playerColours: Record<number, string>;
   selectedCells: Array<{ row: number; col: number }>;
   foundWordGroups: Array<{ playerId: number; cells: Array<{ row: number; col: number }> }>;

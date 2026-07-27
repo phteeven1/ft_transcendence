@@ -7,12 +7,13 @@ export class InvitationsController {
 
   @Post('send')
   async send(
-    @Body() body: {
-      groupId:        number;
-      groupName:      string;
-      toEmail:        string;
+    @Body()
+    body: {
+      groupId: number;
+      groupName: string;
+      toEmail: string;
       invitationText: string;
-      authorId:       number;
+      authorId: number;
     },
   ) {
     return this.invitationsService.sendInvitation(
@@ -30,8 +31,8 @@ export class InvitationsController {
   }
 
   @Post('accept')
-  accept(@Body() body: { token: string }) {
-    this.invitationsService.markAsUsed(body.token);
+  async accept(@Body() body: { token: string }) {
+    await this.invitationsService.markAsUsed(body.token);
     return { success: true };
   }
 }

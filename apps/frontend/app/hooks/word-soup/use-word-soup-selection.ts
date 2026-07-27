@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type SelectionCell = { row: number; col: number };
 
@@ -40,28 +40,34 @@ export function useWordSoupSelection({
   const isSelectingRef = useRef(false);
   const onGuessFailedRef = useRef(onGuessFailed);
   const onGuessSucceededRef = useRef(onGuessSucceeded);
-  onGuessFailedRef.current = onGuessFailed;
-  onGuessSucceededRef.current = onGuessSucceeded;
-
   const lastProcessedGuessResultRef = useRef<GuessResult | null>(null);
+  const [trackedGuessResult, setTrackedGuessResult] = useState(guessResult);
+
+  useLayoutEffect(() => {
+    onGuessFailedRef.current = onGuessFailed;
+    onGuessSucceededRef.current = onGuessSucceeded;
+  });
+
+  if (guessResult !== trackedGuessResult) {
+    setTrackedGuessResult(guessResult);
+    if (guessResult) {
+      setSelectionMessage(guessResult.message);
+      setIsSubmittingGuess(false);
+      if (!guessResult.success) {
+        setSelection([]);
+      }
+    }
+  }
 
   useEffect(() => {
     if (!guessResult) {
       lastProcessedGuessResultRef.current = null;
       return;
     }
-
-    if (lastProcessedGuessResultRef.current === guessResult) {
-      return;
-    }
-
+    if (lastProcessedGuessResultRef.current === guessResult) return;
     lastProcessedGuessResultRef.current = guessResult;
 
-    setSelectionMessage(guessResult.message);
-    setIsSubmittingGuess(false);
-
     if (!guessResult.success) {
-      setSelection([]);
       onGuessFailedRef.current?.();
     } else {
       onGuessSucceededRef.current?.();

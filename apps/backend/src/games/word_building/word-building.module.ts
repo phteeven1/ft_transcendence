@@ -4,7 +4,7 @@ import { WordBuildingService } from './word-building.service';
 
 @Module({
   controllers: [WordBuildingController],
-  providers:   [WordBuildingService],
-  exports:     [WordBuildingService],   // exported so GameGateway can inject it
+  providers: [WordBuildingService],
+  exports: [WordBuildingService], // exported so GameGateway can inject it
 })
 export class WordBuildingModule {}

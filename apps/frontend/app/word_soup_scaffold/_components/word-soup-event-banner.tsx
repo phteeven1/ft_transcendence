@@ -35,14 +35,26 @@ function revealByProgress(
 
 function useRevealProgress(phase: EventBannerPhase, event: WordSoupEventBanner | null): number {
   const [progress, setProgress] = useState(0);
+  const [trackedPhase, setTrackedPhase] = useState(phase);
+  const [trackedEventId, setTrackedEventId] = useState(event?.id ?? null);
 
-  useEffect(() => {
+  const eventId = event?.id ?? null;
+  if (phase !== trackedPhase || eventId !== trackedEventId) {
+    setTrackedPhase(phase);
+    setTrackedEventId(eventId);
     if (phase === 'idle' || !event) {
       setProgress(0);
-      return;
-    }
-    if (phase === 'hold') {
+    } else if (phase === 'hold') {
       setProgress(1);
+    } else if (phase === 'enter') {
+      setProgress(0);
+    } else {
+      setProgress(1);
+    }
+  }
+
+  useEffect(() => {
+    if (phase === 'idle' || !event || phase === 'hold') {
       return;
     }
 

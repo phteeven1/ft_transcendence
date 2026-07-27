@@ -11,8 +11,14 @@ export class GroupsController {
   }
 
   @Post('addMember')
-  addMember(@Body() body: { groupId: number; userId: number; authorId: number }) {
-    return this.groupsService.addMember(body.groupId, body.userId, body.authorId);
+  addMember(
+    @Body() body: { groupId: number; userId: number; authorId: number },
+  ) {
+    return this.groupsService.addMember(
+      body.groupId,
+      body.userId,
+      body.authorId,
+    );
   }
 
   @Post('promote')
@@ -31,8 +37,14 @@ export class GroupsController {
   }
 
   @Post('rename')
-  rename(@Body() body: { groupId: number; groupName: string; authorId: number }) {
-    return this.groupsService.rename(body.groupId, body.groupName, body.authorId);
+  rename(
+    @Body() body: { groupId: number; groupName: string; authorId: number },
+  ) {
+    return this.groupsService.rename(
+      body.groupId,
+      body.groupName,
+      body.authorId,
+    );
   }
 
   @Post('expel')

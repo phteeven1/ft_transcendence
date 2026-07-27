@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-
-import type { WordSoup } from '@/lib/api/games/word-soup/types';
+import type { WordSoupFreezeNoticeDto } from '@/lib/api/games/word-soup/types';
 
 type UseWordSoupFreezeArgs = {
   playerId: number;
   frozenPlayers: Record<number, number>;
-  freezeNotice: WordSoup.FreezeNoticeDto | null;
+  freezeNotice: WordSoupFreezeNoticeDto | null;
   playerLeftNotice?: { playerId: number; playerName: string } | null;
 };
 
@@ -31,16 +30,28 @@ export function useWordSoupFreeze({
   freezeNotice,
   playerLeftNotice = null,
 }: UseWordSoupFreezeArgs) {
-  const [freezeSecondsByPlayer, setFreezeSecondsByPlayer] = useState<Record<number, number>>({});
+  const [now, setNow] = useState<number | null>(null);
   const [latestFreezeNotice, setLatestFreezeNotice] =
-    useState<WordSoup.FreezeNoticeDto | null>(null);
+    useState<WordSoupFreezeNoticeDto | null>(null);
   const [latestPlayerLeft, setLatestPlayerLeft] = useState<{
     playerId: number;
     playerName: string;
   } | null>(null);
 
+  if (freezeNotice != null && freezeNotice !== latestFreezeNotice) {
+    setLatestFreezeNotice(freezeNotice);
+  }
+
+  if (playerLeftNotice != null && playerLeftNotice !== latestPlayerLeft) {
+    setLatestPlayerLeft(playerLeftNotice);
+  }
+
   const frozenUntil = frozenPlayers[playerId] ?? 0;
-  const isLocalPlayerFrozen = frozenUntil > Date.now();
+  const freezeSecondsByPlayer = useMemo(
+    () => (now == null ? {} : computeFreezeSecondsMap(frozenPlayers, now)),
+    [frozenPlayers, now],
+  );
+  const isLocalPlayerFrozen = now != null && frozenUntil > now;
   const freezeSecondsLeft = freezeSecondsByPlayer[playerId] ?? 0;
 
   const frozenPlayersKey = useMemo(
@@ -53,35 +64,14 @@ export function useWordSoupFreeze({
   );
 
   useEffect(() => {
-    const tick = () => {
-      const next = computeFreezeSecondsMap(frozenPlayers, Date.now());
-      setFreezeSecondsByPlayer((prev) => {
-        const prevKeys = Object.keys(prev);
-        const nextKeys = Object.keys(next);
-        if (
-          prevKeys.length === nextKeys.length &&
-          nextKeys.every((key) => prev[Number(key)] === next[Number(key)])
-        ) {
-          return prev;
-        }
-        return next;
-      });
-    };
-
-    tick();
+    const tick = () => setNow(Date.now());
+    const timeoutId = window.setTimeout(tick, 0);
     const intervalId = window.setInterval(tick, 250);
-    return () => window.clearInterval(intervalId);
-  }, [frozenPlayersKey, frozenPlayers]);
-
-  useEffect(() => {
-    if (!freezeNotice) return;
-    setLatestFreezeNotice(freezeNotice);
-  }, [freezeNotice]);
-
-  useEffect(() => {
-    if (!playerLeftNotice) return;
-    setLatestPlayerLeft(playerLeftNotice);
-  }, [playerLeftNotice]);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, [frozenPlayersKey]);
 
   return {
     isLocalPlayerFrozen,

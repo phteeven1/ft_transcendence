@@ -1,4 +1,3 @@
-
 //
 // Single source of truth for all types used by the Word Building game.
 
@@ -18,10 +17,10 @@ export type CellStatus = 'correct' | 'wrong' | 'empty' | 'none';
  * All new fields are optional so word_soup CourtCell is unaffected.
  */
 export type CourtCell = {
-  char: string;           // current letter, or '' when empty / black
+  char: string; // current letter, or '' when empty / black
   status: CellStatus;
-  clueNumber?: number;    // set when this cell is the start of an across/down word
-  placedBy?: number;      // playerId of first correct placer (only when status==='correct')
+  clueNumber?: number; // set when this cell is the start of an across/down word
+  placedBy?: number; // playerId of first correct placer (only when status==='correct')
 };
 
 // ─── Clue types ───────────────────────────────────────────────────────────────
@@ -32,7 +31,7 @@ export type ClueEntry = {
   row: number;
   col: number;
   direction: 'across' | 'down';
-  word: string;  // stored server-side; stripped before sending to client
+  word: string; // stored server-side; stripped before sending to client
 };
 
 export type ClueMap = {
@@ -52,65 +51,65 @@ export const CELL_LOCK_TIMEOUT_MS = 5_000;
  * One soft lock record: which player reserved a cell and when it expires.
  */
 export type ICellLock = {
-  playerId:   number;
+  playerId: number;
   playerName: string;
-  expiresAt:  number; // Unix timestamp (ms)
+  expiresAt: number; // Unix timestamp (ms)
 };
 
 /** Emitted by client → server when a player selects a cell for editing. */
 export type ILockCellDto = {
-  gameId:     number;
-  playerId:   number;
+  gameId: number;
+  playerId: number;
   playerName: string;
-  row:        number;
-  col:        number;
+  row: number;
+  col: number;
 };
 
 /** Broadcast server → all clients whenever the lock map changes. */
 export type ICellLocksPayload = {
   locks: Array<{
-    row:        number;
-    col:        number;
-    playerId:   number;
+    row: number;
+    col: number;
+    playerId: number;
     playerName: string;
-    expiresAt:  number;
+    expiresAt: number;
   }>;
 };
 
 // ─── In-memory live state (per game, lives in WordBuildingService Map) ─────────
 
 export type ILiveGameState = {
-  solution:    (string | null)[][];   // correct answer — never leaves the backend
-  playerGrid:  (string | null)[][];   // letters currently placed by players
-  creditGrid:  (number | null)[][];   // playerId of first correct placer per cell
-  scores:      Map<number, number>;   // playerId → current point total
-  clues:       ClueMap;
-  revision:    number;
-  locks:       Map<string, ICellLock>; // soft reservations: key = "row,col"
+  solution: (string | null)[][]; // correct answer — never leaves the backend
+  playerGrid: (string | null)[][]; // letters currently placed by players
+  creditGrid: (number | null)[][]; // playerId of first correct placer per cell
+  scores: Map<number, number>; // playerId → current point total
+  clues: ClueMap;
+  revision: number;
+  locks: Map<string, ICellLock>; // soft reservations: key = "row,col"
 };
 
 // ─── WebSocket payloads ───────────────────────────────────────────────────────
 
 /** Emitted by client → server when a player places a letter. */
 export type IPlaceLetterDto = {
-  gameId:   number;
+  gameId: number;
   playerId: number;
-  row:      number;
-  col:      number;
-  letter:   string;
+  row: number;
+  col: number;
+  letter: string;
 };
 
 /** Broadcast server → all clients after every letter placement. */
 export type IGameStatePayload = {
-  visibleCourt: CourtCell[][];   // full grid with status info — no solution data
-  scores:       Array<{ playerId: number; score: number }>;
-  solved:       boolean;
-  revision:     number;
+  visibleCourt: CourtCell[][]; // full grid with status info — no solution data
+  scores: Array<{ playerId: number; score: number }>;
+  solved: boolean;
+  revision: number;
 };
 
 /** Response shape for POST /games/:id/initWordBuildingCourt */
 export type IInitCourtResponse = {
-  trueCourt:    CourtCell[][];   // correct layout — used client-side for clue numbers
-  visibleCourt: CourtCell[][];   // initial state — all word cells are 'empty'
-  clues:        { across: Omit<ClueEntry, 'word'>[]; down: Omit<ClueEntry, 'word'>[] };
+  trueCourt: CourtCell[][]; // correct layout — used client-side for clue numbers
+  visibleCourt: CourtCell[][]; // initial state — all word cells are 'empty'
+  clues: { across: Omit<ClueEntry, 'word'>[]; down: Omit<ClueEntry, 'word'>[] };
 };

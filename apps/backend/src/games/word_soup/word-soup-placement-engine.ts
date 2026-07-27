@@ -125,8 +125,12 @@ export function pickPlacement(
   if (mode === 'prefer-cross') {
     const crossing = placements.filter((placement) => placement.overlaps > 0);
     if (crossing.length > 0) {
-      const maxOverlaps = Math.max(...crossing.map((placement) => placement.overlaps));
-      candidates = crossing.filter((placement) => placement.overlaps === maxOverlaps);
+      const maxOverlaps = Math.max(
+        ...crossing.map((placement) => placement.overlaps),
+      );
+      candidates = crossing.filter(
+        (placement) => placement.overlaps === maxOverlaps,
+      );
     }
   } else if (mode === 'avoid-cross') {
     const isolated = placements.filter((placement) => placement.overlaps === 0);
@@ -139,12 +143,14 @@ export function pickPlacement(
     let bestDistance = Number.POSITIVE_INFINITY;
     for (const placement of placements) {
       const distance =
-        Math.abs(placement.row - centreRow) + Math.abs(placement.col - centreCol);
+        Math.abs(placement.row - centreRow) +
+        Math.abs(placement.col - centreCol);
       if (distance < bestDistance) bestDistance = distance;
     }
     const nearCentre = placements.filter((placement) => {
       const distance =
-        Math.abs(placement.row - centreRow) + Math.abs(placement.col - centreCol);
+        Math.abs(placement.row - centreRow) +
+        Math.abs(placement.col - centreCol);
       return distance <= bestDistance + 2;
     });
     candidates = nearCentre.length > 0 ? nearCentre : placements;

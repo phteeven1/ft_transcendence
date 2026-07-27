@@ -138,7 +138,8 @@ export class GamesService {
   async abandonPlay(gameId: number, playerId: number): Promise<void> {
     const roster = await this.findPlayersForGame(gameId);
     const playerName =
-      roster.find((player) => player.id === playerId)?.name ?? `Player #${playerId}`;
+      roster.find((player) => player.id === playerId)?.name ??
+      `Player #${playerId}`;
 
     await this.leave(gameId, playerId);
     await this.playersService.clearSession(playerId);
@@ -157,8 +158,8 @@ export class GamesService {
       ...gameWithPlayers,
     });
     return game ? toApiGame(game) : undefined;
-  }  
-  
+  }
+
   async isPlayerInGame(gameId: number, playerId: number): Promise<boolean> {
     const count = await this.prisma.gamePlayer.count({
       where: { gameId, playerId },
@@ -196,12 +197,17 @@ export class GamesService {
    * @param gameId Game whose players should be listed.
    * @returns Player ids and names for the requested game.
    */
-  async findPlayersForGame(gameId: number): Promise<Array<{ id: number; name: string }>> {
+  async findPlayersForGame(
+    gameId: number,
+  ): Promise<Array<{ id: number; name: string }>> {
     const gamePlayers = await this.prisma.gamePlayer.findMany({
       where: { gameId },
       include: { player: { select: { id: true, name: true } } },
     });
-    return gamePlayers.map(gp => ({ id: gp.player.id, name: gp.player.name }));
+    return gamePlayers.map((gp) => ({
+      id: gp.player.id,
+      name: gp.player.name,
+    }));
   }
 
   /**

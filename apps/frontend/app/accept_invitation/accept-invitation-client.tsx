@@ -102,7 +102,7 @@ export default function AcceptInvitationClient() {
     } else if (!currentUser && authUser) {
       setCurrentUser(authUser);
     }
-  }, [pageState, currentUser, authUser]);
+  }, [pageState, currentUser, authUser, t]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
