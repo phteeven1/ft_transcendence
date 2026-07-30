@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
-import WordSoupPlaceholderClient from './_components/word-soup-game';
+import WordSoupGame from './_components/word-soup-game';
 
 function WordSoupLoading() {
   const t = useTranslations('common');
@@ -17,7 +17,7 @@ function WordSoupLoading() {
 export default function WordSoupPage() {
   return (
     <Suspense fallback={<WordSoupLoading />}>
-      <WordSoupPlaceholderClient />
+      <WordSoupGame />
     </Suspense>
   );
 }

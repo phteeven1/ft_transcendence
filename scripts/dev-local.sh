@@ -39,7 +39,11 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 if ! docker compose exec -T postgres pg_isready -U postgres -d transcendence >/dev/null 2>&1; then
-  echo "[error] PostgreSQL ist nicht bereit. Pruefe: docker compose logs postgres"
+  if [ ! -f "apps/backend/.env" ]; then
+    echo "[error] Datei apps/backend/.env nicht gefunden"
+  else
+    echo "[error] PostgreSQL ist nicht bereit. Pruefe: docker compose logs postgres"
+  fi
   exit 1
 fi
 

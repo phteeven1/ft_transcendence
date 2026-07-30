@@ -1,15 +1,14 @@
-
 export interface IEngineResult {
-  rows:       number;
-  cols:       number;
-  solution:   (string | null)[][];
+  rows: number;
+  cols: number;
+  solution: (string | null)[][];
   placements: Array<{
-    word:      string;
-    clue:      string;
-    row:       number;
-    col:       number;
+    word: string;
+    clue: string;
+    row: number;
+    col: number;
     direction: 'across' | 'down';
-    number:    number;
+    number: number;
   }>;
 }
 

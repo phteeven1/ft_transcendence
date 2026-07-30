@@ -6,10 +6,8 @@ export { usersApi } from './users';
 export { groupsApi } from './groups';
 export { playersApi } from './players';
 export { vocabulariesApi } from './vocabularies';
-export { gamesApi } from './games';
+export { gamesApi, wordBuildingApi, wordSoupApi } from './games';
 export { invitationsApi } from './invitations';
-export { wordBuildingApi } from './games/word-building.api';
-export { wordSoupApi } from './games/word-soup.api';
 export { chatApi } from './chat';
 export { healthApi } from './health';
 export type {
@@ -49,6 +47,18 @@ export type {
   CreateGameInput,
   GameIdInput,
   GameIdPlayerIdInput,
+  WordSoupCourtCell,
+  WordSoupFoundWord,
+  WordSoupDto,
+  WordSoupFreezeNoticeDto,
+  WordSoupGuessResultDto,
+  WordSoupWordGuessedDto,
+  ClueEntry,
+  ICellLocksPayload,
+  IGameStatePayload,
+  IInitCourtResponse,
+  ILockCellDto,
+  IPlaceLetterDto,
 } from './games';
 export type {
   ValidateInvitationResult,

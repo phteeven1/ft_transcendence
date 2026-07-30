@@ -46,7 +46,9 @@ export class ExtractionService implements OnModuleDestroy {
   private getOpenAiClient(): OpenAI {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey?.trim() || apiKey.trim() === 'null') {
-      throw new InternalServerErrorException('OPENAI_API_KEY is not configured on the server.');
+      throw new InternalServerErrorException(
+        'OPENAI_API_KEY is not configured on the server.',
+      );
     }
     if (!this.openai) {
       this.openai = new OpenAI({ apiKey });
@@ -61,7 +63,10 @@ export class ExtractionService implements OnModuleDestroy {
   private isPdf(file: Express.Multer.File): boolean {
     const ext = extname(file.originalname).toLowerCase();
     const pdfMimes = new Set(['application/pdf', 'application/x-pdf']);
-    return pdfMimes.has(file.mimetype) || (ext === '.pdf' && !file.mimetype.startsWith('image/'));
+    return (
+      pdfMimes.has(file.mimetype) ||
+      (ext === '.pdf' && !file.mimetype.startsWith('image/'))
+    );
   }
 
   private isImage(file: Express.Multer.File): boolean {
@@ -77,7 +82,9 @@ export class ExtractionService implements OnModuleDestroy {
 
   private resolveTesseractLang(language: string): string | null {
     const normalized = language.trim().toLowerCase();
-    return TESSERACT_LANG[normalized] ?? TESSERACT_LANG[language.trim()] ?? null;
+    return (
+      TESSERACT_LANG[normalized] ?? TESSERACT_LANG[language.trim()] ?? null
+    );
   }
 
   private toTesseractLangs(fromLanguage: string, toLanguage: string): string {
@@ -96,7 +103,10 @@ export class ExtractionService implements OnModuleDestroy {
     this.ocrLangKey = '';
   }
 
-  private async getOcrWorker(fromLanguage: string, toLanguage: string): Promise<Worker> {
+  private async getOcrWorker(
+    fromLanguage: string,
+    toLanguage: string,
+  ): Promise<Worker> {
     const langKey = this.toTesseractLangs(fromLanguage, toLanguage);
     if (this.ocrWorker && this.ocrLangKey === langKey) {
       return this.ocrWorker;
@@ -108,7 +118,11 @@ export class ExtractionService implements OnModuleDestroy {
     return this.ocrWorker;
   }
 
-  private buildPrompt(fromLanguage: string, toLanguage: string, documentText: string): string {
+  private buildPrompt(
+    fromLanguage: string,
+    toLanguage: string,
+    documentText: string,
+  ): string {
     const MAX_CHARS = 15000;
     const text =
       documentText.length > MAX_CHARS
@@ -146,14 +160,24 @@ ${text}`;
     return `${fromLanguage} - ${toLanguage} Vocabulary`;
   }
 
-  private normalizePairs(parsed: Record<string, unknown>): Pick<ExtractionResult, 'words' | 'meanings'> {
+  private normalizePairs(
+    parsed: Record<string, unknown>,
+  ): Pick<ExtractionResult, 'words' | 'meanings'> {
     const words = Array.isArray(parsed.words) ? parsed.words.map(String) : [];
-    const meanings = Array.isArray(parsed.meanings) ? parsed.meanings.map(String) : [];
+    const meanings = Array.isArray(parsed.meanings)
+      ? parsed.meanings.map(String)
+      : [];
     if (words.length > 0 || meanings.length > 0) {
       return { words, meanings };
     }
 
-    const pairKeys = ['pairs', 'vocabulary', 'entries', 'items', 'data'] as const;
+    const pairKeys = [
+      'pairs',
+      'vocabulary',
+      'entries',
+      'items',
+      'data',
+    ] as const;
     for (const key of pairKeys) {
       const value = parsed[key];
       if (!Array.isArray(value)) continue;
@@ -172,11 +196,17 @@ ${text}`;
         }
         if (!item || typeof item !== 'object') continue;
         const pair = item as Record<string, unknown>;
-        const word = pair.word ?? pair.source ?? pair.term ?? pair.foreign ?? pair[0];
-        const meaning = pair.meaning ?? pair.translation ?? pair.target ?? pair.english ?? pair[1];
-        if (word != null && meaning != null) {
-          extractedWords.push(String(word).trim());
-          extractedMeanings.push(String(meaning).trim());
+        const word =
+          pair.word ?? pair.source ?? pair.term ?? pair.foreign ?? pair[0];
+        const meaning =
+          pair.meaning ??
+          pair.translation ??
+          pair.target ??
+          pair.english ??
+          pair[1];
+        if (typeof word === 'string' && typeof meaning === 'string') {
+          extractedWords.push(word.trim());
+          extractedMeanings.push(meaning.trim());
         }
       }
       if (extractedWords.length > 0) {
@@ -187,7 +217,10 @@ ${text}`;
     return { words: [], meanings: [] };
   }
 
-  private validatePairs(words: string[], meanings: string[]): Pick<ExtractionResult, 'words' | 'meanings'> {
+  private validatePairs(
+    words: string[],
+    meanings: string[],
+  ): Pick<ExtractionResult, 'words' | 'meanings'> {
     const cleanedWords = words.map((w) => w.trim()).filter(Boolean);
     const cleanedMeanings = meanings.map((m) => m.trim()).filter(Boolean);
     const count = Math.min(cleanedWords.length, cleanedMeanings.length);
@@ -210,7 +243,8 @@ ${text}`;
       const pdfData = await instance.getText();
       return pdfData.text.trim();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown PDF error';
+      const message =
+        error instanceof Error ? error.message : 'Unknown PDF error';
       throw new BadRequestException(`Could not read PDF: ${message}`);
     } finally {
       await instance.destroy();
@@ -227,9 +261,12 @@ ${text}`;
       const { data } = await worker.recognize(buffer);
       return data.text.trim();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown OCR error';
+      const message =
+        error instanceof Error ? error.message : 'Unknown OCR error';
       console.error('OCR extraction error:', message);
-      throw new BadRequestException(`Could not read text from image: ${message}`);
+      throw new BadRequestException(
+        `Could not read text from image: ${message}`,
+      );
     }
   }
 
@@ -272,9 +309,12 @@ ${text}`;
         temperature: 0.2,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'OpenAI request failed';
+      const message =
+        error instanceof Error ? error.message : 'OpenAI request failed';
       console.error('OpenAI extraction error:', message);
-      throw new InternalServerErrorException(`AI extraction failed: ${message}`);
+      throw new InternalServerErrorException(
+        `AI extraction failed: ${message}`,
+      );
     }
 
     const content = response.choices[0]?.message?.content ?? '{}';
@@ -296,7 +336,12 @@ ${text}`;
     }
     const validated = this.validatePairs(words, meanings);
     return {
-      title: this.resolveTitle(parsed, fromLanguage, toLanguage, fallbackFilename),
+      title: this.resolveTitle(
+        parsed,
+        fromLanguage,
+        toLanguage,
+        fallbackFilename,
+      ),
       ...validated,
     };
   }
@@ -308,11 +353,18 @@ ${text}`;
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey?.trim() || apiKey.trim() === 'null') {
-      throw new InternalServerErrorException('OPENAI_API_KEY is not configured on the server.');
+      throw new InternalServerErrorException(
+        'OPENAI_API_KEY is not configured on the server.',
+      );
     }
 
     const buffer = this.getFileBuffer(file);
-    const documentText = await this.extractDocumentText(file, buffer, fromLanguage, toLanguage);
+    const documentText = await this.extractDocumentText(
+      file,
+      buffer,
+      fromLanguage,
+      toLanguage,
+    );
 
     if (!documentText) {
       throw new BadRequestException(

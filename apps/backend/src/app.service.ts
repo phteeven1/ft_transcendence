@@ -31,7 +31,8 @@ export class AppService {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'up', latencyMs: Date.now() - start };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown database error';
+      const message =
+        error instanceof Error ? error.message : 'Unknown database error';
       return { status: 'down', error: message };
     }
   }

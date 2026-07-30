@@ -16,35 +16,37 @@ import { ExtractionService } from './extraction.service';
 @Controller('vocabularies')
 export class VocabulariesController {
   constructor(
-		private readonly vocabulariesService: VocabulariesService,
-		private readonly extractionService: ExtractionService,
-	) {}
+    private readonly vocabulariesService: VocabulariesService,
+    private readonly extractionService: ExtractionService,
+  ) {}
 
   @Post('create')
   create(
-    @Body() body: {
-      vocabularyInGroup:    number;
-      byUser:               number;
-      vocabularyName:       string;
-      vocabularyWords?:     string[];
-      vocabularyMeanings?:  string[];
+    @Body()
+    body: {
+      vocabularyInGroup: number;
+      byUser: number;
+      vocabularyName: string;
+      vocabularyWords?: string[];
+      vocabularyMeanings?: string[];
     },
   ) {
     return this.vocabulariesService.create(
       body.vocabularyInGroup,
       body.byUser,
       body.vocabularyName,
-      body.vocabularyWords   ?? [],
+      body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
     );
   }
 
   @Post('setActive')
   setActive(
-    @Body() body: {
-      vocabularyId:      number;
+    @Body()
+    body: {
+      vocabularyId: number;
       vocabularyInGroup: number;
-      authorId:          number;
+      authorId: number;
     },
   ) {
     return this.vocabulariesService.setActive(
@@ -56,11 +58,12 @@ export class VocabulariesController {
 
   @Post('rename')
   rename(
-    @Body() body: {
-      vocabularyId:      number;
-      vocabularyName:    string;
+    @Body()
+    body: {
+      vocabularyId: number;
+      vocabularyName: string;
       vocabularyInGroup: number;
-      authorId:          number;
+      authorId: number;
     },
   ) {
     return this.vocabulariesService.rename(
@@ -73,9 +76,10 @@ export class VocabulariesController {
 
   @Post('update-entries')
   updateEntries(
-    @Body() body: {
-      vocabularyId:       number;
-      vocabularyWords:    string[];
+    @Body()
+    body: {
+      vocabularyId: number;
+      vocabularyWords: string[];
       vocabularyMeanings: string[];
     },
   ) {
@@ -88,10 +92,11 @@ export class VocabulariesController {
 
   @Post('remove')
   remove(
-    @Body() body: {
-      vocabularyId:      number;
+    @Body()
+    body: {
+      vocabularyId: number;
       vocabularyInGroup: number;
-      authorId:          number;
+      authorId: number;
     },
   ) {
     return this.vocabulariesService.remove(

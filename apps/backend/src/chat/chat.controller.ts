@@ -33,10 +33,10 @@ export class ChatController {
   postMessage(
     @Body()
     body: {
-      groupId:  number;
+      groupId: number;
       authorId: number;
-      type:     Exclude<ChatEntryType, 'LOG'>;
-      content:  string;
+      type: Exclude<ChatEntryType, 'LOG'>;
+      content: string;
     },
   ) {
     return this.chatService.postMessage(

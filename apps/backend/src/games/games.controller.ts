@@ -21,11 +21,7 @@ export class GamesController {
       initiatedBy: number;
     },
   ) {
-    return this.gamesService.create(
-      body.name,
-      body.inGroup,
-      body.initiatedBy,
-    );
+    return this.gamesService.create(body.name, body.inGroup, body.initiatedBy);
   }
 
   /**
@@ -90,8 +86,8 @@ export class GamesController {
    * @returns A small acknowledgement payload for the caller.
    */
   @Post('cleanup')
-  cleanup() {
-    this.gamesService.cleanupExpired();
+  async cleanup() {
+    await this.gamesService.cleanupExpired();
     return { ok: true };
   }
 

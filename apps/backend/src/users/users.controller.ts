@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Param, Body, HttpException, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  HttpException,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -6,8 +15,14 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('register')
-  register(@Body() body: { userName: string; userPassword: string; userEmail: string }) {
-    return this.usersService.register(body.userName, body.userPassword, body.userEmail);
+  register(
+    @Body() body: { userName: string; userPassword: string; userEmail: string },
+  ) {
+    return this.usersService.register(
+      body.userName,
+      body.userPassword,
+      body.userEmail,
+    );
   }
 
   //@Post('signin')

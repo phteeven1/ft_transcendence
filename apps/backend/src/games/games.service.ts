@@ -3,6 +3,7 @@ import { gameWithPlayers, toApiGame } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
 import { GameGateway } from './game.gateway';
+import { WordSoupService } from './word_soup/word-soup.service';
 
 export type Game = {
   id: number;
@@ -23,6 +24,7 @@ export class GamesService {
     private readonly playersService: PlayersService,
     @Inject(forwardRef(() => GameGateway))
     private readonly gateway: GameGateway,
+    private readonly wordSoupService: WordSoupService,
   ) {}
 
   /**
@@ -134,8 +136,14 @@ export class GamesService {
    * @param playerId Player ending the session.
    */
   async abandonPlay(gameId: number, playerId: number): Promise<void> {
+    const roster = await this.findPlayersForGame(gameId);
+    const playerName =
+      roster.find((player) => player.id === playerId)?.name ??
+      `Player #${playerId}`;
+
     await this.leave(gameId, playerId);
     await this.playersService.clearSession(playerId);
+    this.gateway.emitPlayerLeft(gameId, playerId, playerName);
   }
 
   /**
@@ -150,6 +158,13 @@ export class GamesService {
       ...gameWithPlayers,
     });
     return game ? toApiGame(game) : undefined;
+  }
+
+  async isPlayerInGame(gameId: number, playerId: number): Promise<boolean> {
+    const count = await this.prisma.gamePlayer.count({
+      where: { gameId, playerId },
+    });
+    return count > 0;
   }
 
   /**
@@ -182,12 +197,17 @@ export class GamesService {
    * @param gameId Game whose players should be listed.
    * @returns Player ids and names for the requested game.
    */
-  async findPlayersForGame(gameId: number): Promise<Array<{ id: number; name: string }>> {
+  async findPlayersForGame(
+    gameId: number,
+  ): Promise<Array<{ id: number; name: string }>> {
     const gamePlayers = await this.prisma.gamePlayer.findMany({
       where: { gameId },
       include: { player: { select: { id: true, name: true } } },
     });
-    return gamePlayers.map(gp => ({ id: gp.player.id, name: gp.player.name }));
+    return gamePlayers.map((gp) => ({
+      id: gp.player.id,
+      name: gp.player.name,
+    }));
   }
 
   /**
@@ -315,6 +335,8 @@ export class GamesService {
     await this.emitLobbyUpdate(game.inGroup);
     // Notify all players inside the game room that the game has ended.
     this.gateway.emitGameFinished(gameId);
+    // Word Soup keeps an in-memory court + freeze timers — evict on finish.
+    this.wordSoupService.clearCourt(gameId);
     return result;
   }
 }

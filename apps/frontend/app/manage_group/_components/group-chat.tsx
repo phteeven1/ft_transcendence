@@ -58,8 +58,8 @@ function renderLogSentence(
   const i18nKey = EVENT_KEY_TO_I18N[entry.eventKey ?? ''] ?? 'unknown';
   const key = `logEvents.${i18nKey}` as const;
 
-  const authorTag = (_chunks: React.ReactNode) => authorEl;
-  const targetTag = (_chunks: React.ReactNode) => targetEl;
+  const authorTag = () => authorEl;
+  const targetTag = () => targetEl;
 
   if (entry.eventKey === 'PROMOTE_ADMIN' || entry.eventKey === 'EXPEL_MEMBER') {
     return t.rich(key, {

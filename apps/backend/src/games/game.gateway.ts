@@ -1,4 +1,4 @@
-import { forwardRef, Inject } from '@nestjs/common';
+import { forwardRef, Inject, OnModuleInit } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -10,6 +10,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GamesService, Game } from './games.service';
 import { WordBuildingService } from './word_building/word-building.service';
+import { WordSoupService } from './word_soup/word-soup.service';
+import {
+  FREEZE_DURATION_SECONDS,
+  POINTS_PER_WORD,
+} from './word_soup/word-soup.types';
 import type {
   IPlaceLetterDto,
   ILockCellDto,
@@ -25,7 +30,7 @@ interface SocketData {
 type TypedSocket = Socket<any, any, any, SocketData>;
 
 @WebSocketGateway({ cors: { origin: '*' } })
-export class GameGateway implements OnGatewayDisconnect {
+export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
   @WebSocketServer()
   server!: Server;
 
@@ -33,7 +38,14 @@ export class GameGateway implements OnGatewayDisconnect {
     @Inject(forwardRef(() => GamesService))
     private readonly gamesService: GamesService,
     private readonly wordBuildingService: WordBuildingService,
+    private readonly wordSoupService: WordSoupService,
   ) {}
+
+  onModuleInit(): void {
+    this.wordSoupService.setUnfreezeHandler((gameId, playerId) => {
+      void this.broadcastPlayerUnfrozen(gameId, playerId);
+    });
+  }
 
   /**
    * Joins a client to the lobby room for a group and returns the current lobby state.
@@ -47,7 +59,7 @@ export class GameGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: TypedSocket,
     @MessageBody() data: { groupId: number; playerId: number },
   ): Promise<void> {
-    client.join(`group:${data.groupId}`);
+    await client.join(`group:${data.groupId}`);
 
     client.data.groupId = data.groupId;
     client.data.playerId = data.playerId;
@@ -56,60 +68,137 @@ export class GameGateway implements OnGatewayDisconnect {
 
     client.emit('lobby:update', { games });
   }
-  // @SubscribeMessage('joinGroup')
-  // async handleJoinGroup(
-  //   @ConnectedSocket() client: Socket,
-  //   @MessageBody() data: { groupId: number; playerId: number },
-  // ) {
-  //   client.join(`group:${data.groupId}`);
-  //   client.data.groupId = data.groupId;
-  //   client.data.playerId = data.playerId;
-  //   const games = await this.gamesService.findByGroup(data.groupId);
-  //   client.emit('lobby:update', { games });
-  // }
 
   /**
-   * Joins a client to the in-game room used for live crossword updates.
+   * Joins a client to the in-game room used for live game updates.
    *
    * @param client The connected socket to register.
    * @param data Game and player identifiers supplied by the client.
    */
   @SubscribeMessage('joinGame')
-  handleJoinGame(
+  async handleJoinGame(
     @ConnectedSocket() client: TypedSocket,
     @MessageBody() data: { gameId: number; playerId: number },
-  ): void {
-    client.join(`game:${data.gameId}`);
+  ): Promise<void> {
+    await client.join(`game:${data.gameId}`);
     client.data.gameId = data.gameId;
     client.data.playerId = data.playerId;
   }
-  //handleJoinGame(
-  //  @ConnectedSocket() client: Socket,
-  //  @MessageBody() data: { gameId: number; playerId: number },
-  //) {
-  //  client.join(`game:${data.gameId}`);
-  //  client.data.gameId = data.gameId;
-  //  client.data.playerId = data.playerId;
-  //}
 
-  /**
-   * Relays a revealed-tile event to every player in the game room.
-   * The backend keeps no tile state for this path; it only coordinates the shared view.
-   *
-   * @param client The connected socket that triggered the event.
-   * @param data Tile coordinates and player metadata from the client.
-   */
-  @SubscribeMessage('tile:click')
-  handleTileClick(
+  @SubscribeMessage('guess:submit')
+  async handleSubmitGuess(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    data: { gameId: number; playerId: number; row: number; col: number },
+    data: {
+      gameId: number;
+      playerId: number;
+      selection: Array<{ row: number; col: number }>;
+    },
   ) {
-    this.server.to(`game:${data.gameId}`).emit('game:tileRevealed', {
-      row: data.row,
-      col: data.col,
-      playerId: data.playerId,
+    const isPlayer = await this.gamesService.isPlayerInGame(
+      data.gameId,
+      data.playerId,
+    );
+    if (!isPlayer) {
+      client.emit('game:error', {
+        message: 'You are not a player in this game.',
+      });
+      return;
+    }
+
+    const result = this.wordSoupService.submitGuess(
+      data.gameId,
+      data.playerId,
+      data.selection,
+    );
+
+    if (result.success) {
+      const playerName = await this.getPlayerName(data.gameId, data.playerId);
+      this.server
+        .to(`game:${data.gameId}`)
+        .emit('game:state', { state: result.state });
+      this.server.to(`game:${data.gameId}`).emit('game:wordGuessed', {
+        playerId: data.playerId,
+        playerName,
+        word: result.word,
+        cells: result.cells,
+        direction: result.direction,
+        pointsEarned: POINTS_PER_WORD,
+        playerScores: result.playerScores,
+        state: result.state,
+      });
+      // Always ack the guessing client so FE submitting state cannot stick
+      // if celebration / wordGuessed handling fails.
+      client.emit('game:guessResult', {
+        success: true,
+        message: `Found ${result.word}!`,
+        word: result.word,
+      });
+
+      if (result.solved) {
+        await this.gamesService.finish(data.gameId);
+      }
+      return;
+    }
+
+    client.emit('game:guessResult', {
+      success: false,
+      message: result.message,
+      frozen: result.frozen,
+      frozenUntil: result.frozenUntil,
     });
+
+    if (result.frozen && result.frozenUntil) {
+      void this.broadcastPlayerFrozen(
+        data.gameId,
+        data.playerId,
+        result.frozenUntil,
+      );
+    }
+  }
+
+  private async broadcastPlayerFrozen(
+    gameId: number,
+    playerId: number,
+    frozenUntil: number,
+  ): Promise<void> {
+    const playerName = await this.getPlayerName(gameId, playerId);
+    const meta = this.wordSoupService.getScoreboardMeta(gameId);
+    this.server.to(`game:${gameId}`).emit('game:playerFrozen', {
+      playerId,
+      playerName,
+      frozenUntil,
+      durationSeconds: FREEZE_DURATION_SECONDS,
+      playerStreaks: meta?.playerStreaks,
+      kind: 'freeze',
+    });
+  }
+
+  private async broadcastPlayerUnfrozen(
+    gameId: number,
+    playerId: number,
+  ): Promise<void> {
+    // Court may already be cleared after solve; still notify the room.
+    const playerName = await this.getPlayerName(gameId, playerId);
+    const meta = this.wordSoupService.getScoreboardMeta(gameId);
+    this.server.to(`game:${gameId}`).emit('game:playerUnfrozen', {
+      playerId,
+      playerName,
+      message: `${playerName} is back in the game! 🎉`,
+      kind: 'unfreeze',
+      playerStreaks: meta?.playerStreaks,
+    });
+  }
+
+  private async getPlayerName(
+    gameId: number,
+    playerId: number,
+  ): Promise<string> {
+    const players = await this.gamesService.findPlayersForGame(gameId);
+    return (
+      players.find((player) => player.id === playerId)?.name ??
+      `Player #${playerId}`
+    );
   }
 
   /**
@@ -247,6 +336,28 @@ export class GameGateway implements OnGatewayDisconnect {
    */
   emitGameFinished(gameId: number) {
     this.server.to(`game:${gameId}`).emit('game:finished');
+  }
+
+  /**
+   * Broadcasts that a player has left the game room mid-play.
+   *
+   * @param gameId The game room to notify.
+   * @param playerId The player who left.
+   * @param playerName Display name captured before leave.
+   */
+  emitPlayerLeft(gameId: number, playerId: number, playerName: string) {
+    const state = this.wordSoupService.markPlayerLeft(
+      gameId,
+      playerId,
+      playerName,
+    );
+    this.server.to(`game:${gameId}`).emit('game:playerLeft', {
+      playerId,
+      playerName,
+      leftPlayers: state?.leftPlayers ?? { [playerId]: playerName },
+      playerStreaks: state?.playerStreaks,
+      state: state ?? undefined,
+    });
   }
 
   /**

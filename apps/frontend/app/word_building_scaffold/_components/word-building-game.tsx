@@ -137,7 +137,7 @@ export default function WordBuildingGame() {
       if (!cancelled) router.push('/');
     });
 
-    gamesApi.getById(gameId).then(game => {
+    gamesApi.getById({ gameId }).then(game => {
       if (cancelled) return;
       setGameName(game.name);
       setStartedTime(game.startedTime ?? null);

@@ -1,111 +1,151 @@
 'use client';
 
 /*
-  Renders the S/M/L size selector and the fixed-pixel game court grid.
-  Size is local state: set once at mount based on screen width, then only
-  changed by the player clicking S/M/L. Rotation and resize do not affect it.
-  Each player has their own size — it is not shared via WebSocket.
+  Renders the fixed-pixel game court grid.
+  Size is controlled by the parent (S/M/L controls). Each player has their own
+  size — not shared via WebSocket.
 
-  Grid dimensions are controlled by two constants at the top of this file:
-  COURT_COLS and COURT_ROWS. Change these to resize the grid for this game.
-  The matching constants in word-building-game.tsx must be kept in sync.
+  Grid dimensions live in court-size.ts and must stay in sync with the backend.
 */
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import type { PointerEvent as ReactPointerEvent, ReactNode, TouchEvent as ReactTouchEvent } from 'react';
 import CourtTile from './court-tile';
-import type { CourtCell } from './court-tile';
-import { Button } from '../../components/ui/button';
-
-// ── Grid dimensions ──────────────────────────────────────────────────────────
-const COURT_COLS = 18;
-const COURT_ROWS = 10;
-// ─────────────────────────────────────────────────────────────────────────────
-
-const COURT_TILE_GAP = 4;
-
-type CourtSize = 'S' | 'M' | 'L';
-
-const SIZE_CONFIG: Record<CourtSize, { tileSize: number; padding: number; fontSize: number }> = {
-  S: { tileSize: 20, padding: 2, fontSize: 16 },
-  M: { tileSize: 32, padding: 3, fontSize: 16 },
-  L: { tileSize: 46, padding: 4, fontSize: 22 },
-};
-
-function computeGridWidth(size: CourtSize): number {
-  const { tileSize, padding } = SIZE_CONFIG[size];
-  return COURT_COLS * tileSize + (COURT_COLS - 1) * COURT_TILE_GAP + padding * 2;
-}
-
-function computeGridHeight(size: CourtSize): number {
-  const { tileSize, padding } = SIZE_CONFIG[size];
-  return COURT_ROWS * tileSize + (COURT_ROWS - 1) * COURT_TILE_GAP + padding * 2;
-}
-
-// Detect default size once at mount. Below lg breakpoint (1024px) → S, else → L.
-function getDefaultSize(): CourtSize {
-  if (typeof window === 'undefined') return 'L';
-  return window.innerWidth < 1024 ? 'M' : 'L';
-}
+import type { WordSoupCourtCell } from '@/lib/api/games/word-soup/types';
+import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
+import {
+  COURT_COLS,
+  COURT_ROWS,
+  COURT_TILE_GAP,
+  SIZE_CONFIG,
+  computeGridHeight,
+  computeGridWidth,
+  type CourtSize,
+} from './court-size';
 
 interface Props {
-  visibleCourt: CourtCell[][];
-  onTileClick: (row: number, col: number) => void;
+  courtSize: CourtSize;
+  visibleCourt: WordSoupCourtCell[][];
+  playerColours: Record<number, string>;
+  selectedCells: Array<{ row: number; col: number }>;
+  foundWordGroups: Array<{ playerId: number; cells: Array<{ row: number; col: number }> }>;
+  isLocalPlayerFrozen: boolean;
+  freezeSecondsLeft: number;
+  lettersVisible?: boolean;
+  wordCelebration: WordCelebration | null;
+  overlay?: ReactNode;
+  onSelectionStart: (row: number, col: number) => void;
+  onSelectionContinue: (row: number, col: number) => void;
+  onSelectionEnd: () => void;
 }
 
-const SIZE_LABEL_KEYS = {
-  S: 'courtSizeSmall',
-  M: 'courtSizeMedium',
-  L: 'courtSizeLarge',
-} as const;
+function continueFromPoint(
+  clientX: number,
+  clientY: number,
+  onSelectionContinue: (row: number, col: number) => void,
+) {
+  const el = document.elementFromPoint(clientX, clientY);
+  const tile = el?.closest<HTMLElement>('[data-court-tile]');
+  if (!tile) return;
+  const row = Number(tile.dataset.row);
+  const col = Number(tile.dataset.col);
+  if (Number.isInteger(row) && Number.isInteger(col)) {
+    onSelectionContinue(row, col);
+  }
+}
 
-export default function GameCourt({ visibleCourt, onTileClick }: Props) {
-  const t = useTranslations('games.wordSoup');
-  const [courtSize, setCourtSize] = useState<CourtSize>(() => getDefaultSize());
-
+export default function GameCourt({
+  courtSize,
+  visibleCourt,
+  playerColours,
+  selectedCells,
+  foundWordGroups,
+  isLocalPlayerFrozen,
+  freezeSecondsLeft,
+  lettersVisible = true,
+  wordCelebration,
+  overlay = null,
+  onSelectionStart,
+  onSelectionContinue,
+  onSelectionEnd,
+}: Props) {
   const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
   const gridWidth = computeGridWidth(courtSize);
   const gridHeight = computeGridHeight(courtSize);
 
-  return (
-    <div className="flex flex-col gap-2">
-      {/* Size selector */}
-      <div className="flex gap-2">
-        {(['S', 'M', 'L'] as CourtSize[]).map((size) => (
-          <Button
-            key={size}
-            variant={courtSize === size ? 'accent' : 'ghost'}
-            size="sm"
-            className="w-8 h-8 p-0"
-            onClick={() => setCourtSize(size)}
-          >
-            {t(SIZE_LABEL_KEYS[size])}
-          </Button>
-        ))}
-      </div>
+  const getCelebrationHighlight = (
+    row: number,
+    col: number,
+  ): { playerId: number; status: 'filled' | 'leading' } | undefined => {
+    if (!wordCelebration) return undefined;
 
-      {/* Court grid — fixed pixel size, scrolls if it doesn't fit */}
+    const index = wordCelebration.orderedCells.findIndex(
+      (cell) => cell.row === row && cell.col === col,
+    );
+    if (index === -1) return undefined;
+    if (index > wordCelebration.activeIndex) return undefined;
+
+    return {
+      playerId: wordCelebration.playerId,
+      status: index === wordCelebration.activeIndex ? 'leading' : 'filled',
+    };
+  };
+
+  const interactionDisabled =
+    !lettersVisible ||
+    isLocalPlayerFrozen ||
+    wordCelebration !== null;
+
+  const handleTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (interactionDisabled) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    event.preventDefault();
+    continueFromPoint(touch.clientX, touch.clientY, onSelectionContinue);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Mouse uses tile mouseEnter; this path covers touch/pen after court capture.
+    if (interactionDisabled) return;
+    if (event.pointerType === 'mouse') return;
+    if (event.buttons === 0) return;
+    continueFromPoint(event.clientX, event.clientY, onSelectionContinue);
+  };
+
+  return (
+    <div
+      className={[
+        'relative rounded-2xl bg-white shadow-xl transition-[filter,transform] duration-300',
+        isLocalPlayerFrozen ? 'word-soup-court-frozen' : '',
+      ].join(' ')}
+      onMouseUp={interactionDisabled ? undefined : onSelectionEnd}
+      onMouseLeave={interactionDisabled ? undefined : onSelectionEnd}
+      onTouchEnd={interactionDisabled ? undefined : onSelectionEnd}
+      onTouchCancel={interactionDisabled ? undefined : onSelectionEnd}
+      onTouchMove={interactionDisabled ? undefined : handleTouchMove}
+      onPointerMove={interactionDisabled ? undefined : handlePointerMove}
+      style={{
+        width: `${gridWidth}px`,
+        minWidth: `${gridWidth}px`,
+        height: `${gridHeight}px`,
+        flexShrink: 0,
+        touchAction: 'none',
+      }}
+    >
       <div
-        className="clay-panel rounded-2xl"
+        className={interactionDisabled ? 'pointer-events-none select-none grid' : 'grid'}
         style={{
-          width: `${gridWidth}px`,
-          minWidth: `${gridWidth}px`,
-          height: `${gridHeight}px`,
-          flexShrink: 0,
+          padding: `${padding}px`,
+          gap: `${COURT_TILE_GAP}px`,
+          gridTemplateColumns: `repeat(${COURT_COLS}, ${tileSize}px)`,
+          gridTemplateRows: `repeat(${COURT_ROWS}, ${tileSize}px)`,
+          gridAutoFlow: 'row',
         }}
       >
-        <div
-          className="grid"
-          style={{
-            padding: `${padding}px`,
-            gap: `${COURT_TILE_GAP}px`,
-            gridTemplateColumns: `repeat(${COURT_COLS}, ${tileSize}px)`,
-            gridTemplateRows: `repeat(${COURT_ROWS}, ${tileSize}px)`,
-            gridAutoFlow: 'row',
-          }}
-        >
-          {visibleCourt.map((row, rowIndex) =>
-            row.map((cell, colIndex) => (
+        {visibleCourt.map((row, rowIndex) =>
+          row.map((cell, colIndex) => {
+            const celebrationHighlight = getCelebrationHighlight(rowIndex, colIndex);
+
+            return (
               <CourtTile
                 key={`${rowIndex}-${colIndex}`}
                 cell={cell}
@@ -113,12 +153,48 @@ export default function GameCourt({ visibleCourt, onTileClick }: Props) {
                 col={colIndex}
                 tileSize={tileSize}
                 fontSize={fontSize}
-                onClick={onTileClick}
+                playerColours={playerColours}
+                foundWordGroups={foundWordGroups}
+                isSelected={selectedCells.some(
+                  (selected) => selected.row === rowIndex && selected.col === colIndex,
+                )}
+                hideLetter={!lettersVisible}
+                celebrationHighlight={celebrationHighlight}
+                onSelectionStart={onSelectionStart}
+                onSelectionContinue={onSelectionContinue}
               />
-            )),
-          )}
-        </div>
+            );
+          }),
+        )}
       </div>
+
+      {isLocalPlayerFrozen && (
+        <div
+          className="word-soup-freeze-overlay pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl"
+          role="status"
+          aria-live="assertive"
+        >
+          <div className="word-soup-freeze-card mx-4 max-w-[260px] rounded-2xl border-4 border-sky-200 bg-white/95 px-5 py-4 text-center shadow-lg">
+            <div className="word-soup-freeze-snowflakes mb-2 text-3xl" aria-hidden="true">
+              <span>🧊</span>
+              <span>❄️</span>
+              <span>🐧</span>
+            </div>
+            <p className="text-lg font-extrabold text-sky-700"> Incorrect guess!</p>
+            <p className="mt-1 text-sm font-semibold text-sky-900">
+              BRRR! You&apos;re Frozen! Chill for a bit!
+            </p>
+            <p className="mt-3 text-4xl font-black tabular-nums text-sky-600">
+              {freezeSecondsLeft}
+            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-500">
+              seconds left
+            </p>
+          </div>
+        </div>
+      )}
+
+      {overlay}
     </div>
   );
 }

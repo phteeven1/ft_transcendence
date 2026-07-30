@@ -27,7 +27,7 @@ export class MailService {
       `,
     };
 
-    const result = await this.mailerService.sendMail(payload);
+    await this.mailerService.sendMail(payload);
 
     if (!this.smtpConfigured) {
       this.logger.warn(
@@ -36,9 +36,6 @@ export class MailService {
       this.logger.log(
         `Dev invitation to ${toEmail} for "${groupName}": ${inviteLink}`,
       );
-      if (result) {
-        this.logger.debug(String(result));
-      }
     }
   }
 }
