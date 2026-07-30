@@ -26,6 +26,8 @@ export type WordSoupDto = {
   hasPlayerSeenIntro: boolean;
   /** Shared intro timeline start (epoch ms). */
   introStartedAt?: number;
+  /** Epoch ms when the play clock starts (after intro countdown). */
+  playStartedAt?: number;
   isComplete: boolean;
 };
 

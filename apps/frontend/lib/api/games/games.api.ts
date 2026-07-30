@@ -1,7 +1,9 @@
 import { apiRequest } from '../http';
 import type {
   CreateGameInput,
+  FinishGameResultDto,
   GameDto,
+  GameFinishOutcomeDto,
   GameIdInput,
   GameIdPlayerIdInput,
 } from './types';
@@ -50,10 +52,16 @@ export const gamesApi = {
     });
   },
 
-  finish(input: GameIdInput): Promise<GameDto> {
-    return apiRequest<GameDto>('/games/finish', {
+  finish(input: GameIdInput): Promise<FinishGameResultDto> {
+    return apiRequest<FinishGameResultDto>('/games/finish', {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  },
+
+  getFinishOutcome(input: GameIdInput): Promise<GameFinishOutcomeDto | null> {
+    return apiRequest<GameFinishOutcomeDto | null>(
+      `/games/${input.gameId}/finish-outcome`,
+    );
   },
 };
