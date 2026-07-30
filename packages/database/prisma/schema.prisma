@@ -96,6 +96,14 @@ model Player {
   passAnswer    String
   currentGameId Int?
   lastSignout   DateTime @default(now())
+  xp            Int      @default(0)
+  gamesPlayed   Int      @default(0)
+  wins          Int      @default(0)
+  winStreak     Int      @default(0)
+  bestWinStreak Int      @default(0)
+  /// Peak consecutive correct words in a Word Soup match (solo or multiplayer).
+  bestWordStreak Int     @default(0)
+  avatarTier    Int      @default(0)
   
   group          Group          @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [ofUserId], references: [id], onDelete: Cascade)
@@ -143,6 +151,12 @@ model Game {
   startedTime   DateTime?
   isActive      Boolean   @default(false)
   isFinished    Boolean   @default(false)
+  endedAt               DateTime?
+  progressionAppliedAt  DateTime?
+  /// When the play clock started (after Word Soup intro, or game start for Building).
+  playStartedAt         DateTime?
+  /// Elapsed play time at finish in milliseconds.
+  durationMs            Int?
 
   group           Group        @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
   initiatedBy     Player       @relation("GameInitiator", fields: [initiatedById], references: [id])
@@ -155,6 +169,14 @@ model GamePlayer {
   gameId   Int
   playerId Int
   score    Int    @default(0)
+  /// Peak in-match word-finding streak (Word Soup); 0 for other games.
+  bestWordStreak Int @default(0)
+  /// Words found in this match (Word Soup).
+  wordsFound     Int @default(0)
+  /// Times frozen for wrong guesses in this match (Word Soup).
+  freezeCount    Int @default(0)
+  /// Whether the player completed the puzzle (all words / crossword solved).
+  completed      Boolean @default(false)
 
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
