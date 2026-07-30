@@ -27,6 +27,7 @@ import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
 import TileRack from './tile-rack';
+import GameClock from '@/app/components/game-clock';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
 /**

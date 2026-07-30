@@ -8,6 +8,7 @@
 
 import { useTranslations } from 'next-intl';
 import type { ClueEntry } from '@/lib/api/games/word-building.types';
+import GameClock from '@/app/components/game-clock';
 
 type ScoreEntry = {
   playerId: number;
@@ -46,7 +47,6 @@ export function GameInfoColumn({
   solved,
 }: GameInfoColumnProps) {
   const t = useTranslations('games.wordBuilding');
-  const tInfo = useTranslations('games.info');
   const tCommon = useTranslations('common');
   const tLobby = useTranslations('games.lobby');
   const sortedScores = [...scores].sort((a, b) => b.score - a.score);
@@ -63,11 +63,14 @@ export function GameInfoColumn({
       {/* Game header */}
       <div>
         <h2 className="font-heading font-bold text-lg text-foreground">{displayGameName}</h2>
-        {startedTime && (
-          <p className="text-muted-foreground text-xs">
-            {tInfo('startedAt', { time: new Date(startedTime).toLocaleTimeString() })}
-          </p>
-        )}
+        <div className="mt-2">
+          <GameClock
+            startedAtMs={
+              startedTime ? new Date(startedTime).getTime() : null
+            }
+            stopped={solved}
+          />
+        </div>
       </div>
 
       {/* Solved banner */}

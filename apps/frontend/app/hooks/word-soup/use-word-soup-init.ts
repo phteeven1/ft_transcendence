@@ -52,6 +52,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
   const [foundWords, setFoundWords] = useState<WordSoupFoundWord[]>([]);
   const [hasPlayerSeenIntro, setHasPlayerSeenIntro] = useState(false);
   const [introStartedAt, setIntroStartedAt] = useState<number | null>(null);
+  const [playStartedAt, setPlayStartedAt] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [initialFrozenPlayers, setInitialFrozenPlayers] = useState<Record<number, number>>({});
   const [activeCourtInitKey, setActiveCourtInitKey] = useState(`${gameId}:${playerId}:0`);
@@ -115,6 +116,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
         setFoundWords(result.foundWords);
         setHasPlayerSeenIntro(result.hasPlayerSeenIntro);
         setIntroStartedAt(result.introStartedAt ?? Date.now());
+        setPlayStartedAt(result.playStartedAt ?? null);
         setIsComplete(result.isComplete ?? false);
         setInitialFrozenPlayers(result.frozenPlayers ?? {});
         setCourtInitError(null);
@@ -160,6 +162,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     setFoundWords,
     hasPlayerSeenIntro,
     introStartedAt,
+    playStartedAt,
     isComplete,
     initialFrozenPlayers,
   };

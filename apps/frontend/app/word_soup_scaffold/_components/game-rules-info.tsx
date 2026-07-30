@@ -2,12 +2,18 @@
 
 import { useId, useState } from 'react';
 
+const howToPlay = [
+  'Highlight a word on the grid (left click and drag from the first letter to the last).',  
+  'Words run from left to right or top to bottom',
+  'Found words are highlighted in your player colour',
+];
+
 const RULES = [
-  'Select a contiguous word on the grid.',
-  'Submit your guess to score points.',
-  'Found words are highlighted in your player colour.',
-  'Wrong guesses freeze you for a few seconds.',
-  'Find two or more words in a row to start a scoring streak.',
+  'Points are awarded for each word found.',
+  'The player with the most points at the end of the game wins.',
+  'Wrong guesses freeze you for a few seconds',
+  'XP are awarded for each word found.',
+  'The winner is awarded a trophy and 35XP points.',
 ];
 
 export default function GameRulesInfo() {
@@ -51,6 +57,12 @@ export default function GameRulesInfo() {
           id={panelId}
           className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-emerald-200 bg-white p-4 text-sm text-gray-700 shadow-lg"
         >
+          <p className="font-semibold text-emerald-800">How to play</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {howToPlay.map((rule) => (
+              <li key={rule}>{rule}</li>
+            ))}
+          </ul>
           <p className="font-semibold text-emerald-800">Rules</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {RULES.map((rule) => (
