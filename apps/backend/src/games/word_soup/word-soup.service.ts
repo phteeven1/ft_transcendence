@@ -19,6 +19,7 @@ import {
   COURT_ROWS,
   PLAYER_COLOURS,
   WORDS_IN_GAME,
+  estimateIntroDurationMs,
 } from './word-soup.constants';
 import {
   generateTrueCourt,
@@ -94,8 +95,14 @@ export class WordSoupService {
 
   private ensureCourtDefaults(court: SharedWordSoupCourt): void {
     if (!court.playerStreaks) court.playerStreaks = {};
+    if (!court.playerBestWordStreaks) court.playerBestWordStreaks = {};
+    if (!court.playerFreezeCounts) court.playerFreezeCounts = {};
     if (!court.leftPlayers) court.leftPlayers = {};
     if (!court.introStartedAt) court.introStartedAt = Date.now();
+    if (!court.playStartedAt) {
+      court.playStartedAt =
+        court.introStartedAt + estimateIntroDurationMs(court.solutionWords);
+    }
   }
 
   private async createCourt(gameId: number): Promise<SharedWordSoupCourt> {
@@ -122,6 +129,7 @@ export class WordSoupService {
     }
 
     const visibleCourt = this.generateVisibleCourt(trueCourt);
+    const introStartedAt = Date.now();
 
     const sharedCourt: SharedWordSoupCourt = {
       trueCourt,
@@ -130,12 +138,15 @@ export class WordSoupService {
       playerScores: this.createPlayerScores(playerIds),
       playerWordCounts: this.createPlayerWordCounts(playerIds),
       playerStreaks: this.createPlayerStreaks(playerIds),
+      playerBestWordStreaks: this.createPlayerStreaks(playerIds),
+      playerFreezeCounts: this.createPlayerStreaks(playerIds),
       leftPlayers: {},
       solutionWords: placedWords,
       foundWords: [],
       frozenUntil: {},
       isIntroAlreadyShown: this.createIntroShownState(playerIds),
-      introStartedAt: Date.now(),
+      introStartedAt,
+      playStartedAt: introStartedAt + estimateIntroDurationMs(placedWords),
     };
 
     this.sharedCourts.set(gameId, sharedCourt);
@@ -152,6 +163,56 @@ export class WordSoupService {
     }
     this.sharedCourts.delete(gameId);
     this.initInFlight.delete(gameId);
+  }
+
+  /**
+   * Returns the epoch ms when the Word Soup play clock started, or null if
+   * this game has no loaded court (e.g. Word Building).
+   */
+  getPlayStartedAt(gameId: number): number | null {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return null;
+    this.ensureCourtDefaults(court);
+    return court.playStartedAt;
+  }
+
+  /**
+   * Writes in-memory Word Soup scores, word counts, freeze counts, and peak
+   * word-finding streaks to GamePlayer. Also raises Player.bestWordStreak when
+   * a new peak is set (solo and multiplayer).
+   * No-op when the court is not loaded (e.g. already evicted).
+   */
+  async persistScores(gameId: number): Promise<void> {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return;
+
+    const playerIds = Object.keys(court.playerScores).map(Number);
+    if (playerIds.length === 0) return;
+
+    await this.prisma.$transaction(async (tx) => {
+      const completed = this.isCourtComplete(court);
+      for (const playerId of playerIds) {
+        const peak = court.playerBestWordStreaks[playerId] ?? 0;
+        await tx.gamePlayer.update({
+          where: { gameId_playerId: { gameId, playerId } },
+          data: {
+            score: court.playerScores[playerId] ?? 0,
+            bestWordStreak: peak,
+            wordsFound: court.playerWordCounts[playerId] ?? 0,
+            freezeCount: court.playerFreezeCounts[playerId] ?? 0,
+            completed,
+          },
+        });
+
+        // Peak word streak should be tracked for solo and multiplayer.
+        if (peak > 0) {
+          await tx.player.updateMany({
+            where: { id: playerId, bestWordStreak: { lt: peak } },
+            data: { bestWordStreak: peak },
+          });
+        }
+      }
+    });
   }
 
   private addScoreForPlayer(
@@ -419,7 +480,7 @@ export class WordSoupService {
     if (!direction) {
       return {
         success: false,
-        message: 'Selection must be contiguous in one direction.',
+        message: 'Selection must be in a straight line (either right->left or top->bottom',
       };
     }
 
@@ -468,6 +529,10 @@ export class WordSoupService {
     court.playerWordCounts[playerId] =
       (court.playerWordCounts[playerId] ?? 0) + 1;
     court.playerStreaks[playerId] = (court.playerStreaks[playerId] ?? 0) + 1;
+    court.playerBestWordStreaks[playerId] = Math.max(
+      court.playerBestWordStreaks[playerId] ?? 0,
+      court.playerStreaks[playerId],
+    );
 
     normalisedSelection.forEach(({ row, col }) => {
       court.visibleCourt[row][col] = {
@@ -556,6 +621,8 @@ export class WordSoupService {
 
     const frozenUntil = Date.now() + FREEZE_DURATION_SECONDS * 1000;
     court.frozenUntil[playerId] = frozenUntil;
+    court.playerFreezeCounts[playerId] =
+      (court.playerFreezeCounts[playerId] ?? 0) + 1;
 
     this.scheduleUnfreeze(
       gameId,
@@ -655,6 +722,7 @@ export class WordSoupService {
       frozenPlayers: this.getActiveFrozenPlayers(court),
       hasPlayerSeenIntro: court.isIntroAlreadyShown[playerId] ?? false,
       introStartedAt: court.introStartedAt,
+      playStartedAt: court.playStartedAt,
       isComplete: this.isCourtComplete(court),
     };
   }

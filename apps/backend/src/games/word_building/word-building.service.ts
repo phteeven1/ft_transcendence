@@ -663,7 +663,7 @@ export class WordBuildingService {
       ...Array.from(state.scores.entries()).map(([playerId, score]) =>
         this.prisma.gamePlayer.update({
           where: { gameId_playerId: { gameId, playerId } },
-          data: { score },
+          data: { score, completed: true },
         }),
       ),
       this.prisma.game.update({
