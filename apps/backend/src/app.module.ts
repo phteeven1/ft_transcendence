@@ -11,6 +11,7 @@ import { VocabulariesModule } from './vocabularies/vocabularies.module';
 import { GamesModule } from './games/games.module';
 import { ChatModule } from './chat/chat.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProgressionModule } from './progression/progression.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PrismaModule } from './prisma/prisma.module';
     VocabulariesModule,
     GamesModule,
     ChatModule,
+    ProgressionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
