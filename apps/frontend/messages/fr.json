@@ -351,7 +351,7 @@
     },
     "delete": {
       "title": "Supprimer {name} ?",
-      "confirmMessage": "Cela supprimera définitivement ce profil de joueur. Cette action est irréversible."
+      "confirmMessage": "La suppression du joueur entraînera également la suppression de ses données (statistiques de jeu, XP, classement) pour ce groupe uniquement."
     },
     "invite": {
       "title": "Inviter {name} à jouer",
@@ -427,7 +427,51 @@
       "wordBuilding": "Construction de mots",
       "wordSoup": "Soupe de mots",
       "createNewGame": "Créer un nouveau jeu",
-      "exitGames": "Quitter les jeux"
+      "exitGames": "Quitter les jeux",
+      "progression": {
+        "tabsLabel": "Progression du groupe",
+        "myStatsTabsLabel": "Sections de mes statistiques",
+        "leaderboard": "Classement",
+        "myStats": "Mes stats",
+        "loading": "Mise à jour…",
+        "loadFailed": "Impossible de charger les stats du groupe.",
+        "you": "Toi",
+        "player": "Joueur",
+        "columns": {
+          "xp": "XP",
+          "played": "Parties",
+          "wins": "Victoires",
+          "winStreak": "Série victoires",
+          "wordStreak": "Série mots",
+          "winRatio": "Taux victoires",
+          "completed": "Terminées",
+          "fastest": "Plus rapide",
+          "wordsFound": "Mots trouvés",
+          "freezes": "Gels",
+          "bestScore": "Meilleur",
+          "soloBest": "Meilleur solo",
+          "multiBest": "Meilleur multi"
+        },
+        "emptyLeaderboard": "Aucun joueur dans ce groupe pour le moment.",
+        "emptyStats": "Tes stats apparaîtront ici après avoir joué.",
+        "emptyRecent": "Aucune partie terminée. Joue une manche pour voir tes scores !",
+        "recentGames": "Parties récentes",
+        "winner": "Victoire",
+        "xpValue": "{xp} XP",
+        "scoreValue": "{score} pts",
+        "noGames": "—",
+        "modeLabels": {
+          "solo": "Solo",
+          "multiplayer": "Multijoueur"
+        },
+        "scope": {
+          "overall": "Général"
+        },
+        "gameTypes": {
+          "wordSoup": "Soupe de mots",
+          "wordBuilding": "Construction de mots"
+        }
+      }
     },
     "initiate": {
       "message": "Veux-tu démarrer une nouvelle session ? D'autres membres de ton groupe peuvent rejoindre avant qu'elle ne commence."

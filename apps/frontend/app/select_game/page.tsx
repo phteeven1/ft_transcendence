@@ -40,7 +40,9 @@ import { useSessionGuard } from '../hooks/use-session-guard';
 import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guard';
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
+import { useLobbyProgression } from '../hooks/use-lobby-progression';
 import PuzzleWindow from './_components/puzzle-window';
+import ProgressionPanel from './_components/progression/progression-panel';
 import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
 
@@ -157,10 +159,17 @@ export default function SelectGame() {
   // connect to the group's WebSocket room
   // pendingGames is updated automatically when the backend emits lobby:update
   // startedGame is set when the backend emits game:started for a game this player is in
-  const { pendingGames, startedGame } = useGroupSocket(
+  const { pendingGames, startedGame, lobbyRevision } = useGroupSocket(
     player?.inGroup ?? 0,
     player?.id ?? 0,
   );
+
+  const progression = useLobbyProgression({
+    groupId: player?.inGroup ?? 0,
+    playerId: player?.id ?? 0,
+    enabled: sessionReady && Boolean(player),
+    refreshToken: lobbyRevision,
+  });
 
   // navigate to the matching game page as soon as the backend tells us our game has started
   useEffect(() => {
@@ -300,6 +309,16 @@ export default function SelectGame() {
 
         <div className="mt-6">
           <PuzzleWindow />
+        </div>
+
+        <div className="mt-6">
+          <ProgressionPanel
+            localPlayerId={player.id}
+            leaderboard={progression.leaderboard}
+            myStats={progression.myStats}
+            loading={progression.loading}
+            error={progression.error}
+          />
         </div>
 
         <div className="mt-6 text-center">
