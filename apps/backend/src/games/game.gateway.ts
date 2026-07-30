@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GamesService, Game } from './games.service';
+import type { GameFinishOutcome } from '../progression/progression.types';
 import { WordBuildingService } from './word_building/word-building.service';
 import { WordSoupService } from './word_soup/word-soup.service';
 import {
@@ -334,8 +335,8 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
    *
    * @param gameId The finished game id.
    */
-  emitGameFinished(gameId: number) {
-    this.server.to(`game:${gameId}`).emit('game:finished');
+  emitGameFinished(gameId: number, outcome: GameFinishOutcome | null) {
+    this.server.to(`game:${gameId}`).emit('game:finished', { outcome });
   }
 
   /**

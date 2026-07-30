@@ -2,6 +2,8 @@ import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { gameWithPlayers, toApiGame } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
+import { ProgressionService } from '../progression/progression.service';
+import type { GameFinishOutcome } from '../progression/progression.types';
 import { GameGateway } from './game.gateway';
 import { WordSoupService } from './word_soup/word-soup.service';
 
@@ -17,11 +19,17 @@ export type Game = {
   isFinished: boolean;
 };
 
+export type FinishGameResponse = {
+  game: Game;
+  outcome: GameFinishOutcome | null;
+};
+
 @Injectable()
 export class GamesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly playersService: PlayersService,
+    private readonly progressionService: ProgressionService,
     @Inject(forwardRef(() => GameGateway))
     private readonly gateway: GameGateway,
     private readonly wordSoupService: WordSoupService,
@@ -315,28 +323,67 @@ export class GamesService {
   }
 
   /**
-   * Marks a game as finished, clears player session state, and emits the end-game event.
+   * Returns finish scores and XP awards for a completed game.
+   */
+  async getFinishOutcome(gameId: number): Promise<GameFinishOutcome | null> {
+    return this.progressionService.getFinishOutcome(gameId);
+  }
+
+  /**
+   * Marks a game as finished, persists final scores, applies progression once,
+   * clears player session state, and emits the end-game event.
    *
    * @param gameId Game to finish.
-   * @returns The updated game, or `undefined` if the game does not exist.
+   * @returns The updated game and finish outcome, or `undefined` if missing.
    */
-  async finish(gameId: number): Promise<Game | undefined> {
-    const game = await this.findById(gameId);
-    if (!game) return undefined;
+  async finish(gameId: number): Promise<FinishGameResponse | undefined> {
+    const dbGame = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      ...gameWithPlayers,
+    });
+    if (!dbGame) return undefined;
+
+    if (dbGame.isFinished && dbGame.progressionAppliedAt) {
+      const result = await this.findById(gameId);
+      if (!result) return undefined;
+      const outcome = await this.progressionService.getFinishOutcome(gameId);
+      return { game: result, outcome };
+    }
+
+    await this.wordSoupService.persistScores(gameId);
+
+    const now = new Date();
+    const soupPlayStartedAt = this.wordSoupService.getPlayStartedAt(gameId);
+    const playStartedAtMs =
+      soupPlayStartedAt ??
+      dbGame.playStartedAt?.getTime() ??
+      dbGame.startedTime?.getTime() ??
+      dbGame.initiatedTime.getTime();
+    const playStartedAt = new Date(playStartedAtMs);
+    const durationMs = Math.max(0, now.getTime() - playStartedAtMs);
 
     await this.prisma.game.update({
       where: { id: gameId },
-      data: { isFinished: true, isActive: false },
+      data: {
+        isFinished: true,
+        isActive: false,
+        endedAt: dbGame.endedAt ?? now,
+        playStartedAt: dbGame.playStartedAt ?? playStartedAt,
+        durationMs: dbGame.durationMs ?? durationMs,
+      },
     });
+
+    const outcome = await this.progressionService.recordGameOutcome(gameId);
+
+    const game = toApiGame(dbGame);
     for (const pId of game.players) {
       await this.playersService.clearCurrentGame(pId);
     }
     const result = await this.findById(gameId);
+    if (!result) return undefined;
     await this.emitLobbyUpdate(game.inGroup);
-    // Notify all players inside the game room that the game has ended.
-    this.gateway.emitGameFinished(gameId);
-    // Word Soup keeps an in-memory court + freeze timers — evict on finish.
+    this.gateway.emitGameFinished(gameId, outcome);
     this.wordSoupService.clearCourt(gameId);
-    return result;
+    return { game: result, outcome };
   }
 }
