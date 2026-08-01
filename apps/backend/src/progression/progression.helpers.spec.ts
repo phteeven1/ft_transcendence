@@ -11,9 +11,7 @@ import { PARTICIPATION_XP, WIN_XP } from './progression.constants';
 
 describe('resolveWinnerIds', () => {
   it('returns no winners for solo games', () => {
-    expect(
-      resolveWinnerIds([{ playerId: 1, score: 40 }]).size,
-    ).toBe(0);
+    expect(resolveWinnerIds([{ playerId: 1, score: 40 }]).size).toBe(0);
   });
 });
 

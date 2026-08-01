@@ -480,7 +480,8 @@ export class WordSoupService {
     if (!direction) {
       return {
         success: false,
-        message: 'Selection must be in a straight line (either right->left or top->bottom',
+        message:
+          'Selection must be in a straight line (either right->left or top->bottom',
       };
     }
 

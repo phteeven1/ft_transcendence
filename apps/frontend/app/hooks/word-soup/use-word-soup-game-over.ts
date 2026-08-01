@@ -159,12 +159,10 @@ type UseWordSoupGameOverProps = {
 export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProps) {
   const [frame, setFrame] = useState<GameOverFrame>(IDLE_FRAME);
   const segmentsRef = useRef<TimelineSegment[]>([]);
+  const sequenceActive = active && outcome != null;
 
   useLayoutEffect(() => {
-    if (!active || !outcome) {
-      setFrame(IDLE_FRAME);
-      return;
-    }
+    if (!sequenceActive || !outcome) return;
 
     segmentsRef.current = buildTimelineSegments(outcome);
 
@@ -198,18 +196,22 @@ export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProp
       window.cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [active, outcome]);
+  }, [sequenceActive, outcome]);
 
-  const displayedText = frame.bubbleText.slice(0, frame.typedLength);
-  const showOverlay = active && frame.phase !== 'idle' && frame.phase !== 'hold';
+  const displayFrame = sequenceActive ? frame : IDLE_FRAME;
+  const displayedText = displayFrame.bubbleText.slice(0, displayFrame.typedLength);
+  const showOverlay =
+    sequenceActive &&
+    displayFrame.phase !== 'idle' &&
+    displayFrame.phase !== 'hold';
 
   return {
     showOverlay,
-    isCourtHold: active && frame.phase === 'hold',
-    phase: frame.phase,
+    isCourtHold: sequenceActive && displayFrame.phase === 'hold',
+    phase: displayFrame.phase,
     bubbleText: displayedText,
-    bubbleVisible: frame.bubbleVisible,
-    revealedPlayerIds: frame.revealedPlayerIds,
-    showReturnButton: frame.done,
+    bubbleVisible: displayFrame.bubbleVisible,
+    revealedPlayerIds: displayFrame.revealedPlayerIds,
+    showReturnButton: sequenceActive && displayFrame.done,
   };
 }

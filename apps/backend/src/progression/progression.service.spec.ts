@@ -1,8 +1,5 @@
 import { PARTICIPATION_XP, WIN_XP } from './progression.constants';
-import {
-  computeStreakUpdate,
-  determineWinnerIds,
-} from './progression.helpers';
+import { computeStreakUpdate, determineWinnerIds } from './progression.helpers';
 import { ProgressionOutcomeService } from './progression-outcome.service';
 import { ProgressionStatsService } from './progression-stats.service';
 import { ProgressionService } from './progression.service';
@@ -145,7 +142,7 @@ describe('ProgressionService', () => {
     });
     expect(gameUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: { progressionAppliedAt: expect.any(Date) },
+      data: { progressionAppliedAt: expect.any(Date) as Date },
     });
   });
 
@@ -176,12 +173,14 @@ describe('ProgressionService', () => {
     });
     expect(playerUpdate).toHaveBeenCalledWith({
       where: { id: 10 },
-      data: expect.objectContaining({
+      data: {
         xp: { increment: PARTICIPATION_XP },
         gamesPlayed: { increment: 1 },
-      }),
+        winStreak: 0,
+        bestWinStreak: 0,
+        avatarTier: 0,
+      },
     });
-    expect(playerUpdate.mock.calls[0][0].data).not.toHaveProperty('wins');
   });
 
   it('is idempotent when progression was already applied', async () => {

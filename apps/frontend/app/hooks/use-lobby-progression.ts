@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { progressionApi } from '@/lib/api';
 import type {
@@ -36,40 +36,54 @@ export function useLobbyProgression({
     error: null,
   });
 
-  const fetchProgression = useCallback(async () => {
+  useEffect(() => {
     if (!enabled || !groupId || !playerId) return;
 
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    let cancelled = false;
 
-    try {
-      const [leaderboard, groupStats] = await Promise.all([
-        progressionApi.getLeaderboard(groupId),
-        progressionApi.getGroupStats(groupId),
-      ]);
+    async function fetchProgression() {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      const myStats =
-        groupStats.players.find((entry) => entry.playerId === playerId) ??
-        null;
+      try {
+        const [leaderboard, groupStats] = await Promise.all([
+          progressionApi.getLeaderboard(groupId),
+          progressionApi.getGroupStats(groupId),
+        ]);
 
-      setState({
-        leaderboard: leaderboard.entries,
-        myStats,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      console.error('Failed to load lobby progression', error);
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: 'loadFailed',
-      }));
+        if (cancelled) return;
+
+        const myStats =
+          groupStats.players.find((entry) => entry.playerId === playerId) ??
+          null;
+
+        setState({
+          leaderboard: leaderboard.entries,
+          myStats,
+          loading: false,
+          error: null,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Failed to load lobby progression', error);
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: 'loadFailed',
+        }));
+      }
     }
-  }, [enabled, groupId, playerId]);
 
-  useEffect(() => {
-    void fetchProgression();
-  }, [fetchProgression, refreshToken]);
+    // Defer so setState is not synchronous in the effect body
+    // (react-hooks/set-state-in-effect).
+    const frameId = requestAnimationFrame(() => {
+      void fetchProgression();
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+    };
+  }, [enabled, groupId, playerId, refreshToken]);
 
   return state;
 }

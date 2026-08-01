@@ -74,7 +74,10 @@ export async function buildGameHistoryStats(
       bucket.gamesPlayed += 1;
       if (isWinner) bucket.wins += 1;
       bucket.bestScore = Math.max(bucket.bestScore, gp.score);
-      bucket.bestWordStreak = Math.max(bucket.bestWordStreak, gp.bestWordStreak);
+      bucket.bestWordStreak = Math.max(
+        bucket.bestWordStreak,
+        gp.bestWordStreak,
+      );
       bucket.xpEarned += gameXp;
 
       const mode = isMultiplayer ? bucket.multi : bucket.solo;
@@ -111,7 +114,10 @@ export async function buildGameHistoryStats(
           game.durationMs,
         );
       } else {
-        bucket.fastestSoloMs = minDuration(bucket.fastestSoloMs, game.durationMs);
+        bucket.fastestSoloMs = minDuration(
+          bucket.fastestSoloMs,
+          game.durationMs,
+        );
       }
       map.set(gp.playerId, current);
     }

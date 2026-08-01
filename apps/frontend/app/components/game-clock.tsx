@@ -11,7 +11,6 @@ type GameClockProps = {
   stopped?: boolean;
   className?: string;
   label?: string;
-  width?: string;
 };
 
 /**
@@ -22,28 +21,17 @@ export default function GameClock({
   stopped = false,
   className = '',
   label = 'Time',
-  width = 'w-full',
 }: GameClockProps) {
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [frozenElapsed, setFrozenElapsed] = useState<number | null>(null);
 
   useEffect(() => {
-    if (stopped) {
-      if (startedAtMs != null) {
-        setFrozenElapsed(Math.max(0, Date.now() - startedAtMs));
-      }
-      return;
-    }
-
-    setFrozenElapsed(null);
-    setNowMs(Date.now());
+    if (stopped || startedAtMs == null) return;
     const id = window.setInterval(() => setNowMs(Date.now()), 250);
     return () => window.clearInterval(id);
   }, [startedAtMs, stopped]);
 
   const elapsedMs =
-    frozenElapsed ??
-    (startedAtMs == null ? 0 : Math.max(0, nowMs - startedAtMs));
+    startedAtMs == null ? 0 : Math.max(0, nowMs - startedAtMs);
 
   return (
     <div
