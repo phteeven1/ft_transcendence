@@ -49,7 +49,7 @@
 ## 🚨 Mandatory blockers (can fail whole project)
 
 1. ~~**Privacy Policy + Terms of Service** pages (footer links, real content)~~ — done (`/privacy`, `/terms`)
-2. **Password hashing** — passwords still plain text today
+2. ~~**Password hashing** — passwords still plain text today~~ done (Hash player secret words?)
 3. **No console errors** in Chrome during eval
 4. **README** — team roles, module list, point calculation, who did what
 

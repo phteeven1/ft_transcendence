@@ -188,8 +188,8 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
       const normalized = entry.word
         .normalize('NFC')
         .split('')
-        .map((char) =>
-          char === 'ß' || char === 'ẞ' ? 'ß' : char.toUpperCase(),
+        .map(char =>
+          (char === 'ß' || char === 'ẞ') ? 'ß' : char.toUpperCase(),
         )
         .join('')
         .replace(/[^\p{L}]/gu, '');

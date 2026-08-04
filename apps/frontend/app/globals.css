@@ -648,3 +648,18 @@ body {
   70% { opacity: 1; transform: scale(1.08); }
   100% { opacity: 1; transform: scale(1); }
 }
+
+.word-soup-game-over-score-row {
+  animation: word-soup-game-over-row-in 320ms cubic-bezier(0.22, 1.1, 0.36, 1);
+}
+
+@keyframes word-soup-game-over-row-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

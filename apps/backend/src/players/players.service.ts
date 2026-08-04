@@ -102,9 +102,66 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
 
   async remove(playerId: number): Promise<boolean> {
     try {
-      await this.prisma.player.delete({ where: { id: playerId } });
+      const player = await this.prisma.player.findUnique({
+        where: { id: playerId },
+        select: { id: true },
+      });
+      if (!player) return false;
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.playerSession.deleteMany({ where: { playerId } });
+
+        const participations = await tx.gamePlayer.findMany({
+          where: { playerId },
+          select: {
+            gameId: true,
+            game: { select: { initiatedById: true } },
+          },
+        });
+
+        for (const { gameId, game } of participations) {
+          const otherPlayers = await tx.gamePlayer.findMany({
+            where: { gameId, playerId: { not: playerId } },
+            select: { playerId: true },
+            orderBy: { playerId: 'asc' },
+          });
+
+          if (otherPlayers.length === 0) {
+            await tx.game.delete({ where: { id: gameId } });
+            continue;
+          }
+
+          if (game.initiatedById === playerId) {
+            await tx.game.update({
+              where: { id: gameId },
+              data: { initiatedById: otherPlayers[0].playerId },
+            });
+          }
+
+          await tx.gamePlayer.delete({
+            where: { gameId_playerId: { gameId, playerId } },
+          });
+        }
+
+        const orphanedInitiated = await tx.game.findMany({
+          where: { initiatedById: playerId },
+          select: { id: true },
+        });
+        for (const { id: gameId } of orphanedInitiated) {
+          await tx.game.delete({ where: { id: gameId } });
+        }
+
+        await tx.player.update({
+          where: { id: playerId },
+          data: { currentGameId: null },
+        });
+
+        await tx.player.delete({ where: { id: playerId } });
+      });
+
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Failed to remove player', error);
       return false;
     }
   }

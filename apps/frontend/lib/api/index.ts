@@ -10,6 +10,7 @@ export { gamesApi, wordBuildingApi, wordSoupApi } from './games';
 export { invitationsApi } from './invitations';
 export { chatApi } from './chat';
 export { healthApi } from './health';
+export { progressionApi } from './progression';
 export type {
   ChatEntryType,
   ChatEventKey,
@@ -66,3 +67,14 @@ export type {
   AcceptInvitationInput,
 } from './invitations';
 export type { HealthResponse, HealthCheckResult, HealthCheckStatus } from './health';
+export type {
+  AvatarTierDefinitionDto,
+  EquipAvatarInput,
+  GroupStatsResponseDto,
+  LeaderboardEntryDto,
+  LeaderboardResponseDto,
+  PlayerGroupStatsDto,
+  PlayerProgressionResponseDto,
+  RecentGameEntryDto,
+} from './progression';
+export { AVATAR_TIERS } from './progression';

@@ -351,7 +351,7 @@
     },
     "delete": {
       "title": "Delete {name}?",
-      "confirmMessage": "This will permanently delete this player profile. This cannot be undone."
+      "confirmMessage": "Deleting the player will also result in the player's data (game statistics, XP, leaderboard status) being deleted (for this group only)."
     },
     "invite": {
       "title": "Invite {name} to Play",
@@ -427,7 +427,51 @@
       "wordBuilding": "Word Building",
       "wordSoup": "Word Soup",
       "createNewGame": "Create new game",
-      "exitGames": "Exit Games"
+      "exitGames": "Exit Games",
+      "progression": {
+        "tabsLabel": "Group progress",
+        "myStatsTabsLabel": "My stats sections",
+        "leaderboard": "Leaderboard",
+        "myStats": "My stats",
+        "loading": "Updating…",
+        "loadFailed": "Could not load group stats.",
+        "you": "You",
+        "player": "Player",
+        "columns": {
+          "xp": "XP",
+          "played": "Played",
+          "wins": "Wins",
+          "winStreak": "Win streak",
+          "wordStreak": "Word streak",
+          "winRatio": "Win ratio",
+          "completed": "Completed",
+          "fastest": "Fastest",
+          "wordsFound": "Words found",
+          "freezes": "Freezes",
+          "bestScore": "Best",
+          "soloBest": "Solo best",
+          "multiBest": "Multi best"
+        },
+        "emptyLeaderboard": "No players in this group yet.",
+        "emptyStats": "Your stats will appear here after you play.",
+        "emptyRecent": "No finished games yet. Play a round to see your scores!",
+        "recentGames": "Recent games",
+        "winner": "Win",
+        "xpValue": "{xp} XP",
+        "scoreValue": "{score} pts",
+        "noGames": "—",
+        "modeLabels": {
+          "solo": "Solo",
+          "multiplayer": "Multiplayer"
+        },
+        "scope": {
+          "overall": "Overall"
+        },
+        "gameTypes": {
+          "wordSoup": "Word Soup",
+          "wordBuilding": "Word Building"
+        }
+      }
     },
     "initiate": {
       "message": "Do you want to start a new session? Others in your group can join before it begins."

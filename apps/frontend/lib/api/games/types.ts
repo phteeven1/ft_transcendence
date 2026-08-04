@@ -1,3 +1,20 @@
+export type GameFinishPlayerOutcomeDto = {
+  playerId: number;
+  playerName: string;
+  score: number;
+  xpAwarded: number;
+  isWinner: boolean;
+};
+
+export type GameFinishOutcomeDto = {
+  players: GameFinishPlayerOutcomeDto[];
+};
+
+export type FinishGameResultDto = {
+  game: GameDto;
+  outcome: GameFinishOutcomeDto | null;
+};
+
 export type GameDto = {
   id: number;
   name: string;

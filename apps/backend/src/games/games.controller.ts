@@ -101,6 +101,11 @@ export class GamesController {
     return this.gamesService.findAll();
   }
 
+  @Get(':id/finish-outcome')
+  getFinishOutcome(@Param('id') id: string) {
+    return this.gamesService.getFinishOutcome(Number(id));
+  }
+
   /**
    * Returns one game by id for scaffold and detail views.
    *

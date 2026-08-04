@@ -107,7 +107,7 @@ export function useWordSoupGameOverOverlay(
   isCelebrating: boolean,
   celebrationActiveRef: { current: boolean },
 ) {
-  const [allowGameOverOverlay, setAllowGameOverOverlay] = useState(false);
+  const [startGameOverSequence, setStartGameOverSequence] = useState(false);
   const [sawCompletionCelebration, setSawCompletionCelebration] = useState(false);
   const [prevIsGameOver, setPrevIsGameOver] = useState(isGameOver);
   const [prevIsCelebrating, setPrevIsCelebrating] = useState(isCelebrating);
@@ -115,7 +115,7 @@ export function useWordSoupGameOverOverlay(
   if (isGameOver !== prevIsGameOver) {
     setPrevIsGameOver(isGameOver);
     if (!isGameOver) {
-      setAllowGameOverOverlay(false);
+      setStartGameOverSequence(false);
       setSawCompletionCelebration(false);
     }
   }
@@ -124,20 +124,25 @@ export function useWordSoupGameOverOverlay(
     setPrevIsCelebrating(isCelebrating);
     if (isGameOver && isCelebrating) {
       setSawCompletionCelebration(true);
-      setAllowGameOverOverlay(false);
+      setStartGameOverSequence(false);
     } else if (isGameOver && !isCelebrating && sawCompletionCelebration) {
-      setAllowGameOverOverlay(true);
+      setStartGameOverSequence(true);
     }
   }
 
   useEffect(() => {
-    if (!isGameOver || isCelebrating || sawCompletionCelebration || allowGameOverOverlay) {
+    if (
+      !isGameOver ||
+      isCelebrating ||
+      sawCompletionCelebration ||
+      startGameOverSequence
+    ) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
       if (!celebrationActiveRef.current) {
-        setAllowGameOverOverlay(true);
+        setStartGameOverSequence(true);
       }
     }, GAME_OVER_OVERLAY_GRACE_MS);
 
@@ -146,9 +151,9 @@ export function useWordSoupGameOverOverlay(
     isGameOver,
     isCelebrating,
     sawCompletionCelebration,
-    allowGameOverOverlay,
+    startGameOverSequence,
     celebrationActiveRef,
   ]);
 
-  return allowGameOverOverlay && !isCelebrating;
+  return startGameOverSequence && !isCelebrating;
 }

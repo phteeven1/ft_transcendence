@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { gamesApi } from '@/lib/api';
+import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { clearPlayerSession } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import type {
@@ -26,12 +27,15 @@ import {
   useWordSoupGameOverOverlay,
   useWordSoupScorePopup,
 } from './use-word-soup-ui-effects';
+import { useWordSoupGameOver } from './use-word-soup-game-over';
+import { buildFallbackFinishOutcome } from './word-soup-game-over.helpers';
 
 type UseWordSoupGameArgs = {
   gameId: number;
   playerId: number;
   socket: {
     gameFinished: boolean;
+    finishOutcome: GameFinishOutcomeDto | null;
     isConnected: boolean;
     wordGuessed: WordSoupWordGuessedDto | null;
     wordGuessedSeq: number;
@@ -52,6 +56,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
   const {
     gameFinished,
+    finishOutcome: finishOutcomeFromSocket,
     isConnected,
     wordGuessed,
     wordGuessedSeq,
@@ -88,6 +93,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     setFoundWords,
     hasPlayerSeenIntro,
     introStartedAt,
+    playStartedAt,
     isComplete: initIsComplete,
     initialFrozenPlayers,
   } = useWordSoupInit(gameId, playerId);
@@ -179,7 +185,8 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   const { scorePopup, showScorePopup } = useWordSoupScorePopup();
 
   const isGameOver = Boolean(
-    game?.isFinished ||
+    gameFinished ||
+      game?.isFinished ||
       initIsComplete ||
       serverState?.isComplete ||
       (solutionWords.length > 0 && foundWords.length >= solutionWords.length),
@@ -204,8 +211,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       if (result.isPenultimate) {
         pushEvent({
           kind: 'final-word',
-          headline: 'Final word!',
-          detail: "Who's going to find the last one?",
+          headline: 'Last word!',
           clothesColor: '#F59E0B',
         });
       }
@@ -250,11 +256,75 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     pushEvent,
   });
 
-  const showGameOverOverlay = useWordSoupGameOverOverlay(
+  const startGameOverSequence = useWordSoupGameOverOverlay(
     isGameOver,
     isCelebrating,
     celebrationActiveRef,
   );
+
+  const [finishOutcomeFromApi, setFinishOutcomeFromApi] =
+    useState<GameFinishOutcomeDto | null>(null);
+
+  useEffect(() => {
+    if (!startGameOverSequence) {
+      setFinishOutcomeFromApi(null);
+      return;
+    }
+    if (finishOutcomeFromSocket || finishOutcomeFromApi) return;
+
+    let cancelled = false;
+    void gamesApi
+      .getFinishOutcome({ gameId })
+      .then((outcome) => {
+        if (!cancelled && outcome) {
+          setFinishOutcomeFromApi(outcome);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load finish outcome', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    startGameOverSequence,
+    finishOutcomeFromSocket,
+    finishOutcomeFromApi,
+    gameId,
+  ]);
+
+  const finishOutcome = useMemo(() => {
+    if (finishOutcomeFromSocket) return finishOutcomeFromSocket;
+    if (finishOutcomeFromApi) return finishOutcomeFromApi;
+    if (!startGameOverSequence) return null;
+    return buildFallbackFinishOutcome(players, playerScores);
+  }, [
+    finishOutcomeFromSocket,
+    finishOutcomeFromApi,
+    startGameOverSequence,
+    players,
+    playerScores,
+  ]);
+
+  const playersByOutcomeId = useMemo(() => {
+    if (!finishOutcome) return {};
+    return Object.fromEntries(
+      finishOutcome.players.map((player) => [player.playerId, player]),
+    );
+  }, [finishOutcome]);
+
+  const {
+    showOverlay: showGameOverOverlay,
+    phase: gameOverPhase,
+    bubbleText: gameOverBubbleText,
+    bubbleVisible: gameOverBubbleVisible,
+    revealedPlayerIds: gameOverRevealedPlayerIds,
+    showReturnButton: showGameOverReturnButton,
+  } = useWordSoupGameOver({
+    active: startGameOverSequence,
+    outcome: finishOutcome,
+  });
 
   const handleGuessSubmitted = useCallback(() => {
     pendingGuessRef.current = true;
@@ -392,13 +462,19 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   }, []);
 
   const handleGameOver = useCallback(async () => {
-    await gamesApi.finish({ gameId });
+    const result = await gamesApi.finish({ gameId });
+    if (result.outcome) {
+      setFinishOutcomeFromApi(result.outcome);
+    }
   }, [gameId]);
 
   const handleReturnToLobby = useCallback(async () => {
     try {
       if (!gameFinished && !game?.isFinished) {
-        await gamesApi.finish({ gameId });
+        const result = await gamesApi.finish({ gameId });
+        if (result.outcome) {
+          setFinishOutcomeFromApi(result.outcome);
+        }
       }
     } catch (error) {
       console.error('finish failed:', error);
@@ -440,6 +516,13 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     freezeSecondsByPlayer,
     frozenPlayers: mergedFrozenPlayers,
     showGameOverOverlay,
+    startGameOverSequence,
+    gameOverPhase,
+    gameOverBubbleText,
+    gameOverBubbleVisible,
+    gameOverRevealedPlayerIds,
+    gameOverPlayersById: playersByOutcomeId,
+    showGameOverReturnButton,
     eventBanner,
     eventBannerPhase,
     scorePopup,
@@ -454,10 +537,12 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     wordRevealIndex,
     introCountdownValue,
     introTotalWords,
+    playStartedAt,
     showAbandonModal,
     isAbandoning,
     wordsFound,
     wordsLeft,
+    isGameOver,
     isSubmittingGuess,
     handleSelectionStart,
     handleSelectionContinue,

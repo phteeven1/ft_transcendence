@@ -351,7 +351,7 @@
     },
     "delete": {
       "title": "{name} löschen?",
-      "confirmMessage": "Dies wird dieses Spielerprofil dauerhaft löschen. Dies kann nicht rückgängig gemacht werden."
+      "confirmMessage": "Beim Löschen des Spielers werden auch dessen Daten (Spielstatistiken, XP, Ranglistenstatus) gelöscht (nur für diese Gruppe)."
     },
     "invite": {
       "title": "{name} zum Spielen einladen",
@@ -427,7 +427,51 @@
       "wordBuilding": "Wortbau",
       "wordSoup": "Wortsuppe",
       "createNewGame": "Neues Spiel erstellen",
-      "exitGames": "Spiele verlassen"
+      "exitGames": "Spiele verlassen",
+      "progression": {
+        "tabsLabel": "Gruppenfortschritt",
+        "myStatsTabsLabel": "Meine Statistik-Bereiche",
+        "leaderboard": "Rangliste",
+        "myStats": "Meine Stats",
+        "loading": "Aktualisiere…",
+        "loadFailed": "Gruppenstatistiken konnten nicht geladen werden.",
+        "you": "Du",
+        "player": "Spieler",
+        "columns": {
+          "xp": "XP",
+          "played": "Gespielt",
+          "wins": "Siege",
+          "winStreak": "Siegserie",
+          "wordStreak": "Wortserie",
+          "winRatio": "Siegquote",
+          "completed": "Abgeschlossen",
+          "fastest": "Schnellste",
+          "wordsFound": "Wörter gefunden",
+          "freezes": "Freezes",
+          "bestScore": "Best",
+          "soloBest": "Solo-Best",
+          "multiBest": "Multi-Best"
+        },
+        "emptyLeaderboard": "Noch keine Spieler in dieser Gruppe.",
+        "emptyStats": "Deine Stats erscheinen hier, sobald du spielst.",
+        "emptyRecent": "Noch keine beendeten Spiele. Spiele eine Runde, um deine Punkte zu sehen!",
+        "recentGames": "Letzte Spiele",
+        "winner": "Sieg",
+        "xpValue": "{xp} XP",
+        "scoreValue": "{score} Pkt",
+        "noGames": "—",
+        "modeLabels": {
+          "solo": "Solo",
+          "multiplayer": "Mehrspieler"
+        },
+        "scope": {
+          "overall": "Gesamt"
+        },
+        "gameTypes": {
+          "wordSoup": "Wortsuppe",
+          "wordBuilding": "Wortbau"
+        }
+      }
     },
     "initiate": {
       "message": "Möchtest du eine neue Sitzung starten? Andere in deiner Gruppe können beitreten, bevor sie beginnt."

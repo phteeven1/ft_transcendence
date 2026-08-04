@@ -44,14 +44,15 @@ export type SharedWordSoupCourt = {
   playerScores: Record<number, number>;
   playerWordCounts: Record<number, number>;
   playerStreaks: Record<number, number>;
-  /** Players who abandoned mid-game: playerId → display name */
+  playerBestWordStreaks: Record<number, number>;
+  playerFreezeCounts: Record<number, number>;
   leftPlayers: Record<number, string>;
   solutionWords: string[];
   foundWords: FoundWord[];
   frozenUntil: Record<number, number>;
   isIntroAlreadyShown: Record<number, boolean>;
-  /** Wall-clock ms when the shared intro timeline began (for synced playback). */
   introStartedAt: number;
+  playStartedAt: number;
 };
 
 export interface WordSoupGameState {
@@ -65,7 +66,7 @@ export interface WordSoupGameState {
   foundWords: FoundWord[];
   frozenPlayers: Record<number, number>;
   hasPlayerSeenIntro: boolean;
-  /** Shared intro timeline start (epoch ms). */
   introStartedAt: number;
+  playStartedAt: number;
   isComplete: boolean;
 }

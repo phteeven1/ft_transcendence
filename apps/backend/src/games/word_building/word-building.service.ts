@@ -240,7 +240,7 @@ export class WordBuildingService {
     const normalized = letter
       .normalize('NFC')
       .split('')
-      .map((char) => (char === 'ß' || char === 'ẞ' ? 'ß' : char.toUpperCase()))
+      .map(char => (char === 'ß' || char === 'ẞ') ? 'ß' : char.toUpperCase())
       .join('')
       .replace(/[^\p{L}]/gu, '');
     if (!normalized || normalized.length !== 1) return null;
@@ -663,7 +663,7 @@ export class WordBuildingService {
       ...Array.from(state.scores.entries()).map(([playerId, score]) =>
         this.prisma.gamePlayer.update({
           where: { gameId_playerId: { gameId, playerId } },
-          data: { score },
+          data: { score, completed: true },
         }),
       ),
       this.prisma.game.update({

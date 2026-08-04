@@ -16,9 +16,11 @@ import type {
   WordSoupDto,
   WordSoupFreezeNoticeDto,
 } from '@/lib/api/games/word-soup/types';
+import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 
 interface GameSocketState {
   gameFinished: boolean;
+  finishOutcome: GameFinishOutcomeDto | null;
   isConnected: boolean;
   gameState: IGameStatePayload | null;
   cellLocks: ICellLocksPayload | null;
@@ -45,6 +47,7 @@ export function useGameSocket(gameId: number, playerId: number) {
   const socketRef = useRef<Socket | null>(null);
   const [state, setState] = useState<GameSocketState>({
     gameFinished: false,
+    finishOutcome: null,
     isConnected: false,
     gameState: null,
     cellLocks: null,
@@ -211,9 +214,13 @@ export function useGameSocket(gameId: number, playerId: number) {
     });
 
     // Backend broadcasts this when the game is marked finished.
-    socket.on('game:finished', () => {
+    socket.on('game:finished', (payload?: { outcome?: GameFinishOutcomeDto | null }) => {
       if (!active) return;
-      setState((s) => ({ ...s, gameFinished: true }));
+      setState((s) => ({
+        ...s,
+        gameFinished: true,
+        finishOutcome: payload?.outcome ?? s.finishOutcome,
+      }));
     });
 
     return () => {
