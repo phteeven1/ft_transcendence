@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import type {
   LeaderboardEntryDto,
   PlayerGroupStatsDto,
+  PlayerProgressionResponseDto,
 } from '@/lib/api/progression';
 import { LEADERBOARD_GAME_TYPES } from '@/lib/api/progression';
 import { Chip } from '@/app/components/ui/chip';
@@ -26,21 +27,30 @@ import {
   type TabId,
 } from './progression-panel-helpers';
 import { ProgressionPlayerSummary } from './progression-player-summary';
+import { AvatarEquipPicker } from './avatar-equip-picker';
 
 type ProgressionPanelProps = {
   localPlayerId: number;
   leaderboard: LeaderboardEntryDto[];
   myStats: PlayerGroupStatsDto | null;
+  myProgression: PlayerProgressionResponseDto | null;
   loading: boolean;
   error: string | null;
+  equipping: boolean;
+  equipError: string | null;
+  onEquipAvatar: (tier: number) => void;
 };
 
 export default function ProgressionPanel({
   localPlayerId,
   leaderboard,
   myStats,
+  myProgression,
   loading,
   error,
+  equipping,
+  equipError,
+  onEquipAvatar,
 }: ProgressionPanelProps) {
   const t = useTranslations('games.lobby.progression');
   const [tab, setTab] = useState<TabId>('leaderboard');
@@ -54,12 +64,18 @@ export default function ProgressionPanel({
     [leaderboard, scope],
   );
 
+  const displayTier =
+    myProgression?.avatarTier ??
+    myStats?.avatarTier ??
+    leaderboard.find((e) => e.playerId === localPlayerId)?.avatarTier ??
+    0;
+
   const localPlayerSummary = useMemo(() => {
     if (myStats) {
       return {
-        avatarTier: myStats.avatarTier,
+        avatarTier: displayTier,
         playerName: myStats.playerName,
-        xp: myStats.xp,
+        xp: myProgression?.xp ?? myStats.xp,
       };
     }
 
@@ -67,11 +83,11 @@ export default function ProgressionPanel({
     if (!entry) return null;
 
     return {
-      avatarTier: entry.avatarTier,
+      avatarTier: displayTier,
       playerName: entry.playerName,
-      xp: entry.xp,
+      xp: myProgression?.xp ?? entry.xp,
     };
-  }, [myStats, leaderboard, localPlayerId]);
+  }, [myStats, leaderboard, localPlayerId, displayTier, myProgression?.xp]);
 
   return (
     <Panel className="p-4 sm:p-5">
@@ -142,44 +158,59 @@ export default function ProgressionPanel({
         </div>
       ) : (
         <div role="tabpanel">
-          {!myStats ? (
+          {!myStats && !myProgression ? (
             <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
               {t('emptyStats')}
             </p>
           ) : (
             <>
-              <ProgressionPlayerSummary
-                avatarTier={myStats.avatarTier}
-                playerName={myStats.playerName}
-                xp={myStats.xp}
-              />
-
-              <div
-                className="mb-4 flex flex-wrap gap-1.5"
-                role="tablist"
-                aria-label={t('myStatsTabsLabel')}
-              >
-                {MY_STATS_TABS.map((option) => (
-                  <Chip
-                    key={option}
-                    active={statsTab === option}
-                    onClick={() => setStatsTab(option)}
-                    aria-selected={statsTab === option}
-                    role="tab"
-                    className="!px-2.5 !py-1 !text-xs"
-                  >
-                    {myStatsTabLabel(option, t)}
-                  </Chip>
-                ))}
-              </div>
-
-              {statsTab === 'recent' ? (
-                <ProgressionRecentGamesList games={myStats.recentGames} />
-              ) : (
-                <ProgressionGameStatsCard
-                  gameType={statsTab}
-                  stats={myStats.byGame[statsTab] ?? EMPTY_GAME_STATS}
+              {localPlayerSummary && (
+                <ProgressionPlayerSummary
+                  avatarTier={localPlayerSummary.avatarTier}
+                  playerName={localPlayerSummary.playerName}
+                  xp={localPlayerSummary.xp}
                 />
+              )}
+
+              {myProgression && (
+                <AvatarEquipPicker
+                  progression={myProgression}
+                  equipping={equipping}
+                  equipError={equipError}
+                  onEquip={onEquipAvatar}
+                />
+              )}
+
+              {myStats && (
+                <>
+                  <div
+                    className="mb-4 flex flex-wrap gap-1.5"
+                    role="tablist"
+                    aria-label={t('myStatsTabsLabel')}
+                  >
+                    {MY_STATS_TABS.map((option) => (
+                      <Chip
+                        key={option}
+                        active={statsTab === option}
+                        onClick={() => setStatsTab(option)}
+                        aria-selected={statsTab === option}
+                        role="tab"
+                        className="!px-2.5 !py-1 !text-xs"
+                      >
+                        {myStatsTabLabel(option, t)}
+                      </Chip>
+                    ))}
+                  </div>
+
+                  {statsTab === 'recent' ? (
+                    <ProgressionRecentGamesList games={myStats.recentGames} />
+                  ) : (
+                    <ProgressionGameStatsCard
+                      gameType={statsTab}
+                      stats={myStats.byGame[statsTab] ?? EMPTY_GAME_STATS}
+                    />
+                  )}
+                </>
               )}
             </>
           )}

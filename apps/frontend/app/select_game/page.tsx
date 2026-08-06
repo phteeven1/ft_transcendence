@@ -316,8 +316,14 @@ export default function SelectGame() {
             localPlayerId={player.id}
             leaderboard={progression.leaderboard}
             myStats={progression.myStats}
+            myProgression={progression.myProgression}
             loading={progression.loading}
             error={progression.error}
+            equipping={progression.equipping}
+            equipError={progression.equipError}
+            onEquipAvatar={(tier) => {
+              void progression.equipAvatar(tier);
+            }}
           />
         </div>
 

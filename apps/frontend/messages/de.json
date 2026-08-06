@@ -460,6 +460,14 @@
         "xpValue": "{xp} XP",
         "scoreValue": "{score} Pkt",
         "noGames": "—",
+        "equipTitle": "Avatar",
+        "equipHint": "Wähle ein freigeschaltetes Aussehen. Höhere Stufen freischalten mit XP.",
+        "equipping": "Speichern…",
+        "equipFailed": "Avatar konnte nicht aktualisiert werden.",
+        "equipped": "Ausgewählt",
+        "unlockAt": "Ab {xp} XP",
+        "equipTier": "{label} auswählen",
+        "lockedTier": "{label} gesperrt — braucht {xp} XP",
         "modeLabels": {
           "solo": "Solo",
           "multiplayer": "Mehrspieler"

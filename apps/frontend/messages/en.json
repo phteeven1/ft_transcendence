@@ -460,6 +460,14 @@
         "xpValue": "{xp} XP",
         "scoreValue": "{score} pts",
         "noGames": "—",
+        "equipTitle": "Avatar",
+        "equipHint": "Pick any unlocked look. Higher tiers unlock with XP.",
+        "equipping": "Saving…",
+        "equipFailed": "Could not update your avatar.",
+        "equipped": "Equipped",
+        "unlockAt": "Unlock at {xp} XP",
+        "equipTier": "Equip {label}",
+        "lockedTier": "{label} locked — needs {xp} XP",
         "modeLabels": {
           "solo": "Solo",
           "multiplayer": "Multiplayer"

@@ -460,6 +460,14 @@
         "xpValue": "{xp} XP",
         "scoreValue": "{score} pts",
         "noGames": "—",
+        "equipTitle": "Avatar",
+        "equipHint": "Choisis une apparence débloquée. Les niveaux plus élevés se débloquent avec l'XP.",
+        "equipping": "Enregistrement…",
+        "equipFailed": "Impossible de mettre à jour ton avatar.",
+        "equipped": "Équipé",
+        "unlockAt": "Débloquer à {xp} XP",
+        "equipTier": "Équiper {label}",
+        "lockedTier": "{label} verrouillé — nécessite {xp} XP",
         "modeLabels": {
           "solo": "Solo",
           "multiplayer": "Multijoueur"
