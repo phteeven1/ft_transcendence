@@ -1,6 +1,6 @@
 'use client';
 
-import SoupHostCharacter from '@/app/word_soup_scaffold/_components/soup-host-character';
+import HostCharacter from '@/app/components/game/host-character';
 import {
   getAvatarTierStyle,
   resolveAvatarTier,
@@ -34,7 +34,7 @@ export function AvatarTierThumb({
       data-tier={definition.tier}
       data-variant={definition.variantKey}
     >
-      <SoupHostCharacter
+      <HostCharacter
         clothesColor={style.flairBg}
         className="h-full w-full scale-[1.15]"
       />
