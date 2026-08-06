@@ -95,7 +95,8 @@ describe('ProgressionService', () => {
         id: 20,
         winStreak: 0,
         bestWinStreak: 0,
-        xp: 0,
+        // 40 + win XP crosses tier-1 (50) but equipped tier 0 must stick
+        xp: 40,
         avatarTier: 0,
         bestWordStreak: 0,
       });
@@ -126,6 +127,7 @@ describe('ProgressionService', () => {
         gamesPlayed: { increment: 1 },
         winStreak: 0,
         bestWinStreak: 2,
+        // Invalid equipped tier 2 with low XP clamps down to 0
         avatarTier: 0,
       },
     });
@@ -137,6 +139,7 @@ describe('ProgressionService', () => {
         wins: { increment: 1 },
         winStreak: 1,
         bestWinStreak: 1,
+        // Equipped tier 0 preserved even though XP now unlocks tier 1
         avatarTier: 0,
       },
     });

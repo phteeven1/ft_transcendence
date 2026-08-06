@@ -6,8 +6,8 @@ import {
 } from './progression.constants';
 import {
   aggregatePlayerTotals,
-  clampEquippedAvatarTier,
   computeXpAwarded,
+  resolveEquippedAvatarTier,
   resolveWinnerIds,
   type PlayerProgressionTotals,
 } from './progression.helpers';
@@ -180,7 +180,7 @@ export async function syncPlayersFromGameHistory(
     const totals = totalsMap.get(player.id);
     if (!totals) continue;
 
-    const avatarTier = clampEquippedAvatarTier(totals.xp);
+    const avatarTier = resolveEquippedAvatarTier(player.avatarTier, totals.xp);
     const needsUpdate =
       player.xp !== totals.xp ||
       player.wins !== totals.wins ||

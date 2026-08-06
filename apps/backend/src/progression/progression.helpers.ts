@@ -130,8 +130,24 @@ export function isAvatarTierUnlocked(xp: number, tier: number): boolean {
 }
 
 /**
- * Equips the highest avatar tier unlocked by the player's XP.
- * Auto-upgrades when XP crosses a threshold; clamps down if XP no longer supports a higher tier.
+ * Resolves the equipped avatar tier after an XP change.
+ * Keeps the player's current choice when still unlocked; clamps down if XP
+ * no longer supports the equipped tier. Never auto-upgrades.
+ */
+export function resolveEquippedAvatarTier(
+  currentTier: number,
+  xp: number,
+): number {
+  const maxUnlocked = getMaxUnlockedTier(xp);
+  if (!isValidAvatarTier(currentTier) || currentTier > maxUnlocked) {
+    return maxUnlocked;
+  }
+  return currentTier;
+}
+
+/**
+ * @deprecated Prefer {@link resolveEquippedAvatarTier}. Kept for call sites
+ * that only have XP and must fall back to the highest unlocked tier.
  */
 export function clampEquippedAvatarTier(xp: number): number {
   return getMaxUnlockedTier(xp);

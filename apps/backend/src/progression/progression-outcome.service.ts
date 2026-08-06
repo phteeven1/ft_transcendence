@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  clampEquippedAvatarTier,
   computeStreakUpdate,
   computeXpAwarded,
+  resolveEquippedAvatarTier,
   resolveWinnerIds,
 } from './progression.helpers';
 import type {
@@ -105,7 +105,7 @@ export class ProgressionOutcomeService {
         const streaks = computeStreakUpdate(player, isWinner);
         const xpGain = computeXpAwarded(participantCount, isWinner);
         const newXp = player.xp + xpGain;
-        const avatarTier = clampEquippedAvatarTier(newXp);
+        const avatarTier = resolveEquippedAvatarTier(player.avatarTier, newXp);
 
         await tx.player.update({
           where: { id: gp.playerId },
