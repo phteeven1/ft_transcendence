@@ -35,6 +35,7 @@ export function AvatarTierThumb({
       data-variant={definition.variantKey}
     >
       <HostCharacter
+        tier={definition.tier}
         clothesColor={style.flairBg}
         className="h-full w-full scale-[1.15]"
       />
