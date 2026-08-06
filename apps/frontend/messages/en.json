@@ -468,6 +468,9 @@
         "unlockAt": "Unlock at {xp} XP",
         "equipTier": "Equip {label}",
         "lockedTier": "{label} locked — needs {xp} XP",
+        "unlockToastTitle": "New avatar unlocked!",
+        "unlockToastBody": "You unlocked {label}. Equip it anytime in My stats.",
+        "unlockToastDismiss": "Nice!",
         "modeLabels": {
           "solo": "Solo",
           "multiplayer": "Multiplayer"

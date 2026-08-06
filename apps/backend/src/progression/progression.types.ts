@@ -7,6 +7,8 @@ export type GameFinishPlayerOutcome = {
   score: number;
   xpAwarded: number;
   isWinner: boolean;
+  /** Highest tier newly unlocked by this finish's XP; null if none. */
+  newlyUnlockedTier: number | null;
 };
 
 export type GameFinishOutcome = {

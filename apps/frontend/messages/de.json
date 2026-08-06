@@ -468,6 +468,9 @@
         "unlockAt": "Ab {xp} XP",
         "equipTier": "{label} auswählen",
         "lockedTier": "{label} gesperrt — braucht {xp} XP",
+        "unlockToastTitle": "Neuer Avatar freigeschaltet!",
+        "unlockToastBody": "Du hast {label} freigeschaltet. Wähle es jederzeit unter Meine Stats.",
+        "unlockToastDismiss": "Super!",
         "modeLabels": {
           "solo": "Solo",
           "multiplayer": "Mehrspieler"

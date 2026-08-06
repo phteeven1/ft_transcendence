@@ -468,6 +468,9 @@
         "unlockAt": "Débloquer à {xp} XP",
         "equipTier": "Équiper {label}",
         "lockedTier": "{label} verrouillé — nécessite {xp} XP",
+        "unlockToastTitle": "Nouvel avatar débloqué !",
+        "unlockToastBody": "Tu as débloqué {label}. Équipe-le quand tu veux dans Mes stats.",
+        "unlockToastDismiss": "Super !",
         "modeLabels": {
           "solo": "Solo",
           "multiplayer": "Multijoueur"

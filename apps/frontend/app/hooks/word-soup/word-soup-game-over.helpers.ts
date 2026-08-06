@@ -87,6 +87,7 @@ export function buildFallbackFinishOutcome(
         score,
         xpAwarded: computeXpAwarded(players.length, isWinner),
         isWinner,
+        newlyUnlockedTier: null,
       };
     }),
   };

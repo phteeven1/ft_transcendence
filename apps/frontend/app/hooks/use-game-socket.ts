@@ -17,6 +17,7 @@ import type {
   WordSoupFreezeNoticeDto,
 } from '@/lib/api/games/word-soup/types';
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
+import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 
 interface GameSocketState {
   gameFinished: boolean;
@@ -216,10 +217,19 @@ export function useGameSocket(gameId: number, playerId: number) {
     // Backend broadcasts this when the game is marked finished.
     socket.on('game:finished', (payload?: { outcome?: GameFinishOutcomeDto | null }) => {
       if (!active) return;
+      const outcome = payload?.outcome ?? null;
+      const unlock = outcome?.players.find(
+        (entry) =>
+          entry.playerId === playerId &&
+          typeof entry.newlyUnlockedTier === 'number',
+      )?.newlyUnlockedTier;
+      if (typeof unlock === 'number') {
+        stashPendingAvatarUnlock(playerId, unlock);
+      }
       setState((s) => ({
         ...s,
         gameFinished: true,
-        finishOutcome: payload?.outcome ?? s.finishOutcome,
+        finishOutcome: outcome ?? s.finishOutcome,
       }));
     });
 

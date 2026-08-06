@@ -110,12 +110,14 @@ describe('ProgressionService', () => {
           score: 40,
           xpAwarded: PARTICIPATION_XP,
           isWinner: false,
+          newlyUnlockedTier: null,
         }),
         expect.objectContaining({
           playerId: 20,
           score: 60,
           xpAwarded: PARTICIPATION_XP + WIN_XP,
           isWinner: true,
+          newlyUnlockedTier: 1,
         }),
       ]),
     );
@@ -173,6 +175,7 @@ describe('ProgressionService', () => {
       playerId: 10,
       xpAwarded: PARTICIPATION_XP,
       isWinner: false,
+      newlyUnlockedTier: null,
     });
     expect(playerUpdate).toHaveBeenCalledWith({
       where: { id: 10 },
