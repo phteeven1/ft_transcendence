@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
+import { gamesApi, wordSoupApi } from '@/lib/api';
+import type { GameRosterPlayerDto } from '@/lib/api/games';
 import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
-import type { Game, Player } from '@/app/types';
+import type { Game } from '@/app/types';
 import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
 function createEmptyCourt(): WordSoupCourtCell[][] {
@@ -15,13 +16,6 @@ function createEmptyCourt(): WordSoupCourtCell[][] {
       highlightedByPlayerId: undefined,
     })),
   );
-}
-
-async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
-  const results = await Promise.all(
-    playerIds.map((id) => playersApi.getById(id).catch(() => null)),
-  );
-  return results.filter((player): player is Player => player !== null);
 }
 
 function formatInitError(error: unknown): string {
@@ -41,7 +35,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
   const [courtInitError, setCourtInitError] = useState<string | null>(null);
   const [courtRetryToken, setCourtRetryToken] = useState(0);
   const [game, setGame] = useState<Game | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<GameRosterPlayerDto[]>([]);
   const [visibleCourt, setVisibleCourt] = useState<WordSoupCourtCell[][]>(createEmptyCourt);
   const [playerColours, setPlayerColours] = useState<Record<number, string>>({});
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
@@ -79,7 +73,9 @@ export function useWordSoupInit(gameId: number, playerId: number) {
         return;
       }
 
-      const loadedPlayers = await loadPlayersByIds(loadedGame.players);
+      const loadedPlayers = await gamesApi
+        .getPlayersForGame(gameId)
+        .catch(() => [] as GameRosterPlayerDto[]);
 
       if (!isMounted) return;
 

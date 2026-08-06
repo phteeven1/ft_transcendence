@@ -13,8 +13,9 @@ type GameMeta = {
 };
 
 type PlayerMeta = {
-  id:   number;
+  id: number;
   name: string;
+  avatarTier: number;
 };
 
 export const wordBuildingApi = {

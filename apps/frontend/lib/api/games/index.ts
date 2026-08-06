@@ -3,6 +3,7 @@ export { wordBuildingApi } from './word-building.api';
 export { wordSoupApi } from './word-soup';
 export type {
   GameDto,
+  GameRosterPlayerDto,
   CreateGameInput,
   GameIdInput,
   GameIdPlayerIdInput,

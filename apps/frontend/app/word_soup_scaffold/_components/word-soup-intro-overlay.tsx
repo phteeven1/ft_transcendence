@@ -10,6 +10,8 @@ type WordSoupIntroOverlayProps = {
   wordRevealIndex: number;
   totalWords: number;
   countdownValue: IntroCountdownValue;
+  /** Equipped avatar tier for the local player host. */
+  hostTier?: number;
 };
 
 function SpeechBubble({
@@ -62,6 +64,7 @@ export default function WordSoupIntroOverlay({
   wordRevealIndex,
   totalWords,
   countdownValue,
+  hostTier = 0,
 }: WordSoupIntroOverlayProps) {
   const isWordPhase = phase === 'word' || phase === 'word-gap';
   const isCountdown = phase === 'countdown';
@@ -75,6 +78,7 @@ export default function WordSoupIntroOverlay({
         >
           <SoupHostCharacter
             animated
+            tier={hostTier}
             className="h-28 w-28 sm:h-36 sm:w-36"
           />
           {countdownValue !== 'GO!' && (
@@ -102,6 +106,7 @@ export default function WordSoupIntroOverlay({
           />
           <SoupHostCharacter
             animated
+            tier={hostTier}
             className="h-28 w-28 sm:h-36 sm:w-36"
           />
           {isWordPhase && totalWords > 0 && (

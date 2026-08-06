@@ -203,18 +203,21 @@ export class GamesService {
    * Returns the player roster for one game for scoreboard rendering.
    *
    * @param gameId Game whose players should be listed.
-   * @returns Player ids and names for the requested game.
+   * @returns Player ids, names, and equipped avatar tiers for the requested game.
    */
   async findPlayersForGame(
     gameId: number,
-  ): Promise<Array<{ id: number; name: string }>> {
+  ): Promise<Array<{ id: number; name: string; avatarTier: number }>> {
     const gamePlayers = await this.prisma.gamePlayer.findMany({
       where: { gameId },
-      include: { player: { select: { id: true, name: true } } },
+      include: {
+        player: { select: { id: true, name: true, avatarTier: true } },
+      },
     });
     return gamePlayers.map((gp) => ({
       id: gp.player.id,
       name: gp.player.name,
+      avatarTier: gp.player.avatarTier,
     }));
   }
 

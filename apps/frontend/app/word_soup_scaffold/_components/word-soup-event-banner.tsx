@@ -11,6 +11,8 @@ import {
 type WordSoupEventBannerProps = {
   event: WordSoupEventBanner | null;
   phase: EventBannerPhase;
+  /** Equipped avatar tier for the local player host. */
+  hostTier?: number;
 };
 
 const IDLE_CLOTHES = '#5EEAD4';
@@ -85,6 +87,7 @@ function useRevealProgress(phase: EventBannerPhase, event: WordSoupEventBanner |
 export default function WordSoupEventBannerView({
   event,
   phase,
+  hostTier = 0,
 }: WordSoupEventBannerProps) {
   const progress = useRevealProgress(phase, event);
   const bubbleVisible = phase === 'enter' || phase === 'hold';
@@ -108,6 +111,7 @@ export default function WordSoupEventBannerView({
     >
       <SoupHostCharacter
         clothesColor={event?.clothesColor ?? IDLE_CLOTHES}
+        tier={hostTier}
         animated
         className="relative z-10 h-14 w-14 shrink-0 sm:h-16 sm:w-16"
         title="Word Soup host"
