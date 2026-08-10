@@ -7,7 +7,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { IsInt, Min } from 'class-validator';
+import { IsInt, Max, Min } from 'class-validator';
 import { AuthenticatedPlayerId } from './authenticated-player.decorator';
 import { PlayerSessionGuard } from './player-session.guard';
 import { ProgressionService } from './progression.service';
@@ -15,7 +15,8 @@ import { ProgressionService } from './progression.service';
 class EquipAvatarDto {
   @IsInt()
   @Min(0)
-  avatarTier!: number;
+  @Max(4)
+  avatarAnimal!: number;
 }
 
 @Controller('players')
@@ -34,6 +35,8 @@ export class PlayerProgressionController {
     @AuthenticatedPlayerId() playerId: number,
     @Body() body: EquipAvatarDto,
   ) {
-    return this.progressionService.equipAvatar(playerId, body.avatarTier);
+    return this.progressionService.equipAvatar(playerId, {
+      avatarAnimal: body.avatarAnimal,
+    });
   }
 }

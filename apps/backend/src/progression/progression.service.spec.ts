@@ -46,6 +46,7 @@ describe('ProgressionService', () => {
   const gameFindUnique = jest.fn();
   const gameFindMany = jest.fn();
   const playerFindUnique = jest.fn();
+  const playerFindMany = jest.fn();
   const playerUpdate = jest.fn();
   const gameUpdate = jest.fn();
   const transaction = jest.fn(async (fn: (tx: unknown) => Promise<void>) =>
@@ -61,7 +62,11 @@ describe('ProgressionService', () => {
       findMany: gameFindMany,
       update: gameUpdate,
     },
-    player: { findUnique: playerFindUnique, update: playerUpdate },
+    player: {
+      findUnique: playerFindUnique,
+      findMany: playerFindMany,
+      update: playerUpdate,
+    },
     $transaction: transaction,
   };
 
@@ -70,6 +75,7 @@ describe('ProgressionService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     gameFindMany.mockResolvedValue([]);
+    playerFindMany.mockResolvedValue([]);
   });
 
   it('awards participation + win XP and increments stats for winners', async () => {
@@ -95,7 +101,7 @@ describe('ProgressionService', () => {
         id: 20,
         winStreak: 0,
         bestWinStreak: 0,
-        // 40 + win XP crosses tier-1 (50) but equipped tier 0 must stick
+        // 40 + win XP crosses tier-1 (50); rank auto-updates to 1
         xp: 40,
         avatarTier: 0,
         bestWordStreak: 0,
@@ -129,7 +135,7 @@ describe('ProgressionService', () => {
         gamesPlayed: { increment: 1 },
         winStreak: 0,
         bestWinStreak: 2,
-        // Invalid equipped tier 2 with low XP clamps down to 0
+        // XP still below Explorer (50); rank stays Apprentice
         avatarTier: 0,
       },
     });
@@ -141,8 +147,8 @@ describe('ProgressionService', () => {
         wins: { increment: 1 },
         winStreak: 1,
         bestWinStreak: 1,
-        // Equipped tier 0 preserved even though XP now unlocks tier 1
-        avatarTier: 0,
+        // Rank follows XP: 40 + win XP unlocks Explorer
+        avatarTier: 1,
       },
     });
     expect(gameUpdate).toHaveBeenCalledWith({
@@ -267,7 +273,7 @@ describe('ProgressionService', () => {
     );
   });
 
-  it('rejects equipping a locked avatar tier', async () => {
+  it('rejects equipping an invalid avatar animal', async () => {
     playerFindUnique.mockResolvedValue({
       id: 5,
       xp: 30,
@@ -277,16 +283,18 @@ describe('ProgressionService', () => {
       bestWinStreak: 0,
       bestWordStreak: 0,
       avatarTier: 0,
+      avatarAnimal: 0,
     });
 
-    await expect(service.equipAvatar(5, 2)).rejects.toThrow(
-      'Avatar tier is not unlocked',
+    await expect(service.equipAvatar(5, { avatarAnimal: 9 })).rejects.toThrow(
+      'Invalid avatar animal',
     );
   });
 
   it('returns progression payload with unlocked tiers', async () => {
     playerFindUnique.mockResolvedValue({
       id: 5,
+      inGroupId: null,
       xp: 150,
       gamesPlayed: 10,
       wins: 4,
@@ -294,6 +302,7 @@ describe('ProgressionService', () => {
       bestWinStreak: 3,
       bestWordStreak: 5,
       avatarTier: 1,
+      avatarAnimal: 2,
     });
 
     const result = await service.getMyProgression(5);
@@ -302,9 +311,12 @@ describe('ProgressionService', () => {
       playerId: 5,
       xp: 150,
       unlockedTiers: [0, 1, 2],
-      avatarTier: 1,
+      // Rank always mirrors XP (150 → Wordsmith / tier 2), not stored choice
+      avatarTier: 2,
+      avatarAnimal: 2,
       bestWordStreak: 5,
     });
     expect(result.tiers.length).toBeGreaterThan(0);
+    expect(result.animals.length).toBe(5);
   });
 });

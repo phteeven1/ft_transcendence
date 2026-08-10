@@ -2,23 +2,27 @@
 
 import HostCharacter from '@/app/components/game/host-character';
 import {
+  getAvatarAnimalStyle,
   getAvatarTierStyle,
   resolveAvatarTier,
 } from './avatar-tier-styles';
 
 type AvatarTierThumbProps = {
   tier: number;
+  animal?: number;
   className?: string;
   title?: string;
 };
 
 export function AvatarTierThumb({
   tier,
+  animal = 0,
   className = '',
   title,
 }: AvatarTierThumbProps) {
   const definition = resolveAvatarTier(tier);
   const style = getAvatarTierStyle(definition);
+  const animalStyle = getAvatarAnimalStyle(animal);
   const label = title ?? definition.label;
 
   return (
@@ -32,12 +36,16 @@ export function AvatarTierThumb({
       title={label}
       aria-label={label}
       data-tier={definition.tier}
+      data-animal={animal}
       data-variant={definition.variantKey}
     >
       <HostCharacter
+        theme="animals"
         tier={definition.tier}
-        clothesColor={style.flairBg}
-        className="h-full w-full scale-[1.15]"
+        animal={animal}
+        size="thumb"
+        clothesColor={animalStyle.flairBg || style.flairBg}
+        className="scale-[1.15]"
       />
     </span>
   );

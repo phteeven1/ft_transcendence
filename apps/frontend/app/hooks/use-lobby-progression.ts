@@ -25,12 +25,13 @@ type LobbyProgressionState = {
   error: string | null;
   equipping: boolean;
   equipError: string | null;
-  equipAvatar: (tier: number) => Promise<void>;
+  equipAnimal: (animal: number) => Promise<void>;
 };
 
-function applyEquippedTier(
+function applyEquippedAvatar(
   playerId: number,
   avatarTier: number,
+  avatarAnimal: number,
   leaderboard: LeaderboardEntryDto[],
   myStats: PlayerGroupStatsDto | null,
 ): {
@@ -39,10 +40,12 @@ function applyEquippedTier(
 } {
   return {
     leaderboard: leaderboard.map((entry) =>
-      entry.playerId === playerId ? { ...entry, avatarTier } : entry,
+      entry.playerId === playerId
+        ? { ...entry, avatarTier, avatarAnimal }
+        : entry,
     ),
     myStats: myStats
-      ? { ...myStats, avatarTier }
+      ? { ...myStats, avatarTier, avatarAnimal }
       : myStats,
   };
 }
@@ -116,8 +119,6 @@ export function useLobbyProgression({
       }
     }
 
-    // Defer so setState is not synchronous in the effect body
-    // (react-hooks/set-state-in-effect).
     const frameId = requestAnimationFrame(() => {
       void fetchProgression();
     });
@@ -128,30 +129,38 @@ export function useLobbyProgression({
     };
   }, [enabled, groupId, playerId, refreshToken]);
 
-  const equipAvatar = useCallback(
-    async (tier: number) => {
+  const applyEquipResult = useCallback(
+    (myProgression: PlayerProgressionResponseDto) => {
+      setState((prev) => {
+        const synced = applyEquippedAvatar(
+          playerId,
+          myProgression.avatarTier,
+          myProgression.avatarAnimal,
+          prev.leaderboard,
+          prev.myStats,
+        );
+        return {
+          ...prev,
+          ...synced,
+          myProgression,
+          equipping: false,
+          equipError: null,
+        };
+      });
+    },
+    [playerId],
+  );
+
+  const equipAnimal = useCallback(
+    async (animal: number) => {
       setState((prev) => ({ ...prev, equipping: true, equipError: null }));
       try {
         const myProgression = await progressionApi.equipAvatar({
-          avatarTier: tier,
+          avatarAnimal: animal,
         });
-        setState((prev) => {
-          const synced = applyEquippedTier(
-            playerId,
-            myProgression.avatarTier,
-            prev.leaderboard,
-            prev.myStats,
-          );
-          return {
-            ...prev,
-            ...synced,
-            myProgression,
-            equipping: false,
-            equipError: null,
-          };
-        });
+        applyEquipResult(myProgression);
       } catch (error) {
-        console.error('Failed to equip avatar tier', error);
+        console.error('Failed to equip avatar animal', error);
         setState((prev) => ({
           ...prev,
           equipping: false,
@@ -159,11 +168,11 @@ export function useLobbyProgression({
         }));
       }
     },
-    [playerId],
+    [applyEquipResult],
   );
 
   return {
     ...state,
-    equipAvatar,
+    equipAnimal,
   };
 }

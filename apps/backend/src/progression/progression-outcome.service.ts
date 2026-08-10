@@ -4,7 +4,6 @@ import {
   computeStreakUpdate,
   computeXpAwarded,
   getMaxUnlockedTier,
-  resolveEquippedAvatarTier,
   resolveWinnerIds,
 } from './progression.helpers';
 import type {
@@ -98,9 +97,9 @@ export class ProgressionOutcomeService {
         const streaks = computeStreakUpdate(player, isWinner);
         const xpGain = computeXpAwarded(participantCount, isWinner);
         const newXp = player.xp + xpGain;
-        const avatarTier = resolveEquippedAvatarTier(player.avatarTier, newXp);
+        const avatarTier = getMaxUnlockedTier(newXp);
         const previousMax = getMaxUnlockedTier(player.xp);
-        const newMax = getMaxUnlockedTier(newXp);
+        const newMax = avatarTier;
         const newlyUnlockedTier = newMax > previousMax ? newMax : null;
 
         await tx.player.update({

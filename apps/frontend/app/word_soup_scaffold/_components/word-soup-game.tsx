@@ -195,7 +195,9 @@ export default function WordSoupGame() {
                         playersById={ws.gameOverPlayersById}
                         playerColours={ws.playerColours}
                         playerAvatarTiers={ws.playerAvatarTiers}
+                        playerAvatarAnimals={ws.playerAvatarAnimals}
                         hostTier={ws.localHostTier}
+                        hostAnimal={ws.localHostAnimal}
                         localPlayerId={playerId}
                         newlyUnlockedTier={ws.newlyUnlockedTier}
                         showReturnButton={ws.showGameOverReturnButton}

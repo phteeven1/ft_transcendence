@@ -110,9 +110,11 @@ export default function WordSoupEventBannerView({
       aria-label={bubbleVisible ? liveMessage : 'Game message banner'}
     >
       <SoupHostCharacter
+        theme="classic"
         clothesColor={event?.clothesColor ?? IDLE_CLOTHES}
         tier={hostTier}
         animated
+        size="default"
         className="relative z-10 h-14 w-14 shrink-0 sm:h-16 sm:w-16"
         title="Word Soup host"
       />

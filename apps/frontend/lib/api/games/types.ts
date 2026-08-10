@@ -36,6 +36,7 @@ export type GameRosterPlayerDto = {
   id: number;
   name: string;
   avatarTier: number;
+  avatarAnimal: number;
 };
 
 export type CreateGameInput = {

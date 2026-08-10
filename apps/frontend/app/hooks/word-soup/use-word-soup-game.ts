@@ -155,6 +155,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
           id: playerIdNum,
           name,
           avatarTier: 0,
+          avatarAnimal: 0,
         });
       }
     }
@@ -315,7 +316,16 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     return tiers;
   }, [players]);
 
+  const playerAvatarAnimals = useMemo(() => {
+    const animals: Record<number, number> = {};
+    for (const player of players) {
+      animals[player.id] = player.avatarAnimal ?? 0;
+    }
+    return animals;
+  }, [players]);
+
   const localHostTier = playerAvatarTiers[playerId] ?? 0;
+  const localHostAnimal = playerAvatarAnimals[playerId] ?? 0;
 
   const newlyUnlockedTier = useMemo(() => {
     const fromOutcome = finishOutcome?.players.find(
@@ -549,7 +559,9 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     gameOverRevealedPlayerIds,
     gameOverPlayersById: playersByOutcomeId,
     playerAvatarTiers,
+    playerAvatarAnimals,
     localHostTier,
+    localHostAnimal,
     newlyUnlockedTier,
     showGameOverReturnButton,
     eventBanner,

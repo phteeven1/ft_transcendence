@@ -16,7 +16,9 @@ type WordSoupGameOverOverlayProps = {
   playersById: Record<number, GameFinishPlayerOutcomeDto>;
   playerColours: Record<number, string>;
   playerAvatarTiers?: Record<number, number>;
+  playerAvatarAnimals?: Record<number, number>;
   hostTier?: number;
+  hostAnimal?: number;
   localPlayerId: number;
   newlyUnlockedTier?: number | null;
   showReturnButton: boolean;
@@ -73,7 +75,9 @@ export default function WordSoupGameOverOverlay({
   playersById,
   playerColours,
   playerAvatarTiers = {},
+  playerAvatarAnimals = {},
   hostTier = 0,
+  hostAnimal = 0,
   localPlayerId,
   newlyUnlockedTier = null,
   showReturnButton,
@@ -104,17 +108,20 @@ export default function WordSoupGameOverOverlay({
       <div className="flex w-full max-w-3xl flex-col items-stretch gap-4 sm:gap-5">
         {unlockTier !== null && (
           <div
-            className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-amber-300/50 bg-amber-50/95 px-4 py-3 text-amber-950 shadow-lg"
+            className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50/95 px-4 py-3 text-teal-950 shadow-lg"
             role="status"
             aria-live="polite"
           >
             <SoupHostCharacter
+              theme="animals"
               tier={unlockTier}
-              className="h-12 w-12 shrink-0"
+              animal={hostAnimal}
+              size="default"
+              className="shrink-0"
             />
             <div className="min-w-0">
               <p className="text-sm font-bold">{t('unlockToastTitle')}</p>
-              <p className="text-xs text-amber-900/80">
+              <p className="text-xs text-teal-900/80">
                 {t('unlockToastBody', { label: resolveTierLabel(unlockTier) })}
               </p>
             </div>
@@ -126,7 +133,9 @@ export default function WordSoupGameOverOverlay({
             <SpeechBubble text={bubbleText} visible={bubbleVisible} />
             <SoupHostCharacter
               animated
+              theme="classic"
               tier={hostTier}
+              size="presentation"
               className="h-24 w-24 sm:h-32 sm:w-32"
             />
           </div>
@@ -147,15 +156,19 @@ export default function WordSoupGameOverOverlay({
                     if (!player) return null;
                     const colour = playerColours[playerId] ?? '#5EEAD4';
                     const tier = playerAvatarTiers[playerId] ?? 0;
+                    const animal = playerAvatarAnimals[playerId] ?? 0;
                     return (
                       <li
                         key={playerId}
                         className="word-soup-game-over-score-row flex items-center gap-3 rounded-xl border border-white/20 bg-white/95 px-3 py-2.5 shadow-sm"
                       >
                         <SoupHostCharacter
+                          theme="animals"
                           clothesColor={colour}
                           tier={tier}
-                          className="h-10 w-10 shrink-0"
+                          animal={animal}
+                          size="thumb"
+                          className="shrink-0"
                         />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-teal-950">

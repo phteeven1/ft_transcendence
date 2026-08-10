@@ -1,4 +1,5 @@
 import {
+  AVATAR_ANIMALS,
   AVATAR_TIERS,
   LEADERBOARD_GAME_TYPES,
   PARTICIPATION_XP,
@@ -101,7 +102,7 @@ export function computeStreakUpdate(
   };
 }
 
-/** Highest avatar tier unlocked for the given lifetime XP. */
+/** Highest avatar rank unlocked for the given lifetime XP. */
 export function getMaxUnlockedTier(xp: number): number {
   let maxTier = 0;
   for (const tier of AVATAR_TIERS) {
@@ -112,43 +113,13 @@ export function getMaxUnlockedTier(xp: number): number {
   return maxTier;
 }
 
-/** Lists every tier id the player has unlocked. */
+/** Lists every rank id the player has unlocked. */
 export function getUnlockedTierIds(xp: number): number[] {
   return AVATAR_TIERS.filter((tier) => xp >= tier.xpRequired).map(
     (tier) => tier.tier,
   );
 }
 
-export function isValidAvatarTier(tier: number): boolean {
-  return AVATAR_TIERS.some((entry) => entry.tier === tier);
-}
-
-export function isAvatarTierUnlocked(xp: number, tier: number): boolean {
-  const definition = AVATAR_TIERS.find((entry) => entry.tier === tier);
-  if (!definition) return false;
-  return xp >= definition.xpRequired;
-}
-
-/**
- * Resolves the equipped avatar tier after an XP change.
- * Keeps the player's current choice when still unlocked; clamps down if XP
- * no longer supports the equipped tier. Never auto-upgrades.
- */
-export function resolveEquippedAvatarTier(
-  currentTier: number,
-  xp: number,
-): number {
-  const maxUnlocked = getMaxUnlockedTier(xp);
-  if (!isValidAvatarTier(currentTier) || currentTier > maxUnlocked) {
-    return maxUnlocked;
-  }
-  return currentTier;
-}
-
-/**
- * @deprecated Prefer {@link resolveEquippedAvatarTier}. Kept for call sites
- * that only have XP and must fall back to the highest unlocked tier.
- */
-export function clampEquippedAvatarTier(xp: number): number {
-  return getMaxUnlockedTier(xp);
+export function isValidAvatarAnimal(animal: number): boolean {
+  return AVATAR_ANIMALS.some((entry) => entry.id === animal);
 }

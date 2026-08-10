@@ -78,8 +78,9 @@ export default function WordSoupIntroOverlay({
         >
           <SoupHostCharacter
             animated
+            theme="classic"
             tier={hostTier}
-            className="h-28 w-28 sm:h-36 sm:w-36"
+            size="presentation"
           />
           {countdownValue !== 'GO!' && (
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-teal-100/85">
@@ -106,8 +107,9 @@ export default function WordSoupIntroOverlay({
           />
           <SoupHostCharacter
             animated
+            theme="classic"
             tier={hostTier}
-            className="h-28 w-28 sm:h-36 sm:w-36"
+            size="presentation"
           />
           {isWordPhase && totalWords > 0 && (
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-100/80">

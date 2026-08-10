@@ -38,7 +38,7 @@ type ProgressionPanelProps = {
   error: string | null;
   equipping: boolean;
   equipError: string | null;
-  onEquipAvatar: (tier: number) => void;
+  onEquipAnimal: (animal: number) => void;
 };
 
 export default function ProgressionPanel({
@@ -50,7 +50,7 @@ export default function ProgressionPanel({
   error,
   equipping,
   equipError,
-  onEquipAvatar,
+  onEquipAnimal,
 }: ProgressionPanelProps) {
   const t = useTranslations('games.lobby.progression');
   const [tab, setTab] = useState<TabId>('leaderboard');
@@ -70,24 +70,34 @@ export default function ProgressionPanel({
     leaderboard.find((e) => e.playerId === localPlayerId)?.avatarTier ??
     0;
 
-  const localPlayerSummary = useMemo(() => {
-    if (myStats) {
-      return {
-        avatarTier: displayTier,
-        playerName: myStats.playerName,
-        xp: myProgression?.xp ?? myStats.xp,
-      };
-    }
+  const displayAnimal =
+    myProgression?.avatarAnimal ??
+    myStats?.avatarAnimal ??
+    leaderboard.find((e) => e.playerId === localPlayerId)?.avatarAnimal ??
+    0;
 
+  const localPlayerSummary = useMemo(() => {
     const entry = leaderboard.find((e) => e.playerId === localPlayerId);
-    if (!entry) return null;
+    // Prefer leaderboard/stats XP (synced) so the summary matches the table.
+    const xp = entry?.xp ?? myStats?.xp ?? myProgression?.xp ?? 0;
+    const playerName =
+      myStats?.playerName ?? entry?.playerName ?? null;
+    if (!playerName) return null;
 
     return {
       avatarTier: displayTier,
-      playerName: entry.playerName,
-      xp: myProgression?.xp ?? entry.xp,
+      avatarAnimal: displayAnimal,
+      playerName,
+      xp,
     };
-  }, [myStats, leaderboard, localPlayerId, displayTier, myProgression?.xp]);
+  }, [
+    myStats,
+    leaderboard,
+    localPlayerId,
+    displayTier,
+    displayAnimal,
+    myProgression?.xp,
+  ]);
 
   return (
     <Panel className="p-4 sm:p-5">
@@ -100,6 +110,14 @@ export default function ProgressionPanel({
             role="tab"
           >
             {t('leaderboard')}
+          </Chip>
+          <Chip
+            active={tab === 'avatar'}
+            onClick={() => setTab('avatar')}
+            aria-selected={tab === 'avatar'}
+            role="tab"
+          >
+            {t('avatarTab')}
           </Chip>
           <Chip
             active={tab === 'my-stats'}
@@ -126,6 +144,7 @@ export default function ProgressionPanel({
           {localPlayerSummary && (
             <ProgressionPlayerSummary
               avatarTier={localPlayerSummary.avatarTier}
+              avatarAnimal={localPlayerSummary.avatarAnimal}
               playerName={localPlayerSummary.playerName}
               xp={localPlayerSummary.xp}
             />
@@ -156,6 +175,30 @@ export default function ProgressionPanel({
             />
           )}
         </div>
+      ) : tab === 'avatar' ? (
+        <div role="tabpanel">
+          {localPlayerSummary && (
+            <ProgressionPlayerSummary
+              avatarTier={localPlayerSummary.avatarTier}
+              avatarAnimal={localPlayerSummary.avatarAnimal}
+              playerName={localPlayerSummary.playerName}
+              xp={localPlayerSummary.xp}
+            />
+          )}
+
+          {myProgression ? (
+            <AvatarEquipPicker
+              progression={myProgression}
+              equipping={equipping}
+              equipError={equipError}
+              onEquipAnimal={onEquipAnimal}
+            />
+          ) : (
+            <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+              {t('emptyStats')}
+            </p>
+          )}
+        </div>
       ) : (
         <div role="tabpanel">
           {!myStats && !myProgression ? (
@@ -167,17 +210,9 @@ export default function ProgressionPanel({
               {localPlayerSummary && (
                 <ProgressionPlayerSummary
                   avatarTier={localPlayerSummary.avatarTier}
+                  avatarAnimal={localPlayerSummary.avatarAnimal}
                   playerName={localPlayerSummary.playerName}
                   xp={localPlayerSummary.xp}
-                />
-              )}
-
-              {myProgression && (
-                <AvatarEquipPicker
-                  progression={myProgression}
-                  equipping={equipping}
-                  equipError={equipError}
-                  onEquip={onEquipAvatar}
                 />
               )}
 

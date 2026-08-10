@@ -183,8 +183,11 @@ export default function PlayerScoreboardBanner({
             )}
 
             <SoupHostCharacter
+              theme="animals"
               clothesColor={colour}
               tier={player.avatarTier ?? 0}
+              animal={player.avatarAnimal ?? 0}
+              size="thumb"
               className="relative z-10 h-8 w-8 shrink-0 sm:h-9 sm:w-9"
               title={`${player.name} avatar`}
             />

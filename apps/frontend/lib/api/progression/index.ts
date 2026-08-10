@@ -1,5 +1,6 @@
 export { progressionApi } from './progression.api';
 export type {
+  AvatarAnimalDefinitionDto,
   AvatarTierDefinitionDto,
   EquipAvatarInput,
   GroupStatsResponseDto,
@@ -12,5 +13,5 @@ export type {
   PlayerProgressionResponseDto,
   RecentGameEntryDto,
 } from './types';
-export { AVATAR_TIERS, LEADERBOARD_GAME_TYPES } from './types';
+export { AVATAR_ANIMALS, AVATAR_TIERS, LEADERBOARD_GAME_TYPES } from './types';
 export { computeXpAwarded, isMultiplayerGame } from './constants';

@@ -270,14 +270,17 @@ export default function SelectGame() {
       <PageShell>
         {unlockToastTier !== null && (
           <div
-            className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm"
+            className="mb-4 flex items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50 px-4 py-3 text-teal-950 shadow-sm"
             role="status"
             aria-live="polite"
           >
-            <AvatarTierThumb tier={unlockToastTier} />
+            <AvatarTierThumb
+              tier={unlockToastTier}
+              animal={progression.myProgression?.avatarAnimal ?? 0}
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{tProgression('unlockToastTitle')}</p>
-              <p className="text-xs text-amber-900/80">
+              <p className="text-xs text-teal-900/80">
                 {tProgression('unlockToastBody', {
                   label:
                     AVATAR_TIERS.find((entry) => entry.tier === unlockToastTier)
@@ -364,8 +367,8 @@ export default function SelectGame() {
             error={progression.error}
             equipping={progression.equipping}
             equipError={progression.equipError}
-            onEquipAvatar={(tier) => {
-              void progression.equipAvatar(tier);
+            onEquipAnimal={(animal) => {
+              void progression.equipAnimal(animal);
             }}
           />
         </div>

@@ -16,6 +16,7 @@ type PlayerMeta = {
   id: number;
   name: string;
   avatarTier: number;
+  avatarAnimal: number;
 };
 
 export const wordBuildingApi = {
