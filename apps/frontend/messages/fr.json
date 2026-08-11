@@ -26,6 +26,7 @@
     "checking": "Vérification…",
     "starting": "Démarrage…",
     "leaving": "Départ…",
+    "ending": "Fin en cours…",
     "ending": "Fin…",
     "loadingGame": "Chargement du jeu...",
     "loadingEllipsis": "Chargement...",
@@ -520,6 +521,12 @@
       "stayInGame": "Rester dans le jeu",
       "leaveGame": "Quitter le jeu",
       "message": "Si tu pars maintenant, ta session de jeu se terminera immédiatement. Tu ne pourras pas rejoindre à nouveau — un parent devra démarrer une nouvelle session pour toi."
+    },
+    "endGame": {
+      "title": "Terminer cette partie ?",
+      "message": "La partie se terminera immédiatement pour tous les joueurs. Si le puzzle n'est pas encore terminé, aucun XP ne sera attribué.",
+      "cancel": "Continuer à jouer",
+      "confirm": "Terminer la partie"
     },
     "wordBuilding": {
       "defaultName": "Construction de mots",

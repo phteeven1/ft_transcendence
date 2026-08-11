@@ -30,6 +30,8 @@ type UseWordSoupIntroProps = {
   /** Shared server timeline start (epoch ms) so all clients stay in sync. */
   introStartedAt: number | null;
   skipIntro?: boolean;
+  /** When true, do not call markIntroShown (e.g. game ended before intro finished). */
+  skipMarkIntroShown?: boolean;
 };
 
 const CHAR_MS = 42;
@@ -197,6 +199,7 @@ export function useWordSoupIntro({
   hasPlayerSeenIntro,
   introStartedAt,
   skipIntro = false,
+  skipMarkIntroShown = false,
 }: UseWordSoupIntroProps) {
   const [frame, setFrame] = useState<IntroFrame>(IDLE_FRAME);
   const [timelineReady, setTimelineReady] = useState(false);
@@ -235,7 +238,7 @@ export function useWordSoupIntro({
 
       if (next.done) {
         setTimelineReady(true);
-        if (!markedIntroRef.current) {
+        if (!markedIntroRef.current && !skipMarkIntroShown) {
           markedIntroRef.current = true;
           void wordSoupApi.markIntroShown({ gameId, playerId }).catch((error) => {
             console.error('Failed to mark intro shown', error);
@@ -269,6 +272,7 @@ export function useWordSoupIntro({
     solutionWords,
     introStartedAt,
     shouldSkipIntro,
+    skipMarkIntroShown,
   ]);
 
   const gameReady = shouldSkipIntro ? courtReady : timelineReady;

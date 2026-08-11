@@ -157,6 +157,12 @@ export class WordSoupService {
     return sharedCourt;
   }
 
+  isGameComplete(gameId: number): boolean {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return false;
+    return this.isCourtComplete(court);
+  }
+
   /** Evict in-memory court and cancel freeze timers for a finished/abandoned game. */
   clearCourt(gameId: number): void {
     const court = this.sharedCourts.get(gameId);

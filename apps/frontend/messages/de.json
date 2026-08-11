@@ -27,6 +27,7 @@
     "starting": "Wird gestartet…",
     "leaving": "Wird verlassen…",
     "ending": "Wird beendet…",
+    "ending": "Wird beendet…",
     "loadingGame": "Spiel wird geladen...",
     "loadingEllipsis": "Wird geladen...",
     "admin": "Admin",
@@ -520,6 +521,12 @@
       "stayInGame": "Im Spiel bleiben",
       "leaveGame": "Spiel verlassen",
       "message": "Wenn du jetzt gehst, endet deine Spielsitzung sofort. Du kannst nicht erneut beitreten — ein Elternteil muss eine neue Sitzung für dich starten."
+    },
+    "endGame": {
+      "title": "Dieses Spiel beenden?",
+      "message": "Das Spiel endet sofort für alle Spieler. Wenn das Rätsel noch nicht fertig ist, gibt es kein XP.",
+      "cancel": "Weiterspielen",
+      "confirm": "Spiel beenden"
     },
     "wordBuilding": {
       "defaultName": "Wortbau",

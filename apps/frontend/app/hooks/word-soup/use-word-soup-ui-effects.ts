@@ -106,6 +106,7 @@ export function useWordSoupGameOverOverlay(
   isGameOver: boolean,
   isCelebrating: boolean,
   celebrationActiveRef: { current: boolean },
+  startImmediately = false,
 ) {
   const [startGameOverSequence, setStartGameOverSequence] = useState(false);
   const [sawCompletionCelebration, setSawCompletionCelebration] = useState(false);
@@ -140,6 +141,13 @@ export function useWordSoupGameOverOverlay(
       return;
     }
 
+    if (startImmediately) {
+      if (!celebrationActiveRef.current) {
+        setStartGameOverSequence(true);
+      }
+      return;
+    }
+
     const timeoutId = window.setTimeout(() => {
       if (!celebrationActiveRef.current) {
         setStartGameOverSequence(true);
@@ -153,6 +161,7 @@ export function useWordSoupGameOverOverlay(
     sawCompletionCelebration,
     startGameOverSequence,
     celebrationActiveRef,
+    startImmediately,
   ]);
 
   return startGameOverSequence && !isCelebrating;

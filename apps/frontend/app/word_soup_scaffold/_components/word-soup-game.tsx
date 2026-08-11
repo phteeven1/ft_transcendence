@@ -8,6 +8,7 @@ import { useWordSoupGame } from '../../hooks/word-soup/use-word-soup-game';
 
 import GameCourt from './game-court';
 import AbandonPlayModal from './abandon-play-modal';
+import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
 import WordSoupIntroOverlay from './word-soup-intro-overlay';
 import WordSoupGameOverOverlay from './word-soup-game-over-overlay';
@@ -178,18 +179,7 @@ export default function WordSoupGame() {
                   onSelectionContinue={ws.handleSelectionContinue}
                   onSelectionEnd={ws.handleSelectionEnd}
                   overlay={
-                    ws.showIntro ? (
-                      <WordSoupIntroOverlay
-                        phase={ws.introPhase}
-                        bubbleText={ws.introBubbleText}
-                        bubbleVisible={ws.introBubbleVisible}
-                        wordRevealIndex={ws.wordRevealIndex}
-                        totalWords={ws.introTotalWords}
-                        countdownValue={ws.introCountdownValue}
-                        solutionWords={ws.solutionWords}
-                        courtSize={courtSize}
-                      />
-                    ) : ws.showGameOverOverlay ? (
+                    ws.showGameOverOverlay ? (
                       <WordSoupGameOverOverlay
                         phase={ws.gameOverPhase}
                         bubbleText={ws.gameOverBubbleText}
@@ -199,6 +189,17 @@ export default function WordSoupGame() {
                         playerColours={ws.playerColours}
                         showReturnButton={ws.showGameOverReturnButton}
                         onReturnToLobby={ws.handleReturnToLobby}
+                        courtSize={courtSize}
+                      />
+                    ) : ws.showIntro ? (
+                      <WordSoupIntroOverlay
+                        phase={ws.introPhase}
+                        bubbleText={ws.introBubbleText}
+                        bubbleVisible={ws.introBubbleVisible}
+                        wordRevealIndex={ws.wordRevealIndex}
+                        totalWords={ws.introTotalWords}
+                        countdownValue={ws.introCountdownValue}
+                        solutionWords={ws.solutionWords}
                         courtSize={courtSize}
                       />
                     ) : null
@@ -212,7 +213,8 @@ export default function WordSoupGame() {
               <SessionActions
                 fillHeight
                 onLeave={ws.handleLeaveClick}
-                onGameOver={ws.handleGameOver}
+                onGameOver={ws.handleGameOverClick}
+                gameOverDisabled={ws.isGameOver || ws.isFinishingGame}
               />
             </div>
 
@@ -240,7 +242,8 @@ export default function WordSoupGame() {
               />
               <SessionActions
                 onLeave={ws.handleLeaveClick}
-                onGameOver={ws.handleGameOver}
+                onGameOver={ws.handleGameOverClick}
+                gameOverDisabled={ws.isGameOver || ws.isFinishingGame}
               />
             </div>
           </div>
@@ -251,6 +254,14 @@ export default function WordSoupGame() {
             onStay={ws.closeAbandonModal}
             onLeave={ws.abandonPlay}
             isLeaving={ws.isAbandoning}
+          />
+        )}
+
+        {ws.showGameOverModal && (
+          <EndGameConfirmModal
+            onCancel={ws.closeGameOverModal}
+            onConfirm={ws.confirmGameOver}
+            isConfirming={ws.isFinishingGame}
           />
         )}
       </div>

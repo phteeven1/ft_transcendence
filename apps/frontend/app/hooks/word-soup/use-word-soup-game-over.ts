@@ -47,10 +47,13 @@ function speechBlockMs(text: string): number {
   return text.length * CHAR_MS + HOLD_AFTER_TYPE_MS;
 }
 
-function buildTimelineSegments(outcome: GameFinishOutcomeDto): TimelineSegment[] {
-  const segments: TimelineSegment[] = [
-    { kind: 'hold', duration: GAME_OVER_COURT_HOLD_MS },
-  ];
+function buildTimelineSegments(
+  outcome: GameFinishOutcomeDto,
+  skipInitialHold = false,
+): TimelineSegment[] {
+  const segments: TimelineSegment[] = skipInitialHold
+    ? []
+    : [{ kind: 'hold', duration: GAME_OVER_COURT_HOLD_MS }];
 
   for (const announcement of buildGameOverAnnouncements(outcome.players)) {
     segments.push({
@@ -154,9 +157,14 @@ const IDLE_FRAME: GameOverFrame = {
 type UseWordSoupGameOverProps = {
   active: boolean;
   outcome: GameFinishOutcomeDto | null;
+  skipInitialHold?: boolean;
 };
 
-export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProps) {
+export function useWordSoupGameOver({
+  active,
+  outcome,
+  skipInitialHold = false,
+}: UseWordSoupGameOverProps) {
   const [frame, setFrame] = useState<GameOverFrame>(IDLE_FRAME);
   const segmentsRef = useRef<TimelineSegment[]>([]);
   const sequenceActive = active && outcome != null;
@@ -164,7 +172,7 @@ export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProp
   useLayoutEffect(() => {
     if (!sequenceActive || !outcome) return;
 
-    segmentsRef.current = buildTimelineSegments(outcome);
+    segmentsRef.current = buildTimelineSegments(outcome, skipInitialHold);
 
     let rafId = 0;
     let cancelled = false;
@@ -196,7 +204,7 @@ export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProp
       window.cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [sequenceActive, outcome]);
+  }, [sequenceActive, outcome, skipInitialHold]);
 
   const displayFrame = sequenceActive ? frame : IDLE_FRAME;
   const displayedText = displayFrame.bubbleText.slice(0, displayFrame.typedLength);

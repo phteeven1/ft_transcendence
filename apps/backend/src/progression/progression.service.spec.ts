@@ -217,6 +217,38 @@ describe('ProgressionService', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
+  it('returns finish standings with zero XP when progression was skipped', async () => {
+    gameFindUnique.mockResolvedValue({
+      id: 1,
+      isFinished: true,
+      progressionAppliedAt: null,
+      gamePlayers: [
+        { playerId: 10, score: 4, player: { id: 10, name: 'Player A' } },
+        { playerId: 11, score: 7, player: { id: 11, name: 'Player B' } },
+      ],
+    });
+
+    const outcome = await service.getUnrewardedFinishOutcome(1);
+
+    expect(outcome?.players).toEqual([
+      {
+        playerId: 10,
+        playerName: 'Player A',
+        score: 4,
+        xpAwarded: 0,
+        isWinner: false,
+      },
+      {
+        playerId: 11,
+        playerName: 'Player B',
+        score: 7,
+        xpAwarded: 0,
+        isWinner: true,
+      },
+    ]);
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
   it('ranks leaderboard entries by XP', async () => {
     const playerFindMany = jest.fn().mockResolvedValue([
       {

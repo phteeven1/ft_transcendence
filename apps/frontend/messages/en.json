@@ -521,6 +521,12 @@
       "leaveGame": "Leave game",
       "message": "If you leave now, your play session will end immediately. You will not be able to join again — a parent must start a new session for you."
     },
+    "endGame": {
+      "title": "End this game?",
+      "message": "The game will end immediately for all players. If the puzzle is not finished yet, no XP will be awarded.",
+      "cancel": "Keep playing",
+      "confirm": "End game"
+    },
     "wordBuilding": {
       "defaultName": "Word Building",
       "generating": "Generating crossword…",

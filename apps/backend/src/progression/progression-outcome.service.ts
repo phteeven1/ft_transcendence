@@ -128,6 +128,22 @@ export class ProgressionOutcomeService {
 
     return outcome;
   }
+
+  /**
+   * Returns score standings for a finished game without XP (early termination).
+   */
+  async getUnrewardedFinishOutcome(
+    gameId: number,
+  ): Promise<GameFinishOutcome | null> {
+    const outcome = await this.getFinishOutcome(gameId);
+    if (!outcome) return null;
+    return {
+      players: outcome.players.map((player) => ({
+        ...player,
+        xpAwarded: 0,
+      })),
+    };
+  }
 }
 
 function toPlayerOutcome(
