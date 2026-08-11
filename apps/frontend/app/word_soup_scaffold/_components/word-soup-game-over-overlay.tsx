@@ -4,6 +4,7 @@ import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import type { GameOverPhase } from '@/app/hooks/word-soup/use-word-soup-game-over';
 import SoupHostCharacter from './soup-host-character';
 import type { CourtSize } from './court-size';
+import { getOverlayScale, type OverlayScale } from './overlay-scale';
 
 type WordSoupGameOverOverlayProps = {
   phase: GameOverPhase;
@@ -20,25 +21,27 @@ type WordSoupGameOverOverlayProps = {
 function SpeechBubble({
   text,
   visible,
-  compact,
+  scale,
 }: {
   text: string;
   visible: boolean;
-  compact?: boolean;
+  scale: OverlayScale;
 }) {
   return (
     <div
       className={[
-        'word-soup-intro-bubble relative w-full rounded-[1.75rem] border-[3px] border-teal-700 bg-white shadow-[4px_6px_0_rgba(15,118,110,0.25)] transition-all duration-300',
-        compact ? 'max-w-[min(100%,16rem)] px-3 py-2.5' : 'max-w-[min(100%,22rem)] px-5 py-4',
-        visible ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-2 scale-95 opacity-0',
+        'word-soup-intro-bubble relative mx-auto flex w-full items-center justify-center rounded-[1.75rem] border-[3px] border-teal-700 bg-white shadow-[4px_6px_0_rgba(15,118,110,0.25)] transition-opacity duration-300',
+        scale.bubbleMaxWidthClass,
+        scale.bubblePadClass,
+        scale.outroBubbleHeightClass,
+        visible ? 'opacity-100' : 'pointer-events-none opacity-0',
       ].join(' ')}
       aria-hidden={!visible}
     >
       <p
         className={[
-          'min-h-[1.5em] text-center font-bold leading-snug text-teal-950 break-words whitespace-pre-wrap',
-          compact ? 'text-sm' : 'text-base sm:text-lg',
+          'line-clamp-3 w-full text-center font-bold leading-snug text-teal-950 break-words whitespace-pre-wrap',
+          scale.bubbleTextClass,
         ].join(' ')}
         aria-live="polite"
         aria-atomic="true"
@@ -61,6 +64,87 @@ function SpeechBubble({
   );
 }
 
+function ScorePanel({
+  scale,
+  revealedPlayerIds,
+  playersById,
+  playerColours,
+}: {
+  scale: OverlayScale;
+  revealedPlayerIds: number[];
+  playersById: Record<number, GameFinishPlayerOutcomeDto>;
+  playerColours: Record<number, string>;
+}) {
+  return (
+    <div
+      className={[
+        'w-full rounded-2xl border border-white/15 bg-white/10 shadow-inner backdrop-blur-sm',
+        scale.bubbleMaxWidthClass,
+        scale.scorePadClass,
+      ].join(' ')}
+    >
+      <h3
+        className={[
+          'text-center font-semibold uppercase text-teal-100/85',
+          scale.labelClass,
+        ].join(' ')}
+      >
+        Final scores
+      </h3>
+      <ul className="mt-1.5 space-y-1 sm:mt-2 sm:space-y-1.5">
+        {revealedPlayerIds.length === 0 ? (
+          <li
+            className={[
+              'rounded-xl border border-dashed border-white/20 px-2 py-2 text-center text-teal-100/70',
+              scale.bubbleTextClass,
+            ].join(' ')}
+          >
+            Scores coming up…
+          </li>
+        ) : (
+          revealedPlayerIds.map((playerId) => {
+            const player = playersById[playerId];
+            if (!player) return null;
+            const colour = playerColours[playerId] ?? '#5EEAD4';
+            return (
+              <li
+                key={playerId}
+                className={[
+                  'word-soup-game-over-score-row flex items-center rounded-xl border border-white/20 bg-white/95 shadow-sm',
+                  scale.scoreRowClass,
+                ].join(' ')}
+              >
+                <SoupHostCharacter
+                  clothesColor={colour}
+                  className={`${scale.scoreAvatarClass} shrink-0`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={[
+                      'truncate font-semibold text-teal-950',
+                      scale.bubbleTextClass,
+                    ].join(' ')}
+                  >
+                    {player.playerName}
+                  </p>
+                  <p className={`${scale.labelClass} normal-case tracking-normal text-teal-800/80`}>
+                    {player.score} pts · +{player.xpAwarded} XP
+                  </p>
+                </div>
+                {player.isWinner && (
+                  <span className="shrink-0 text-sm sm:text-base" aria-label="Winner">
+                    🏆
+                  </span>
+                )}
+              </li>
+            );
+          })
+        )}
+      </ul>
+    </div>
+  );
+}
+
 export default function WordSoupGameOverOverlay({
   phase,
   bubbleText,
@@ -73,11 +157,11 @@ export default function WordSoupGameOverOverlay({
   courtSize = 'L',
 }: WordSoupGameOverOverlayProps) {
   const isClosing = phase === 'closing' || phase === 'closing-gap';
-  const compact = courtSize === 'S';
+  const scale = getOverlayScale(courtSize);
 
   return (
     <div
-      className="word-soup-intro-overlay absolute inset-0 z-30 flex flex-col items-center justify-start overflow-y-auto overscroll-contain rounded-2xl bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 px-2 py-2 backdrop-blur-md sm:justify-center sm:px-4 sm:py-4"
+      className="word-soup-intro-overlay absolute inset-0 z-30 overflow-hidden rounded-2xl bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="word-soup-game-over-title"
@@ -86,130 +170,82 @@ export default function WordSoupGameOverOverlay({
         Game over results
       </h2>
 
+      {/*
+        Same relative stack on S/M/L:
+        (bubble+host) → scrollable scores → pinned return button.
+        Bubble and host are one group (no flex-gap) so the tail points at the host.
+      */}
       <div
         className={[
-          'flex w-full max-w-3xl flex-col items-stretch',
-          compact ? 'gap-2' : 'gap-4 sm:gap-5',
+          'flex h-full w-full flex-col items-center',
+          scale.overlayPadClass,
+          scale.stackGapClass,
         ].join(' ')}
       >
-        <div
-          className={[
-            'flex flex-col items-center',
-            compact
-              ? 'gap-2'
-              : 'gap-4 sm:flex-row sm:items-end sm:justify-center sm:gap-6',
-          ].join(' ')}
-        >
+        <div className="flex w-full shrink-0 flex-col items-center">
           <div
             className={[
-              'flex flex-col items-center',
-              compact ? 'gap-2' : 'gap-4 sm:min-w-0 sm:flex-1',
+              'relative z-10 w-full',
+              scale.bubbleMaxWidthClass,
+              scale.bubbleTailPadClass,
             ].join(' ')}
           >
-            <SpeechBubble text={bubbleText} visible={bubbleVisible} compact={compact} />
-            <SoupHostCharacter
-              animated
-              className={compact ? 'h-14 w-14' : 'h-24 w-24 sm:h-32 sm:w-32'}
+            <SpeechBubble
+              text={bubbleText}
+              visible={bubbleVisible}
+              scale={scale}
             />
           </div>
-
-          <div className={compact ? 'w-full' : 'w-full sm:max-w-xs sm:flex-1'}>
-            <div
-              className={[
-                'rounded-2xl border border-white/15 bg-white/10 shadow-inner backdrop-blur-sm',
-                compact ? 'p-2' : 'p-3 sm:p-4',
-              ].join(' ')}
-            >
-              <h3
-                className={[
-                  'text-center font-semibold uppercase text-teal-100/85',
-                  compact ? 'text-[10px] tracking-[0.16em]' : 'text-xs tracking-[0.22em]',
-                ].join(' ')}
-              >
-                Final scores
-              </h3>
-              <ul className={compact ? 'mt-2 space-y-1.5' : 'mt-3 space-y-2'}>
-                {revealedPlayerIds.length === 0 ? (
-                  <li
-                    className={[
-                      'rounded-xl border border-dashed border-white/20 text-center text-teal-100/70',
-                      compact ? 'px-2 py-2 text-xs' : 'px-3 py-4 text-sm',
-                    ].join(' ')}
-                  >
-                    Scores coming up…
-                  </li>
-                ) : (
-                  revealedPlayerIds.map((playerId) => {
-                    const player = playersById[playerId];
-                    if (!player) return null;
-                    const colour = playerColours[playerId] ?? '#5EEAD4';
-                    return (
-                      <li
-                        key={playerId}
-                        className={[
-                          'word-soup-game-over-score-row flex items-center rounded-xl border border-white/20 bg-white/95 shadow-sm',
-                          compact ? 'gap-2 px-2 py-1.5' : 'gap-3 px-3 py-2.5',
-                        ].join(' ')}
-                      >
-                        <SoupHostCharacter
-                          clothesColor={colour}
-                          className={compact ? 'h-8 w-8 shrink-0' : 'h-10 w-10 shrink-0'}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={[
-                              'truncate font-semibold text-teal-950',
-                              compact ? 'text-xs' : 'text-sm',
-                            ].join(' ')}
-                          >
-                            {player.playerName}
-                          </p>
-                          <p className={compact ? 'text-[10px] text-teal-800/80' : 'text-xs text-teal-800/80'}>
-                            {player.score} pts · +{player.xpAwarded} XP
-                          </p>
-                        </div>
-                        {player.isWinner && (
-                          <span
-                            className={compact ? 'shrink-0 text-sm' : 'shrink-0 text-lg'}
-                            aria-label="Winner"
-                          >
-                            🏆
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })
-                )}
-              </ul>
-            </div>
+          <div className="relative z-0 shrink-0">
+            <SoupHostCharacter animated className={scale.hostClass} />
           </div>
         </div>
 
-        {showReturnButton && (
-          <div className="flex justify-center">
+        <div className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto overscroll-contain">
+          <ScorePanel
+            scale={scale}
+            revealedPlayerIds={revealedPlayerIds}
+            playersById={playersById}
+            playerColours={playerColours}
+          />
+        </div>
+
+        <div className="flex w-full shrink-0 flex-col items-center justify-center">
+          {showReturnButton ? (
             <button
               type="button"
               onClick={onReturnToLobby}
               className={[
                 'rounded-full bg-emerald-500 font-semibold text-white shadow-[0_4px_0_#047857] transition hover:bg-emerald-400 active:translate-y-0.5 active:shadow-none',
-                compact ? 'px-4 py-2 text-xs' : 'px-6 py-2.5 text-sm',
+                scale.buttonClass,
               ].join(' ')}
             >
               Return to lobby
             </button>
-          </div>
-        )}
-
-        {isClosing && !showReturnButton && (
-          <p
-            className={[
-              'text-center font-medium uppercase text-teal-100/70',
-              compact ? 'text-[10px] tracking-[0.14em]' : 'text-xs tracking-[0.18em]',
-            ].join(' ')}
-          >
-            Almost done…
-          </p>
-        )}
+          ) : isClosing ? (
+            <p
+              className={[
+                'text-center font-medium uppercase text-teal-100/70',
+                scale.labelClass,
+              ].join(' ')}
+            >
+              Almost done…
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled
+              tabIndex={-1}
+              aria-hidden
+              className={[
+                'invisible rounded-full font-semibold',
+                scale.buttonClass,
+              ].join(' ')}
+            >
+              Return to lobby
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

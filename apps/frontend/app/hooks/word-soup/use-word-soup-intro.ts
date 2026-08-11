@@ -14,6 +14,8 @@ export type IntroPhase =
   | 'words-intro-gap'
   | 'word'
   | 'word-gap'
+  | 'lets-go'
+  | 'lets-go-gap'
   | 'countdown'
   | 'done';
 
@@ -41,6 +43,7 @@ const GO_HOLD_MS = 900;
 const WELCOME_TEXT = 'Welcome to Word Soup!';
 const BRIEFING_TEXT = 'In this game, you have to find words in the grid.';
 const WORDS_INTRO_TEXT = 'Here are the words...';
+const LETS_GO_TEXT = "OK, let's go!";
 
 const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
 
@@ -133,6 +136,15 @@ function getIntroFrameAt(elapsedMs: number, solutionWords: string[]): IntroFrame
     hit = runSpeech('word', 'word-gap', word, WORD_CHAR_MS, index);
     if (hit) return hit;
   }
+
+  hit = runSpeech(
+    'lets-go',
+    'lets-go-gap',
+    LETS_GO_TEXT,
+    CHAR_MS,
+    Math.max(0, solutionWords.length - 1),
+  );
+  if (hit) return hit;
 
   const countdownSteps: Array<{ value: IntroCountdownValue; hold: number }> = [
     { value: 3, hold: COUNTDOWN_STEP_MS },

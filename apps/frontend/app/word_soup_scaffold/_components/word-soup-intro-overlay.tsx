@@ -4,10 +4,8 @@ import { useLayoutEffect, useState } from 'react';
 import type { IntroCountdownValue, IntroPhase } from '@/app/hooks/word-soup/use-word-soup-intro';
 import SoupHostCharacter from './soup-host-character';
 import type { CourtSize } from './court-size';
-import {
-  introBubbleHorizontalInset,
-  longestSolutionWord,
-} from './intro-bubble-width';
+import { longestSolutionWord } from './intro-bubble-width';
+import { getOverlayScale } from './overlay-scale';
 
 type WordSoupIntroOverlayProps = {
   phase: IntroPhase;
@@ -20,53 +18,41 @@ type WordSoupIntroOverlayProps = {
   courtSize?: CourtSize;
 };
 
-function wordPhaseTypographyClass(compact: boolean, useSmSize: boolean): string {
-  if (compact) {
-    return 'text-xl tracking-[0.1em]';
-  }
-  return useSmSize
-    ? 'text-3xl tracking-[0.12em]'
-    : 'text-2xl tracking-[0.12em]';
-}
-
 function SpeechBubble({
   text,
   visible,
   emphasize,
-  compact,
-  minWidthPx,
+  scale,
+  wordScale,
 }: {
   text: string;
   visible: boolean;
   emphasize?: boolean;
-  compact?: boolean;
-  minWidthPx?: number;
+  scale: ReturnType<typeof getOverlayScale>;
+  wordScale: number;
 }) {
-  const defaultMaxClass = compact ? 'max-w-[min(100%,16rem)]' : 'max-w-[min(100%,22rem)]';
-
   return (
     <div
       className={[
-        'word-soup-intro-bubble relative rounded-[1.75rem] border-[3px] border-teal-700 bg-white shadow-[4px_6px_0_rgba(15,118,110,0.25)] transition-all duration-300',
-        minWidthPx ? 'w-max max-w-full' : `w-full ${defaultMaxClass}`,
-        compact ? 'px-3 py-2.5' : 'px-5 py-4',
-        visible ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-2 scale-95 opacity-0',
+        'word-soup-intro-bubble relative mx-auto w-full rounded-[1.75rem] border-[3px] border-teal-700 bg-white shadow-[4px_6px_0_rgba(15,118,110,0.25)] transition-opacity duration-300',
+        scale.bubbleMaxWidthClass,
+        scale.bubblePadClass,
+        visible ? 'opacity-100' : 'pointer-events-none opacity-0',
       ].join(' ')}
-      style={minWidthPx ? { minWidth: `${minWidthPx}px` } : undefined}
       aria-hidden={!visible}
     >
       <p
         className={[
           'min-h-[1.5em] text-center font-bold leading-snug text-teal-950',
-          emphasize ? 'whitespace-nowrap' : 'break-words whitespace-pre-wrap',
           emphasize
-            ? compact
-              ? 'text-xl tracking-[0.1em]'
-              : 'text-2xl tracking-[0.12em] sm:text-3xl'
-            : compact
-              ? 'text-sm'
-              : 'text-base sm:text-lg',
+            ? `whitespace-nowrap ${scale.bubbleWordTextClass}`
+            : `break-words whitespace-pre-wrap ${scale.bubbleTextClass}`,
         ].join(' ')}
+        style={
+          emphasize && wordScale < 1
+            ? { transform: `scale(${wordScale})`, transformOrigin: 'center' }
+            : undefined
+        }
         aria-live="polite"
         aria-atomic="true"
       >
@@ -88,37 +74,99 @@ function SpeechBubble({
   );
 }
 
-function useIntroBubbleMinWidth(
+function CountdownBubble({
+  value,
+  scale,
+}: {
+  value: IntroCountdownValue;
+  scale: ReturnType<typeof getOverlayScale>;
+}) {
+  const isGo = value === 'GO!';
+
+  return (
+    <div
+      key={String(value)}
+      className={[
+        'word-soup-intro-countdown word-soup-intro-bubble relative mx-auto flex w-full flex-col items-center justify-center rounded-[1.75rem] border-[3px] border-teal-700 bg-white shadow-[4px_6px_0_rgba(15,118,110,0.25)]',
+        scale.countdownMaxWidthClass,
+        scale.countdownPadClass,
+        scale.countdownHeightClass,
+      ].join(' ')}
+    >
+      <p
+        className={[
+          'text-center font-semibold uppercase text-teal-800/80',
+          scale.labelClass,
+          isGo ? 'invisible' : '',
+        ].join(' ')}
+      >
+        Starting in
+      </p>
+      <p
+        className={[
+          'text-center font-black tabular-nums text-teal-950',
+          isGo ? scale.countdownGoClass : scale.countdownNumberClass,
+        ].join(' ')}
+      >
+        {value}
+      </p>
+      <span
+        className="absolute left-1/2 top-full -mt-px -translate-x-1/2"
+        aria-hidden="true"
+      >
+        <span className="block h-0 w-0 border-x-[14px] border-t-[16px] border-x-transparent border-t-teal-700" />
+        <span className="absolute left-1/2 top-0 -translate-x-1/2 border-x-[11px] border-t-[13px] border-x-transparent border-t-white" />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Scale word-announcement text so the longest vocabulary word fits inside the
+ * available bubble width (no horizontal scrollbar on S).
+ */
+function useWordFitScale(
   longestWord: string,
-  compact: boolean,
+  typographyClass: string,
+  insetPx: number,
 ): {
-  minWidthPx: number | undefined;
+  wordScale: number;
+  setSlotEl: (el: HTMLDivElement | null) => void;
+  measureClassName: string;
   setMeasureEl: (el: HTMLSpanElement | null) => void;
-  useSmSize: boolean;
 } {
-  const [minWidthPx, setMinWidthPx] = useState<number | undefined>();
-  const [useSmSize, setUseSmSize] = useState(false);
+  const [wordScale, setWordScale] = useState(1);
+  const [slotEl, setSlotEl] = useState<HTMLDivElement | null>(null);
   const [measureEl, setMeasureEl] = useState<HTMLSpanElement | null>(null);
 
   useLayoutEffect(() => {
-    if (typeof window === 'undefined') return;
-    const media = window.matchMedia('(min-width: 640px)');
-    const sync = () => setUseSmSize(media.matches);
-    sync();
-    media.addEventListener('change', sync);
-    return () => media.removeEventListener('change', sync);
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!longestWord || !measureEl) {
-      setMinWidthPx(undefined);
+    if (!longestWord || !slotEl || !measureEl) {
+      setWordScale(1);
       return;
     }
-    const textWidth = measureEl.getBoundingClientRect().width;
-    setMinWidthPx(Math.ceil(textWidth + introBubbleHorizontalInset(compact)));
-  }, [longestWord, compact, useSmSize, measureEl]);
 
-  return { minWidthPx, setMeasureEl, useSmSize };
+    const update = () => {
+      const available = Math.max(0, slotEl.clientWidth - insetPx);
+      const needed = measureEl.getBoundingClientRect().width;
+      if (needed <= 0 || available <= 0) {
+        setWordScale(1);
+        return;
+      }
+      setWordScale(Math.min(1, available / needed));
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(slotEl);
+    return () => observer.disconnect();
+  }, [longestWord, typographyClass, insetPx, slotEl, measureEl]);
+
+  return {
+    wordScale,
+    setSlotEl,
+    measureClassName: typographyClass,
+    setMeasureEl,
+  };
 }
 
 export default function WordSoupIntroOverlay({
@@ -133,95 +181,79 @@ export default function WordSoupIntroOverlay({
 }: WordSoupIntroOverlayProps) {
   const isWordPhase = phase === 'word' || phase === 'word-gap';
   const isCountdown = phase === 'countdown';
-  const compact = courtSize === 'S';
+  const scale = getOverlayScale(courtSize);
   const longestWord = longestSolutionWord(solutionWords);
-  const { minWidthPx, setMeasureEl, useSmSize } = useIntroBubbleMinWidth(
+  const { wordScale, setSlotEl, measureClassName, setMeasureEl } = useWordFitScale(
     longestWord,
-    compact,
+    scale.bubbleWordTextClass,
+    scale.bubbleInsetPx,
   );
 
   return (
-    <div className="word-soup-intro-overlay absolute inset-0 z-30 flex flex-col items-center justify-center overflow-x-auto overflow-y-auto overscroll-contain rounded-2xl bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 px-2 py-2 backdrop-blur-md sm:px-4 sm:py-3">
+    <div className="word-soup-intro-overlay absolute inset-0 z-30 overflow-hidden rounded-2xl bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 backdrop-blur-md">
       {longestWord ? (
         <span
           ref={setMeasureEl}
           aria-hidden
           className={[
             'pointer-events-none invisible absolute whitespace-nowrap font-bold',
-            wordPhaseTypographyClass(compact, useSmSize),
+            measureClassName,
           ].join(' ')}
         >
           {longestWord}
         </span>
       ) : null}
 
-      {isCountdown && countdownValue !== null ? (
-        <div
-          key={String(countdownValue)}
-          className={[
-            'word-soup-intro-countdown flex flex-col items-center',
-            compact ? 'gap-1.5' : 'gap-3',
-          ].join(' ')}
-        >
-          <SoupHostCharacter
-            animated
-            className={compact ? 'h-16 w-16' : 'h-28 w-28 sm:h-36 sm:w-36'}
-          />
-          {countdownValue !== 'GO!' && (
-            <p
-              className={[
-                'font-semibold uppercase text-teal-100/85',
-                compact ? 'text-[10px] tracking-[0.16em]' : 'text-sm tracking-[0.22em]',
-              ].join(' ')}
-            >
-              Starting in
-            </p>
-          )}
-          <p
+      {/* Same stacked order on S/M/L: (bubble+host) → footer */}
+      <div
+        className={[
+          'flex h-full w-full flex-col items-center',
+          scale.overlayPadClass,
+          scale.stackGapClass,
+        ].join(' ')}
+      >
+        {/* Bubble + host share one column with no flex-gap so the tail points at the host. */}
+        <div className="flex min-h-0 w-full flex-[1.35] flex-col items-center justify-end">
+          <div
+            ref={setSlotEl}
             className={[
-              'font-black tabular-nums text-white drop-shadow-lg',
-              countdownValue === 'GO!'
-                ? compact
-                  ? 'text-3xl tracking-[0.16em]'
-                  : 'text-5xl tracking-[0.2em] sm:text-6xl'
-                : compact
-                  ? 'text-5xl'
-                  : 'text-7xl sm:text-8xl',
+              'relative z-10 w-full',
+              scale.bubbleMaxWidthClass,
+              scale.bubbleTailPadClass,
             ].join(' ')}
           >
-            {countdownValue}
-          </p>
+            {isCountdown && countdownValue !== null ? (
+              <CountdownBubble value={countdownValue} scale={scale} />
+            ) : (
+              <SpeechBubble
+                text={bubbleText}
+                visible={bubbleVisible}
+                emphasize={isWordPhase}
+                scale={scale}
+                wordScale={wordScale}
+              />
+            )}
+          </div>
+          <div className="relative z-0 shrink-0">
+            <SoupHostCharacter animated className={scale.hostClass} />
+          </div>
         </div>
-      ) : (
-        <div
-          className={[
-            'flex w-full max-w-full flex-col items-center',
-            compact ? 'gap-2' : 'gap-5',
-          ].join(' ')}
-        >
-          <SpeechBubble
-            text={bubbleText}
-            visible={bubbleVisible}
-            emphasize={isWordPhase}
-            compact={compact}
-            minWidthPx={minWidthPx}
-          />
-          <SoupHostCharacter
-            animated
-            className={compact ? 'h-16 w-16' : 'h-28 w-28 sm:h-36 sm:w-36'}
-          />
-          {isWordPhase && totalWords > 0 && (
+
+        <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-start overflow-hidden">
+          {totalWords > 0 ? (
             <p
               className={[
-                'font-semibold uppercase text-teal-100/80',
-                compact ? 'text-[10px] tracking-[0.16em]' : 'text-xs tracking-[0.22em]',
+                'font-semibold uppercase',
+                scale.labelClass,
+                isWordPhase ? 'text-teal-100/80' : 'invisible text-teal-100/80',
               ].join(' ')}
+              aria-hidden={!isWordPhase}
             >
               Word {Math.min(wordRevealIndex + 1, totalWords)} of {totalWords}
             </p>
-          )}
+          ) : null}
         </div>
-      )}
+      </div>
     </div>
   );
 }
