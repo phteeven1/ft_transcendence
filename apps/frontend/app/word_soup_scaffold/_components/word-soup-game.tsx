@@ -105,10 +105,11 @@ export default function WordSoupGame() {
               </div>
             </div>
 
-            {/* Message + court controls — right edge flush with court */}
-            <div className="lg:col-start-2 lg:row-start-1">
+            {/* Message + court controls — right edge flush with court.
+                Banner may expand downward over the court when messages wrap. */}
+            <div className="relative z-20 lg:col-start-2 lg:row-start-1">
               <div
-                className="flex items-center gap-2 sm:gap-3"
+                className="flex items-start gap-2 sm:gap-3"
                 style={{ width: courtWidthPx, maxWidth: '100%' }}
               >
                 <div className="min-w-0 flex-1">
@@ -117,10 +118,12 @@ export default function WordSoupGame() {
                     phase={ws.eventBannerPhase}
                   />
                 </div>
-                <CourtControls
-                  courtSize={courtSize}
-                  onCourtSizeChange={onCourtSizeChange}
-                />
+                <div className="flex h-14 shrink-0 items-center sm:h-16">
+                  <CourtControls
+                    courtSize={courtSize}
+                    onCourtSizeChange={onCourtSizeChange}
+                  />
+                </div>
               </div>
             </div>
 
@@ -157,7 +160,7 @@ export default function WordSoupGame() {
             {/* Court */}
             <div
               ref={frameRef}
-              className="min-w-0 lg:col-start-2 lg:row-start-2"
+              className="relative z-0 min-w-0 lg:col-start-2 lg:row-start-2"
               style={{ maxWidth: MAX_COURT_FRAME_WIDTH }}
             >
               <div style={{ width: courtWidthPx, maxWidth: '100%' }}>
@@ -183,6 +186,8 @@ export default function WordSoupGame() {
                         wordRevealIndex={ws.wordRevealIndex}
                         totalWords={ws.introTotalWords}
                         countdownValue={ws.introCountdownValue}
+                        solutionWords={ws.solutionWords}
+                        courtSize={courtSize}
                       />
                     ) : ws.showGameOverOverlay ? (
                       <WordSoupGameOverOverlay
@@ -194,6 +199,7 @@ export default function WordSoupGame() {
                         playerColours={ws.playerColours}
                         showReturnButton={ws.showGameOverReturnButton}
                         onReturnToLobby={ws.handleReturnToLobby}
+                        courtSize={courtSize}
                       />
                     ) : null
                   }
