@@ -117,6 +117,7 @@ export default function WordSoupGame() {
                   <WordSoupEventBannerView
                     event={ws.eventBanner}
                     phase={ws.eventBannerPhase}
+                    hostTier={ws.localHostTier}
                   />
                 </div>
                 <div className="flex h-14 shrink-0 items-center sm:h-16">
@@ -179,7 +180,17 @@ export default function WordSoupGame() {
                   onSelectionContinue={ws.handleSelectionContinue}
                   onSelectionEnd={ws.handleSelectionEnd}
                   overlay={
-                    ws.showGameOverOverlay ? (
+                    ws.showIntro ? (
+                      <WordSoupIntroOverlay
+                        phase={ws.introPhase}
+                        bubbleText={ws.introBubbleText}
+                        bubbleVisible={ws.introBubbleVisible}
+                        wordRevealIndex={ws.wordRevealIndex}
+                        totalWords={ws.introTotalWords}
+                        countdownValue={ws.introCountdownValue}
+                        hostTier={ws.localHostTier}
+                      />
+                    ) : ws.showGameOverOverlay ? (
                       <WordSoupGameOverOverlay
                         phase={ws.gameOverPhase}
                         bubbleText={ws.gameOverBubbleText}
@@ -187,6 +198,12 @@ export default function WordSoupGame() {
                         revealedPlayerIds={ws.gameOverRevealedPlayerIds}
                         playersById={ws.gameOverPlayersById}
                         playerColours={ws.playerColours}
+                        playerAvatarTiers={ws.playerAvatarTiers}
+                        playerAvatarAnimals={ws.playerAvatarAnimals}
+                        hostTier={ws.localHostTier}
+                        hostAnimal={ws.localHostAnimal}
+                        localPlayerId={playerId}
+                        newlyUnlockedTier={ws.newlyUnlockedTier}
                         showReturnButton={ws.showGameOverReturnButton}
                         onReturnToLobby={ws.handleReturnToLobby}
                         courtSize={courtSize}

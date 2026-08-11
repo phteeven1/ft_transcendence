@@ -1,7 +1,10 @@
 'use client';
 
 import { useLayoutEffect, useState } from 'react';
-import type { IntroCountdownValue, IntroPhase } from '@/app/hooks/word-soup/use-word-soup-intro';
+import type {
+  IntroCountdownValue,
+  IntroPhase,
+} from '@/app/hooks/word-soup/use-word-soup-intro';
 import SoupHostCharacter from './soup-host-character';
 import type { CourtSize } from './court-size';
 import { longestSolutionWord } from './intro-bubble-width';
@@ -15,6 +18,8 @@ type WordSoupIntroOverlayProps = {
   totalWords: number;
   countdownValue: IntroCountdownValue;
   solutionWords: string[];
+  hostTier?: number;
+  hostAnimal?: number;
   courtSize?: CourtSize;
 };
 
@@ -50,7 +55,10 @@ function SpeechBubble({
         ].join(' ')}
         style={
           emphasize && wordScale < 1
-            ? { transform: `scale(${wordScale})`, transformOrigin: 'center' }
+            ? {
+                transform: `scale(${wordScale})`,
+                transformOrigin: 'center',
+              }
             : undefined
         }
         aria-live="polite"
@@ -63,6 +71,7 @@ function SpeechBubble({
           </span>
         )}
       </p>
+
       <span
         className="absolute left-1/2 top-full -mt-px -translate-x-1/2"
         aria-hidden="true"
@@ -102,6 +111,7 @@ function CountdownBubble({
       >
         Starting in
       </p>
+
       <p
         className={[
           'text-center font-black tabular-nums text-teal-950',
@@ -110,6 +120,7 @@ function CountdownBubble({
       >
         {value}
       </p>
+
       <span
         className="absolute left-1/2 top-full -mt-px -translate-x-1/2"
         aria-hidden="true"
@@ -148,16 +159,20 @@ function useWordFitScale(
     const update = () => {
       const available = Math.max(0, slotEl.clientWidth - insetPx);
       const needed = measureEl.getBoundingClientRect().width;
+
       if (needed <= 0 || available <= 0) {
         setWordScale(1);
         return;
       }
+
       setWordScale(Math.min(1, available / needed));
     };
 
     update();
+
     const observer = new ResizeObserver(update);
     observer.observe(slotEl);
+
     return () => observer.disconnect();
   }, [longestWord, typographyClass, insetPx, slotEl, measureEl]);
 
@@ -176,14 +191,23 @@ export default function WordSoupIntroOverlay({
   wordRevealIndex,
   totalWords,
   countdownValue,
-  solutionWords,
+  solutionWords = [],
+  hostTier = 0,
+  hostAnimal = 0,
   courtSize = 'L',
 }: WordSoupIntroOverlayProps) {
   const isWordPhase = phase === 'word' || phase === 'word-gap';
   const isCountdown = phase === 'countdown';
+
   const scale = getOverlayScale(courtSize);
   const longestWord = longestSolutionWord(solutionWords);
-  const { wordScale, setSlotEl, measureClassName, setMeasureEl } = useWordFitScale(
+
+  const {
+    wordScale,
+    setSlotEl,
+    measureClassName,
+    setMeasureEl,
+  } = useWordFitScale(
     longestWord,
     scale.bubbleWordTextClass,
     scale.bubbleInsetPx,
@@ -204,7 +228,13 @@ export default function WordSoupIntroOverlay({
         </span>
       ) : null}
 
-      {/* Same stacked order on S/M/L: (bubble+host) → footer */}
+      {/*
+        Same stacked order on S/M/L:
+        (bubble + host) → footer.
+
+        Bubble and host share one column with no flex-gap so the
+        speech-bubble tail remains aligned with the character.
+      */}
       <div
         className={[
           'flex h-full w-full flex-col items-center',
@@ -212,7 +242,6 @@ export default function WordSoupIntroOverlay({
           scale.stackGapClass,
         ].join(' ')}
       >
-        {/* Bubble + host share one column with no flex-gap so the tail points at the host. */}
         <div className="flex min-h-0 w-full flex-[1.35] flex-col items-center justify-end">
           <div
             ref={setSlotEl}
@@ -223,7 +252,10 @@ export default function WordSoupIntroOverlay({
             ].join(' ')}
           >
             {isCountdown && countdownValue !== null ? (
-              <CountdownBubble value={countdownValue} scale={scale} />
+              <CountdownBubble
+                value={countdownValue}
+                scale={scale}
+              />
             ) : (
               <SpeechBubble
                 text={bubbleText}
@@ -234,8 +266,15 @@ export default function WordSoupIntroOverlay({
               />
             )}
           </div>
+
           <div className="relative z-0 shrink-0">
-            <SoupHostCharacter animated className={scale.hostClass} />
+            <SoupHostCharacter
+              animated
+              theme="animals"
+              tier={hostTier}
+              animal={hostAnimal}
+              className={scale.hostClass}
+            />
           </div>
         </div>
 
@@ -245,7 +284,9 @@ export default function WordSoupIntroOverlay({
               className={[
                 'font-semibold uppercase',
                 scale.labelClass,
-                isWordPhase ? 'text-teal-100/80' : 'invisible text-teal-100/80',
+                isWordPhase
+                  ? 'text-teal-100/80'
+                  : 'invisible text-teal-100/80',
               ].join(' ')}
               aria-hidden={!isWordPhase}
             >

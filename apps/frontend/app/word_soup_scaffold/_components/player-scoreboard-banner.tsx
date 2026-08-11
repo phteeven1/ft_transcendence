@@ -1,12 +1,12 @@
 'use client';
 
-import type { Player } from '@/app/types';
+import type { GameRosterPlayerDto } from '@/lib/api/games';
 import SoupHostCharacter from './soup-host-character';
 
 type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
 
 type PlayerScoreboardBannerProps = {
-  players: Player[];
+  players: GameRosterPlayerDto[];
   localPlayerId: number;
   playerColours: Record<number, string>;
   playerScores: Record<number, number>;
@@ -183,7 +183,11 @@ export default function PlayerScoreboardBanner({
             )}
 
             <SoupHostCharacter
+              theme="animals"
               clothesColor={colour}
+              tier={player.avatarTier ?? 0}
+              animal={player.avatarAnimal ?? 0}
+              size="thumb"
               className="relative z-10 h-8 w-8 shrink-0 sm:h-9 sm:w-9"
               title={`${player.name} avatar`}
             />

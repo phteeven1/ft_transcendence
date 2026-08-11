@@ -99,9 +99,14 @@ export function ProgressionRecentGamesList({
               {formatEndedAt(game.endedAt)}
             </p>
           </div>
-          <span className="shrink-0 font-semibold text-teal-800">
-            {t('scoreValue', { score: game.score })}
-          </span>
+          <div className="shrink-0 text-right">
+            <p className="font-semibold tabular-nums text-teal-800">
+              {t('scoreValue', { score: game.score })}
+            </p>
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {t('xpValue', { xp: game.xpAwarded })}
+            </p>
+          </div>
         </li>
       ))}
     </ul>

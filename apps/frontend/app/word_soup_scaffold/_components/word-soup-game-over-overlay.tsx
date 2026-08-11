@@ -1,6 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
+import { AVATAR_TIERS } from '@/lib/api/progression';
+import { clearPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import type { GameOverPhase } from '@/app/hooks/word-soup/use-word-soup-game-over';
 import SoupHostCharacter from './soup-host-character';
 import type { CourtSize } from './court-size';
@@ -10,9 +14,19 @@ type WordSoupGameOverOverlayProps = {
   phase: GameOverPhase;
   bubbleText: string;
   bubbleVisible: boolean;
+
   revealedPlayerIds: number[];
   playersById: Record<number, GameFinishPlayerOutcomeDto>;
   playerColours: Record<number, string>;
+  localPlayerId: number;
+
+  // Avatar customisation
+  playerAvatarTiers?: Record<number, number>;
+  playerAvatarAnimals?: Record<number, number>;
+  hostTier?: number;
+  hostAnimal?: number;
+  newlyUnlockedTier?: number | null;
+
   showReturnButton: boolean;
   onReturnToLobby: () => void;
   courtSize?: CourtSize;
@@ -40,7 +54,7 @@ function SpeechBubble({
     >
       <p
         className={[
-          'line-clamp-3 w-full text-center font-bold leading-snug text-teal-950 break-words whitespace-pre-wrap',
+          'line-clamp-3 w-full break-words whitespace-pre-wrap text-center font-bold leading-snug text-teal-950',
           scale.bubbleTextClass,
         ].join(' ')}
         aria-live="polite"
@@ -53,6 +67,7 @@ function SpeechBubble({
           </span>
         )}
       </p>
+
       <span
         className="absolute left-1/2 top-full -mt-px -translate-x-1/2"
         aria-hidden="true"
@@ -69,11 +84,15 @@ function ScorePanel({
   revealedPlayerIds,
   playersById,
   playerColours,
+  playerAvatarTiers,
+  playerAvatarAnimals,
 }: {
   scale: OverlayScale;
   revealedPlayerIds: number[];
   playersById: Record<number, GameFinishPlayerOutcomeDto>;
   playerColours: Record<number, string>;
+  playerAvatarTiers: Record<number, number>;
+  playerAvatarAnimals: Record<number, number>;
 }) {
   return (
     <div
@@ -91,6 +110,7 @@ function ScorePanel({
       >
         Final scores
       </h3>
+
       <ul className="mt-1.5 space-y-1 sm:mt-2 sm:space-y-1.5">
         {revealedPlayerIds.length === 0 ? (
           <li
@@ -105,7 +125,11 @@ function ScorePanel({
           revealedPlayerIds.map((playerId) => {
             const player = playersById[playerId];
             if (!player) return null;
+
             const colour = playerColours[playerId] ?? '#5EEAD4';
+            const tier = playerAvatarTiers[playerId] ?? 0;
+            const animal = playerAvatarAnimals[playerId] ?? 0;
+
             return (
               <li
                 key={playerId}
@@ -115,9 +139,13 @@ function ScorePanel({
                 ].join(' ')}
               >
                 <SoupHostCharacter
+                  theme="animals"
                   clothesColor={colour}
+                  tier={tier}
+                  animal={animal}
                   className={`${scale.scoreAvatarClass} shrink-0`}
                 />
+
                 <div className="min-w-0 flex-1">
                   <p
                     className={[
@@ -127,12 +155,19 @@ function ScorePanel({
                   >
                     {player.playerName}
                   </p>
-                  <p className={`${scale.labelClass} normal-case tracking-normal text-teal-800/80`}>
+
+                  <p
+                    className={`${scale.labelClass} normal-case tracking-normal text-teal-800/80`}
+                  >
                     {player.score} pts · +{player.xpAwarded} XP
                   </p>
                 </div>
+
                 {player.isWinner && (
-                  <span className="shrink-0 text-sm sm:text-base" aria-label="Winner">
+                  <span
+                    className="shrink-0 text-sm sm:text-base"
+                    aria-label="Winner"
+                  >
                     🏆
                   </span>
                 )}
@@ -145,19 +180,43 @@ function ScorePanel({
   );
 }
 
+function resolveTierLabel(tier: number): string {
+  return (
+    AVATAR_TIERS.find((entry) => entry.tier === tier)?.label ?? `Tier ${tier}`
+  );
+}
+
 export default function WordSoupGameOverOverlay({
   phase,
   bubbleText,
   bubbleVisible,
   revealedPlayerIds,
   playersById,
+  localPlayerId,
   playerColours,
+  playerAvatarTiers = {},
+  playerAvatarAnimals = {},
+  hostTier = 0,
+  hostAnimal = 0,
+  newlyUnlockedTier = null,
   showReturnButton,
   onReturnToLobby,
   courtSize = 'L',
 }: WordSoupGameOverOverlayProps) {
+  const t = useTranslations('games.lobby.progression');
+
   const isClosing = phase === 'closing' || phase === 'closing-gap';
   const scale = getOverlayScale(courtSize);
+
+  const unlockTier =
+    typeof newlyUnlockedTier === 'number' ? newlyUnlockedTier : null;
+
+  useEffect(() => {
+    if (unlockTier === null) return;
+
+    // Shown in-game — avoid a second toast when returning to the lobby.
+    clearPendingAvatarUnlock(localPlayerId);
+  }, [unlockTier, localPlayerId]);
 
   return (
     <div
@@ -170,10 +229,37 @@ export default function WordSoupGameOverOverlay({
         Game over results
       </h2>
 
+      {unlockTier !== null && (
+        <div
+          className="absolute left-1/2 top-3 z-30 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50/95 px-4 py-3 text-teal-950 shadow-lg sm:top-4"
+          role="status"
+          aria-live="polite"
+        >
+          <SoupHostCharacter
+            theme="animals"
+            tier={unlockTier}
+            animal={hostAnimal}
+            size="default"
+            className="shrink-0"
+          />
+
+          <div className="min-w-0">
+            <p className="text-sm font-bold">{t('unlockToastTitle')}</p>
+            <p className="text-xs text-teal-900/80">
+              {t('unlockToastBody', {
+                label: resolveTierLabel(unlockTier),
+              })}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/*
         Same relative stack on S/M/L:
-        (bubble+host) → scrollable scores → pinned return button.
-        Bubble and host are one group (no flex-gap) so the tail points at the host.
+        (bubble + host) → scrollable scores → pinned return button.
+
+        Bubble and host remain one group so the speech-bubble tail
+        stays aligned with the character.
       */}
       <div
         className={[
@@ -196,8 +282,15 @@ export default function WordSoupGameOverOverlay({
               scale={scale}
             />
           </div>
+
           <div className="relative z-0 shrink-0">
-            <SoupHostCharacter animated className={scale.hostClass} />
+            <SoupHostCharacter
+              animated
+              theme="animals"
+              tier={hostTier}
+              animal={hostAnimal}
+              className={scale.hostClass}
+            />
           </div>
         </div>
 
@@ -207,6 +300,8 @@ export default function WordSoupGameOverOverlay({
             revealedPlayerIds={revealedPlayerIds}
             playersById={playersById}
             playerColours={playerColours}
+            playerAvatarTiers={playerAvatarTiers}
+            playerAvatarAnimals={playerAvatarAnimals}
           />
         </div>
 

@@ -129,6 +129,7 @@ export function ProgressionLeaderboardTable({
                     <div className="flex min-w-0 items-center gap-2">
                       <AvatarTierThumb
                         tier={entry.avatarTier}
+                        animal={entry.avatarAnimal}
                         className="!h-8 !w-8"
                       />
                       <div className="min-w-0">

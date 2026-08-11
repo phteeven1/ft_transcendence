@@ -8,6 +8,7 @@ import { gamesApi } from '@/lib/api';
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { clearPlayerSession } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import type {
   WordSoupWordGuessedDto,
   WordSoupGuessResultDto,
@@ -160,18 +161,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     for (const [id, name] of Object.entries(leftPlayers)) {
       const playerIdNum = Number(id);
       if (!byId.has(playerIdNum)) {
-        const template = initialPlayers[0];
         byId.set(playerIdNum, {
-          ...(template ?? {
-            inGroup: 0,
-            ofUser: 0,
-            passQuestion: '',
-            currentGameId: null,
-            lastSignout: '',
-            sessionExpiresAt: null,
-          }),
           id: playerIdNum,
           name,
+          avatarTier: 0,
+          avatarAnimal: 0,
         });
       }
     }
@@ -331,6 +325,32 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       finishOutcome.players.map((player) => [player.playerId, player]),
     );
   }, [finishOutcome]);
+
+  const playerAvatarTiers = useMemo(() => {
+    const tiers: Record<number, number> = {};
+    for (const player of players) {
+      tiers[player.id] = player.avatarTier ?? 0;
+    }
+    return tiers;
+  }, [players]);
+
+  const playerAvatarAnimals = useMemo(() => {
+    const animals: Record<number, number> = {};
+    for (const player of players) {
+      animals[player.id] = player.avatarAnimal ?? 0;
+    }
+    return animals;
+  }, [players]);
+
+  const localHostTier = playerAvatarTiers[playerId] ?? 0;
+  const localHostAnimal = playerAvatarAnimals[playerId] ?? 0;
+
+  const newlyUnlockedTier = useMemo(() => {
+    const fromOutcome = finishOutcome?.players.find(
+      (entry) => entry.playerId === playerId,
+    )?.newlyUnlockedTier;
+    return typeof fromOutcome === 'number' ? fromOutcome : null;
+  }, [finishOutcome, playerId]);
 
   const {
     showOverlay: showGameOverOverlay,
@@ -525,7 +545,15 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       const result = await gamesApi.finish({ gameId });
       setShowGameOverModal(false);
       if (result.outcome) {
-        setFinishOutcomeFromApi(result.outcome);
+        const unlock = result.outcome.players.find(
+        (entry) =>
+          entry.playerId === playerId &&
+          typeof entry.newlyUnlockedTier === 'number',
+      )?.newlyUnlockedTier;
+      if (typeof unlock === 'number') {
+        stashPendingAvatarUnlock(playerId, unlock);
+      }
+      setFinishOutcomeFromApi(result.outcome);
       }
     } catch (error) {
       console.error('finish failed:', error);
@@ -534,13 +562,21 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     } finally {
       setIsFinishingGame(false);
     }
-  }, [gameId, isFinishingGame, isGameOver, showIntro]);
+  }, [gameId, isFinishingGame, isGameOver, showIntro, playerId]);
 
   const handleReturnToLobby = useCallback(async () => {
     try {
       if (!gameEnded) {
         const result = await gamesApi.finish({ gameId });
         if (result.outcome) {
+          const unlock = result.outcome.players.find(
+            (entry) =>
+              entry.playerId === playerId &&
+              typeof entry.newlyUnlockedTier === 'number',
+          )?.newlyUnlockedTier;
+          if (typeof unlock === 'number') {
+            stashPendingAvatarUnlock(playerId, unlock);
+          }
           setFinishOutcomeFromApi(result.outcome);
         }
       }
@@ -590,6 +626,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     gameOverBubbleVisible,
     gameOverRevealedPlayerIds,
     gameOverPlayersById: playersByOutcomeId,
+    playerAvatarTiers,
+    playerAvatarAnimals,
+    localHostTier,
+    localHostAnimal,
+    newlyUnlockedTier,
     showGameOverReturnButton,
     eventBanner,
     eventBannerPhase,

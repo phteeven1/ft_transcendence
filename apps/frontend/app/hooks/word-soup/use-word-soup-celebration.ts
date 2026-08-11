@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Player } from '@/app/types';
 import type { 
   WordSoupWordGuessedDto,
   WordSoupFoundWord,
@@ -32,7 +31,7 @@ type UseWordSoupCelebrationProps = {
   wordGuessedSeq: number;
   wordGuessed: WordGuessed | null;
 
-  players: Player[];
+  players: Array<{ id: number; name: string }>;
 
   solutionWords: string[];
 
