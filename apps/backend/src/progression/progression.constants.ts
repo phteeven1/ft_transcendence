@@ -22,6 +22,21 @@ export const AVATAR_TIERS: AvatarTierDefinition[] = [
   { tier: 4, label: 'Legend', variantKey: 'tier-4', xpRequired: 500 },
 ];
 
+export type AvatarAnimalDefinition = {
+  id: number;
+  label: string;
+  variantKey: string;
+};
+
+/** Free-to-equip Animal Crossing–style species (not XP-gated). */
+export const AVATAR_ANIMALS: AvatarAnimalDefinition[] = [
+  { id: 0, label: 'Rabbit', variantKey: 'animal-rabbit' },
+  { id: 1, label: 'Fox', variantKey: 'animal-fox' },
+  { id: 2, label: 'Bear', variantKey: 'animal-bear' },
+  { id: 3, label: 'Tiger', variantKey: 'animal-tiger' },
+  { id: 4, label: 'Lion', variantKey: 'animal-lion' },
+];
+
 /** Canonical game display names used when creating games from the lobby. */
 export const GAME_TYPE_WORD_SOUP = 'Word Soup';
 export const GAME_TYPE_WORD_BUILDING = 'Word Building';

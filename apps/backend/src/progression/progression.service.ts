@@ -37,9 +37,9 @@ export class ProgressionService {
 
   equipAvatar(
     playerId: number,
-    avatarTier: number,
+    input: { avatarAnimal: number },
   ): Promise<PlayerProgressionResponse> {
-    return this.stats.equipAvatar(playerId, avatarTier);
+    return this.stats.equipAvatar(playerId, input);
   }
 
   getFinishOutcome(gameId: number): Promise<GameFinishOutcome | null> {

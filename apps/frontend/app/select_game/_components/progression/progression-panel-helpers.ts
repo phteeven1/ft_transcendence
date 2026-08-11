@@ -12,7 +12,7 @@ export type TranslateFn = ReturnType<typeof useTranslations>;
 
 export type LeaderboardScope = 'overall' | LeaderboardGameType;
 
-export type TabId = 'leaderboard' | 'my-stats';
+export type TabId = 'leaderboard' | 'my-stats' | 'avatar';
 
 export type MyStatsTabId = LeaderboardGameType | 'recent';
 
@@ -124,9 +124,12 @@ export function scopeLabel(scope: LeaderboardScope, t: TranslateFn): string {
 
 export function formatEndedAt(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
   } catch {
     return iso;
@@ -199,10 +202,9 @@ export function sortedEntries(
     return [...entries].sort((a, b) => b.xp - a.xp);
   }
   return [...entries]
-    .filter((e) => (e.byGame?.[scope]?.bestScore ?? 0) > 0)
+    .filter((e) => (e.byGame?.[scope]?.gamesPlayed ?? 0) > 0)
     .sort(
       (a, b) =>
-        (b.byGame?.[scope]?.bestScore ?? 0) -
-        (a.byGame?.[scope]?.bestScore ?? 0),
+        (b.byGame?.[scope]?.xpEarned ?? 0) - (a.byGame?.[scope]?.xpEarned ?? 0),
     );
 }

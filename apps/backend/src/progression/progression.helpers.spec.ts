@@ -1,10 +1,7 @@
 import {
-  clampEquippedAvatarTier,
   computeXpAwarded,
   getMaxUnlockedTier,
   getUnlockedTierIds,
-  isAvatarTierUnlocked,
-  isValidAvatarTier,
   resolveWinnerIds,
 } from './progression.helpers';
 import { PARTICIPATION_XP, WIN_XP } from './progression.constants';
@@ -27,29 +24,21 @@ describe('computeXpAwarded', () => {
   });
 });
 
-describe('avatar tier helpers', () => {
-  it('computes max unlocked tier from XP thresholds', () => {
+describe('avatar rank helpers', () => {
+  it('computes max unlocked rank from XP thresholds', () => {
     expect(getMaxUnlockedTier(0)).toBe(0);
     expect(getMaxUnlockedTier(49)).toBe(0);
     expect(getMaxUnlockedTier(50)).toBe(1);
     expect(getMaxUnlockedTier(500)).toBe(4);
   });
 
-  it('lists unlocked tier ids', () => {
+  it('lists unlocked rank ids', () => {
     expect(getUnlockedTierIds(150)).toEqual([0, 1, 2]);
   });
 
-  it('validates tier ids and unlock state', () => {
-    expect(isValidAvatarTier(2)).toBe(true);
-    expect(isValidAvatarTier(99)).toBe(false);
-    expect(isAvatarTierUnlocked(100, 2)).toBe(false);
-    expect(isAvatarTierUnlocked(150, 2)).toBe(true);
-  });
-
-  it('auto-equips the highest tier unlocked by XP', () => {
-    expect(clampEquippedAvatarTier(40)).toBe(0);
-    expect(clampEquippedAvatarTier(50)).toBe(1);
-    expect(clampEquippedAvatarTier(200)).toBe(2);
-    expect(clampEquippedAvatarTier(500)).toBe(4);
+  it('maps XP totals to the current rank', () => {
+    expect(getMaxUnlockedTier(200)).toBe(2);
+    expect(getMaxUnlockedTier(40)).toBe(0);
+    expect(getMaxUnlockedTier(150)).toBe(2);
   });
 });

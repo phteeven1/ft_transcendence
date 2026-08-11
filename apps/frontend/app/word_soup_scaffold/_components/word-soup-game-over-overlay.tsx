@@ -1,6 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
+import { AVATAR_TIERS } from '@/lib/api/progression';
+import { clearPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import type { GameOverPhase } from '@/app/hooks/word-soup/use-word-soup-game-over';
 import SoupHostCharacter from './soup-host-character';
 
@@ -11,6 +15,12 @@ type WordSoupGameOverOverlayProps = {
   revealedPlayerIds: number[];
   playersById: Record<number, GameFinishPlayerOutcomeDto>;
   playerColours: Record<number, string>;
+  playerAvatarTiers?: Record<number, number>;
+  playerAvatarAnimals?: Record<number, number>;
+  hostTier?: number;
+  hostAnimal?: number;
+  localPlayerId: number;
+  newlyUnlockedTier?: number | null;
   showReturnButton: boolean;
   onReturnToLobby: () => void;
 };
@@ -53,6 +63,10 @@ function SpeechBubble({
   );
 }
 
+function resolveTierLabel(tier: number): string {
+  return AVATAR_TIERS.find((entry) => entry.tier === tier)?.label ?? `Tier ${tier}`;
+}
+
 export default function WordSoupGameOverOverlay({
   phase,
   bubbleText,
@@ -60,10 +74,25 @@ export default function WordSoupGameOverOverlay({
   revealedPlayerIds,
   playersById,
   playerColours,
+  playerAvatarTiers = {},
+  playerAvatarAnimals = {},
+  hostTier = 0,
+  hostAnimal = 0,
+  localPlayerId,
+  newlyUnlockedTier = null,
   showReturnButton,
   onReturnToLobby,
 }: WordSoupGameOverOverlayProps) {
+  const t = useTranslations('games.lobby.progression');
   const isClosing = phase === 'closing' || phase === 'closing-gap';
+  const unlockTier =
+    typeof newlyUnlockedTier === 'number' ? newlyUnlockedTier : null;
+
+  useEffect(() => {
+    if (unlockTier === null) return;
+    // Shown in-game — avoid a second toast when returning to the lobby.
+    clearPendingAvatarUnlock(localPlayerId);
+  }, [unlockTier, localPlayerId]);
 
   return (
     <div
@@ -77,11 +106,36 @@ export default function WordSoupGameOverOverlay({
       </h2>
 
       <div className="flex w-full max-w-3xl flex-col items-stretch gap-4 sm:gap-5">
+        {unlockTier !== null && (
+          <div
+            className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50/95 px-4 py-3 text-teal-950 shadow-lg"
+            role="status"
+            aria-live="polite"
+          >
+            <SoupHostCharacter
+              theme="animals"
+              tier={unlockTier}
+              animal={hostAnimal}
+              size="default"
+              className="shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-bold">{t('unlockToastTitle')}</p>
+              <p className="text-xs text-teal-900/80">
+                {t('unlockToastBody', { label: resolveTierLabel(unlockTier) })}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:justify-center sm:gap-6">
           <div className="flex flex-col items-center gap-4 sm:min-w-0 sm:flex-1">
             <SpeechBubble text={bubbleText} visible={bubbleVisible} />
             <SoupHostCharacter
               animated
+              theme="classic"
+              tier={hostTier}
+              size="presentation"
               className="h-24 w-24 sm:h-32 sm:w-32"
             />
           </div>
@@ -101,14 +155,20 @@ export default function WordSoupGameOverOverlay({
                     const player = playersById[playerId];
                     if (!player) return null;
                     const colour = playerColours[playerId] ?? '#5EEAD4';
+                    const tier = playerAvatarTiers[playerId] ?? 0;
+                    const animal = playerAvatarAnimals[playerId] ?? 0;
                     return (
                       <li
                         key={playerId}
                         className="word-soup-game-over-score-row flex items-center gap-3 rounded-xl border border-white/20 bg-white/95 px-3 py-2.5 shadow-sm"
                       >
                         <SoupHostCharacter
+                          theme="animals"
                           clothesColor={colour}
-                          className="h-10 w-10 shrink-0"
+                          tier={tier}
+                          animal={animal}
+                          size="thumb"
+                          className="shrink-0"
                         />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-teal-950">

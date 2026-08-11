@@ -103,7 +103,10 @@ model Player {
   bestWinStreak Int      @default(0)
   /// Peak consecutive correct words in a Word Soup match (solo or multiplayer).
   bestWordStreak Int     @default(0)
+  /// Equipped XP rank look (0–4); clamped to unlocked tiers.
   avatarTier    Int      @default(0)
+  /// Equipped animal species (0–4); free to change at any XP.
+  avatarAnimal  Int      @default(0)
   
   group          Group          @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [ofUserId], references: [id], onDelete: Cascade)

@@ -115,6 +115,7 @@ export default function WordSoupGame() {
                   <WordSoupEventBannerView
                     event={ws.eventBanner}
                     phase={ws.eventBannerPhase}
+                    hostTier={ws.localHostTier}
                   />
                 </div>
                 <CourtControls
@@ -183,6 +184,7 @@ export default function WordSoupGame() {
                         wordRevealIndex={ws.wordRevealIndex}
                         totalWords={ws.introTotalWords}
                         countdownValue={ws.introCountdownValue}
+                        hostTier={ws.localHostTier}
                       />
                     ) : ws.showGameOverOverlay ? (
                       <WordSoupGameOverOverlay
@@ -192,6 +194,12 @@ export default function WordSoupGame() {
                         revealedPlayerIds={ws.gameOverRevealedPlayerIds}
                         playersById={ws.gameOverPlayersById}
                         playerColours={ws.playerColours}
+                        playerAvatarTiers={ws.playerAvatarTiers}
+                        playerAvatarAnimals={ws.playerAvatarAnimals}
+                        hostTier={ws.localHostTier}
+                        hostAnimal={ws.localHostAnimal}
+                        localPlayerId={playerId}
+                        newlyUnlockedTier={ws.newlyUnlockedTier}
                         showReturnButton={ws.showGameOverReturnButton}
                         onReturnToLobby={ws.handleReturnToLobby}
                       />

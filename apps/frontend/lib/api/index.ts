@@ -45,6 +45,7 @@ export type {
 } from './vocabularies';
 export type {
   GameDto,
+  GameRosterPlayerDto,
   CreateGameInput,
   GameIdInput,
   GameIdPlayerIdInput,

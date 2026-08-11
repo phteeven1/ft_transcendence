@@ -6,6 +6,7 @@ import type {
   GameFinishOutcomeDto,
   GameIdInput,
   GameIdPlayerIdInput,
+  GameRosterPlayerDto,
 } from './types';
 
 export const gamesApi = {
@@ -18,6 +19,10 @@ export const gamesApi = {
 
   getById(input: GameIdInput): Promise<GameDto> {
     return apiRequest<GameDto>(`/games/${input.gameId}`);
+  },
+
+  getPlayersForGame(gameId: number): Promise<GameRosterPlayerDto[]> {
+    return apiRequest<GameRosterPlayerDto[]>(`/games/${gameId}/players`);
   },
 
   findByGroup(groupId: number): Promise<GameDto[]> {
