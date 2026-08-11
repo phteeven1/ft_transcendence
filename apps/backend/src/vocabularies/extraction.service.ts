@@ -160,63 +160,6 @@ ${text}`;
     return `${fromLanguage} - ${toLanguage} Vocabulary`;
   }
 
-  private normalizePairs(
-    parsed: Record<string, unknown>,
-  ): Pick<ExtractionResult, 'words' | 'meanings'> {
-    const words = Array.isArray(parsed.words) ? parsed.words.map(String) : [];
-    const meanings = Array.isArray(parsed.meanings)
-      ? parsed.meanings.map(String)
-      : [];
-    if (words.length > 0 || meanings.length > 0) {
-      return { words, meanings };
-    }
-
-    const pairKeys = [
-      'pairs',
-      'vocabulary',
-      'entries',
-      'items',
-      'data',
-    ] as const;
-    for (const key of pairKeys) {
-      const value = parsed[key];
-      if (!Array.isArray(value)) continue;
-
-      const extractedWords: string[] = [];
-      const extractedMeanings: string[] = [];
-      for (const item of value) {
-        if (typeof item === 'string' && item.includes('-')) {
-          const [word, ...rest] = item.split('-');
-          const meaning = rest.join('-').trim();
-          if (word.trim() && meaning) {
-            extractedWords.push(word.trim());
-            extractedMeanings.push(meaning);
-          }
-          continue;
-        }
-        if (!item || typeof item !== 'object') continue;
-        const pair = item as Record<string, unknown>;
-        const word =
-          pair.word ?? pair.source ?? pair.term ?? pair.foreign ?? pair[0];
-        const meaning =
-          pair.meaning ??
-          pair.translation ??
-          pair.target ??
-          pair.english ??
-          pair[1];
-        if (typeof word === 'string' && typeof meaning === 'string') {
-          extractedWords.push(word.trim());
-          extractedMeanings.push(meaning.trim());
-        }
-      }
-      if (extractedWords.length > 0) {
-        return { words: extractedWords, meanings: extractedMeanings };
-      }
-    }
-
-    return { words: [], meanings: [] };
-  }
-
   private validatePairs(
     words: string[],
     meanings: string[],
@@ -305,46 +248,65 @@ ${text}`;
           },
           { role: 'user', content: prompt },
         ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'OpenAI request failed';
-      console.error('OpenAI extraction error:', message);
-      throw new InternalServerErrorException(
-        `AI extraction failed: ${message}`,
-      );
-    }
+				response_format: {
+					type: 'json_schema',
+					json_schema: {
+						name: 'vocabulary_extraction',
+						strict: true,
+						schema: {
+							type: 'object',
+							properties: {
+								title: {
+									type: 'string',
+									description: 'Short descriptive title for the vocabulary list (max 80 chars)',
+								},
+								words: {
+									type: 'array',
+									items: { type: 'string' },
+									description: 'List of source language words',
+								},
+								meanings: {
+									type: 'array',
+									items: { type: 'string' },
+									description: 'List of target language meanings/translations aligned index-by-index with words',
+								},
+							},
+							required: ['title', 'words', 'meanings'],
+							additionalProperties: false,
+						},
+					},
+				},
+				temperature: 0.2,
+			});
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : 'OpenAI request failed';
+			console.error('OpenAI extraction error:', message);
+			throw new InternalServerErrorException(
+				`AI extraction failed: ${message}`,
+			);
+		}
+		const content = response.choices[0]?.message?.content ?? '{}';
 
-    const content = response.choices[0]?.message?.content ?? '{}';
-    const jsonString = content.replace(/```json\n?|```/g, '').trim();
+		let parsed: ExtractionResult;
+		try {
+			// OpenAI now guarantees this parsed object matches ExtractionResult type exactly
+			parsed = JSON.parse(content) as ExtractionResult;
+		} catch {
+			console.error('Failed to parse AI response:', content);
+			throw new UnprocessableEntityException(
+				'AI returned an invalid response. Please try again with a clearer file.',
+			);
+		}
 
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(jsonString) as Record<string, unknown>;
-    } catch {
-      console.error('Failed to parse AI response:', jsonString);
-      throw new UnprocessableEntityException(
-        'AI returned an invalid response. Please try again with a clearer file.',
-      );
-    }
+		// Enforce minimum item count guardrail (e.g. at least 5 pairs)
+		const validated = this.validatePairs(parsed.words, parsed.meanings);
 
-    const { words, meanings } = this.normalizePairs(parsed);
-    if (words.length === 0 && meanings.length === 0) {
-      console.error('AI returned no vocabulary pairs:', jsonString);
-    }
-    const validated = this.validatePairs(words, meanings);
-    return {
-      title: this.resolveTitle(
-        parsed,
-        fromLanguage,
-        toLanguage,
-        fallbackFilename,
-      ),
-      ...validated,
-    };
-  }
+		return {
+			title: parsed.title.trim().slice(0, 80) || `${fromLanguage} - ${toLanguage} Vocabulary`,
+			...validated,
+		};
+	}
 
   async extractVocab(
     file: Express.Multer.File,
