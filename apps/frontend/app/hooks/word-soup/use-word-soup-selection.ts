@@ -7,6 +7,7 @@ type SelectionCell = { row: number; col: number };
 type GuessResult = {
   success: boolean;
   message: string;
+  messageKey?: 'wrongPosition' | 'alreadyFoundElsewhere';
 };
 
 type UseWordSoupSelectionArgs = {
@@ -16,6 +17,7 @@ type UseWordSoupSelectionArgs = {
   isCelebrating: boolean;
   guessResult: GuessResult | null;
   emitSubmitGuess: (cells: SelectionCell[]) => void;
+  resolveGuessMessage?: (result: GuessResult) => string;
   onGuessSubmitted?: () => void;
   onGuessFailed?: () => void;
   onGuessSucceeded?: () => void;
@@ -28,6 +30,7 @@ export function useWordSoupSelection({
   isCelebrating,
   guessResult,
   emitSubmitGuess,
+  resolveGuessMessage,
   onGuessSubmitted,
   onGuessFailed,
   onGuessSucceeded,
@@ -40,18 +43,22 @@ export function useWordSoupSelection({
   const isSelectingRef = useRef(false);
   const onGuessFailedRef = useRef(onGuessFailed);
   const onGuessSucceededRef = useRef(onGuessSucceeded);
+  const resolveGuessMessageRef = useRef(resolveGuessMessage);
   const lastProcessedGuessResultRef = useRef<GuessResult | null>(null);
   const [trackedGuessResult, setTrackedGuessResult] = useState(guessResult);
 
   useLayoutEffect(() => {
     onGuessFailedRef.current = onGuessFailed;
     onGuessSucceededRef.current = onGuessSucceeded;
+    resolveGuessMessageRef.current = resolveGuessMessage;
   });
 
   if (guessResult !== trackedGuessResult) {
     setTrackedGuessResult(guessResult);
     if (guessResult) {
-      setSelectionMessage(guessResult.message);
+      setSelectionMessage(
+        resolveGuessMessageRef.current?.(guessResult) ?? guessResult.message,
+      );
       setIsSubmittingGuess(false);
       if (!guessResult.success) {
         setSelection([]);

@@ -539,7 +539,11 @@
       "courtSizeSmall": "S",
       "courtSizeMedium": "M",
       "courtSizeLarge": "L",
-      "cellTitle": "Zeile {row}, Spalte {col}"
+      "cellTitle": "Zeile {row}, Spalte {col}",
+      "guess": {
+        "wrongPosition": "Guter Versuch, aber die Position des Wortes ist falsch — schau, ob du es woanders im Gitter findest!",
+        "alreadyFoundElsewhere": "Guter Versuch, aber das Wort wurde bereits woanders im Gitter gefunden!"
+      }
     }
   },
   "session": {

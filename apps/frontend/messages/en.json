@@ -539,7 +539,11 @@
       "courtSizeSmall": "S",
       "courtSizeMedium": "M",
       "courtSizeLarge": "L",
-      "cellTitle": "Row {row}, Column {col}"
+      "cellTitle": "Row {row}, Column {col}",
+      "guess": {
+        "wrongPosition": "Good guess, but the word's position is incorrect - see if you can find it elsewhere in the grid!",
+        "alreadyFoundElsewhere": "Good guess, but the word has already been found somewhere else in the grid!"
+      }
     }
   },
   "session": {

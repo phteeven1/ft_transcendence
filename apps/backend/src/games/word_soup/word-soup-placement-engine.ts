@@ -1,9 +1,16 @@
-import type { CourtCell, Direction } from './word-soup.types';
+import type {
+  CourtCell,
+  Direction,
+  PlacedWordMetadata,
+  Position,
+} from './word-soup.types';
 import {
   COURT_COLS,
   COURT_ROWS,
   CROSSING_WORD_BUDGET,
 } from './word-soup.constants';
+
+export type { PlacedWordMetadata };
 
 const R: Direction = [0, 1];
 const D: Direction = [1, 0];
@@ -20,7 +27,7 @@ export type PlacementMode = 'centre' | 'prefer-cross' | 'avoid-cross';
 
 export type GenerateCourtResult = {
   trueCourt: CourtCell[][];
-  placedWords: string[];
+  placedWords: PlacedWordMetadata[];
 };
 
 function shuffle<T>(array: T[]): T[] {
@@ -30,6 +37,26 @@ function shuffle<T>(array: T[]): T[] {
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
+}
+
+function isPerpendicular(a: Direction, b: Direction): boolean {
+  return a[0] * b[0] + a[1] * b[1] === 0;
+}
+
+function cellsForWord(
+  word: string,
+  row: number,
+  col: number,
+  [dx, dy]: Direction,
+): Position[] {
+  return Array.from({ length: word.length }, (_, i) => ({
+    row: row + i * dx,
+    col: col + i * dy,
+  }));
+}
+
+function cellKey(row: number, col: number): string {
+  return `${row},${col}`;
 }
 
 export function createEmptyCourt(
@@ -82,9 +109,45 @@ export function countLetterOverlaps(
   return overlaps;
 }
 
+/**
+ * Overlaps are only allowed when perpendicular to every already-placed word
+ * that shares a cell, and each such pair may share at most one letter.
+ */
+export function hasValidOverlaps(
+  word: string,
+  row: number,
+  col: number,
+  direction: Direction,
+  placedWords: PlacedWordMetadata[],
+): boolean {
+  const candidateCells = cellsForWord(word, row, col, direction);
+  const candidateKeys = new Set(
+    candidateCells.map((cell) => cellKey(cell.row, cell.col)),
+  );
+
+  for (const placed of placedWords) {
+    const placedCells = cellsForWord(
+      placed.word,
+      placed.startRow,
+      placed.startCol,
+      placed.direction,
+    );
+    const shared = placedCells.filter((cell) =>
+      candidateKeys.has(cellKey(cell.row, cell.col)),
+    );
+
+    if (shared.length === 0) continue;
+    if (shared.length > 1) return false;
+    if (!isPerpendicular(direction, placed.direction)) return false;
+  }
+
+  return true;
+}
+
 export function collectValidPlacements(
   trueCourt: CourtCell[][],
   word: string,
+  placedWords: PlacedWordMetadata[] = [],
 ): Placement[] {
   const rows = trueCourt.length;
   const cols = trueCourt[0]?.length ?? 0;
@@ -99,12 +162,21 @@ export function collectValidPlacements(
     for (let row = 0; row <= maxRow; row++) {
       for (let col = 0; col <= maxCol; col++) {
         if (!canPlace(trueCourt, word, row, col, direction)) continue;
-        placements.push({
+
+        const overlaps = countLetterOverlaps(
+          trueCourt,
+          word,
           row,
           col,
           direction,
-          overlaps: countLetterOverlaps(trueCourt, word, row, col, direction),
-        });
+        );
+        // Reject embedding an entire word inside existing letters.
+        if (overlaps === word.length) continue;
+        if (!hasValidOverlaps(word, row, col, direction, placedWords)) {
+          continue;
+        }
+
+        placements.push({ row, col, direction, overlaps });
       }
     }
   }
@@ -125,6 +197,7 @@ export function pickPlacement(
   if (mode === 'prefer-cross') {
     const crossing = placements.filter((placement) => placement.overlaps > 0);
     if (crossing.length > 0) {
+      // Prefer single-letter crosses (the maximum allowed overlap).
       const maxOverlaps = Math.max(
         ...crossing.map((placement) => placement.overlaps),
       );
@@ -184,6 +257,7 @@ export function placeWord(
 /**
  * Places words on an empty court. Returns only words that were successfully placed.
  * Longer words are attempted first so they form anchors for later crossings.
+ * Crossings are perpendicular only and share at most one letter per word pair.
  */
 export function generateTrueCourt(
   words: string[],
@@ -193,14 +267,14 @@ export function generateTrueCourt(
   const orderedWords = [...words].sort(
     (a, b) => b.length - a.length || a.localeCompare(b),
   );
-  const placedWords: string[] = [];
+  const placedWords: PlacedWordMetadata[] = [];
   let crossingsUsed = 0;
 
   for (let index = 0; index < orderedWords.length; index++) {
     const word = orderedWords[index];
     if (!word) continue;
 
-    const placements = collectValidPlacements(trueCourt, word);
+    const placements = collectValidPlacements(trueCourt, word, placedWords);
     const mode: PlacementMode =
       index === 0
         ? 'centre'
@@ -215,7 +289,16 @@ export function generateTrueCourt(
     }
 
     placeWord(trueCourt, word, chosen.row, chosen.col, chosen.direction);
-    placedWords.push(word);
+
+    const [dx, dy] = chosen.direction;
+    placedWords.push({
+      word,
+      startRow: chosen.row,
+      startCol: chosen.col,
+      endRow: chosen.row + (word.length - 1) * dx,
+      endCol: chosen.col + (word.length - 1) * dy,
+      direction: chosen.direction,
+    });
   }
 
   return { trueCourt, placedWords };

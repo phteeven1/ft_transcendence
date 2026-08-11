@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { gamesApi } from '@/lib/api';
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
@@ -53,6 +54,7 @@ type UseWordSoupGameArgs = {
 export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArgs) {
   const router = useRouter();
   const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
+  const tGuess = useTranslations('games.wordSoup.guess');
 
   const {
     gameFinished,
@@ -345,6 +347,19 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     }, 800);
   }, [celebrationActiveRef]);
 
+  const resolveGuessMessage = useCallback(
+    (result: WordSoupGuessResultDto) => {
+      if (
+        result.messageKey === 'wrongPosition' ||
+        result.messageKey === 'alreadyFoundElsewhere'
+      ) {
+        return tGuess(result.messageKey);
+      }
+      return result.message;
+    },
+    [tGuess],
+  );
+
   const {
     selection,
     selectionMessage,
@@ -362,6 +377,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     isCelebrating,
     guessResult,
     emitSubmitGuess,
+    resolveGuessMessage,
     onGuessSubmitted: handleGuessSubmitted,
     onGuessFailed: handleGuessFailed,
     onGuessSucceeded: handleGuessSucceeded,

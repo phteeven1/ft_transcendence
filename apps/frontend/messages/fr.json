@@ -539,7 +539,11 @@
       "courtSizeSmall": "S",
       "courtSizeMedium": "M",
       "courtSizeLarge": "L",
-      "cellTitle": "Ligne {row}, Colonne {col}"
+      "cellTitle": "Ligne {row}, Colonne {col}",
+      "guess": {
+        "wrongPosition": "Bonne tentative, mais la position du mot est incorrecte — cherche-le ailleurs dans la grille !",
+        "alreadyFoundElsewhere": "Bonne tentative, mais ce mot a déjà été trouvé ailleurs dans la grille !"
+      }
     }
   },
   "session": {
