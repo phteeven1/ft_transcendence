@@ -248,6 +248,7 @@ describe('ProgressionService', () => {
         playerName: 'Player A',
         score: 4,
         xpAwarded: 0,
+        newlyUnlockedTier: null,
         isWinner: false,
       },
       {
@@ -255,6 +256,7 @@ describe('ProgressionService', () => {
         playerName: 'Player B',
         score: 7,
         xpAwarded: 0,
+        newlyUnlockedTier: null,
         isWinner: true,
       },
     ]);
