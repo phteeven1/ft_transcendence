@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { gamesApi, wordSoupApi } from '@/lib/api';
 import type { GameRosterPlayerDto } from '@/lib/api/games';
 import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
-import type { Game, Player } from '@/app/types';
+import type { Game } from '@/app/types';
 import { useAuth } from '@/app/context/auth-context';
 import {
   getPlayerSession,

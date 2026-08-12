@@ -524,10 +524,7 @@ export class WordSoupService {
     });
 
     if (!matchedWordMeta) {
-      const embeddedHint = this.getEmbeddedWordHint(
-        court,
-        normalisedSelection,
-      );
+      const embeddedHint = this.getEmbeddedWordHint(court, normalisedSelection);
       if (embeddedHint) {
         return embeddedHint;
       }
@@ -537,10 +534,14 @@ export class WordSoupService {
     const alreadyFound = court.foundWords.some(
       (found) =>
         found.word === matchedWordMeta.word &&
-        Math.min(found.cells[0].row, found.cells[found.cells.length - 1].row) ===
-          guessMinR &&
-        Math.min(found.cells[0].col, found.cells[found.cells.length - 1].col) ===
-          guessMinC,
+        Math.min(
+          found.cells[0].row,
+          found.cells[found.cells.length - 1].row,
+        ) === guessMinR &&
+        Math.min(
+          found.cells[0].col,
+          found.cells[found.cells.length - 1].col,
+        ) === guessMinC,
     );
 
     if (alreadyFound) {

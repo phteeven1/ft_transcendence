@@ -153,13 +153,13 @@ function useWordFitScale(
   measureClassName: string;
   setMeasureEl: (el: HTMLSpanElement | null) => void;
 } {
-  const [wordScale, setWordScale] = useState(1);
+  const [measuredScale, setMeasuredScale] = useState(1);
   const [slotEl, setSlotEl] = useState<HTMLDivElement | null>(null);
   const [measureEl, setMeasureEl] = useState<HTMLSpanElement | null>(null);
+  const canMeasure = Boolean(longestWord && slotEl && measureEl);
 
   useLayoutEffect(() => {
-    if (!longestWord || !slotEl || !measureEl) {
-      setWordScale(1);
+    if (!canMeasure || !slotEl || !measureEl) {
       return;
     }
 
@@ -168,11 +168,11 @@ function useWordFitScale(
       const needed = measureEl.getBoundingClientRect().width;
 
       if (needed <= 0 || available <= 0) {
-        setWordScale(1);
+        setMeasuredScale(1);
         return;
       }
 
-      setWordScale(Math.min(1, available / needed));
+      setMeasuredScale(Math.min(1, available / needed));
     };
 
     update();
@@ -181,10 +181,10 @@ function useWordFitScale(
     observer.observe(slotEl);
 
     return () => observer.disconnect();
-  }, [longestWord, typographyClass, insetPx, slotEl, measureEl]);
+  }, [canMeasure, longestWord, typographyClass, insetPx, slotEl, measureEl]);
 
   return {
-    wordScale,
+    wordScale: canMeasure ? measuredScale : 1,
     setSlotEl,
     measureClassName: typographyClass,
     setMeasureEl,

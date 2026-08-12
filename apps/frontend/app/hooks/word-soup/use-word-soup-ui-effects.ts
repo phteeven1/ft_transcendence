@@ -155,10 +155,12 @@ export function useWordSoupGameOverOverlay(
     }
 
     if (startImmediately) {
-      if (!celebrationActiveRef.current) {
-        setStartGameOverSequence(true);
-      }
-      return;
+      const timeoutId = window.setTimeout(() => {
+        if (!celebrationActiveRef.current) {
+          setStartGameOverSequence(true);
+        }
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
 
     const timeoutId = window.setTimeout(() => {

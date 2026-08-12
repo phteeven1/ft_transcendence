@@ -395,7 +395,10 @@ export class GamesService {
       },
     });
 
-    const awardProgression = await this.isProgressionEligible(gameId, dbGame.name);
+    const awardProgression = await this.isProgressionEligible(
+      gameId,
+      dbGame.name,
+    );
     const outcome = awardProgression
       ? await this.progressionService.recordGameOutcome(gameId)
       : await this.progressionService.getUnrewardedFinishOutcome(gameId);

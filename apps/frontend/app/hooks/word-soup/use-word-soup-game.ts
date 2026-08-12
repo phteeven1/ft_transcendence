@@ -620,7 +620,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       console.error('finish failed:', error);
     }
     await navigateToLobby();
-  }, [gameId, gameEnded, navigateToLobby]);
+  }, [gameId, gameEnded, navigateToLobby, playerId]);
 
   const abandonPlay = useCallback(async () => {
     setIsAbandoning(true);

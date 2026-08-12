@@ -22,7 +22,10 @@ export function cellKey(row: number, col: number): string {
   return `${row},${col}`;
 }
 
-export function includesSubarray(haystack: string[], needle: string[]): boolean {
+export function includesSubarray(
+  haystack: string[],
+  needle: string[],
+): boolean {
   for (let i = 0; i <= haystack.length - needle.length; i++) {
     if (needle.every((key, offset) => haystack[i + offset] === key)) {
       return true;

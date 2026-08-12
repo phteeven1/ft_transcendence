@@ -16,9 +16,7 @@ export type FoundWord = {
 };
 
 /** Structured failure reasons the client can localise. */
-export type GuessMessageKey =
-  | 'wrongPosition'
-  | 'alreadyFoundElsewhere';
+export type GuessMessageKey = 'wrongPosition' | 'alreadyFoundElsewhere';
 
 export type GuessResult =
   | {

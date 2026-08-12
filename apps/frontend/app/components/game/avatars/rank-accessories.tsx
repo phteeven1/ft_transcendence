@@ -1,5 +1,44 @@
+type RankAccessoryProps = {
+  tier: number;
+};
+
+type CrownLayout = {
+  dx: number;
+  dy: number;
+  scale: number;
+};
+
+/** Lion layout — full scale, resting on the head top without vertical nudge. */
+const CROWN_LAYOUT: CrownLayout = { dx: 0, dy: 0, scale: 1.05 };
+
+/** Legend-tier crown, anchored to the top of the 160×160 head box. */
+function Crown({ layout }: { layout: CrownLayout }) {
+  const anchorX = 80;
+  const anchorY = 26;
+  const { dx, dy, scale } = layout;
+
+  return (
+    <g
+      transform={`translate(${anchorX + dx} ${anchorY + dy}) scale(${scale}) translate(${-anchorX} ${-anchorY})`}
+    >
+      <path
+        d="M58 26 L64 10 L72 20 L80 6 L88 20 L96 10 L102 26 L102 30 L58 30 Z"
+        fill="#F59E0B"
+      />
+      <path
+        d="M58 26 L64 10 L72 20 L80 6 L88 20 L96 10 L102 26 L102 30 L58 30 Z"
+        fill="#FCD34D"
+        opacity="0.55"
+      />
+      <circle cx="64" cy="10" r="3.5" fill="#EF4444" />
+      <circle cx="80" cy="6" r="3.5" fill="#3B82F6" />
+      <circle cx="96" cy="10" r="3.5" fill="#22C55E" />
+    </g>
+  );
+}
+
 /** XP rank cosmetics overlaid on classic or animal figures. */
-export function RankAccessories({ tier }: { tier: number }) {
+export function RankAccessories({ tier }: RankAccessoryProps) {
   switch (tier) {
     case 1:
       return (
@@ -66,18 +105,7 @@ export function RankAccessories({ tier }: { tier: number }) {
     case 4:
       return (
         <g aria-hidden="true">
-          <path
-            d="M48 48l10 18 12-14 10 14 12-18 6 28H42z"
-            fill="#F59E0B"
-          />
-          <path
-            d="M48 48l10 18 12-14 10 14 12-18 6 28H42z"
-            fill="#FCD34D"
-            opacity="0.55"
-          />
-          <circle cx="48" cy="46" r="4" fill="#EF4444" />
-          <circle cx="80" cy="34" r="4" fill="#3B82F6" />
-          <circle cx="112" cy="46" r="4" fill="#22C55E" />
+          <Crown layout={CROWN_LAYOUT} />
         </g>
       );
     default:

@@ -45,26 +45,12 @@ export function useWordSoupSelection({
   const onGuessSucceededRef = useRef(onGuessSucceeded);
   const resolveGuessMessageRef = useRef(resolveGuessMessage);
   const lastProcessedGuessResultRef = useRef<GuessResult | null>(null);
-  const [trackedGuessResult, setTrackedGuessResult] = useState(guessResult);
 
   useLayoutEffect(() => {
     onGuessFailedRef.current = onGuessFailed;
     onGuessSucceededRef.current = onGuessSucceeded;
     resolveGuessMessageRef.current = resolveGuessMessage;
   });
-
-  if (guessResult !== trackedGuessResult) {
-    setTrackedGuessResult(guessResult);
-    if (guessResult) {
-      setSelectionMessage(
-        resolveGuessMessageRef.current?.(guessResult) ?? guessResult.message,
-      );
-      setIsSubmittingGuess(false);
-      if (!guessResult.success) {
-        setSelection([]);
-      }
-    }
-  }
 
   useEffect(() => {
     if (!guessResult) {
@@ -74,11 +60,20 @@ export function useWordSoupSelection({
     if (lastProcessedGuessResultRef.current === guessResult) return;
     lastProcessedGuessResultRef.current = guessResult;
 
-    if (!guessResult.success) {
-      onGuessFailedRef.current?.();
-    } else {
-      onGuessSucceededRef.current?.();
-    }
+    const timeoutId = window.setTimeout(() => {
+      setSelectionMessage(
+        resolveGuessMessageRef.current?.(guessResult) ?? guessResult.message,
+      );
+      setIsSubmittingGuess(false);
+      if (!guessResult.success) {
+        setSelection([]);
+        onGuessFailedRef.current?.();
+      } else {
+        onGuessSucceededRef.current?.();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [guessResult]);
 
   const handleSelectionStart = useCallback(

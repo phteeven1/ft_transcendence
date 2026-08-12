@@ -1,6 +1,9 @@
 import { createEmptyCourt } from './word-soup-placement-engine';
 import { resolveEmbeddedWordHintKey } from './word-soup-guess-helpers';
-import type { PlacedWordMetadata, SharedWordSoupCourt } from './word-soup.types';
+import type {
+  PlacedWordMetadata,
+  SharedWordSoupCourt,
+} from './word-soup.types';
 
 /**
  * Lightweight coverage for selection-direction rules that live on the service.
@@ -219,15 +222,10 @@ describe('resolveEmbeddedWordHintKey', () => {
     trueCourt[0][0] = { char: 'X' };
     trueCourt[0][1] = { char: 'Y' };
     expect(
-      resolveEmbeddedWordHintKey(
-        [tableTennis, tennis],
-        [],
-        trueCourt,
-        [
-          { row: 0, col: 0 },
-          { row: 0, col: 1 },
-        ],
-      ),
+      resolveEmbeddedWordHintKey([tableTennis, tennis], [], trueCourt, [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ]),
     ).toBeNull();
   });
 });

@@ -36,9 +36,9 @@ describe('generateTrueCourt', () => {
     const { trueCourt, placedWords } = generateTrueCourt(words);
 
     expect(placedWords.length).toBeGreaterThan(0);
-    expect(
-      placedWords.every((placed) => words.includes(placed.word)),
-    ).toBe(true);
+    expect(placedWords.every((placed) => words.includes(placed.word))).toBe(
+      true,
+    );
 
     for (const placed of placedWords) {
       const [dx, dy] = placed.direction;
@@ -98,9 +98,9 @@ describe('generateTrueCourt', () => {
 
           if (shared.length === 0) continue;
           expect(shared.length).toBe(1);
-          expect(a.direction[0] * b.direction[0] + a.direction[1] * b.direction[1]).toBe(
-            0,
-          );
+          expect(
+            a.direction[0] * b.direction[0] + a.direction[1] * b.direction[1],
+          ).toBe(0);
         }
       }
     }
