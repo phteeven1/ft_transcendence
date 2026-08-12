@@ -12,9 +12,9 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^7.4.1",
+    "@prisma/client": "^7.9.1",
     "dotenv": "^16.4.7",
-    "prisma": "^7.8.0"
+    "prisma": "^7.9.1"
   },
   "devDependencies": {
     "@types/node": "^25.3.1",
