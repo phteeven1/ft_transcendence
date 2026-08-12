@@ -34,6 +34,7 @@ export default function WordSoupGame() {
   const socket = useGameSocket(gameId, playerId);
   const ws = useWordSoupGame({ gameId, playerId, socket });
   const { courtSize, courtWidthPx, frameRef, onCourtSizeChange } = useCourtSize();
+  const localHostClothesColor = ws.playerColours[playerId];
 
   const scoreboardProps = {
     players: ws.players,
@@ -118,6 +119,8 @@ export default function WordSoupGame() {
                     event={ws.eventBanner}
                     phase={ws.eventBannerPhase}
                     hostTier={ws.localHostTier}
+                    hostAnimal={ws.localHostAnimal}
+                    hostClothesColor={localHostClothesColor}
                   />
                 </div>
                 <div className="flex h-14 shrink-0 items-center sm:h-16">
@@ -180,17 +183,7 @@ export default function WordSoupGame() {
                   onSelectionContinue={ws.handleSelectionContinue}
                   onSelectionEnd={ws.handleSelectionEnd}
                   overlay={
-                    ws.showIntro ? (
-                      <WordSoupIntroOverlay
-                        phase={ws.introPhase}
-                        bubbleText={ws.introBubbleText}
-                        bubbleVisible={ws.introBubbleVisible}
-                        wordRevealIndex={ws.wordRevealIndex}
-                        totalWords={ws.introTotalWords}
-                        countdownValue={ws.introCountdownValue}
-                        hostTier={ws.localHostTier}
-                      />
-                    ) : ws.showGameOverOverlay ? (
+                    ws.showGameOverOverlay ? (
                       <WordSoupGameOverOverlay
                         phase={ws.gameOverPhase}
                         bubbleText={ws.gameOverBubbleText}
@@ -202,6 +195,7 @@ export default function WordSoupGame() {
                         playerAvatarAnimals={ws.playerAvatarAnimals}
                         hostTier={ws.localHostTier}
                         hostAnimal={ws.localHostAnimal}
+                        hostClothesColor={localHostClothesColor}
                         localPlayerId={playerId}
                         newlyUnlockedTier={ws.newlyUnlockedTier}
                         showReturnButton={ws.showGameOverReturnButton}
@@ -217,6 +211,9 @@ export default function WordSoupGame() {
                         totalWords={ws.introTotalWords}
                         countdownValue={ws.introCountdownValue}
                         solutionWords={ws.solutionWords}
+                        hostTier={ws.localHostTier}
+                        hostAnimal={ws.localHostAnimal}
+                        hostClothesColor={localHostClothesColor}
                         courtSize={courtSize}
                       />
                     ) : null

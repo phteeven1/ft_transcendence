@@ -20,6 +20,7 @@ type WordSoupIntroOverlayProps = {
   solutionWords: string[];
   hostTier?: number;
   hostAnimal?: number;
+  hostClothesColor?: string;
   courtSize?: CourtSize;
 };
 
@@ -194,6 +195,7 @@ export default function WordSoupIntroOverlay({
   solutionWords = [],
   hostTier = 0,
   hostAnimal = 0,
+  hostClothesColor,
   courtSize = 'L',
 }: WordSoupIntroOverlayProps) {
   const isWordPhase = phase === 'word' || phase === 'word-gap';
@@ -271,6 +273,7 @@ export default function WordSoupIntroOverlay({
             <SoupHostCharacter
               animated
               theme="animals"
+              clothesColor={hostClothesColor}
               tier={hostTier}
               animal={hostAnimal}
               className={scale.hostClass}

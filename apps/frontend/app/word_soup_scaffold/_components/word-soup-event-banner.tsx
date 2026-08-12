@@ -11,8 +11,11 @@ import {
 type WordSoupEventBannerProps = {
   event: WordSoupEventBanner | null;
   phase: EventBannerPhase;
-  /** Equipped avatar tier for the local player host. */
+  /** Equipped avatar for the local player — same as intro/outro host. */
   hostTier?: number;
+  hostAnimal?: number;
+  /** Local player's court outfit colour — keeps the announcer visually stable. */
+  hostClothesColor?: string;
 };
 
 const IDLE_CLOTHES = '#5EEAD4';
@@ -88,6 +91,8 @@ export default function WordSoupEventBannerView({
   event,
   phase,
   hostTier = 0,
+  hostAnimal = 0,
+  hostClothesColor = IDLE_CLOTHES,
 }: WordSoupEventBannerProps) {
   const progress = useRevealProgress(phase, event);
   const bubbleVisible = phase === 'enter' || phase === 'hold';
@@ -116,9 +121,10 @@ export default function WordSoupEventBannerView({
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-0">
         <SoupHostCharacter
-          theme="classic"
-          clothesColor={event?.clothesColor ?? IDLE_CLOTHES}
+          theme="animals"
+          clothesColor={hostClothesColor}
           tier={hostTier}
+          animal={hostAnimal}
           animated
           size="default"
           className="relative z-10 h-14 w-14 shrink-0 sm:h-16 sm:w-16"

@@ -25,6 +25,7 @@ type WordSoupGameOverOverlayProps = {
   playerAvatarAnimals?: Record<number, number>;
   hostTier?: number;
   hostAnimal?: number;
+  hostClothesColor?: string;
   newlyUnlockedTier?: number | null;
 
   showReturnButton: boolean;
@@ -198,6 +199,7 @@ export default function WordSoupGameOverOverlay({
   playerAvatarAnimals = {},
   hostTier = 0,
   hostAnimal = 0,
+  hostClothesColor,
   newlyUnlockedTier = null,
   showReturnButton,
   onReturnToLobby,
@@ -287,6 +289,7 @@ export default function WordSoupGameOverOverlay({
             <SoupHostCharacter
               animated
               theme="animals"
+              clothesColor={hostClothesColor}
               tier={hostTier}
               animal={hostAnimal}
               className={scale.hostClass}
