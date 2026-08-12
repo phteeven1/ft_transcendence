@@ -1,6 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type {
   IntroCountdownValue,
   IntroPhase,
@@ -87,11 +88,16 @@ function SpeechBubble({
 function CountdownBubble({
   value,
   scale,
+  startingInLabel,
+  goLabel,
 }: {
   value: IntroCountdownValue;
   scale: ReturnType<typeof getOverlayScale>;
+  startingInLabel: string;
+  goLabel: string;
 }) {
-  const isGo = value === 'GO!';
+  const isGo = value === 'go';
+  const displayValue = isGo ? goLabel : value;
 
   return (
     <div
@@ -110,7 +116,7 @@ function CountdownBubble({
           isGo ? 'invisible' : '',
         ].join(' ')}
       >
-        Starting in
+        {startingInLabel}
       </p>
 
       <p
@@ -119,7 +125,7 @@ function CountdownBubble({
           isGo ? scale.countdownGoClass : scale.countdownNumberClass,
         ].join(' ')}
       >
-        {value}
+        {displayValue}
       </p>
 
       <span
@@ -198,6 +204,7 @@ export default function WordSoupIntroOverlay({
   hostClothesColor,
   courtSize = 'L',
 }: WordSoupIntroOverlayProps) {
+  const t = useTranslations('games.wordSoup.intro');
   const isWordPhase = phase === 'word' || phase === 'word-gap';
   const isCountdown = phase === 'countdown';
 
@@ -257,6 +264,8 @@ export default function WordSoupIntroOverlay({
               <CountdownBubble
                 value={countdownValue}
                 scale={scale}
+                startingInLabel={t('startingIn')}
+                goLabel={t('go')}
               />
             ) : (
               <SpeechBubble
@@ -293,7 +302,10 @@ export default function WordSoupIntroOverlay({
               ].join(' ')}
               aria-hidden={!isWordPhase}
             >
-              Word {Math.min(wordRevealIndex + 1, totalWords)} of {totalWords}
+              {t('wordOf', {
+                current: Math.min(wordRevealIndex + 1, totalWords),
+                total: totalWords,
+              })}
             </p>
           ) : null}
         </div>

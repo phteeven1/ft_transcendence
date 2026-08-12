@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { gamesApi, playersApi } from '@/lib/api';
-import { AVATAR_TIERS } from '@/lib/api/progression';
+import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 import {
   clearPlayerSession,
   getPlayerSession,
@@ -282,9 +282,7 @@ export default function SelectGame() {
               <p className="text-sm font-bold">{tProgression('unlockToastTitle')}</p>
               <p className="text-xs text-teal-900/80">
                 {tProgression('unlockToastBody', {
-                  label:
-                    AVATAR_TIERS.find((entry) => entry.tier === unlockToastTier)
-                      ?.label ?? `Tier ${unlockToastTier}`,
+                  label: translateAvatarTier(tProgression, unlockToastTier),
                 })}
               </p>
             </div>

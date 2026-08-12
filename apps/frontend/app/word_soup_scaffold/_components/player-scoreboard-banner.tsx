@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { GameRosterPlayerDto } from '@/lib/api/games';
 import SoupHostCharacter from './soup-host-character';
 
@@ -85,14 +86,16 @@ function StatusSymbol({
   status,
   streak,
   freezeSeconds,
+  t,
 }: {
   status: ScoreboardPlayerStatus;
   streak: number;
   freezeSeconds: number;
+  t: ReturnType<typeof useTranslations<'games.wordSoup'>>;
 }) {
   if (status === 'left') {
     return (
-      <span className="inline-flex items-center text-gray-500" title="Left the game">
+      <span className="inline-flex items-center text-gray-500" title={t('leftGame')}>
         <CrossIcon className="h-4 w-4" />
       </span>
     );
@@ -102,7 +105,7 @@ function StatusSymbol({
     return (
       <span
         className="inline-flex items-center gap-0.5 text-sky-700"
-        title={`Frozen: ${freezeSeconds}s`}
+        title={t('frozenSeconds', { seconds: freezeSeconds })}
       >
         <SnowflakeIcon className="h-4 w-4" />
         <span className="text-xs font-bold tabular-nums">{freezeSeconds}</span>
@@ -114,7 +117,7 @@ function StatusSymbol({
     return (
       <span
         className="inline-flex items-center gap-0.5 text-orange-700"
-        title={`Scoring streak: ${streak}`}
+        title={t('scoringStreak', { streak })}
       >
         <FlameIcon className="h-5 w-5" />
         <span className="text-xs font-bold tabular-nums">{streak}</span>
@@ -137,6 +140,8 @@ export default function PlayerScoreboardBanner({
   scorePopup = null,
   orientation = 'horizontal',
 }: PlayerScoreboardBannerProps) {
+  const t = useTranslations('games.wordSoup');
+  const tCommon = useTranslations('common');
   const isVertical = orientation === 'vertical';
 
   return (
@@ -147,7 +152,7 @@ export default function PlayerScoreboardBanner({
           : 'flex w-full flex-wrap justify-start gap-1.5 sm:gap-2'
       }
       role="list"
-      aria-label="Player scoreboard"
+      aria-label={t('scoreboardLabel')}
     >
       {players.map((player) => {
         const status = getPlayerStatus(player.id, leftPlayers, frozenPlayers);
@@ -189,7 +194,7 @@ export default function PlayerScoreboardBanner({
               animal={player.avatarAnimal ?? 0}
               size="thumb"
               className="relative z-10 h-8 w-8 shrink-0 sm:h-9 sm:w-9"
-              title={`${player.name} avatar`}
+              title={t('playerAvatar', { name: player.name })}
             />
 
             <div
@@ -215,7 +220,7 @@ export default function PlayerScoreboardBanner({
                       showPointsPopup ? 'text-white/80' : 'opacity-70',
                     ].join(' ')}
                   >
-                    You
+                    {tCommon('you')}
                   </span>
                 )}
               </div>
@@ -234,6 +239,7 @@ export default function PlayerScoreboardBanner({
                 status={status}
                 streak={streak}
                 freezeSeconds={freezeSeconds}
+                t={t}
               />
             </div>
           </div>

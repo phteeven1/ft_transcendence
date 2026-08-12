@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
-import { AVATAR_TIERS } from '@/lib/api/progression';
 import { clearPendingAvatarUnlock } from '@/lib/avatar-unlock';
+import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 import type { GameOverPhase } from '@/app/hooks/word-soup/use-word-soup-game-over';
 import SoupHostCharacter from './soup-host-character';
 import type { CourtSize } from './court-size';
@@ -87,6 +87,7 @@ function ScorePanel({
   playerColours,
   playerAvatarTiers,
   playerAvatarAnimals,
+  t,
 }: {
   scale: OverlayScale;
   revealedPlayerIds: number[];
@@ -94,6 +95,7 @@ function ScorePanel({
   playerColours: Record<number, string>;
   playerAvatarTiers: Record<number, number>;
   playerAvatarAnimals: Record<number, number>;
+  t: ReturnType<typeof useTranslations<'games.wordSoup.outro'>>;
 }) {
   return (
     <div
@@ -109,7 +111,7 @@ function ScorePanel({
           scale.labelClass,
         ].join(' ')}
       >
-        Final scores
+        {t('finalScores')}
       </h3>
 
       <ul className="mt-1.5 space-y-1 sm:mt-2 sm:space-y-1.5">
@@ -120,7 +122,7 @@ function ScorePanel({
               scale.bubbleTextClass,
             ].join(' ')}
           >
-            Scores coming up…
+            {t('scoresComingUp')}
           </li>
         ) : (
           revealedPlayerIds.map((playerId) => {
@@ -160,14 +162,17 @@ function ScorePanel({
                   <p
                     className={`${scale.labelClass} normal-case tracking-normal text-teal-800/80`}
                   >
-                    {player.score} pts · +{player.xpAwarded} XP
+                    {t('pointsXp', {
+                      score: player.score,
+                      xp: player.xpAwarded,
+                    })}
                   </p>
                 </div>
 
                 {player.isWinner && (
                   <span
                     className="shrink-0 text-sm sm:text-base"
-                    aria-label="Winner"
+                    aria-label={t('winner')}
                   >
                     🏆
                   </span>
@@ -181,10 +186,11 @@ function ScorePanel({
   );
 }
 
-function resolveTierLabel(tier: number): string {
-  return (
-    AVATAR_TIERS.find((entry) => entry.tier === tier)?.label ?? `Tier ${tier}`
-  );
+function resolveTierLabel(
+  tProgression: ReturnType<typeof useTranslations<'games.lobby.progression'>>,
+  tier: number,
+): string {
+  return translateAvatarTier(tProgression, tier);
 }
 
 export default function WordSoupGameOverOverlay({
@@ -206,6 +212,7 @@ export default function WordSoupGameOverOverlay({
   courtSize = 'L',
 }: WordSoupGameOverOverlayProps) {
   const t = useTranslations('games.lobby.progression');
+  const tOutro = useTranslations('games.wordSoup.outro');
 
   const isClosing = phase === 'closing' || phase === 'closing-gap';
   const scale = getOverlayScale(courtSize);
@@ -228,7 +235,7 @@ export default function WordSoupGameOverOverlay({
       aria-labelledby="word-soup-game-over-title"
     >
       <h2 id="word-soup-game-over-title" className="sr-only">
-        Game over results
+        {tOutro('gameOverTitle')}
       </h2>
 
       {unlockTier !== null && (
@@ -249,7 +256,7 @@ export default function WordSoupGameOverOverlay({
             <p className="text-sm font-bold">{t('unlockToastTitle')}</p>
             <p className="text-xs text-teal-900/80">
               {t('unlockToastBody', {
-                label: resolveTierLabel(unlockTier),
+                label: resolveTierLabel(t, unlockTier),
               })}
             </p>
           </div>
@@ -305,6 +312,7 @@ export default function WordSoupGameOverOverlay({
             playerColours={playerColours}
             playerAvatarTiers={playerAvatarTiers}
             playerAvatarAnimals={playerAvatarAnimals}
+            t={tOutro}
           />
         </div>
 
@@ -318,7 +326,7 @@ export default function WordSoupGameOverOverlay({
                 scale.buttonClass,
               ].join(' ')}
             >
-              Return to lobby
+              {tOutro('returnToLobby')}
             </button>
           ) : isClosing ? (
             <p
@@ -327,7 +335,7 @@ export default function WordSoupGameOverOverlay({
                 scale.labelClass,
               ].join(' ')}
             >
-              Almost done…
+              {tOutro('almostDone')}
             </p>
           ) : (
             <button
@@ -340,7 +348,7 @@ export default function WordSoupGameOverOverlay({
                 scale.buttonClass,
               ].join(' ')}
             >
-              Return to lobby
+              {tOutro('returnToLobby')}
             </button>
           )}
         </div>

@@ -488,6 +488,20 @@
         "gameTypes": {
           "wordSoup": "Word Soup",
           "wordBuilding": "Word Building"
+        },
+        "tiers": {
+          "0": "Apprentice",
+          "1": "Explorer",
+          "2": "Wordsmith",
+          "3": "Champion",
+          "4": "Legend"
+        },
+        "animals": {
+          "0": "Rabbit",
+          "1": "Fox",
+          "2": "Bear",
+          "3": "Tiger",
+          "4": "Lion"
         }
       }
     },
@@ -560,13 +574,84 @@
       "returningToLobby": "Returning to lobby…"
     },
     "wordSoup": {
+      "title": "Word Soup",
       "courtSizeSmall": "S",
       "courtSizeMedium": "M",
       "courtSizeLarge": "L",
+      "courtSizeLabel": "Court size",
       "cellTitle": "Row {row}, Column {col}",
+      "cellHidden": "hidden",
+      "cellEmpty": "empty",
+      "timeLabel": "Time",
+      "wordsHeading": "Words",
+      "statsTotal": "Total",
+      "statsFound": "Found",
+      "statsLeft": "Left",
+      "wordsFoundProgress": "Words found",
+      "submitGuess": "Submit Guess",
+      "submitting": "Submitting…",
+      "frozen": "Frozen! 🧊 {seconds}s",
+      "reconnecting": "Reconnecting to the game server…",
+      "initErrorTitle": "Couldn't start Word Soup",
+      "tryAgain": "Try again",
+      "playersAndStats": "Players and word counts",
+      "scoreboardLabel": "Player scoreboard",
+      "leftGame": "Left the game",
+      "frozenSeconds": "Frozen: {seconds}s",
+      "scoringStreak": "Scoring streak: {streak}",
+      "playerAvatar": "{name} avatar",
+      "hostTitle": "Word Soup host",
+      "messageBanner": "Game message banner",
       "guess": {
         "wrongPosition": "Good guess, but the word's position is incorrect - see if you can find it elsewhere in the grid!",
         "alreadyFoundElsewhere": "Good guess, but the word has already been found somewhere else in the grid!"
+      },
+      "intro": {
+        "welcome": "Welcome to Word Soup!",
+        "briefing": "In this game, you have to find words in the grid.",
+        "wordsIntro": "Here are the words...",
+        "letsGo": "OK, let's go!",
+        "startingIn": "Starting in",
+        "go": "GO!",
+        "wordOf": "Word {current} of {total}"
+      },
+      "outro": {
+        "gameOverTitle": "Game over results",
+        "finalScores": "Final scores",
+        "scoresComingUp": "Scores coming up…",
+        "pointsXp": "{score} pts · +{xp} XP",
+        "winner": "Winner",
+        "returnToLobby": "Return to lobby",
+        "almostDone": "Almost done…",
+        "closingSolo": "Well done {name}, great solo game! See you again soon!",
+        "closingMulti": "Well done everyone, great game! See you again soon!",
+        "placeAnnouncement": "In {place} place, {name}, with {score} points and +{xp} XP!",
+        "firstPlaceSolo": "In 1st place, {name}, with {score} points and +{xp} XP!",
+        "winnersPrefix": "And finally, the winners! ",
+        "winnerPrefix": "And finally, the winner, ",
+        "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
+      },
+      "events": {
+        "playerFoundWord": "{name} found {word}",
+        "lastWord": "Last word!",
+        "playerFrozen": "{name} is frozen!",
+        "playerUnfrozen": "{name} is back!",
+        "playerLeft": "{name} left the game"
+      },
+      "rules": {
+        "show": "Show game rules",
+        "hide": "Hide game rules",
+        "title": "Game rules",
+        "howToPlay": "How to play",
+        "howToPlay1": "Highlight a word on the grid (left click and drag from the first letter to the last).",
+        "howToPlay2": "Words run from left to right or top to bottom",
+        "howToPlay3": "Found words are highlighted in your player colour",
+        "rulesHeading": "Rules",
+        "rules1": "Points are awarded for each word found.",
+        "rules2": "The player with the most points at the end of the game wins.",
+        "rules3": "Wrong guesses freeze you for a few seconds",
+        "rules4": "XP are awarded for each word found.",
+        "rules5": "The winner is awarded a trophy and 35XP points."
       }
     }
   },

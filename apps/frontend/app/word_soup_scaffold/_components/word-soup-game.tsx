@@ -26,6 +26,7 @@ const MAX_COURT_FRAME_WIDTH = computeGridWidth('L');
 
 export default function WordSoupGame() {
   const tCommon = useTranslations('common');
+  const t = useTranslations('games.wordSoup');
   useSessionGuard();
 
   const searchParams = useSearchParams();
@@ -60,14 +61,14 @@ export default function WordSoupGame() {
     return (
       <div className="game-shell flex-1 flex items-center justify-center px-4">
         <div className="max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-lg">
-          <h2 className="text-lg font-semibold text-rose-800">Couldn&apos;t start Word Soup</h2>
+          <h2 className="text-lg font-semibold text-rose-800">{t('initErrorTitle')}</h2>
           <p className="mt-2 text-sm text-gray-600">{ws.courtInitError}</p>
           <button
             type="button"
             onClick={ws.retryInitCourt}
             className="mt-5 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
           >
-            Try again
+            {t('tryAgain')}
           </button>
         </div>
       </div>
@@ -82,7 +83,7 @@ export default function WordSoupGame() {
           role="status"
           aria-live="polite"
         >
-          Reconnecting to the game server…
+          {t('reconnecting')}
         </div>
       )}
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
@@ -140,7 +141,7 @@ export default function WordSoupGame() {
             {/* Players + word stats — bottom of stats = bottom of court */}
             <aside
               className="hidden min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:flex"
-              aria-label="Players and word counts"
+              aria-label={t('playersAndStats')}
             >
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <PlayerScoreboardBanner {...scoreboardProps} orientation="vertical" />
@@ -150,7 +151,7 @@ export default function WordSoupGame() {
                   startedAtMs={ws.playStartedAt}
                   stopped={ws.isGameOver || ws.showGameOverOverlay}
                   className="w-full justify-between"
-                  label="Time"
+                  label={t('timeLabel')}
                 />
               </div>
               <div className="mt-auto shrink-0 pt-3">

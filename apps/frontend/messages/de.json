@@ -489,6 +489,20 @@
         "gameTypes": {
           "wordSoup": "Wortsuppe",
           "wordBuilding": "Wortbau"
+        },
+        "tiers": {
+          "0": "Lehrling",
+          "1": "Entdecker",
+          "2": "Wortschmied",
+          "3": "Champion",
+          "4": "Legende"
+        },
+        "animals": {
+          "0": "Hase",
+          "1": "Fuchs",
+          "2": "Bär",
+          "3": "Tiger",
+          "4": "Löwe"
         }
       }
     },
@@ -561,13 +575,84 @@
       "returningToLobby": "Zurück zur Lobby…"
     },
     "wordSoup": {
+      "title": "Wortsuppe",
       "courtSizeSmall": "S",
       "courtSizeMedium": "M",
       "courtSizeLarge": "L",
+      "courtSizeLabel": "Spielfeldgröße",
       "cellTitle": "Zeile {row}, Spalte {col}",
+      "cellHidden": "verborgen",
+      "cellEmpty": "leer",
+      "timeLabel": "Zeit",
+      "wordsHeading": "Wörter",
+      "statsTotal": "Gesamt",
+      "statsFound": "Gefunden",
+      "statsLeft": "Übrig",
+      "wordsFoundProgress": "Gefundene Wörter",
+      "submitGuess": "Tipp absenden",
+      "submitting": "Wird gesendet…",
+      "frozen": "Eingefroren! 🧊 {seconds}s",
+      "reconnecting": "Verbindung zum Spielserver wird wiederhergestellt…",
+      "initErrorTitle": "Wortsuppe konnte nicht gestartet werden",
+      "tryAgain": "Erneut versuchen",
+      "playersAndStats": "Spieler und Wortzahlen",
+      "scoreboardLabel": "Spieler-Punktestand",
+      "leftGame": "Spiel verlassen",
+      "frozenSeconds": "Eingefroren: {seconds}s",
+      "scoringStreak": "Punkteserie: {streak}",
+      "playerAvatar": "Avatar von {name}",
+      "hostTitle": "Wortsuppe-Moderator",
+      "messageBanner": "Spielnachrichten-Banner",
       "guess": {
         "wrongPosition": "Guter Versuch, aber die Position des Wortes ist falsch — schau, ob du es woanders im Gitter findest!",
         "alreadyFoundElsewhere": "Guter Versuch, aber das Wort wurde bereits woanders im Gitter gefunden!"
+      },
+      "intro": {
+        "welcome": "Willkommen bei Wortsuppe!",
+        "briefing": "In diesem Spiel musst du Wörter im Gitter finden.",
+        "wordsIntro": "Hier sind die Wörter…",
+        "letsGo": "OK, los geht's!",
+        "startingIn": "Start in",
+        "go": "LOS!",
+        "wordOf": "Wort {current} von {total}"
+      },
+      "outro": {
+        "gameOverTitle": "Spielergebnisse",
+        "finalScores": "Endstand",
+        "scoresComingUp": "Punkte folgen gleich…",
+        "pointsXp": "{score} Pkt · +{xp} XP",
+        "winner": "Gewinner",
+        "returnToLobby": "Zurück zur Lobby",
+        "almostDone": "Fast fertig…",
+        "closingSolo": "Gut gemacht {name}, tolles Solo-Spiel! Bis bald!",
+        "closingMulti": "Gut gemacht alle zusammen, tolles Spiel! Bis bald!",
+        "placeAnnouncement": "Platz {place}: {name}, mit {score} Punkten und +{xp} XP!",
+        "firstPlaceSolo": "Platz 1: {name}, mit {score} Punkten und +{xp} XP!",
+        "winnersPrefix": "Und zum Schluss die Gewinner! ",
+        "winnerPrefix": "Und zum Schluss der Gewinner, ",
+        "winnerAnnouncement": "{name}, mit {score} Punkten und +{xp} XP!"
+      },
+      "events": {
+        "playerFoundWord": "{name} hat {word} gefunden",
+        "lastWord": "Letztes Wort!",
+        "playerFrozen": "{name} ist eingefroren!",
+        "playerUnfrozen": "{name} ist wieder da!",
+        "playerLeft": "{name} hat das Spiel verlassen"
+      },
+      "rules": {
+        "show": "Spielregeln anzeigen",
+        "hide": "Spielregeln ausblenden",
+        "title": "Spielregeln",
+        "howToPlay": "So spielst du",
+        "howToPlay1": "Markiere ein Wort im Gitter (linke Maustaste gedrückt halten vom ersten bis zum letzten Buchstaben).",
+        "howToPlay2": "Wörter verlaufen von links nach rechts oder von oben nach unten",
+        "howToPlay3": "Gefundene Wörter werden in deiner Spielerfarbe hervorgehoben",
+        "rulesHeading": "Regeln",
+        "rules1": "Für jedes gefundene Wort gibt es Punkte.",
+        "rules2": "Der Spieler mit den meisten Punkten am Ende gewinnt.",
+        "rules3": "Falsche Tipps frieren dich für ein paar Sekunden ein",
+        "rules4": "Für jedes gefundene Wort gibt es XP.",
+        "rules5": "Der Gewinner bekommt eine Trophäe und 35 XP."
       }
     }
   },

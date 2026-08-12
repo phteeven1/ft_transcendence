@@ -56,6 +56,37 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   const router = useRouter();
   const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
   const tGuess = useTranslations('games.wordSoup.guess');
+  const tIntro = useTranslations('games.wordSoup.intro');
+  const tOutro = useTranslations('games.wordSoup.outro');
+  const tEvents = useTranslations('games.wordSoup.events');
+
+  const introTexts = useMemo(
+    () => ({
+      welcome: tIntro('welcome'),
+      briefing: tIntro('briefing'),
+      wordsIntro: tIntro('wordsIntro'),
+      letsGo: tIntro('letsGo'),
+    }),
+    [tIntro],
+  );
+
+  const formatPlayerFoundWord = useCallback(
+    (name: string, word: string) => tEvents('playerFoundWord', { name, word }),
+    [tEvents],
+  );
+  const formatLastWord = useCallback(() => tEvents('lastWord'), [tEvents]);
+  const formatPlayerFrozen = useCallback(
+    (name: string) => tEvents('playerFrozen', { name }),
+    [tEvents],
+  );
+  const formatPlayerUnfrozen = useCallback(
+    (name: string) => tEvents('playerUnfrozen', { name }),
+    [tEvents],
+  );
+  const formatPlayerLeft = useCallback(
+    (name: string) => tEvents('playerLeft', { name }),
+    [tEvents],
+  );
 
   const {
     gameFinished,
@@ -124,6 +155,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     solutionWords,
     hasPlayerSeenIntro,
     introStartedAt,
+    introTexts,
     skipIntro: initIsComplete || gameEnded,
     skipMarkIntroShown: gameEnded,
   });
@@ -208,18 +240,18 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       const colour = playerColours[result.playerId] ?? '#10B981';
       pushEvent({
         kind: 'word-found',
-        headline: `${result.playerName} found ${result.word}`,
+        headline: formatPlayerFoundWord(result.playerName, result.word),
         clothesColor: colour,
       });
       if (result.isPenultimate) {
         pushEvent({
           kind: 'final-word',
-          headline: 'Last word!',
+          headline: formatLastWord(),
           clothesColor: '#F59E0B',
         });
       }
     },
-    [playerColours, pushEvent],
+    [playerColours, pushEvent, formatPlayerFoundWord, formatLastWord],
   );
 
   const handleScoreAwarded = useCallback(
@@ -257,6 +289,9 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     latestPlayerLeft,
     playerColours,
     pushEvent,
+    formatPlayerFrozen,
+    formatPlayerUnfrozen,
+    formatPlayerLeft,
   });
 
   const startGameOverSequence = useWordSoupGameOverOverlay(
@@ -362,6 +397,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   } = useWordSoupGameOver({
     active: startGameOverSequence,
     outcome: finishOutcome,
+    outroT: tOutro,
     skipInitialHold: finishedDuringIntro,
   });
 

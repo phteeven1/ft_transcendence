@@ -1,22 +1,13 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
-const howToPlay = [
-  'Highlight a word on the grid (left click and drag from the first letter to the last).',  
-  'Words run from left to right or top to bottom',
-  'Found words are highlighted in your player colour',
-];
-
-const RULES = [
-  'Points are awarded for each word found.',
-  'The player with the most points at the end of the game wins.',
-  'Wrong guesses freeze you for a few seconds',
-  'XP are awarded for each word found.',
-  'The winner is awarded a trophy and 35XP points.',
-];
+const HOW_TO_PLAY_KEYS = ['howToPlay1', 'howToPlay2', 'howToPlay3'] as const;
+const RULES_KEYS = ['rules1', 'rules2', 'rules3', 'rules4', 'rules5'] as const;
 
 export default function GameRulesInfo() {
+  const t = useTranslations('games.wordSoup.rules');
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
@@ -33,8 +24,8 @@ export default function GameRulesInfo() {
         ].join(' ')}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={open ? 'Hide game rules' : 'Show game rules'}
-        title="Game rules"
+        aria-label={open ? t('hide') : t('show')}
+        title={t('title')}
       >
         <svg
           viewBox="0 0 24 24"
@@ -57,16 +48,16 @@ export default function GameRulesInfo() {
           id={panelId}
           className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-emerald-200 bg-white p-4 text-sm text-gray-700 shadow-lg"
         >
-          <p className="font-semibold text-emerald-800">How to play</p>
+          <p className="font-semibold text-emerald-800">{t('howToPlay')}</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            {howToPlay.map((rule) => (
-              <li key={rule}>{rule}</li>
+            {HOW_TO_PLAY_KEYS.map((key) => (
+              <li key={key}>{t(key)}</li>
             ))}
           </ul>
-          <p className="font-semibold text-emerald-800">Rules</p>
+          <p className="font-semibold text-emerald-800">{t('rulesHeading')}</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            {RULES.map((rule) => (
-              <li key={rule}>{rule}</li>
+            {RULES_KEYS.map((key) => (
+              <li key={key}>{t(key)}</li>
             ))}
           </ul>
         </div>

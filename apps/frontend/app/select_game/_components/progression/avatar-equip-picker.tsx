@@ -7,9 +7,12 @@ import { AvatarTierThumb } from './avatar-tier-thumb';
 import { AvatarTierFlair } from './avatar-tier-flair';
 import {
   getAvatarAnimalStyle,
-  resolveAvatarAnimal,
 } from './avatar-tier-styles';
 import HostCharacter from '@/app/components/game/host-character';
+import {
+  translateAvatarAnimal,
+  translateAvatarTier,
+} from '@/lib/i18n/progression-labels';
 
 type AvatarEquipPickerProps = {
   progression: PlayerProgressionResponseDto;
@@ -52,6 +55,7 @@ export function AvatarEquipPicker({
           {progression.tiers.map((tierDef) => {
             const isUnlocked = unlocked.has(tierDef.tier);
             const isCurrent = currentRank === tierDef.tier;
+            const tierLabel = translateAvatarTier(t, tierDef.tier);
 
             return (
               <li key={tierDef.tier}>
@@ -59,14 +63,14 @@ export function AvatarEquipPicker({
                   aria-current={isCurrent ? 'true' : undefined}
                   aria-label={
                     isCurrent
-                      ? t('currentRank', { label: tierDef.label })
+                      ? t('currentRank', { label: tierLabel })
                       : isUnlocked
                         ? t('unlockedRank', {
-                            label: tierDef.label,
+                            label: tierLabel,
                             xp: tierDef.xpRequired,
                           })
                         : t('lockedTier', {
-                            label: tierDef.label,
+                            label: tierLabel,
                             xp: tierDef.xpRequired,
                           })
                   }
@@ -123,6 +127,7 @@ export function AvatarEquipPicker({
           {animals.map((animalDef) => {
             const isEquipped = selectedAnimal === animalDef.id;
             const style = getAvatarAnimalStyle(animalDef.id);
+            const animalLabel = translateAvatarAnimal(t, animalDef.id);
 
             return (
               <li key={animalDef.id}>
@@ -131,7 +136,7 @@ export function AvatarEquipPicker({
                   disabled={isEquipped || equipping}
                   onClick={() => onEquipAnimal(animalDef.id)}
                   aria-pressed={isEquipped}
-                  aria-label={t('equipAnimal', { label: animalDef.label })}
+                  aria-label={t('equipAnimal', { label: animalLabel })}
                   className={[
                     'flex w-full flex-col items-center gap-1.5 rounded-xl border px-2 py-2 text-center transition',
                     isEquipped
@@ -156,7 +161,7 @@ export function AvatarEquipPicker({
                       color: style.flairText,
                     }}
                   >
-                    {resolveAvatarAnimal(animalDef.id).label}
+                    {animalLabel}
                   </span>
                   <span className="text-[0.65rem] text-muted-foreground">
                     {isEquipped ? t('equipped') : t('animalFree')}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import SoupHostCharacter from './soup-host-character';
 import {
   getEventBannerDurations,
@@ -94,6 +95,7 @@ export default function WordSoupEventBannerView({
   hostAnimal = 0,
   hostClothesColor = IDLE_CLOTHES,
 }: WordSoupEventBannerProps) {
+  const t = useTranslations('games.wordSoup');
   const progress = useRevealProgress(phase, event);
   const bubbleVisible = phase === 'enter' || phase === 'hold';
   const showCaret = phase === 'enter' && progress < 1;
@@ -117,7 +119,7 @@ export default function WordSoupEventBannerView({
       className="word-soup-event-ticker-slot relative z-20 h-14 w-full sm:h-16"
       role="status"
       aria-live="polite"
-      aria-label={bubbleVisible ? liveMessage : 'Game message banner'}
+      aria-label={bubbleVisible ? liveMessage : t('messageBanner')}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-0">
         <SoupHostCharacter
@@ -128,7 +130,7 @@ export default function WordSoupEventBannerView({
           animated
           size="default"
           className="relative z-10 h-14 w-14 shrink-0 sm:h-16 sm:w-16"
-          title="Word Soup host"
+          title={t('hostTitle')}
         />
 
         <div className="relative min-w-0 flex-1 pt-0.5">
