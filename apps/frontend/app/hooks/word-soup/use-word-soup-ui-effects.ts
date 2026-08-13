@@ -47,6 +47,9 @@ type FreezeBridgeArgs = {
   latestPlayerLeft: { playerId: number; playerName: string } | null;
   playerColours: Record<number, string>;
   pushEvent: (event: Omit<WordSoupEventBanner, 'id'>) => void;
+  formatPlayerFrozen: (name: string) => string;
+  formatPlayerUnfrozen: (name: string) => string;
+  formatPlayerLeft: (name: string) => string;
 };
 
 export function useWordSoupEventBridge({
@@ -55,6 +58,9 @@ export function useWordSoupEventBridge({
   latestPlayerLeft,
   playerColours,
   pushEvent,
+  formatPlayerFrozen,
+  formatPlayerUnfrozen,
+  formatPlayerLeft,
 }: FreezeBridgeArgs) {
   const lastFreezeEventKeyRef = useRef('');
   const lastLeftEventKeyRef = useRef('');
@@ -76,17 +82,24 @@ export function useWordSoupEventBridge({
     if (isUnfreeze) {
       pushEvent({
         kind: 'unfreeze',
-        headline: `${latestFreezeNotice.playerName} is back!`,
+        headline: formatPlayerUnfrozen(latestFreezeNotice.playerName),
         clothesColor: colour,
       });
     } else {
       pushEvent({
         kind: 'freeze',
-        headline: `${latestFreezeNotice.playerName} is frozen!`,
+        headline: formatPlayerFrozen(latestFreezeNotice.playerName),
         clothesColor: colour,
       });
     }
-  }, [latestFreezeNotice, playerColours, pushEvent, playerId]);
+  }, [
+    latestFreezeNotice,
+    playerColours,
+    pushEvent,
+    playerId,
+    formatPlayerFrozen,
+    formatPlayerUnfrozen,
+  ]);
 
   useEffect(() => {
     if (!latestPlayerLeft) return;
@@ -96,16 +109,17 @@ export function useWordSoupEventBridge({
 
     pushEvent({
       kind: 'player-left',
-      headline: `${latestPlayerLeft.playerName} left the game`,
+      headline: formatPlayerLeft(latestPlayerLeft.playerName),
       clothesColor: playerColours[latestPlayerLeft.playerId] ?? '#9CA3AF',
     });
-  }, [latestPlayerLeft, playerColours, pushEvent]);
+  }, [latestPlayerLeft, playerColours, pushEvent, formatPlayerLeft]);
 }
 
 export function useWordSoupGameOverOverlay(
   isGameOver: boolean,
   isCelebrating: boolean,
   celebrationActiveRef: { current: boolean },
+  startImmediately = false,
 ) {
   const [startGameOverSequence, setStartGameOverSequence] = useState(false);
   const [sawCompletionCelebration, setSawCompletionCelebration] = useState(false);
@@ -140,6 +154,15 @@ export function useWordSoupGameOverOverlay(
       return;
     }
 
+    if (startImmediately) {
+      const timeoutId = window.setTimeout(() => {
+        if (!celebrationActiveRef.current) {
+          setStartGameOverSequence(true);
+        }
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+
     const timeoutId = window.setTimeout(() => {
       if (!celebrationActiveRef.current) {
         setStartGameOverSequence(true);
@@ -153,6 +176,7 @@ export function useWordSoupGameOverOverlay(
     sawCompletionCelebration,
     startGameOverSequence,
     celebrationActiveRef,
+    startImmediately,
   ]);
 
   return startGameOverSequence && !isCelebrating;

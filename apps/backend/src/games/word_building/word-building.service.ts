@@ -240,7 +240,7 @@ export class WordBuildingService {
     const normalized = letter
       .normalize('NFC')
       .split('')
-      .map(char => (char === 'ß' || char === 'ẞ') ? 'ß' : char.toUpperCase())
+      .map((char) => (char === 'ß' || char === 'ẞ' ? 'ß' : char.toUpperCase()))
       .join('')
       .replace(/[^\p{L}]/gu, '');
     if (!normalized || normalized.length !== 1) return null;

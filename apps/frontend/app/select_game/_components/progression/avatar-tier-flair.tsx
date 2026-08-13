@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   getAvatarTierStyle,
   resolveAvatarTier,
 } from './avatar-tier-styles';
+import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 
 type AvatarTierFlairProps = {
   tier: number;
@@ -17,8 +19,10 @@ export function AvatarTierFlair({
   className = '',
   size = 'md',
 }: AvatarTierFlairProps) {
+  const t = useTranslations('games.lobby.progression');
   const definition = resolveAvatarTier(tier);
   const style = getAvatarTierStyle(definition);
+  const label = translateAvatarTier(t, definition.tier);
 
   const sizeClass =
     size === 'sm'
@@ -40,12 +44,12 @@ export function AvatarTierFlair({
         clipPath:
           'polygon(0 0, calc(100% - 0.45em) 0, 100% 50%, calc(100% - 0.45em) 100%, 0 100%)',
       }}
-      title={definition.label}
-      aria-label={definition.label}
+      title={label}
+      aria-label={label}
       data-tier={definition.tier}
       data-variant={definition.variantKey}
     >
-      {definition.label}
+      {label}
     </span>
   );
 }

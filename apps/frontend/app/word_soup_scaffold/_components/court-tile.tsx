@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 import type { WordSoupCourtCell } from '@/lib/api/games/word-soup/types';
 import { lightenHexColor } from '../_lib/color-utils';
@@ -42,6 +43,7 @@ export default function CourtTile({
   onSelectionStart,
   onSelectionContinue,
 }: Props) {
+  const t = useTranslations('games.wordSoup');
   const borderColor =
     cell.highlightedByPlayerId !== undefined
      ? playerColours[cell.highlightedByPlayerId] ?? '#F59E0B'
@@ -92,7 +94,9 @@ export default function CourtTile({
 
   const selectionOutline = isSelected ? '2px solid #10B981' : undefined;
   const isLeading = celebrationHighlight?.status === 'leading';
-  const letterLabel = hideLetter ? 'hidden' : cell.char || 'empty';
+  const letterLabel = hideLetter
+    ? t('cellHidden')
+    : cell.char || t('cellEmpty');
 
   // Found-word tiles keep the tinted background only. A per-side black outline
   // used to be set in code but was overridden by borderWidth: 0 — keep that look.
@@ -109,7 +113,7 @@ export default function CourtTile({
   return (
     <button
       type="button"
-      aria-label={`Row ${row + 1}, column ${col + 1}, ${letterLabel}`}
+      aria-label={`${t('cellTitle', { row: row + 1, col: col + 1 })}, ${letterLabel}`}
       aria-pressed={isSelected}
       data-court-tile
       data-row={row}

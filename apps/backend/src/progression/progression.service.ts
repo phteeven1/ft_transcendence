@@ -49,4 +49,10 @@ export class ProgressionService {
   recordGameOutcome(gameId: number): Promise<GameFinishOutcome | null> {
     return this.outcomes.recordGameOutcome(gameId);
   }
+
+  getUnrewardedFinishOutcome(
+    gameId: number,
+  ): Promise<GameFinishOutcome | null> {
+    return this.outcomes.getUnrewardedFinishOutcome(gameId);
+  }
 }

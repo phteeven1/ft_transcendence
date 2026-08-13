@@ -1,0 +1,34 @@
+# Dependencies and build artifacts
+node_modules
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/build
+**/.turbo
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+**/.vscode
+**/.idea
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Documentation and misc
+*.md
+TODO.md
+en.subject.pdf
+
+# Frontend is not needed when building the backend
+apps/frontend
+
+# Local dev artifacts
+**/*.log
+**/.DS_Store
+**/__pycache__

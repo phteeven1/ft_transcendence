@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 type WordSoupTitleProps = {
   wordsFound: number;
   totalWords: number;
@@ -7,13 +9,14 @@ type WordSoupTitleProps = {
 
 /** Compact brand title for the top-left corner above the player rail. */
 export default function WordSoupTitle({ wordsFound, totalWords }: WordSoupTitleProps) {
+  const t = useTranslations('games.wordSoup');
   const progress = totalWords > 0 ? Math.min(1, wordsFound / totalWords) : 0;
 
   return (
     <header className="flex h-full w-full flex-col justify-center gap-1.5">
       <div className="rounded-2xl border border-emerald-200 bg-white/90 px-2.5 py-2 shadow-sm sm:px-3">
         <h1 className="font-heading text-center text-lg font-black leading-none tracking-tight text-emerald-800 sm:text-xl">
-          Word Soup
+          {t('title')}
         </h1>
       </div>
       <div
@@ -22,7 +25,7 @@ export default function WordSoupTitle({ wordsFound, totalWords }: WordSoupTitleP
         aria-valuemin={0}
         aria-valuemax={totalWords}
         aria-valuenow={wordsFound}
-        aria-label="Words found"
+        aria-label={t('wordsFoundProgress')}
       >
         <div
           className="h-full rounded-full bg-emerald-500 transition-[width] duration-300 ease-out"

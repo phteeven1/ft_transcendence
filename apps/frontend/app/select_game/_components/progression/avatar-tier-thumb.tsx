@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import HostCharacter from '@/app/components/game/host-character';
 import {
   getAvatarAnimalStyle,
   getAvatarTierStyle,
   resolveAvatarTier,
 } from './avatar-tier-styles';
+import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 
 type AvatarTierThumbProps = {
   tier: number;
@@ -20,10 +22,11 @@ export function AvatarTierThumb({
   className = '',
   title,
 }: AvatarTierThumbProps) {
+  const t = useTranslations('games.lobby.progression');
   const definition = resolveAvatarTier(tier);
   const style = getAvatarTierStyle(definition);
   const animalStyle = getAvatarAnimalStyle(animal);
-  const label = title ?? definition.label;
+  const label = title ?? translateAvatarTier(t, definition.tier);
 
   return (
     <span

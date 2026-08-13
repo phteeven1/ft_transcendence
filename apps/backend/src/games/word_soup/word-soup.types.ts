@@ -15,6 +15,9 @@ export type FoundWord = {
   word: string;
 };
 
+/** Structured failure reasons the client can localise. */
+export type GuessMessageKey = 'wrongPosition' | 'alreadyFoundElsewhere';
+
 export type GuessResult =
   | {
       success: true;
@@ -28,9 +31,20 @@ export type GuessResult =
   | {
       success: false;
       message: string;
+      /** Optional i18n key under games.wordSoup.guess.* */
+      messageKey?: GuessMessageKey;
       frozen?: boolean;
       frozenUntil?: number;
     };
+
+export type PlacedWordMetadata = {
+  word: string;
+  startRow: number;
+  startCol: number;
+  endRow: number;
+  endCol: number;
+  direction: Direction;
+};
 
 export type Position = {
   row: number;
@@ -47,7 +61,7 @@ export type SharedWordSoupCourt = {
   playerBestWordStreaks: Record<number, number>;
   playerFreezeCounts: Record<number, number>;
   leftPlayers: Record<number, string>;
-  solutionWords: string[];
+  solutionWords: PlacedWordMetadata[];
   foundWords: FoundWord[];
   frozenUntil: Record<number, number>;
   isIntroAlreadyShown: Record<number, boolean>;

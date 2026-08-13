@@ -488,6 +488,20 @@
         "gameTypes": {
           "wordSoup": "Soupe de mots",
           "wordBuilding": "Construction de mots"
+        },
+        "tiers": {
+          "0": "Apprenti",
+          "1": "Explorateur",
+          "2": "Maître des mots",
+          "3": "Champion",
+          "4": "Légende"
+        },
+        "animals": {
+          "0": "Lapin",
+          "1": "Renard",
+          "2": "Ours",
+          "3": "Tigre",
+          "4": "Lion"
         }
       }
     },
@@ -539,6 +553,12 @@
       "leaveGame": "Quitter le jeu",
       "message": "Si tu pars maintenant, ta session de jeu se terminera immédiatement. Tu ne pourras pas rejoindre à nouveau — un parent devra démarrer une nouvelle session pour toi."
     },
+    "endGame": {
+      "title": "Terminer cette partie ?",
+      "message": "La partie se terminera immédiatement pour tous les joueurs. Si le puzzle n'est pas encore terminé, aucun XP ne sera attribué.",
+      "cancel": "Continuer à jouer",
+      "confirm": "Terminer la partie"
+    },
     "wordBuilding": {
       "defaultName": "Construction de mots",
       "generating": "Génération de la grille…",
@@ -554,10 +574,85 @@
       "returningToLobby": "Retour au lobby…"
     },
     "wordSoup": {
+      "title": "Soupe de mots",
       "courtSizeSmall": "S",
       "courtSizeMedium": "M",
       "courtSizeLarge": "L",
-      "cellTitle": "Ligne {row}, Colonne {col}"
+      "courtSizeLabel": "Taille du plateau",
+      "cellTitle": "Ligne {row}, Colonne {col}",
+      "cellHidden": "masquée",
+      "cellEmpty": "vide",
+      "timeLabel": "Temps",
+      "wordsHeading": "Mots",
+      "statsTotal": "Total",
+      "statsFound": "Trouvés",
+      "statsLeft": "Restants",
+      "wordsFoundProgress": "Mots trouvés",
+      "submitGuess": "Envoyer la proposition",
+      "submitting": "Envoi…",
+      "frozen": "Gelé ! 🧊 {seconds}s",
+      "reconnecting": "Reconnexion au serveur de jeu…",
+      "initErrorTitle": "Impossible de démarrer Soupe de mots",
+      "tryAgain": "Réessayer",
+      "playersAndStats": "Joueurs et compteur de mots",
+      "scoreboardLabel": "Tableau des scores",
+      "leftGame": "A quitté le jeu",
+      "frozenSeconds": "Gelé : {seconds}s",
+      "scoringStreak": "Série de points : {streak}",
+      "playerAvatar": "Avatar de {name}",
+      "hostTitle": "Animateur Soupe de mots",
+      "messageBanner": "Bandeau de messages du jeu",
+      "guess": {
+        "wrongPosition": "Bonne tentative, mais la position du mot est incorrecte — cherche-le ailleurs dans la grille !",
+        "alreadyFoundElsewhere": "Bonne tentative, mais ce mot a déjà été trouvé ailleurs dans la grille !"
+      },
+      "intro": {
+        "welcome": "Bienvenue dans Soupe de mots !",
+        "briefing": "Dans ce jeu, tu dois trouver des mots dans la grille.",
+        "wordsIntro": "Voici les mots…",
+        "letsGo": "OK, c'est parti !",
+        "startingIn": "Départ dans",
+        "go": "GO !",
+        "wordOf": "Mot {current} sur {total}"
+      },
+      "outro": {
+        "gameOverTitle": "Résultats de la partie",
+        "finalScores": "Scores finaux",
+        "scoresComingUp": "Scores à venir…",
+        "pointsXp": "{score} pts · +{xp} XP",
+        "winner": "Gagnant",
+        "returnToLobby": "Retour au lobby",
+        "almostDone": "Presque fini…",
+        "closingSolo": "Bravo {name}, super partie solo ! À bientôt !",
+        "closingMulti": "Bravo à tous, super partie ! À bientôt !",
+        "placeAnnouncement": "{place}e place : {name}, avec {score} points et +{xp} XP !",
+        "firstPlaceSolo": "1re place : {name}, avec {score} points et +{xp} XP !",
+        "winnersPrefix": "Et enfin, les gagnants ! ",
+        "winnerPrefix": "Et enfin, le gagnant, ",
+        "winnerAnnouncement": "{name}, avec {score} points et +{xp} XP !"
+      },
+      "events": {
+        "playerFoundWord": "{name} a trouvé {word}",
+        "lastWord": "Dernier mot !",
+        "playerFrozen": "{name} est gelé !",
+        "playerUnfrozen": "{name} est de retour !",
+        "playerLeft": "{name} a quitté le jeu"
+      },
+      "rules": {
+        "show": "Afficher les règles",
+        "hide": "Masquer les règles",
+        "title": "Règles du jeu",
+        "howToPlay": "Comment jouer",
+        "howToPlay1": "Surligne un mot sur la grille (clic gauche et glisser de la première à la dernière lettre).",
+        "howToPlay2": "Les mots vont de gauche à droite ou de haut en bas",
+        "howToPlay3": "Les mots trouvés sont surlignés dans ta couleur de joueur",
+        "rulesHeading": "Règles",
+        "rules1": "Des points sont attribués pour chaque mot trouvé.",
+        "rules2": "Le joueur avec le plus de points à la fin gagne.",
+        "rules3": "Les mauvaises propositions te gèlent pendant quelques secondes",
+        "rules4": "Des XP sont attribués pour chaque mot trouvé.",
+        "rules5": "Le gagnant reçoit un trophée et 35 XP."
+      }
     }
   },
   "session": {

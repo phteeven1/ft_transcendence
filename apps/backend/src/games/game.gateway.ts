@@ -145,6 +145,7 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     client.emit('game:guessResult', {
       success: false,
       message: result.message,
+      messageKey: result.messageKey,
       frozen: result.frozen,
       frozenUntil: result.frozenUntil,
     });

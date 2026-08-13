@@ -25,6 +25,7 @@ import {
   generateTrueCourt,
   normalizeVocabularyWords,
 } from './word-soup-placement-engine';
+import { resolveEmbeddedWordHintKey } from './word-soup-guess-helpers';
 
 type LoadedGame = Awaited<ReturnType<WordSoupService['loadGame']>>;
 
@@ -101,7 +102,8 @@ export class WordSoupService {
     if (!court.introStartedAt) court.introStartedAt = Date.now();
     if (!court.playStartedAt) {
       court.playStartedAt =
-        court.introStartedAt + estimateIntroDurationMs(court.solutionWords);
+        court.introStartedAt +
+        estimateIntroDurationMs(court.solutionWords.map((item) => item.word));
     }
   }
 
@@ -146,11 +148,19 @@ export class WordSoupService {
       frozenUntil: {},
       isIntroAlreadyShown: this.createIntroShownState(playerIds),
       introStartedAt,
-      playStartedAt: introStartedAt + estimateIntroDurationMs(placedWords),
+      playStartedAt:
+        introStartedAt +
+        estimateIntroDurationMs(placedWords.map((item) => item.word)),
     };
 
     this.sharedCourts.set(gameId, sharedCourt);
     return sharedCourt;
+  }
+
+  isGameComplete(gameId: number): boolean {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return false;
+    return this.isCourtComplete(court);
   }
 
   /** Evict in-memory court and cancel freeze timers for a finished/abandoned game. */
@@ -307,12 +317,6 @@ export class WordSoupService {
     };
   }
 
-  private extractWord(trueCourt: CourtCell[][], selection: Position[]): string {
-    return selection
-      .map(({ row, col }) => trueCourt[row][col]?.char ?? '')
-      .join('');
-  }
-
   private fillRandom(court: CourtCell[][]): CourtCell[][] {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -447,6 +451,8 @@ export class WordSoupService {
       return {
         success: false,
         message: `You're frozen for ${secondsLeft} more second${secondsLeft === 1 ? '' : 's'}! 🧊`,
+        frozen: true,
+        frozenUntil: court.frozenUntil[playerId],
       };
     }
 
@@ -485,46 +491,77 @@ export class WordSoupService {
       };
     }
 
-    const word = this.extractWord(
-      court.visibleCourt,
-      normalisedSelection,
-    ).trim();
+    const startNode = normalisedSelection[0];
+    const endNode = normalisedSelection[normalisedSelection.length - 1];
+    const guessMinR = Math.min(startNode.row, endNode.row);
+    const guessMaxR = Math.max(startNode.row, endNode.row);
+    const guessMinC = Math.min(startNode.col, endNode.col);
+    const guessMaxC = Math.max(startNode.col, endNode.col);
+    const [derivedDx, derivedDy] = direction;
 
-    if (!word) {
+    // Match by placed coordinates so a substring of a longer phrase
+    // (e.g. FOOTBALL inside AMERICAN FOOTBALL) cannot claim another word.
+    const matchedWordMeta = court.solutionWords.find((solution) => {
+      const solMinR = Math.min(solution.startRow, solution.endRow);
+      const solMaxR = Math.max(solution.startRow, solution.endRow);
+      const solMinC = Math.min(solution.startCol, solution.endCol);
+      const solMaxC = Math.max(solution.startCol, solution.endCol);
+
+      const boundsMatch =
+        guessMinR === solMinR &&
+        guessMaxR === solMaxR &&
+        guessMinC === solMinC &&
+        guessMaxC === solMaxC;
+
+      if (!boundsMatch) return false;
+      if (solution.word.length !== normalisedSelection.length) return false;
+
+      const [sDx, sDy] = solution.direction;
+      return (
+        Math.abs(derivedDx) === Math.abs(sDx) &&
+        Math.abs(derivedDy) === Math.abs(sDy)
+      );
+    });
+
+    if (!matchedWordMeta) {
+      const embeddedHint = this.getEmbeddedWordHint(court, normalisedSelection);
+      if (embeddedHint) {
+        return embeddedHint;
+      }
       return this.penalizeIncorrectGuess(gameId, playerId);
     }
 
-    const normalisedWord = word.toUpperCase();
-    if (court.foundWords.some((found) => found.word === normalisedWord)) {
+    const alreadyFound = court.foundWords.some(
+      (found) =>
+        found.word === matchedWordMeta.word &&
+        Math.min(
+          found.cells[0].row,
+          found.cells[found.cells.length - 1].row,
+        ) === guessMinR &&
+        Math.min(
+          found.cells[0].col,
+          found.cells[found.cells.length - 1].col,
+        ) === guessMinC,
+    );
+
+    if (alreadyFound) {
       return { success: false, message: 'Already found' };
     }
 
-    const matchedSolution = court.solutionWords.find(
-      (s) => s === normalisedWord,
+    const [tDx, tDy] = matchedWordMeta.direction;
+    const targetCells: Position[] = Array.from(
+      { length: matchedWordMeta.word.length },
+      (_, i) => ({
+        row: matchedWordMeta.startRow + i * tDx,
+        col: matchedWordMeta.startCol + i * tDy,
+      }),
     );
-    if (!matchedSolution) {
-      return this.penalizeIncorrectGuess(gameId, playerId);
-    }
-
-    if (normalisedWord.length !== normalisedSelection.length) {
-      return this.penalizeIncorrectGuess(gameId, playerId);
-    }
-
-    const exactCharMatch = normalisedSelection.every(({ row, col }, idx) => {
-      const expectedChar = matchedSolution[idx];
-      const actualChar = (court.trueCourt[row][col]?.char ?? '').toUpperCase();
-      return actualChar === expectedChar;
-    });
-
-    if (!exactCharMatch) {
-      return this.penalizeIncorrectGuess(gameId, playerId);
-    }
 
     court.foundWords.push({
-      word: normalisedWord,
+      word: matchedWordMeta.word,
       playerId,
-      cells: normalisedSelection,
-      direction,
+      cells: targetCells,
+      direction: matchedWordMeta.direction,
     });
     this.addScoreForPlayer(court, playerId, POINTS_PER_WORD);
     court.playerWordCounts[playerId] =
@@ -535,7 +572,7 @@ export class WordSoupService {
       court.playerStreaks[playerId],
     );
 
-    normalisedSelection.forEach(({ row, col }) => {
+    targetCells.forEach(({ row, col }) => {
       court.visibleCourt[row][col] = {
         ...court.visibleCourt[row][col],
         highlightedByPlayerId: playerId,
@@ -546,12 +583,39 @@ export class WordSoupService {
 
     return {
       success: true,
-      word: normalisedWord,
-      cells: normalisedSelection,
-      direction,
+      word: matchedWordMeta.word,
+      cells: targetCells,
+      direction: matchedWordMeta.direction,
       playerScores: court.playerScores,
       solved,
       state: this.buildGameState(court, playerId),
+    };
+  }
+
+  /**
+   * Detects selecting a full solution word that is embedded inside a longer
+   * placed phrase (e.g. TENNIS within TABLE TENNIS). Those near-misses should
+   * not freeze the player — they get a hint instead.
+   */
+  private getEmbeddedWordHint(
+    court: SharedWordSoupCourt,
+    selection: Position[],
+  ): Extract<GuessResult, { success: false }> | null {
+    const messageKey = resolveEmbeddedWordHintKey(
+      court.solutionWords,
+      court.foundWords,
+      court.trueCourt,
+      selection,
+    );
+    if (!messageKey) return null;
+
+    return {
+      success: false,
+      messageKey,
+      message:
+        messageKey === 'alreadyFoundElsewhere'
+          ? 'Good guess, but the word has already been found somewhere else in the grid!'
+          : "Good guess, but the word's position is incorrect - see if you can find it elsewhere in the grid!",
     };
   }
 
@@ -710,7 +774,7 @@ export class WordSoupService {
       playerWordCounts: { ...court.playerWordCounts },
       playerStreaks: { ...court.playerStreaks },
       leftPlayers: { ...court.leftPlayers },
-      solutionWords: [...court.solutionWords],
+      solutionWords: court.solutionWords.map((item) => item.word),
       foundWords: court.foundWords.map((found) => ({
         word: found.word,
         playerId: found.playerId,

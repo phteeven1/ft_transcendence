@@ -1,11 +1,12 @@
 import {
   canPlace,
-  collectValidPlacements,
   createEmptyCourt,
   generateTrueCourt,
+  hasValidOverlaps,
   normalizeVocabularyWords,
   placeWord,
 } from './word-soup-placement-engine';
+import type { PlacedWordMetadata } from './word-soup.types';
 import { COURT_COLS, COURT_ROWS } from './word-soup.constants';
 
 describe('normalizeVocabularyWords', () => {
@@ -35,20 +36,18 @@ describe('generateTrueCourt', () => {
     const { trueCourt, placedWords } = generateTrueCourt(words);
 
     expect(placedWords.length).toBeGreaterThan(0);
-    expect(placedWords.every((word) => words.includes(word))).toBe(true);
+    expect(placedWords.every((placed) => words.includes(placed.word))).toBe(
+      true,
+    );
 
-    for (const word of placedWords) {
-      const placements = collectValidPlacements(trueCourt, word);
-      // Word must exist somewhere as an exact placement (overlaps allowed with itself).
-      const found = placements.some((placement) => {
-        const [dx, dy] = placement.direction;
-        return word.split('').every((ch, i) => {
-          const cell =
-            trueCourt[placement.row + i * dx][placement.col + i * dy];
-          return cell.char === ch;
-        });
+    for (const placed of placedWords) {
+      const [dx, dy] = placed.direction;
+      const lettersMatch = placed.word.split('').every((ch, i) => {
+        const cell =
+          trueCourt[placed.startRow + i * dx][placed.startCol + i * dy];
+        return cell.char === ch;
       });
-      expect(found).toBe(true);
+      expect(lettersMatch).toBe(true);
     }
   });
 
@@ -73,6 +72,96 @@ describe('generateTrueCourt', () => {
     expect(placedWords).toEqual([]);
     expect(trueCourt).toHaveLength(COURT_ROWS);
     expect(trueCourt[0]).toHaveLength(COURT_COLS);
+  });
+
+  it('only allows perpendicular single-letter overlaps between words', () => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const { placedWords } = generateTrueCourt(
+        ['RUNNING', 'GOLF', 'CAT', 'DOG', 'BIRD', 'FISH'],
+        6,
+      );
+
+      for (let i = 0; i < placedWords.length; i++) {
+        for (let j = i + 1; j < placedWords.length; j++) {
+          const a = placedWords[i];
+          const b = placedWords[j];
+          const aCells = new Set(
+            Array.from({ length: a.word.length }, (_, k) => {
+              const [dx, dy] = a.direction;
+              return `${a.startRow + k * dx},${a.startCol + k * dy}`;
+            }),
+          );
+          const shared = Array.from({ length: b.word.length }, (_, k) => {
+            const [dx, dy] = b.direction;
+            return `${b.startRow + k * dx},${b.startCol + k * dy}`;
+          }).filter((key) => aCells.has(key));
+
+          if (shared.length === 0) continue;
+          expect(shared.length).toBe(1);
+          expect(
+            a.direction[0] * b.direction[0] + a.direction[1] * b.direction[1],
+          ).toBe(0);
+        }
+      }
+    }
+  });
+});
+
+describe('hasValidOverlaps', () => {
+  it('rejects same-direction shared letters (RUNNINGOLF-style)', () => {
+    const placed: PlacedWordMetadata[] = [
+      {
+        word: 'RUNNING',
+        startRow: 0,
+        startCol: 0,
+        endRow: 0,
+        endCol: 6,
+        direction: [0, 1],
+      },
+    ];
+
+    // GOLF would start at RUNNING's trailing G -> RUNNINGOLF
+    expect(hasValidOverlaps('GOLF', 0, 6, [0, 1], placed)).toBe(false);
+  });
+
+  it('allows a single perpendicular shared letter', () => {
+    const placed: PlacedWordMetadata[] = [
+      {
+        word: 'CAT',
+        startRow: 0,
+        startCol: 0,
+        endRow: 0,
+        endCol: 2,
+        direction: [0, 1],
+      },
+    ];
+
+    // Vertical word crossing at A
+    expect(hasValidOverlaps('BAG', 0, 1, [1, 0], placed)).toBe(true);
+  });
+
+  it('allows crossing two different words at one letter each', () => {
+    const placed: PlacedWordMetadata[] = [
+      {
+        word: 'CAT',
+        startRow: 0,
+        startCol: 0,
+        endRow: 0,
+        endCol: 2,
+        direction: [0, 1],
+      },
+      {
+        word: 'DOG',
+        startRow: 2,
+        startCol: 0,
+        endRow: 2,
+        endCol: 2,
+        direction: [0, 1],
+      },
+    ];
+
+    // Vertical word crossing CAT at A and DOG at O
+    expect(hasValidOverlaps('AORTA', 0, 1, [1, 0], placed)).toBe(true);
   });
 });
 

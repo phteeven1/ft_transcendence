@@ -7,7 +7,12 @@ import { gamesApi, playersApi } from '@/lib/api';
 import { Game, Player } from '../types';
 import { useSessionGuard } from '../hooks/use-session-guard';
 import { useAuth } from '../context/auth-context';
-import { clearPlayerSession } from '@/lib/player-session';
+import {
+  clearPlayerSession,
+  getPlayerSession,
+  isSessionExpired,
+} from '@/lib/player-session';
+import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import AbandonPlayModal from './_components/abandon-play-modal';
 import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
@@ -27,7 +32,7 @@ export default function PlayGameClient() {
   const tLobby = useTranslations('games.lobby');
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { logoutPlayer } = useAuth();
+  const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
   useSessionGuard();
 
   const gameId = Number(searchParams.get('gameId'));
@@ -46,8 +51,14 @@ export default function PlayGameClient() {
     }
     const load = async () => {
       const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
-      if (!loadedGame) {
-        router.push('/');
+      if (!loadedGame || loadedGame.isFinished) {
+        const stored = getPlayerSession();
+        if (stored && !isSessionExpired(stored.expiresAt)) {
+          await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
+          router.replace('/select_game');
+          return;
+        }
+        router.replace('/session_over');
         return;
       }
       setGame(loadedGame);
@@ -55,8 +66,8 @@ export default function PlayGameClient() {
       setPlayers(loadedPlayers);
       setLoading(false);
     };
-    load();
-  }, [gameId, playerId, router]);
+    void load();
+  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
 
   useEffect(() => {
     if (!gameId) return;

@@ -30,6 +30,7 @@ const INTRO_GO_HOLD_MS = 900;
 const INTRO_WELCOME = 'Welcome to Word Soup!';
 const INTRO_BRIEFING = 'In this game, you have to find words in the grid.';
 const INTRO_WORDS_HEADER = 'Here are the words...';
+const INTRO_LETS_GO = "OK, let's go!";
 
 function introSpeechBlockMs(text: string, charMs: number): number {
   return text.length * charMs + INTRO_HOLD_AFTER_TYPE_MS;
@@ -53,6 +54,10 @@ export function estimateIntroDurationMs(solutionWords: string[]): number {
       introSpeechBlockMs(word, INTRO_WORD_CHAR_MS) + INTRO_GAP_DURATION_MS;
   }
 
-  total += INTRO_COUNTDOWN_STEP_MS * 3 + INTRO_GO_HOLD_MS;
+  total +=
+    introSpeechBlockMs(INTRO_LETS_GO, INTRO_CHAR_MS) +
+    INTRO_GAP_DURATION_MS +
+    INTRO_COUNTDOWN_STEP_MS * 3 +
+    INTRO_GO_HOLD_MS;
   return total;
 }
