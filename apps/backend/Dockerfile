@@ -12,7 +12,7 @@ RUN cd packages/database && npm ci && npm run db:generate
 
 COPY packages/database ./packages/database
 
-COPY apps/backend/package.json apps/backend/package-lock.json ./apps/backend/
+COPY apps/backend/package.json apps/backend/package-lock.json apps/backend/.npmrc ./apps/backend/
 RUN cd apps/backend && npm ci
 
 COPY apps/backend ./apps/backend
@@ -33,8 +33,10 @@ COPY packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/generated ./packages/database/generated
 RUN cd packages/database && npm ci --omit=dev --ignore-scripts
 
-COPY apps/backend/package.json apps/backend/package-lock.json ./apps/backend/
+COPY apps/backend/package.json apps/backend/package-lock.json apps/backend/.npmrc ./apps/backend/
 # Client already generated in builder; skip backend postinstall.
+# .npmrc sets install-links=false so file: database stays a symlink and
+# sees packages/database/generated (a packed copy would omit it).
 RUN cd apps/backend && npm ci --omit=dev --ignore-scripts
 
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
