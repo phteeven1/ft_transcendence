@@ -156,7 +156,7 @@
     "title": "Gérer les groupes",
     "welcome": "Bon retour, {name} !",
     "userSettings": "Paramètres utilisateur",
-    "createNewGroup": "Créer un nouveau groupe",
+    "newGroup": "Nouveau groupe",
     "noGroups": "Vous n'êtes encore dans aucun groupe.",
     "selectGroup": "Sélectionnez un groupe pour gérer les membres et les joueurs.",
     "settings": {
@@ -181,28 +181,22 @@
     },
     "createGroup": {
       "title": "Créer un nouveau groupe",
-      "subtitle": "Choisissez un nom pour votre nouveau groupe.",
       "groupNameLabel": "Nom du groupe",
       "groupNamePlaceholder": "Entrez un nom de groupe",
-      "submit": "Créer le groupe",
-      "backToDashboard": "Retour au tableau de bord",
       "failed": "Échec de la création du groupe. Veuillez réessayer."
     }
   },
   "group": {
-    "roleAdmin": "Vous êtes administrateur de ce groupe.",
     "roleMember": "Vous êtes membre de ce groupe.",
     "noMembers": "Aucun membre pour le moment.",
     "rowOptions": "Options pour {name}",
-    "ofParent": "de {name}",
-    "ofParentYou": "de {name} ({you})",
     "tabs": {
       "members": "Membres",
       "players": "Joueurs",
       "vocabulary": "Vocabulaire"
     },
     "resignAdmin": "Démissionner comme admin",
-    "sendInvite": "Envoyer une invitation",
+    "newMember": "Nouveau membre",
     "sendInviteModal": {
       "title": "Envoyer une invitation",
       "invitationLabel": "Invitation",
@@ -256,7 +250,8 @@
   },
   "players": {
     "noPlayers": "Aucun joueur pour le moment.",
-    "createPlayer": "Créer un joueur",
+    "newPlayer": "Nouveau joueur",
+    "play": "Jouer",
     "create": {
       "title": "Créer un profil de joueur",
       "playerNameLabel": "Nom du joueur",
@@ -284,9 +279,8 @@
     }
   },
   "vocabulary": {
-    "addVocabulary": "Ajouter un vocabulaire",
+    "newVocabulary": "Nouveau vocabulaire",
     "noVocabularies": "Aucun vocabulaire pour le moment.",
-    "active": "Actif",
     "importTitle": "Import de vocabulaire par IA",
     "fromLanguage": "Langue source",
     "toLanguage": "Langue cible",

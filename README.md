@@ -96,7 +96,7 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------- |
 | Registration / sign-in | Parent accounts; passwords hashed with bcrypt   | `app/register`, `app/signin`, `users.service.ts`  |
 | Dashboard              | Group list, members, players, profile settings  | `app/dashboard`                                   |
-| Groups                 | Create, join, leave, admin roles                | `app/create_group`, `app/dashboard`               |
+| Groups                 | Create, join, leave, admin roles                | `app/dashboard`                                   |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
 | Players                | Child CRUD, Play Now                            | `app/dashboard` (Players tab), `players.service.ts` |
 | Vocabulary             | CRUD, set active list for games                 | `app/dashboard` (Vocabulary tab)                  |

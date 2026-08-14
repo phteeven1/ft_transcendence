@@ -156,7 +156,7 @@
     "title": "Gruppen verwalten",
     "welcome": "Willkommen zurück, {name}!",
     "userSettings": "Benutzereinstellungen",
-    "createNewGroup": "Neue Gruppe erstellen",
+    "newGroup": "Neue Gruppe",
     "noGroups": "Sie sind noch in keiner Gruppe.",
     "selectGroup": "Wählen Sie eine Gruppe, um Mitglieder und Spieler zu verwalten.",
     "settings": {
@@ -181,28 +181,21 @@
     },
     "createGroup": {
       "title": "Neue Gruppe erstellen",
-      "subtitle": "Wählen Sie einen Namen für Ihre neue Gruppe.",
       "groupNameLabel": "Gruppenname",
       "groupNamePlaceholder": "Geben Sie einen Gruppennamen ein",
-      "submit": "Gruppe erstellen",
-      "backToDashboard": "Zurück zum Dashboard",
       "failed": "Gruppe konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
     }
   },
   "group": {
-    "roleAdmin": "Sie sind Administrator dieser Gruppe.",
-    "roleMember": "Sie sind Mitglied dieser Gruppe.",
     "noMembers": "Noch keine Mitglieder.",
     "rowOptions": "Optionen für {name}",
-    "ofParent": "von {name}",
-    "ofParentYou": "von {name} ({you})",
     "tabs": {
       "members": "Mitglieder",
       "players": "Spieler",
       "vocabulary": "Vokabular"
     },
     "resignAdmin": "Als Admin zurücktreten",
-    "sendInvite": "Einladung senden",
+    "newMember": "Neues Mitglied",
     "sendInviteModal": {
       "title": "Einladung senden",
       "invitationLabel": "Einladung",
@@ -256,7 +249,8 @@
   },
   "players": {
     "noPlayers": "Noch keine Spieler.",
-    "createPlayer": "Spieler erstellen",
+    "newPlayer": "Neuer Spieler",
+    "play": "Spielen",
     "create": {
       "title": "Spielerprofil erstellen",
       "playerNameLabel": "Spielername",
@@ -284,9 +278,8 @@
     }
   },
   "vocabulary": {
-    "addVocabulary": "Vokabular hinzufügen",
+    "newVocabulary": "Neues Vokabular",
     "noVocabularies": "Noch keine Vokabulare.",
-    "active": "Aktiv",
     "importTitle": "KI-Vokabularimport",
     "fromLanguage": "Ausgangssprache",
     "toLanguage": "Zielsprache",

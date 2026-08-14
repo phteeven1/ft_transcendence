@@ -8,7 +8,7 @@ import {
   Check,
   CircleNotch,
   Crown,
-  DotsThreeVertical,
+	DotsThree,
   EnvelopeSimple,
   GameController,
   Gear,
@@ -17,6 +17,7 @@ import {
   Lock,
   PencilSimple,
   Play,
+  Plus,
   PuzzlePiece,
   SignOut,
   Snowflake,
@@ -43,6 +44,7 @@ export type IconName =
   | 'dots-three'
   | 'envelope'
   | 'user-plus'
+  | 'plus'
   | 'pencil'
   | 'sign-out'
   | 'trash'
@@ -66,9 +68,10 @@ const ICONS: Record<IconName, PhosphorIcon> = {
   snowflake: Snowflake,
   info: Info,
   spinner: CircleNotch,
-  'dots-three': DotsThreeVertical,
+  'dots-three': DotsThree,
   envelope: EnvelopeSimple,
   'user-plus': UserPlus,
+  plus: Plus,
   pencil: PencilSimple,
   'sign-out': SignOut,
   trash: Trash,

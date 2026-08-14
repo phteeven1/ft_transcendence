@@ -40,7 +40,6 @@ export default function DashboardPage() {
 
 function Dashboard() {
   const t = useTranslations('dashboard');
-  const tGroup = useTranslations('group');
   const { user, group, player, syncGroup, refreshUser, leaveGroup } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,6 +61,7 @@ function Dashboard() {
 
   const [activePlayer, setActivePlayer] = useState<Player | null>(null);
   const [playerDialog, setPlayerDialog] = useState<PlayerAction | null>(null);
+  const [isPlayOpen, setIsPlayOpen] = useState(false);
 
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
   const [actionVocabulary, setActionVocabulary] = useState<Vocabulary | null>(
@@ -275,6 +275,11 @@ function Dashboard() {
     setPlayerDialog(action);
   };
 
+  const handlePlay = (target: Player) => {
+    setActivePlayer(target);
+    setIsPlayOpen(true);
+  };
+
   const handlePlayerCreated = (created: Player) => {
     setPlayers((prev) => [...prev, created]);
   };
@@ -339,10 +344,6 @@ function Dashboard() {
 
   return (
     <PageShell wide>
-      <p className="mb-6 text-muted-foreground text-center">
-        {t('welcome', { name: user.name })}
-      </p>
-
       <div className="flex flex-col md:grid md:grid-cols-5 gap-4 lg:gap-6">
         <div className="md:col-span-2 flex flex-col">
           <GroupsPanel
@@ -351,21 +352,15 @@ function Dashboard() {
             currentUserId={user.id}
             onSelect={(groupId) => void handleGroupSelect(groupId)}
             onAction={handleGroupAction}
+            onCreated={loadDashboard}
           />
         </div>
 
         <div className="md:col-span-3 flex flex-col gap-3">
           {group ? (
             <>
-              <div className="text-center md:text-left">
-                <h2 className="font-heading text-xl font-bold text-foreground">
-                  {group.name}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {isAdmin ? tGroup('roleAdmin') : tGroup('roleMember')}
-                </p>
-              </div>
               <PeoplePanel
+                groupName={group.name}
                 members={currentGroupMembers}
                 players={players}
                 isPlayersLoading={isPlayersLoading}
@@ -376,6 +371,7 @@ function Dashboard() {
                 onTabChange={setActiveTab}
                 onMemberAction={handleMemberAction}
                 onPlayerAction={handlePlayerAction}
+                onPlay={handlePlay}
                 onPlayerCreated={handlePlayerCreated}
                 vocabularies={vocabularies}
                 currentVocabulary={group.currentVocabulary}
@@ -434,8 +430,11 @@ function Dashboard() {
       />
       <InviteToPlay
         player={activePlayer}
-        open={playerDialog === 'invite'}
-        onClose={closePlayerDialog}
+        open={isPlayOpen}
+        onClose={() => {
+          setIsPlayOpen(false);
+          if (playerDialog === null) setActivePlayer(null);
+        }}
       />
       <RenameVocabulary
         vocabulary={actionVocabulary}
