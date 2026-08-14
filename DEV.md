@@ -139,7 +139,7 @@ The server builds the puzzle from the group’s **active vocabulary**. The clien
 
 ## Design
 
-Claymorphism UI. Tokens: `apps/frontend/app/design-tokens.json` and `globals.css`. Components: `apps/frontend/app/components/ui/` (Button, Input, Card, Dialog, PageShell, Panel, Tabs, Dropdown, ListButton, Chip, Tile, Icon, ActionButton — 13 files plus `index.ts`). Fonts: Baloo 2 (headings), Comic Neue (body). Use the `Icon` component for UI glyphs, not emoji.
+Claymorphism UI. Tokens: `apps/frontend/app/design-tokens.json` and `globals.css`. Components: `apps/frontend/app/components/ui/` (Button, Input, Card, Dialog, PageShell, Panel, Chip, Dropdown, Icon — plus `index.ts`). Fonts: Baloo 2 (headings), Comic Neue (body). Use the `Icon` component for UI glyphs, not emoji.
 
 ---
 

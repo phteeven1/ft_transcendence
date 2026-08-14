@@ -16,7 +16,7 @@ export function DropdownItem({ className = '', type = 'button', ...props }: Drop
   return (
     <button
       type={type}
-      className={['clay-dropdown-item text-foreground w-full', className].filter(Boolean).join(' ')}
+      className={['clay-dropdown-item w-full', className].filter(Boolean).join(' ')}
       {...props}
     />
   );

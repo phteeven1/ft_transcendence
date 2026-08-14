@@ -5,7 +5,6 @@ import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
 import { Icon } from '../../components/ui';
 
 type Props = {
@@ -58,9 +57,7 @@ export default function ImportVocabulary({ onImported }: Props) {
   };
 
   return (
-    <Card className="col-span-2 space-y-4">
-      <h2 className="font-heading text-lg font-semibold text-foreground">{t('importTitle')}</h2>
-
+    <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-semibold text-foreground mb-1">{t('fromLanguage')}</label>
@@ -108,6 +105,6 @@ export default function ImportVocabulary({ onImported }: Props) {
           </span>
         ) : t('extractAndSave')}
       </Button>
-    </Card>
+    </div>
   );
 }

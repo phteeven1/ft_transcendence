@@ -31,7 +31,7 @@ export default function CreateGroup() {
         creatorId: user.id,
       });
       const result = await syncGroup(data.id);
-      if (result) router.push('/manage_group');
+      if (result) router.push('/dashboard');
     } catch (error) {
       console.error('Failed to create group:', error);
       setShowError(true);

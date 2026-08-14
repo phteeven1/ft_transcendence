@@ -95,11 +95,11 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Feature                | Description                                     | Paths                                             |
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------- |
 | Registration / sign-in | Parent accounts; passwords hashed with bcrypt   | `app/register`, `app/signin`, `users.service.ts`  |
-| Dashboard              | Group list, profile settings                    | `app/dashboard`                                   |
-| Groups                 | Create, join, leave, admin roles                | `app/create_group`, `app/manage_group`            |
+| Dashboard              | Group list, members, players, profile settings  | `app/dashboard`                                   |
+| Groups                 | Create, join, leave, admin roles                | `app/create_group`, `app/dashboard`               |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
-| Players                | Child CRUD, passphrase, Play Now                | `app/manage_group` (Players tab), `players.service.ts` |
-| Vocabulary             | CRUD, set active list for games                 | `app/manage_vocabulary`                           |
+| Players                | Child CRUD, passphrase, Play Now                | `app/dashboard` (Players tab), `players.service.ts` |
+| Vocabulary             | CRUD, set active list for games                 | `app/dashboard` (Vocabulary tab)                  |
 | AI import              | GPT-4o vision + PDF extract                     | `extraction.service.ts`, `import-vocabulary.tsx`  |
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
 | Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
@@ -155,11 +155,11 @@ Not claimed: SSR, LLM streaming UI, friends system, standard user management (no
 Walk these in order. Use Chrome with the console open — no red errors.
 
 1. **Frameworks** — show `apps/frontend/` (Next.js App Router) and `apps/backend/src/app.module.ts` (Nest modules). Run `npm run dev:local`.
-2. **Design system** — Dashboard tiles, Manage Group tabs/panels, `app/components/ui/index.ts`, tokens in `app/design-tokens.json`.
+2. **Design system** — Dashboard panels, Chip tabs, `app/components/ui/index.ts`, tokens in `app/design-tokens.json`.
 3. **i18n** — home in English, flag menu → Deutsch, then Français. Refresh; language stays. Legal pages (`/privacy`, `/terms`) switch too.
-4. **Auth + groups** — register, create a group, Manage Group (members, promote). Send an invite email, open `/accept_invitation`.
+4. **Auth + groups** — register, create a group, Dashboard (members, promote). Send an invite email, open `/accept_invitation`.
 5. **ORM** — `schema.prisma` and a service using Prisma (e.g. `groups.service.ts`). Optional: `npm run db:studio`.
-6. **Image recognition** — Manage Vocabulary → AI Vocabulary Import → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
+6. **Image recognition** — Dashboard Vocabulary tab → Add vocabulary → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
 7. **Players + Play Now** — create 3 child profiles, start Play Now (minutes). Child lands on Select Game.
 8. **WebSockets + Word Building + remote** — two browsers, same group. Start Word Building. Place a letter in A; B updates without refresh. Show cell lock. Finish puzzle.
 9. **Multiplayer 3+** — third player joins the same pending game (or force-start). Scoreboard shows three names on one grid.
