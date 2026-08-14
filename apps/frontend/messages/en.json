@@ -22,7 +22,6 @@
     "promote": "Promote",
     "resign": "Resign",
     "expel": "Expel",
-    "invite": "Invite",
     "stay": "Stay",
     "skip": "Skip",
     "next": "Next",
@@ -173,11 +172,9 @@
       "oldPasswordLabel": "Old Password",
       "newPasswordLabel": "New Password",
       "confirmNewPasswordLabel": "Confirm New Password",
-      "passwordChangedSuccess": "Your password was changed successfully.",
       "passwordMismatch": "New passwords do not match.",
       "passwordEmpty": "New password cannot be empty.",
-      "oldPasswordIncorrect": "Old password is incorrect. Please try again.",
-      "usernameChangedReminder": "Your username has been changed to {username}. Remember to use it next time you sign in."
+      "oldPasswordIncorrect": "Old password is incorrect. Please try again."
     },
     "createGroup": {
       "title": "Create New Group",
@@ -200,36 +197,29 @@
       "title": "Send Invitation",
       "invitationLabel": "Invitation",
       "emailPlaceholder": "recipient@example.com",
-      "submit": "Submit",
-      "success": "Invitation successfully sent to {email}.",
       "failedPrefix": "Sending invitation failed:"
     },
     "promote": {
       "confirmTitle": "Promote {name}?",
       "confirmMessage": "Promote {name} to admin of {groupName}?",
       "promoteButton": "Promote",
-      "success": "{name} was promoted to an admin in group {groupName}.",
       "failed": "Something went wrong. Please try again."
     },
     "resign": {
       "onlyAdminWarning": "You are the only admin of this group. Promote another member to admin before resigning.",
       "confirm": "Are you sure you want to resign as admin of {groupName}? You will become a regular member.",
-      "success": "You have successfully resigned as admin of {groupName}. You are now a regular member.",
       "failed": "Something went wrong. Please try again."
     },
     "rename": {
       "title": "Rename Group",
       "newNameLabel": "New Group Name",
       "newNamePlaceholder": "Enter new group name",
-      "unchanged": "The group name was not changed.",
-      "success": "Group successfully renamed to {name}.",
       "failed": "Something went wrong. Please try again."
     },
     "expel": {
       "expelButton": "Expel",
       "confirmTitle": "Are you sure?",
       "confirmMessage": "This will expel {memberName} from {groupName}. This cannot be undone.",
-      "success": "{memberName} has been expelled from {groupName}.",
       "failed": "Something went wrong. Please try again."
     },
     "delete": {
@@ -248,7 +238,6 @@
     }
   },
   "players": {
-    "noPlayers": "No players yet.",
     "newPlayer": "New Player",
     "play": "Play",
     "create": {
@@ -267,8 +256,6 @@
       "confirmMessage": "Deleting the player will also result in the player's data (game statistics, XP, leaderboard status) being deleted (for this group only)."
     },
     "invite": {
-      "title": "Invite {name} to Play",
-      "playNow": "Play Now",
       "activeSessionWarning": "{name} already has an active play session. It will end when the timer expires or they leave the game.",
       "sessionDurationTitle": "How long can {name} play?",
       "minutesLabel": "Minutes",

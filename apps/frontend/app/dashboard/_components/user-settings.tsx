@@ -39,7 +39,6 @@ function UserSettingsDialog({
   const { refreshUser } = useAuth();
 
   const [userName, setUserName] = useState(user.name);
-  const [originalUserName] = useState(user.name);
   const [realName, setRealName] = useState(user.realName ?? '');
   const [email, setEmail] = useState(user.email ?? '');
   const [relationshipComment, setRelationshipComment] = useState(
@@ -57,11 +56,6 @@ function UserSettingsDialog({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const [showResult, setShowResult] = useState(false);
-  const [resultMessage, setResultMessage] = useState('');
-  const [showUsernameReminder, setShowUsernameReminder] = useState(false);
-  const [showMain, setShowMain] = useState(true);
-
   const handleConfirm = async () => {
     try {
       await usersApi.update({
@@ -74,12 +68,7 @@ function UserSettingsDialog({
         showRelationshipComment,
       });
       await refreshUser();
-      setShowMain(false);
-      if (userName !== originalUserName) {
-        setShowUsernameReminder(true);
-      } else {
-        onClose();
-      }
+      onClose();
     } catch (error) {
       console.error('Failed to save user settings:', error);
     }
@@ -109,8 +98,6 @@ function UserSettingsDialog({
         newPassword,
       });
       setShowPasswordModal(false);
-      setResultMessage(t('passwordChangedSuccess'));
-      setShowResult(true);
     } catch (error) {
       setPasswordError(t('oldPasswordIncorrect'));
       console.error('changePassword failed:', error);
@@ -120,7 +107,7 @@ function UserSettingsDialog({
   return (
     <>
       <Dialog
-        open={showMain}
+        open
         onClose={onClose}
         title={t('title')}
         onConfirm={handleConfirm}
@@ -239,36 +226,6 @@ function UserSettingsDialog({
             <p className="text-destructive text-sm">{passwordError}</p>
           )}
         </div>
-      </Dialog>
-
-      <Dialog
-        open={showResult}
-        onClose={() => {
-          setShowResult(false);
-          setResultMessage('');
-        }}
-        onConfirm={() => {
-          setShowResult(false);
-          setResultMessage('');
-        }}
-        showCancel={false}
-      >
-        {resultMessage}
-      </Dialog>
-
-      <Dialog
-        open={showUsernameReminder}
-        onClose={() => {
-          setShowUsernameReminder(false);
-          onClose();
-        }}
-        onConfirm={() => {
-          setShowUsernameReminder(false);
-          onClose();
-        }}
-        showCancel={false}
-      >
-        {t('usernameChangedReminder', { username: userName })}
       </Dialog>
     </>
   );

@@ -25,26 +25,19 @@ export default function MemberDialog({
   syncAndRefresh,
 }: Props) {
   const t = useTranslations('group');
-  const tCommon = useTranslations('common');
   const { group, user } = useAuth();
-  const [resultMessage, setResultMessage] = useState('');
-  const [showResult, setShowResult] = useState(false);
+  const [error, setError] = useState('');
 
   if (!group || !user) return null;
 
-  const handleCloseResult = () => {
-    setShowResult(false);
-    setResultMessage('');
-  };
-
-  const showResultMessage = (message: string) => {
+  const handleClose = () => {
+    setError('');
     onClose();
-    setResultMessage(message);
-    setShowResult(true);
   };
 
   const handlePromote = async () => {
     if (!member) return;
+    setError('');
     try {
       await groupsApi.promote({
         groupId: group.id,
@@ -52,17 +45,16 @@ export default function MemberDialog({
         authorId: user.id,
       });
       await syncAndRefresh();
-      showResultMessage(
-        t('promote.success', { name: member.name, groupName: group.name }),
-      );
-    } catch (error) {
-      console.error('Promotion failed:', error);
-      showResultMessage(t('promote.failed'));
+      handleClose();
+    } catch (promoteError) {
+      console.error('Promotion failed:', promoteError);
+      setError(t('promote.failed'));
     }
   };
 
   const handleExpel = async () => {
     if (!member) return;
+    setError('');
     try {
       await groupsApi.expel({
         groupId: group.id,
@@ -70,21 +62,17 @@ export default function MemberDialog({
         authorId: user.id,
       });
       await syncAndRefresh();
-      showResultMessage(
-        t('expel.success', {
-          memberName: member.name,
-          groupName: group.name,
-        }),
-      );
-    } catch (error) {
-      console.error('Expel failed:', error);
-      showResultMessage(t('expel.failed'));
+      handleClose();
+    } catch (expelError) {
+      console.error('Expel failed:', expelError);
+      setError(t('expel.failed'));
     }
   };
 
   const handleResign = async () => {
+    setError('');
     if (group.admins.length === 1) {
-      showResultMessage(t('resign.onlyAdminWarning'));
+      setError(t('resign.onlyAdminWarning'));
       return;
     }
     try {
@@ -94,10 +82,10 @@ export default function MemberDialog({
         authorId: user.id,
       });
       await syncAndRefresh();
-      showResultMessage(t('resign.success', { groupName: group.name }));
-    } catch (error) {
-      console.error('Resign failed:', error);
-      showResultMessage(t('resign.failed'));
+      handleClose();
+    } catch (resignError) {
+      console.error('Resign failed:', resignError);
+      setError(t('resign.failed'));
     }
   };
 
@@ -134,30 +122,21 @@ export default function MemberDialog({
             }
           : null;
 
-  return (
-    <>
-      {confirm && (
-        <Dialog
-          open={open}
-          onClose={onClose}
-          title={confirm.title}
-          confirmLabel={confirm.label}
-          onConfirm={confirm.onConfirm}
-          confirmVariant={confirm.destructive ? 'destructive' : 'accent'}
-        >
-          {confirm.message}
-        </Dialog>
-      )}
+  if (!confirm) return null;
 
-      <Dialog
-        open={showResult}
-        onClose={handleCloseResult}
-        onConfirm={handleCloseResult}
-        showCancel={false}
-        confirmLabel={tCommon('ok')}
-      >
-        {resultMessage}
-      </Dialog>
-    </>
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title={confirm.title}
+      confirmLabel={confirm.label}
+      onConfirm={confirm.onConfirm}
+      confirmVariant={confirm.destructive ? 'destructive' : 'accent'}
+    >
+      <div className="space-y-3">
+        <p>{confirm.message}</p>
+        {error && <p className="text-destructive text-sm">{error}</p>}
+      </div>
+    </Dialog>
   );
 }
