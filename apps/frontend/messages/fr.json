@@ -646,7 +646,7 @@
             "title": "2.3 Contenu que vous téléchargez ou créez",
             "items": [
               "Listes de vocabulaire (mots, traductions, notes) que vous importez ou saisissez manuellement",
-              "Fichiers que vous téléchargez pour l'extraction de vocabulaire (ex. PDF, photos de listes de mots). Les images peuvent être traitées par OCR et structurées par IA pour créer des entrées de vocabulaire",
+              "Fichiers que vous téléchargez pour l'extraction de vocabulaire (ex. PDF, photos de listes de mots). Les images peuvent être envoyées au modèle de langage pour créer des entrées de vocabulaire",
               "Appartenance au groupe et données d'administration (rôles et invitations)",
               "État de jeu, coups et scores générés pendant les sessions multijoueurs"
             ]
@@ -692,14 +692,14 @@
             },
             {
               "label": "Prestataires de services :",
-              "text": "Nous utilisons une infrastructure et des outils pour faire fonctionner l'application, y compris l'hébergement, la livraison d'e-mails (SMTP) et les services IA/OCR pour l'extraction de vocabulaire à partir des fichiers téléchargés. Ces prestataires traitent les données uniquement pour exécuter le service en notre nom"
+              "text": "Nous utilisons une infrastructure et des outils pour faire fonctionner l'application, y compris l'hébergement, la livraison d'e-mails (SMTP) et les services d'IA pour l'extraction de vocabulaire à partir des fichiers téléchargés. Ces prestataires traitent les données uniquement pour exécuter le service en notre nom"
             },
             {
               "label": "Exigences légales :",
               "text": "Nous pouvons divulguer des informations si la loi l'exige ou pour protéger les droits, la sécurité et la protection des utilisateurs et du service"
             }
           ],
-          "uploadWarning": "Lorsque vous téléchargez des images ou des documents pour l'import de vocabulaire, le contenu du fichier peut être envoyé à des services de reconnaissance automatisée pour détecter et structurer les mots. Ne téléchargez pas de documents contenant des données personnelles sensibles sans rapport avec l'apprentissage du vocabulaire."
+          "uploadWarning": "Lorsque vous téléchargez des images ou des documents pour l'import de vocabulaire, le contenu du fichier peut être envoyé au modèle de langage pour détecter et structurer les mots. Ne téléchargez pas de documents contenant des données personnelles sensibles sans rapport avec l'apprentissage du vocabulaire."
         },
         "dataRetention": {
           "title": "6. Conservation des données",
@@ -799,7 +799,7 @@
         "userContent": {
           "title": "5. Contenu utilisateur et vocabulaire",
           "paragraphs": [
-            "Vous conservez la propriété des listes de vocabulaire et autres contenus que vous soumettez (« Contenu utilisateur »). En soumettant du Contenu utilisateur, vous accordez à Dicteé une licence non exclusive et mondiale pour héberger, stocker, afficher et traiter ce contenu uniquement pour exploiter le Service pour vous et votre groupe — y compris l'extraction assistée par OCR et IA lorsque vous téléchargez des fichiers.",
+            "Vous conservez la propriété des listes de vocabulaire et autres contenus que vous soumettez (« Contenu utilisateur »). En soumettant du Contenu utilisateur, vous accordez à Dicteé une licence non exclusive et mondiale pour héberger, stocker, afficher et traiter ce contenu uniquement pour exploiter le Service pour vous et votre groupe — y compris l'extraction assistée par IA lorsque vous téléchargez des fichiers.",
             "Vous déclarez avoir le droit de télécharger du Contenu utilisateur et qu'il ne viole pas les droits de propriété intellectuelle ou de confidentialité de tiers."
           ]
         },
@@ -820,7 +820,7 @@
         "thirdPartyServices": {
           "title": "8. Services tiers",
           "paragraphs": [
-            "Le Service peut intégrer la livraison d'e-mails, la reconnaissance optique de caractères et des modèles de langage pour traiter les supports de vocabulaire téléchargés. Votre utilisation de ces fonctionnalités est également soumise aux politiques des fournisseurs sous-jacents le cas échéant."
+            "Le Service peut intégrer la livraison d'e-mails et des modèles de langage pour traiter les supports de vocabulaire téléchargés. Votre utilisation de ces fonctionnalités est également soumise aux politiques des fournisseurs sous-jacents le cas échéant."
           ]
         },
         "disclaimer": {

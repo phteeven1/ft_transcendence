@@ -646,7 +646,7 @@
             "title": "2.3 Content you upload or create",
             "items": [
               "Vocabulary lists (words, translations, notes) that you import or enter manually",
-              "Files you upload for vocabulary extraction (e.g. PDFs, photos of word lists). Images may be processed with OCR and AI-assisted structuring to build vocabulary entries",
+              "Files you upload for vocabulary extraction (e.g. PDFs, photos of word lists). Images may be sent to the language model to build vocabulary entries",
               "Group membership and administration records (roles and invitations)",
               "Game state, moves, and scores generated during multiplayer sessions"
             ]
@@ -692,14 +692,14 @@
             },
             {
               "label": "Service providers:",
-              "text": "We use infrastructure and tools to run the app, including hosting, email delivery (SMTP), and AI/OCR services for vocabulary extraction from uploaded files. These providers process data only to perform the service on our behalf"
+              "text": "We use infrastructure and tools to run the app, including hosting, email delivery (SMTP), and AI services for vocabulary extraction from uploaded files. These providers process data only to perform the service on our behalf"
             },
             {
               "label": "Legal requirements:",
               "text": "We may disclose information if required by law or to protect the rights, safety, and security of users and the service"
             }
           ],
-          "uploadWarning": "When you upload images or documents for vocabulary import, file content may be sent to automated recognition services to detect and structure words. Do not upload documents containing sensitive personal data unrelated to vocabulary learning."
+          "uploadWarning": "When you upload images or documents for vocabulary import, file content may be sent to the language model to detect and structure words. Do not upload documents containing sensitive personal data unrelated to vocabulary learning."
         },
         "dataRetention": {
           "title": "6. Data retention",
@@ -799,7 +799,7 @@
         "userContent": {
           "title": "5. User content and vocabulary",
           "paragraphs": [
-            "You retain ownership of vocabulary lists and other content you submit (\"User Content\"). By submitting User Content, you grant Dicteé a non-exclusive, worldwide license to host, store, display, and process that content solely to operate the Service for you and your group—including OCR and AI-assisted extraction when you upload files.",
+            "You retain ownership of vocabulary lists and other content you submit (\"User Content\"). By submitting User Content, you grant Dicteé a non-exclusive, worldwide license to host, store, display, and process that content solely to operate the Service for you and your group—including AI-assisted extraction when you upload files.",
             "You represent that you have the right to upload User Content and that it does not infringe third-party intellectual property or privacy rights."
           ]
         },
@@ -820,7 +820,7 @@
         "thirdPartyServices": {
           "title": "8. Third-party services",
           "paragraphs": [
-            "The Service may integrate email delivery, optical character recognition, and language models to process uploaded vocabulary materials. Your use of those features is also subject to the policies of the underlying providers where applicable."
+            "The Service may integrate email delivery and language models to process uploaded vocabulary materials. Your use of those features is also subject to the policies of the underlying providers where applicable."
           ]
         },
         "disclaimer": {
