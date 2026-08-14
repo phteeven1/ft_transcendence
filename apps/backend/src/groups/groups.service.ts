@@ -224,9 +224,4 @@ export class GroupsService {
     });
     return group ? toApiGroup(group) : undefined;
   }
-
-  async findAll(): Promise<Group[]> {
-    const groups = await this.prisma.group.findMany(groupWithMemberships);
-    return groups.map(toApiGroup);
-  }
 }

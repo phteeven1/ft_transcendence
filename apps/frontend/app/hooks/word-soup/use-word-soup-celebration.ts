@@ -9,7 +9,7 @@ import type {
 import {
   POINTS_PER_WORD,
   WORD_SOUP_TILE_ANIM_MS,
-} from '@/app/word_soup_scaffold/_lib/word-soup-constants';
+} from '@/app/word_soup/_lib/word-soup-constants';
 
 type WordGuessed = WordSoupWordGuessedDto;
 

@@ -12,7 +12,7 @@ type Options = {
 };
 
 /**
- * On play_game: warns before tab close. If the user confirms "Leave site",
+ * Warns before tab close. If the user confirms "Leave site",
  * leaves the game and clears the session on the server.
  */
 export function useGameExitGuard({

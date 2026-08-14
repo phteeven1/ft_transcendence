@@ -57,11 +57,6 @@ export class GroupsController {
     return this.groupsService.delete(body.groupId);
   }
 
-  @Get()
-  findAll() {
-    return this.groupsService.findAll();
-  }
-
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.groupsService.findById(Number(id));

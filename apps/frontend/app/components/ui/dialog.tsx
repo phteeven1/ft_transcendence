@@ -20,6 +20,7 @@ export interface DialogProps {
   confirmDisabled?: boolean;
   wide?: boolean;
   scrollable?: boolean;
+  showCancel?: boolean;
 }
 
 export function Dialog({
@@ -36,13 +37,16 @@ export function Dialog({
   confirmDisabled = false,
   wide = false,
   scrollable = false,
+  showCancel = true,
 }: DialogProps) {
   const t = useTranslations('common');
   const resolvedCancelLabel = cancelLabel ?? t('cancel');
+  const resolvedConfirmLabel = confirmLabel ?? t('ok');
 
   if (!open) return null;
 
-  const showDefaultFooter = footer === undefined && (onConfirm !== undefined || confirmLabel);
+  const showConfirm = onConfirm !== undefined || confirmLabel !== undefined;
+  const showDefaultFooter = footer === undefined && showConfirm;
 
   return (
     <div
@@ -76,16 +80,18 @@ export function Dialog({
         {footer}
         {showDefaultFooter && (
           <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
-            <Button variant={cancelVariant} onClick={onClose}>
-              {resolvedCancelLabel}
-            </Button>
-            {onConfirm && confirmLabel && (
+            {showCancel && (
+              <Button variant={cancelVariant} onClick={onClose}>
+                {resolvedCancelLabel}
+              </Button>
+            )}
+            {showConfirm && (
               <Button
                 variant={confirmVariant}
-                onClick={onConfirm}
+                onClick={onConfirm ?? onClose}
                 disabled={confirmDisabled}
               >
-                {confirmLabel}
+                {resolvedConfirmLabel}
               </Button>
             )}
           </div>

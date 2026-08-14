@@ -7,7 +7,7 @@ import { useGameSocket } from '../../hooks/use-game-socket';
 import { useWordSoupGame } from '../../hooks/word-soup/use-word-soup-game';
 
 import GameCourt from './game-court';
-import AbandonPlayModal from './abandon-play-modal';
+import AbandonPlayModal from '../../components/abandon-play-modal';
 import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
 import WordSoupIntroOverlay from './word-soup-intro-overlay';

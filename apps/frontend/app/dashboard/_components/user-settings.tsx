@@ -20,7 +20,6 @@ import { useAuth } from '../../context/auth-context';
 import { usersApi } from '@/lib/api';
 import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
-import { Modal } from '../../components/ui/modal';
 import { Input } from '../../components/ui/input';
 
 export default function UserSettings() {
@@ -270,16 +269,23 @@ export default function UserSettings() {
         </div>
       </Dialog>
 
-      <Modal open={showResult} onClose={handleCloseResult}>
+      <Dialog
+        open={showResult}
+        onClose={handleCloseResult}
+        onConfirm={handleCloseResult}
+        showCancel={false}
+      >
         {resultMessage}
-      </Modal>
+      </Dialog>
 
-      <Modal
+      <Dialog
         open={showUsernameReminder}
         onClose={() => setShowUsernameReminder(false)}
+        onConfirm={() => setShowUsernameReminder(false)}
+        showCancel={false}
       >
         {t('usernameChangedReminder', { username: userName })}
-      </Modal>
+      </Dialog>
     </>
   );
 }

@@ -5,7 +5,6 @@ Game lobby where players can initiate new games and join pending games initiated
 uses WebSockets to sync game status between players in real time
 REST is used only for mutations (create, join, start) — the backend
 then emits WebSocket events to all group members, which drives UI updates.
-Session management prevents duplicate game tabs by redirecting to /already_in_game
 error handling logs errors for failed API calls
 Workflow example:
 player A clicks 'New Word Building', which opens InitiateGameModal
@@ -51,18 +50,18 @@ import { Button } from '../components/ui/button';
 
 function getStartedGameRoute(
   gameName: string,
-): '/play_game' | '/word_building_scaffold' | '/word_soup_scaffold' {
+): '/word_building' | '/word_soup' | null {
   const normalizedName = gameName.trim().toLowerCase();
 
   if (normalizedName === 'word building') {
-    return '/word_building_scaffold';
+    return '/word_building';
   }
 
   if (normalizedName === 'word soup') {
-    return '/word_soup_scaffold';
+    return '/word_soup';
   }
 
-  return '/play_game';
+  return null;
 }
 
 // modal state. none = no modal is open. initiate = 'Initiate Game' modal is open,
@@ -191,6 +190,7 @@ export default function SelectGame() {
   useEffect(() => {
     if (startedGame && player) {
       const route = getStartedGameRoute(startedGame.name);
+      if (!route) return;
       router.push(`${route}?gameId=${startedGame.id}&playerId=${player.id}`);
     }
   }, [startedGame, player, router]);

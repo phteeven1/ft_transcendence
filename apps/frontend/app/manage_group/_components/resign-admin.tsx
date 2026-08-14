@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
-import { Button, Modal } from '../../components/ui';
+import { Button, Dialog } from '../../components/ui';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -59,9 +59,14 @@ export default function ResignAdmin({ syncAndRefresh }: Props) {
         {t('resignAdmin')}
       </Button>
 
-      <Modal open={showResult} onClose={handleCloseResult}>
+      <Dialog
+        open={showResult}
+        onClose={handleCloseResult}
+        onConfirm={handleCloseResult}
+        showCancel={false}
+      >
         {resultMessage}
-      </Modal>
+      </Dialog>
     </>
   );
 }

@@ -1,11 +1,6 @@
 'use client';
 //
-// Changes from scaffold placeholder:
-//   - COURT_ROWS changed from 10 → 18 (crosswords need a square grid)
-//   - Renders CourtTile instead of raw char
-//   - Passes selectedRow/Col through to CourtTile for yellow selection ring
-//   - onCellClick fires with (row, col) so the orchestrator can track selection
-//
+// 18×18 crossword grid. Renders CourtTile; clicks report (row, col) for selection.
 // Keep COURT_COLS and COURT_ROWS in sync with word-building.service.ts.
 
 import { CourtCell, CourtTile } from './court-tile';

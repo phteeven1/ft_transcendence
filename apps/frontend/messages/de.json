@@ -356,8 +356,6 @@
     "invite": {
       "title": "{name} zum Spielen einladen",
       "playNow": "Jetzt spielen",
-      "createPlayButton": "Spielschaltfläche erstellen",
-      "sendInviteToPlay": "Spieleinladung senden",
       "activeSessionWarning": "{name} hat bereits eine aktive Spielsitzung. Bitte beenden Sie sie zuerst mit der Schaltfläche „Spielsitzung beenden“.",
       "sessionDurationTitle": "Wie lange darf {name} spielen?",
       "minutesLabel": "Minuten",
@@ -386,7 +384,6 @@
     "useInGames": "In Spielen verwenden",
     "renameVocabulary": "Vokabular umbenennen",
     "editVocabulary": "Vokabular bearbeiten",
-    "shareVocabulary": "Vokabular teilen",
     "deleteVocabulary": "Vokabular löschen",
     "wordColumn": "Wort",
     "meaningColumn": "Bedeutung",
@@ -531,9 +528,7 @@
       "scrambleInstruction": "Verschiebe die durcheinandergewürfelten Buchstaben, um die Wortbedeutung zu finden…",
       "success": "ERFOLG!",
       "false": "FALSCH",
-      "meansWhatPrompt": "Was übersetzt am besten…",
-      "correctionTitle": "Korrektur-Rätsel",
-      "correctionSubtitle": "Finde und korrigiere den Fehler"
+      "meansWhatPrompt": "Was übersetzt am besten…"
     },
     "info": {
       "game": "Spiel",
@@ -661,10 +656,6 @@
       "messageWithName": "Tolles Spiel, {name}! Deine Sitzung ist beendet.",
       "messageGeneric": "Deine Sitzung ist beendet.",
       "askParent": "Bitte ein Elternteil, eine neue Sitzung zu starten, wenn du wieder spielen möchtest."
-    },
-    "alreadyInGame": {
-      "title": "Bereits in einem Spiel",
-      "message": "Du spielst bereits in einem anderen Tab. Bitte kehre zu diesem Tab zurück, um fortzufahren."
     }
   },
   "legal": {

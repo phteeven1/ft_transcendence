@@ -15,7 +15,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
-import { Button, Dialog, Modal } from '../../components/ui';
+import { Button, Dialog } from '../../components/ui';
 
 type Props = {
   currentGroupMembers: Member[];
@@ -174,9 +174,14 @@ export default function PromoteToAdmin({
         </ul>
       </Dialog>
 
-      <Modal open={showResult} onClose={handleCloseResult}>
+      <Dialog
+        open={showResult}
+        onClose={handleCloseResult}
+        onConfirm={handleCloseResult}
+        showCancel={false}
+      >
         {resultMessage}
-      </Modal>
+      </Dialog>
     </>
   );
 }

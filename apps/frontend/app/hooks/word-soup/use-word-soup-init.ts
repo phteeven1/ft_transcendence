@@ -13,7 +13,7 @@ import {
   isSessionExpired,
 } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
-import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
+import { COURT_COLS, COURT_ROWS } from '@/app/word_soup/_lib/word-soup-constants';
 
 function createEmptyCourt(): WordSoupCourtCell[][] {
   return Array.from({ length: COURT_ROWS }, () =>

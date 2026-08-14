@@ -46,7 +46,7 @@ export const wordBuildingApi = {
    * Fetches the public metadata for a game.
    *
    * @param gameId Game to look up.
-   * @returns The game metadata used by the scaffold header.
+   * @returns Game metadata for the header.
    */
   getGame(gameId: number): Promise<GameMeta> {
     return apiRequest(`/games/${gameId}`);

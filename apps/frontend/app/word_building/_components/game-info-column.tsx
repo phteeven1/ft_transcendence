@@ -1,10 +1,7 @@
 'use client';
 
 //
-// Extends the scaffold info panel with:
-//   - Live score table (updated on every game:state event)
-//   - Clue list (across / down)
-//   - "Puzzle solved!" banner
+// Score table, across/down clues, and a "Puzzle solved!" banner.
 
 import { useTranslations } from 'next-intl';
 import type { ClueEntry } from '@/lib/api/games/word-building.types';

@@ -1,9 +1,22 @@
 .dev/
 node_modules/
 
-# Cursor IDE (local agent skills, debug logs)
-.cursor/skills/
-.cursor/debug*.log
-**/__pycache__/
+# Secrets — copy from .env.example; never commit real .env files
+.env
+.env.*
+!.env.example
 
-TODO.md
+# Build and generated output
+dist/
+.next/
+coverage/
+*.tsbuildinfo
+*.traineddata
+
+# Logs and OS junk
+*.log
+.DS_Store
+
+# Cursor IDE (local agent skills, debug logs)
+.cursor/
+**/__pycache__/

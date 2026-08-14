@@ -415,8 +415,8 @@ export class WordBuildingService {
   }
 
   /**
-   * Builds the initial REST response used by the scaffold when a crossword is first created.
-   * The method pads clue coordinates into the visible board so the client can render numbers.
+   * Builds the initial REST payload when a crossword is first created.
+   * Pads clue coordinates onto the visible board so the client can render numbers.
    *
    * @param solution Trimmed crossword solution grid.
    * @param clues Clue metadata produced by the engine.

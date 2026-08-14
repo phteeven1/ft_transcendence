@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
+import { createTransport, type Transporter } from 'nodemailer';
 
 @Injectable()
 export class MailService {
@@ -7,8 +7,21 @@ export class MailService {
   private readonly smtpConfigured =
     Boolean(process.env.MAIL_USER?.trim()) &&
     Boolean(process.env.MAIL_PASS?.trim());
+  private readonly transporter: Transporter;
 
-  constructor(private readonly mailerService: MailerService) {}
+  constructor() {
+    this.transporter = this.smtpConfigured
+      ? createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS,
+          },
+        })
+      : createTransport({ jsonTransport: true });
+  }
 
   async sendInvitation(
     toEmail: string,
@@ -16,7 +29,8 @@ export class MailService {
     groupName: string,
     inviteLink: string,
   ): Promise<void> {
-    const payload = {
+    await this.transporter.sendMail({
+      from: `"Dictee" <${process.env.MAIL_FROM ?? 'no-reply@localhost'}>`,
       to: toEmail,
       subject: 'Invitation to Dictée vocabulary learning space',
       text: `${invitationText}\n\n${inviteLink}`,
@@ -25,9 +39,7 @@ export class MailService {
         <br>
         <a href="${inviteLink}">Click here to join ${groupName}</a>
       `,
-    };
-
-    await this.mailerService.sendMail(payload);
+    });
 
     if (!this.smtpConfigured) {
       this.logger.warn(

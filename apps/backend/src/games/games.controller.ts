@@ -91,25 +91,15 @@ export class GamesController {
     return { ok: true };
   }
 
-  /**
-   * Returns all games visible to the caller.
-   *
-   * @returns The complete game list in API shape.
-   */
-  @Get()
-  findAll() {
-    return this.gamesService.findAll();
-  }
-
   @Get(':id/finish-outcome')
   getFinishOutcome(@Param('id') id: string) {
     return this.gamesService.getFinishOutcome(Number(id));
   }
 
   /**
-   * Returns one game by id for scaffold and detail views.
+   * Returns one game by id.
    *
-   * @param id Route parameter carrying the game id.
+   * @param id Game id from the route.
    * @returns The matching game, or `undefined` if it does not exist.
    */
   @Get(':id')

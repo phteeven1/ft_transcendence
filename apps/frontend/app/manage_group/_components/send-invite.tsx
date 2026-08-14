@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { invitationsApi, ApiError } from '@/lib/api';
-import { Button, Dialog, Input, Modal } from '../../components/ui';
+import { Button, Dialog, Input } from '../../components/ui';
 
 export default function SendInvite() {
   const t = useTranslations('group');
@@ -72,11 +72,17 @@ export default function SendInvite() {
       </Button>
 
       {inviteStatus === 'success' ? (
-        <Modal open={showModal} onClose={handleClose} confirmLabel={tCommon('close')}>
+        <Dialog
+          open={showModal}
+          onClose={handleClose}
+          onConfirm={handleClose}
+          showCancel={false}
+          confirmLabel={tCommon('close')}
+        >
           <p className="text-primary font-medium">
             {t('sendInviteModal.success', { email: inviteEmail })}
           </p>
-        </Modal>
+        </Dialog>
       ) : (
         <Dialog
           open={showModal}

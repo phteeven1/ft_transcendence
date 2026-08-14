@@ -9,7 +9,7 @@ import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { Modal } from '../components/ui/modal';
+import { Dialog } from '../components/ui/dialog';
 
 export default function SignIn() {
   const t = useTranslations('auth.signIn');
@@ -90,9 +90,14 @@ export default function SignIn() {
         </p>
       </Card>
 
-      <Modal open={showError} onClose={() => setShowError(false)}>
+      <Dialog
+        open={showError}
+        onClose={() => setShowError(false)}
+        onConfirm={() => setShowError(false)}
+        showCancel={false}
+      >
         {t('invalidCredentials')}
-      </Modal>
+      </Dialog>
     </PageShell>
   );
 }

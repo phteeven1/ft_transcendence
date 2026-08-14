@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Dicteé design system — Claymorphism (see design-system/dicteé/MASTER.md) */
+/* Dicteé claymorphism tokens — also in design-tokens.json */
 
 :root {
   --color-background: #F0FDFA;

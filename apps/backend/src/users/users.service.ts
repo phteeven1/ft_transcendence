@@ -63,11 +63,6 @@ export class UsersService {
     return passwordMatches ? toApiUser(user) : undefined;
   }
 
-  async findAll(): Promise<User[]> {
-    const users = await this.prisma.user.findMany(userWithMemberships);
-    return users.map(toApiUser);
-  }
-
   async addMemberGroup(userId: number, groupId: number): Promise<void> {
     await this.prisma.groupMembership.upsert({
       where: { userId_groupId: { userId, groupId } },

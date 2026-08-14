@@ -8,7 +8,7 @@ import {
   getGameOverClosingText,
   type OutroTranslateFn,
 } from './word-soup-game-over.helpers';
-import { GAME_OVER_COURT_HOLD_MS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
+import { GAME_OVER_COURT_HOLD_MS } from '@/app/word_soup/_lib/word-soup-constants';
 
 export type GameOverPhase =
   | 'idle'

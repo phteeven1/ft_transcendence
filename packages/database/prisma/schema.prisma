@@ -1,5 +1,4 @@
-// Domain schema aligned with in-memory backend types (apps/backend/src/**).
-// Change models here, then run: npm run db:migrate (from packages/database).
+// Prisma schema. After edits: `npm run db:migrate` from repo root.
 
 generator client {
   provider = "prisma-client-js"

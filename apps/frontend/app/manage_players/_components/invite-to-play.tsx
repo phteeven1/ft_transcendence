@@ -3,7 +3,6 @@
 this is the bridge between parent session and player session
 only prop is selectedPlayer, with no callback, since it doesn't modify players
 Play Now checks for an active backend session token before proceeding.
-Create Play Button and Send Invite to Play are not yet implemented.
 */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -130,12 +129,6 @@ export default function InviteToPlay({ selectedPlayer }: Props) {
                 disabled={isChecking}
               >
                 {isChecking ? tCommon('checking') : t('invite.playNow')}
-              </Button>
-              <Button variant="ghost" fullWidth disabled>
-                {t('invite.createPlayButton')}
-              </Button>
-              <Button variant="ghost" fullWidth disabled>
-                {t('invite.sendInviteToPlay')}
               </Button>
               <Button variant="ghost" fullWidth onClick={closeInvite}>
                 {tCommon('cancel')}
