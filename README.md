@@ -120,11 +120,10 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
 | Player sessions        | One active Play Now token per child             | `PlayerSession` model, `players.service.ts`       |
 | Language picker        | en / de / fr via next-intl                      | `language-context.tsx`, `flag-menu.tsx`           |
-| Health                 | `GET /health` plus `/status` page               | `app.controller.ts`, `app/status`                 |
 | Legal                  | Privacy Policy and Terms of Service             | `app/privacy`, `app/terms`                        |
 
 
-XP, avatars, and a lobby leaderboard exist under `progression/` but are **not claimed** as a gamification module.
+XP, avatars, and a lobby leaderboard live under `progression/` and are claimed as gamification plus game statistics (see Modules below).
 
 ---
 
@@ -140,30 +139,30 @@ XP, avatars, and a lobby leaderboard exist under `progression/` but are **not cl
 | Frontend + backend frameworks | Major (Web)           | 2   | Next.js 16 + NestJS 11                 | `apps/frontend/`, `apps/backend/`                            |
 | Real-time (WebSockets)        | Major (Web)           | 2   | Socket.IO lobby + in-game              | `games/game.gateway.ts`, `use-game-socket.ts`                |
 | ORM                           | Minor (Web)           | 1   | Prisma 7 + PostgreSQL 16               | `packages/database/prisma/schema.prisma`                     |
-| File upload                   | Minor (Web)           | 1   | Multer, type/size checks, vocab import | `vocabularies.controller.ts`, `extraction.service.ts`        |
 | Custom design system          | Minor (Web)           | 1   | Claymorphism, 13 UI components         | `app/components/ui/`, `design-tokens.json`                   |
 | i18n (3 languages)            | Minor (Accessibility) | 1   | next-intl, en / de / fr, flag switcher | `messages/{en,de,fr}.json`, `flag-menu.tsx`                  |
-| Health check                  | Minor (Devops)        | 1   | `GET /health`, `/status`, DB probe     | `app.service.ts`, `app/status`                               |
 | Organization system           | Major (User)          | 2   | Groups, ADMIN/MEMBER, invitations      | `groups.service.ts`, `invitations.service.ts`                |
+| Game statistics               | Minor (User)          | 1   | Wins, streaks, last 5 games, per type  | `progression-stats.service.ts`, `progression-my-stats.tsx`   |
 | Image recognition             | Minor (AI)            | 1   | GPT-4o vision on uploaded photos       | `extraction.service.ts`                                      |
 | Complete web-based game       | Major (Gaming)        | 2   | Word Building crossword                | `word-building.service.ts`, `word-building-puzzle-engine.ts` |
 | Remote players                | Major (Gaming)        | 2   | Live board sync over WebSockets        | `game.gateway.ts`, `use-game-socket.ts`                      |
 | Multiplayer 3+                | Major (Gaming)        | 2   | Several `GamePlayer` rows per game     | `games.service.ts`, `select_game/page.tsx`                   |
+| Add another game              | Major (Gaming)        | 2   | Word Soup + lobby join pending         | `word_soup/`, `word-soup.service.ts`, `select_game/page.tsx`  |
+| Gamification                  | Minor (Gaming)        | 1   | XP, avatar tiers, leaderboard          | `progression/`, lobby `ProgressionPanel`                     |
 
 
-**Total: 18 points** (above the 14-point minimum).
+**Total: 20 points** (above the 14-point minimum; bonus cap 5).
 
 ```
-Web:     Frameworks (2) + WebSockets (2) + ORM (1) + File upload (1)
-         + Design system (1) + i18n (1)                                 = 8
-User:    Organization / groups (2)                                       = 2
-AI:      Image recognition (1)                                           = 1
-Gaming:  Game (2) + Remote (2) + Multiplayer 3+ (2)                      = 6
-Devops:  Health check (1)                                                = 1
-                                                              Total = 18
+Web:     Frameworks (2) + WebSockets (2) + ORM (1) + Design system (1) + i18n (1) = 7
+User:    Organization (2) + Game statistics (1)                                  = 3
+AI:      Image recognition (1)                                                   = 1
+Gaming:  Game (2) + Remote (2) + Multiplayer 3+ (2) + Another game (2)
+         + Gamification (1)                                                      = 9
+                                                              Total = 20
 ```
 
-Not claimed: SSR, LLM streaming UI, gamification module, friends system, standard user management (no JWT, no avatars-as-module, no online status).
+Not claimed: SSR, LLM streaming UI, friends system, standard user management (no JWT, no online status). File upload exists in the product (vocab import) but is **not claimed** — import is not a file-management system. Game statistics history shows date, score, and win; it does not list opponent names.
 
 ---
 
@@ -178,13 +177,14 @@ Walk these in order. Use Chrome with the console open — no red errors.
 3. **i18n** — home in English, flag menu → Deutsch, then Français. Refresh; language stays. Legal pages (`/privacy`, `/terms`) switch too.
 4. **Auth + groups** — register, create a group, Manage Group (members, promote). Send an invite email, open `/accept_invitation`.
 5. **ORM** — `schema.prisma` and a service using Prisma (e.g. `groups.service.ts`). Optional: `npm run db:studio`.
-6. **File upload + AI import** — Manage Vocabulary → AI Vocabulary Import → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
+6. **Image recognition** — Manage Vocabulary → AI Vocabulary Import → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
 7. **Players + Play Now** — create 3 child profiles, start Play Now (minutes). Child lands on Select Game.
 8. **WebSockets + Word Building + remote** — two browsers, same group. Start Word Building. Place a letter in A; B updates without refresh. Show cell lock. Finish puzzle.
 9. **Multiplayer 3+** — third player joins the same pending game (or force-start). Scoreboard shows three names on one grid.
-10. **Health** — open `/status`, then `curl http://localhost:4000/health`. Optional: stop Postgres → 503 / Degraded.
+10. **Add another game** — from the lobby, create a pending Word Soup. Second player joins that pending game, then start. Show live word-search sync.
+11. **Gamification + statistics** — after a finished game, lobby `ProgressionPanel`: XP / avatar tier, leaderboard, wins and last games (date, score, win).
 
-Talking points: server owns the crossword solution; Socket.IO rooms are `group:{id}` and `game:{id}`; health probes PostgreSQL with `SELECT 1`.
+Talking points: server owns the crossword solution; Socket.IO rooms are `group:{id}` and `game:{id}`; Word Soup join-pending is the matchmaking demo; stats history does not list opponent names.
 
 ---
 

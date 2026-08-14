@@ -23,12 +23,6 @@ export default function SiteFooter() {
           <Link href="/terms" className="legal-footer-link">
             {t('termsOfService')}
           </Link>
-          <span aria-hidden className="text-border">
-            ·
-          </span>
-          <Link href="/status" className="legal-footer-link">
-            {t('systemStatus')}
-          </Link>
         </nav>
       </div>
     </footer>
