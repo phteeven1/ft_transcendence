@@ -23,7 +23,6 @@ export type {
   PlayerSessionDto,
   CreatePlayerInput,
   RenamePlayerInput,
-  UpdatePassPhraseInput,
   StartSessionInput,
   ValidateSessionInput,
   ValidateSessionResult,

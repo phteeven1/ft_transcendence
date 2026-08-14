@@ -23,8 +23,6 @@
     "resign": "Démissionner",
     "expel": "Exclure",
     "invite": "Inviter",
-    "passphrase": "PassPhrase",
-    "endSession": "Terminer",
     "stay": "Rester",
     "skip": "Passer",
     "next": "Suivant",
@@ -263,22 +261,12 @@
       "title": "Créer un profil de joueur",
       "playerNameLabel": "Nom du joueur",
       "playerNamePlaceholder": "ex. Adam",
-      "secretQuestionLabel": "Question secrète",
-      "secretQuestionPlaceholder": "ex. Comment s'appelle ton chien ?",
-      "answerLabel": "Réponse",
-      "answerPlaceholder": "ex. Rex",
       "allFieldsRequired": "Tous les champs sont obligatoires.",
       "failed": "Échec de la création du joueur. Veuillez réessayer."
     },
     "rename": {
       "title": "Renommer {name}",
       "placeholder": "Nouveau nom"
-    },
-    "editPassphrase": {
-      "title": "Modifier la PassPhrase pour {name}",
-      "secretQuestionLabel": "Question secrète",
-      "answerLabel": "Réponse",
-      "answerPlaceholder": "Nouvelle réponse"
     },
     "delete": {
       "title": "Supprimer {name} ?",
@@ -287,18 +275,12 @@
     "invite": {
       "title": "Inviter {name} à jouer",
       "playNow": "Jouer maintenant",
-      "activeSessionWarning": "{name} a déjà une session de jeu active. Veuillez d'abord la terminer avec le bouton Terminer la session de jeu.",
+      "activeSessionWarning": "{name} a déjà une session de jeu active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
       "sessionDurationTitle": "Combien de temps {name} peut-il/elle jouer ?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Entrez les minutes",
-      "activeSessionExists": "{name} a déjà une session active. Terminez-la d'abord.",
+      "activeSessionExists": "{name} a déjà une session active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
       "startFailed": "Impossible de démarrer la session. Veuillez réessayer."
-    },
-    "endSession": {
-      "title": "Terminer la session de jeu",
-      "confirmMessage": "Êtes-vous sûr de vouloir terminer la session de jeu en cours de {name} ? La personne sera déconnectée immédiatement.",
-      "endSessionButton": "Terminer la session",
-      "failed": "Échec de la fin de session. Veuillez réessayer."
     }
   },
   "vocabulary": {
@@ -609,7 +591,7 @@
           "playerProfiles": {
             "title": "2.2 Profils de joueurs (enfants)",
             "items": [
-              "Nom d'affichage du joueur et passphrase optionnelle pour l'accès à la session",
+              "Nom d'affichage du joueur",
               "Association au groupe, participation aux jeux et scores pendant les sessions actives",
               "Les sessions de joueur utilisent des jetons à courte durée de vie stockés dans la session du navigateur jusqu'à la fin ou l'expiration de la session"
             ]
@@ -735,7 +717,7 @@
             },
             {
               "label": "Joueurs (enfants) :",
-              "text": "Peuvent utiliser des profils Joueur créés sous un compte Utilisateur. Les Joueurs accèdent aux jeux via des liens de session ou des passphrases fournis par un parent ou un admin de groupe."
+              "text": "Peuvent utiliser des profils Joueur créés sous un compte Utilisateur. Les Joueurs accèdent aux jeux via des sessions « Jouer maintenant » lancées par un parent."
             },
             {
               "label": "Groupes :",
@@ -786,7 +768,7 @@
           "title": "7. Jeux et fonctionnalités multijoueurs",
           "paragraphs": [
             "Les jeux multijoueurs reposent sur des connexions en temps réel. Nous ne garantissons pas une disponibilité ininterrompue. Les scores et résultats de jeu sont stockés pour affichage au sein de votre session de groupe. Les règles de jeu sont définies dans l'application ; les litiges entre joueurs doivent être résolus par les parents ou les admins de groupe.",
-            "Les sessions de joueur « Jouer maintenant » sont limitées dans le temps. Les parents sont responsables de la fin des sessions et de la supervision du jeu en ligne."
+            "Les sessions de joueur « Jouer maintenant » sont limitées dans le temps. Les parents sont responsables de la supervision du jeu en ligne."
           ]
         },
         "thirdPartyServices": {
@@ -845,10 +827,9 @@
     "registrationUsernameTaken": "Inscription échouée. Le nom d'utilisateur est peut-être déjà pris.",
     "createGroupFailed": "Échec de la création du groupe. Veuillez réessayer.",
     "createPlayerFailed": "Échec de la création du joueur. Veuillez réessayer.",
-    "endSessionFailed": "Échec de la fin de session. Veuillez réessayer.",
     "startSessionFailed": "Impossible de démarrer la session. Veuillez réessayer.",
-    "activeSessionExists": "{name} a déjà une session active. Terminez-la d'abord.",
-    "activePlaySessionExists": "{name} a déjà une session de jeu active. Veuillez d'abord la terminer avec le bouton Terminer la session de jeu.",
+    "activeSessionExists": "{name} a déjà une session active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
+    "activePlaySessionExists": "{name} a déjà une session de jeu active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
     "invitationSendFailed": "Échec de l'envoi de l'invitation : {error}",
     "vocabularyMinimumWords": "Une liste de vocabulaire doit contenir au moins 5 mots.",
     "vocabularyExtractionFailed": "L'extraction par IA a échoué. Veuillez vous assurer que le fichier contient au moins 5 mots et réessayer.",

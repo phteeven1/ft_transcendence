@@ -98,9 +98,9 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Dashboard              | Group list, members, players, profile settings  | `app/dashboard`                                   |
 | Groups                 | Create, join, leave, admin roles                | `app/create_group`, `app/dashboard`               |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
-| Players                | Child CRUD, passphrase, Play Now                | `app/dashboard` (Players tab), `players.service.ts` |
+| Players                | Child CRUD, Play Now                            | `app/dashboard` (Players tab), `players.service.ts` |
 | Vocabulary             | CRUD, set active list for games                 | `app/dashboard` (Vocabulary tab)                  |
-| AI import              | GPT-4o vision + PDF extract                     | `extraction.service.ts`, `import-vocabulary.tsx`  |
+| AI import              | GPT-4o vision + PDF extract                     | `extraction.service.ts`, `add-vocabulary.tsx`     |
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
 | Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
 | Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |

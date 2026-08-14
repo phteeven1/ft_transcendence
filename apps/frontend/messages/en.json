@@ -23,8 +23,6 @@
     "resign": "Resign",
     "expel": "Expel",
     "invite": "Invite",
-    "passphrase": "Passphrase",
-    "endSession": "End session",
     "stay": "Stay",
     "skip": "Skip",
     "next": "Next",
@@ -263,22 +261,12 @@
       "title": "Create Player Profile",
       "playerNameLabel": "Player Name",
       "playerNamePlaceholder": "e.g. Adam",
-      "secretQuestionLabel": "Secret Question",
-      "secretQuestionPlaceholder": "e.g. What is your dog's name?",
-      "answerLabel": "Answer",
-      "answerPlaceholder": "e.g. Rex",
       "allFieldsRequired": "All fields are required.",
       "failed": "Failed to create player. Please try again."
     },
     "rename": {
       "title": "Rename {name}",
       "placeholder": "New name"
-    },
-    "editPassphrase": {
-      "title": "Edit PassPhrase for {name}",
-      "secretQuestionLabel": "Secret Question",
-      "answerLabel": "Answer",
-      "answerPlaceholder": "New answer"
     },
     "delete": {
       "title": "Delete {name}?",
@@ -287,18 +275,12 @@
     "invite": {
       "title": "Invite {name} to Play",
       "playNow": "Play Now",
-      "activeSessionWarning": "{name} already has an active play session. Please end it first using the End Game Session button.",
+      "activeSessionWarning": "{name} already has an active play session. It will end when the timer expires or they leave the game.",
       "sessionDurationTitle": "How long can {name} play?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Enter minutes",
-      "activeSessionExists": "{name} already has an active session. End it first.",
+      "activeSessionExists": "{name} already has an active session. It will end when the timer expires or they leave the game.",
       "startFailed": "Could not start session. Please try again."
-    },
-    "endSession": {
-      "title": "End Game Session",
-      "confirmMessage": "Are you sure you want to end {name}'s current play session? They will be logged out immediately.",
-      "endSessionButton": "End Session",
-      "failed": "Failed to end session. Please try again."
     }
   },
   "vocabulary": {
@@ -609,7 +591,7 @@
           "playerProfiles": {
             "title": "2.2 Player profiles (children)",
             "items": [
-              "Player display name and optional passphrase for session access",
+              "Player display name",
               "Group association, game participation, and scores during active sessions",
               "Player sessions use short-lived tokens stored in the browser session until the session ends or expires"
             ]
@@ -735,7 +717,7 @@
             },
             {
               "label": "Players (children):",
-              "text": "May use Player profiles created under a User account. Players access games through session links or passphrases provided by a parent or group admin."
+              "text": "May use Player profiles created under a User account. Players access games through Play Now sessions started by a parent."
             },
             {
               "label": "Groups:",
@@ -786,7 +768,7 @@
           "title": "7. Games and multiplayer features",
           "paragraphs": [
             "Multiplayer games rely on real-time connections. We do not guarantee uninterrupted availability. Scores and game outcomes are stored for display within your group session. Game rules are defined in the application; disputes between players should be resolved by parents or group admins.",
-            "\"Play Now\" player sessions are time-limited. Parents are responsible for ending sessions and supervising online play."
+            "\"Play Now\" player sessions are time-limited. Parents are responsible for supervising online play."
           ]
         },
         "thirdPartyServices": {
@@ -845,10 +827,9 @@
     "registrationUsernameTaken": "Registration failed. Username may already be taken.",
     "createGroupFailed": "Failed to create group. Please try again.",
     "createPlayerFailed": "Failed to create player. Please try again.",
-    "endSessionFailed": "Failed to end session. Please try again.",
     "startSessionFailed": "Could not start session. Please try again.",
-    "activeSessionExists": "{name} already has an active session. End it first.",
-    "activePlaySessionExists": "{name} already has an active play session. Please end it first using the End Game Session button.",
+    "activeSessionExists": "{name} already has an active session. It will end when the timer expires or they leave the game.",
+    "activePlaySessionExists": "{name} already has an active play session. It will end when the timer expires or they leave the game.",
     "invitationSendFailed": "Sending invitation failed: {error}",
     "vocabularyMinimumWords": "A vocabulary list must have at least 5 words.",
     "vocabularyExtractionFailed": "AI extraction failed. Please ensure the file has at least 5 words and try again.",

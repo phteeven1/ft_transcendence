@@ -9,11 +9,12 @@ import ListRow from './list-row';
 import SendInvite from './send-invite';
 import CreatePlayer from './create-player';
 import AddVocabulary from './add-vocabulary';
-import VocabularyPanel from './vocabulary-panel';
+import VocabularyList, { VocabularyAction } from './vocabulary-list';
+import type { MemberAction } from './member-dialog';
 
 export type PeopleTab = 'members' | 'players' | 'vocabulary';
-export type PlayerAction =
-  'invite' | 'endSession' | 'rename' | 'passphrase' | 'delete';
+export type PlayerAction = 'invite' | 'rename' | 'delete';
+export type { MemberAction, VocabularyAction };
 
 type Props = {
   members: Member[];
@@ -24,9 +25,7 @@ type Props = {
   hasActiveVocabulary: boolean;
   activeTab: PeopleTab;
   onTabChange: (tab: PeopleTab) => void;
-  onPromote: (member: Member) => void;
-  onExpel: (member: Member) => void;
-  onResign: () => void;
+  onMemberAction: (action: MemberAction, member?: Member) => void;
   onPlayerAction: (action: PlayerAction, player: Player) => void;
   onPlayerCreated: (player: Player) => void;
   vocabularies: Vocabulary[];
@@ -34,9 +33,7 @@ type Props = {
   isVocabLoading: boolean;
   onSelectVocabulary: (vocabulary: Vocabulary) => void;
   onVocabularyImported: (vocabulary: Vocabulary) => void;
-  onVocabularyRenamed: (vocabulary: Vocabulary) => void;
-  onVocabularyEdited: (vocabulary: Vocabulary) => void;
-  onVocabularyDeleted: (vocabularyId: number) => void;
+  onVocabAction: (action: VocabularyAction, vocabulary: Vocabulary) => void;
 };
 
 type PlayerParentGroup = {
@@ -87,9 +84,7 @@ export default function PeoplePanel({
   hasActiveVocabulary,
   activeTab,
   onTabChange,
-  onPromote,
-  onExpel,
-  onResign,
+  onMemberAction,
   onPlayerAction,
   onPlayerCreated,
   vocabularies,
@@ -97,9 +92,7 @@ export default function PeoplePanel({
   isVocabLoading,
   onSelectVocabulary,
   onVocabularyImported,
-  onVocabularyRenamed,
-  onVocabularyEdited,
-  onVocabularyDeleted,
+  onVocabAction,
 }: Props) {
   const t = useTranslations('group');
   const tPlayers = useTranslations('players');
@@ -119,7 +112,7 @@ export default function PeoplePanel({
           id: 'resign',
           label: tCommon('resign'),
           icon: 'sign-out',
-          onSelect: onResign,
+          onSelect: () => onMemberAction('resign'),
         },
       ];
     }
@@ -131,13 +124,13 @@ export default function PeoplePanel({
         id: 'promote',
         label: tCommon('promote'),
         icon: 'crown',
-        onSelect: () => onPromote(member),
+        onSelect: () => onMemberAction('promote', member),
       },
       {
         id: 'expel',
         label: tCommon('expel'),
         icon: 'trash',
-        onSelect: () => onExpel(member),
+        onSelect: () => onMemberAction('expel', member),
         destructive: true,
       },
     ];
@@ -145,9 +138,6 @@ export default function PeoplePanel({
 
   function playerMenuItems(player: Player): RowMenuItem[] {
     if (player.ofUser !== currentUserId) return [];
-
-    const hasSession =
-      player.sessionExpiresAt !== null || player.currentGameId !== null;
 
     return [
       {
@@ -158,23 +148,10 @@ export default function PeoplePanel({
         disabled: !hasActiveVocabulary,
       },
       {
-        id: 'endSession',
-        label: tCommon('endSession'),
-        icon: 'stop',
-        onSelect: () => onPlayerAction('endSession', player),
-        disabled: !hasSession,
-      },
-      {
         id: 'rename',
         label: tCommon('rename'),
         icon: 'pencil',
         onSelect: () => onPlayerAction('rename', player),
-      },
-      {
-        id: 'passphrase',
-        label: tCommon('passphrase'),
-        icon: 'key',
-        onSelect: () => onPlayerAction('passphrase', player),
       },
       {
         id: 'delete',
@@ -320,15 +297,19 @@ export default function PeoplePanel({
           )}
         </div>
       ) : (
-        <VocabularyPanel
-          vocabularies={vocabularies}
-          currentVocabulary={currentVocabulary}
-          isLoading={isVocabLoading}
-          onSelect={onSelectVocabulary}
-          onRenamed={onVocabularyRenamed}
-          onEdited={onVocabularyEdited}
-          onDeleted={onVocabularyDeleted}
-        />
+        <div
+          role="tabpanel"
+          id="vocabulary-panel"
+          className="overflow-y-auto flex-1"
+        >
+          <VocabularyList
+            vocabularies={vocabularies}
+            currentVocabulary={currentVocabulary}
+            isLoading={isVocabLoading}
+            onSelect={onSelectVocabulary}
+            onAction={onVocabAction}
+          />
+        </div>
       )}
     </Panel>
   );

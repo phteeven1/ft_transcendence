@@ -63,15 +63,12 @@ export function toApiGroup(group: GroupWithMemberships): Group {
   };
 }
 
-export function toSafePlayer(
-  player: PlayerWithSession,
-): Omit<Player, 'passAnswer'> {
+export function toSafePlayer(player: PlayerWithSession): Player {
   return {
     id: player.id,
     inGroup: player.inGroupId,
     ofUser: player.ofUserId,
     name: player.name,
-    passQuestion: player.passQuestion,
     currentGameId: player.currentGameId,
     lastSignout: player.lastSignout.toISOString(),
     sessionExpiresAt: player.session?.expiresAt.toISOString() ?? null,

@@ -1,5 +1,12 @@
 'use client';
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+} from 'react';
 import { groupsApi, usersApi, type UserDto } from '@/lib/api';
 import type { GroupDto } from '@/lib/api/groups/types';
 import { clearPlayerSession } from '@/lib/player-session';
@@ -30,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [group, setGroup] = useState<Group | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
+  const userRef = useRef(user);
+  userRef.current = user;
 
   const setSessionExpiry = useCallback((expiresAt: number) => {
     setSessionExpiresAt((prev) => (prev === expiresAt ? prev : expiresAt));
@@ -47,43 +56,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionExpiresAt(null);
   }, []);
 
-  const login = (userData: User) => {
+  const login = useCallback((userData: User) => {
     setUser(userData);
-  };
+  }, []);
 
-  const leaveGroup = () => {
+  const leaveGroup = useCallback(() => {
     setGroup(null);
-    if (user) setUser({ ...user, currentGroup: undefined });
-  };
+    setUser((prev) =>
+      prev ? { ...prev, currentGroup: undefined } : prev,
+    );
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setGroup(null);
-  };
+  }, []);
 
-  const syncGroup = async (groupId: number): Promise<Group | null> => {
-    try {
-      const updatedGroup = await groupsApi.getById(groupId);
-      setGroup(updatedGroup);
-      setUser((prev) => (prev ? { ...prev, currentGroup: groupId } : prev));
-      return updatedGroup;
-    } catch (error) {
-      console.error('syncGroup failed:', error);
-      return null;
-    }
-  };
+  const syncGroup = useCallback(
+    async (groupId: number): Promise<Group | null> => {
+      try {
+        const updatedGroup = await groupsApi.getById(groupId);
+        setGroup(updatedGroup);
+        setUser((prev) => {
+          if (!prev || prev.currentGroup === groupId) return prev;
+          return { ...prev, currentGroup: groupId };
+        });
+        return updatedGroup;
+      } catch (error) {
+        console.error('syncGroup failed:', error);
+        return null;
+      }
+    },
+    [],
+  );
 
-  const refreshUser = async (): Promise<User | null> => {
-    if (!user) return null;
+  const refreshUser = useCallback(async (): Promise<User | null> => {
+    const current = userRef.current;
+    if (!current) return null;
     try {
-      const data = await usersApi.getById(user.id);
+      const data = await usersApi.getById(current.id);
       setUser(data);
       return data;
     } catch (error) {
       console.error('refreshUser failed:', error);
       return null;
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider

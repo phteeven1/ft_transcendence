@@ -12,38 +12,18 @@ export class PlayersController {
       playerInGroup: number;
       playerParent: number;
       playerName: string;
-      playerPassQuestion: string;
-      playerPassAnswer: string;
     },
   ) {
     return this.playersService.create(
       body.playerInGroup,
       body.playerParent,
       body.playerName,
-      body.playerPassQuestion,
-      body.playerPassAnswer,
     );
   }
 
   @Post('rename')
   rename(@Body() body: { playerId: number; playerName: string }) {
     return this.playersService.rename(body.playerId, body.playerName);
-  }
-
-  @Post('updatePassPhrase')
-  updatePassPhrase(
-    @Body()
-    body: {
-      playerId: number;
-      playerPassQuestion: string;
-      playerPassAnswer: string;
-    },
-  ) {
-    return this.playersService.updatePassPhrase(
-      body.playerId,
-      body.playerPassQuestion,
-      body.playerPassAnswer,
-    );
   }
 
   @Post('remove')
