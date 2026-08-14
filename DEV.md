@@ -38,7 +38,7 @@ apps/frontend/
   lib/api/             # only place that should call fetch()
 apps/backend/src/
   app.module.ts
-  users/ groups/ players/ vocabularies/ invitations/ chat/ mail/
+  users/ groups/ players/ vocabularies/ invitations/ mail/
   games/               # lobby + shared gateway
     game.gateway.ts    # Socket.IO
     games.service.ts   # create / join / start / leave / finish

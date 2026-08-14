@@ -188,7 +188,6 @@
     "selectMemberHint": "Select a member to view their profile.",
     "tabs": {
       "profile": "Member Profile",
-      "chat": "Group Chat",
       "games": "Game Session"
     },
     "managePlayers": "Manage Players",
@@ -197,9 +196,6 @@
     "resignAdmin": "Resign as Admin",
     "sendInvite": "Send Invite",
     "expelMember": "Expel Member",
-    "messageAdmins": "Message Admins",
-    "messageGroup": "Message Group",
-    "askAdmin": "Ask Admin",
     "renameGroup": "Rename Group",
     "leaveGroup": "Leave Group",
     "deleteGroup": "Delete Group",
@@ -272,49 +268,6 @@
       "lastMemberTitle": "Group will be deleted",
       "lastMemberMessage": "You are the last member of {groupName}. If you leave, the group will be permanently removed.",
       "failed": "Something went wrong. Please try again."
-    },
-    "messageAdminsModal": {
-      "title": "Message Admins",
-      "description": "Write a message to all other admins of group {groupName}. It will appear in the Group Chat, visible to admins only.",
-      "placeholder": "Your message…",
-      "charCount": "{current} / {max}"
-    },
-    "messageGroupModal": {
-      "title": "Message Group",
-      "description": "Write a message to all admins and members of group {groupName}. It will appear in the Group Chat, visible to everyone in the group.",
-      "placeholder": "Your message…",
-      "charCount": "{current} / {max}"
-    },
-    "messageAdminModal": {
-      "title": "Message Admin",
-      "description": "Write a question or concern to the admins of group {groupName}. It will be visible in the Group Chat, but only to the admins of the group.",
-      "placeholder": "Your message…",
-      "charCount": "{current} / {max}"
-    }
-  },
-  "chat": {
-    "filters": {
-      "log": "Log",
-      "adm": "Adm",
-      "gen": "Gen",
-      "mem": "Mem"
-    },
-    "noEntries": "No entries to show.",
-    "logEvents": {
-      "createGroup": "<author></author> created the group",
-      "joinGroup": "<author></author> joined the group",
-      "leaveGroup": "<author></author> left the group",
-      "promoteAdmin": "<author></author> promoted <target></target> to Admin",
-      "resignAdmin": "<author></author> resigned as Admin",
-      "renameGroup": "<author></author> renamed the group to \"{content}\"",
-      "expelMember": "<author></author> expelled <target></target>",
-      "deleteGroup": "<author></author> deleted the group",
-      "uploadVocabulary": "<author></author> uploaded vocabulary \"{content}\"",
-      "setActiveVocabulary": "<author></author> set \"{content}\" as the active vocabulary",
-      "renameVocabulary": "<author></author> renamed a vocabulary to \"{content}\"",
-      "deleteVocabulary": "<author></author> deleted vocabulary \"{content}\"",
-      "sendInvite": "<author></author> sent an invitation",
-      "unknown": "<author></author> performed an unknown action"
     }
   },
   "players": {
@@ -694,7 +647,7 @@
             "items": [
               "Vocabulary lists (words, translations, notes) that you import or enter manually",
               "Files you upload for vocabulary extraction (e.g. PDFs, photos of word lists). Images may be processed with OCR and AI-assisted structuring to build vocabulary entries",
-              "Group chat messages and system log entries visible within your group",
+              "Group membership and administration records (roles and invitations)",
               "Game state, moves, and scores generated during multiplayer sessions"
             ]
           },
@@ -715,7 +668,7 @@
             "Operate groups, invitations, vocabulary libraries, and multiplayer games",
             "Send invitation emails when a group admin invites a parent by email",
             "Extract vocabulary from uploaded documents and images",
-            "Display chat, activity logs, and game results within your group",
+            "Display shared vocabulary and game results within your group",
             "Maintain security, troubleshoot errors, and improve reliability",
             "Comply with applicable legal obligations"
           ],
@@ -735,7 +688,7 @@
           "items": [
             {
               "label": "Within your group:",
-              "text": "Other members of the same group can see usernames, shared vocabulary, chat messages (according to visibility rules), and game activity"
+              "text": "Other members of the same group can see usernames, shared vocabulary, and game activity"
             },
             {
               "label": "Service providers:",
@@ -751,7 +704,7 @@
         "dataRetention": {
           "title": "6. Data retention",
           "paragraphs": [
-            "We retain account and group data for as long as your account or group exists, unless you request deletion or we must remove it for legal reasons. Chat logs and game history may be kept to support group administration and learning records.",
+            "We retain account and group data for as long as your account or group exists, unless you request deletion or we must remove it for legal reasons. Game history may be kept to support group administration and learning records.",
             "Invitation tokens expire after a limited period. Player session tokens expire when the session ends or times out."
           ]
         },
@@ -838,7 +791,7 @@
             "Upload personal data of third parties without permission (beyond vocabulary learning materials)",
             "Attempt to bypass security, scrape the Service, or disrupt games or servers",
             "Impersonate another person or misrepresent your affiliation with a group",
-            "Use automated bots to play games or spam group chat",
+            "Use automated bots to play games or disrupt the Service",
             "Reverse engineer or resell the Service except as permitted by applicable open-source licenses"
           ],
           "moderation": "Group admins may remove members who breach group rules. We may remove content or restrict access at our discretion to protect the community."
@@ -846,14 +799,14 @@
         "userContent": {
           "title": "5. User content and vocabulary",
           "paragraphs": [
-            "You retain ownership of vocabulary lists, messages, and other content you submit (\"User Content\"). By submitting User Content, you grant Dicteé a non-exclusive, worldwide license to host, store, display, and process that content solely to operate the Service for you and your group—including OCR and AI-assisted extraction when you upload files.",
+            "You retain ownership of vocabulary lists and other content you submit (\"User Content\"). By submitting User Content, you grant Dicteé a non-exclusive, worldwide license to host, store, display, and process that content solely to operate the Service for you and your group—including OCR and AI-assisted extraction when you upload files.",
             "You represent that you have the right to upload User Content and that it does not infringe third-party intellectual property or privacy rights."
           ]
         },
         "groupsAndInvitations": {
           "title": "6. Groups, invitations, and admin actions",
           "paragraphs": [
-            "Group creators become administrators with tools to invite members, manage vocabulary, moderate chat visibility, and remove members. Admin actions (expulsions, promotions, group deletion) are logged in the group activity feed where configured.",
+            "Group creators become administrators with tools to invite members, manage vocabulary, and remove members. Admin actions (expulsions, promotions, group deletion) take effect immediately for the group.",
             "Invitations sent by email include a unique link. Do not share invitation links publicly; they are intended for specific recipients invited to your class or family group."
           ]
         },

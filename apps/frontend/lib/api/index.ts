@@ -8,15 +8,8 @@ export { playersApi } from './players';
 export { vocabulariesApi } from './vocabularies';
 export { gamesApi, wordBuildingApi, wordSoupApi } from './games';
 export { invitationsApi } from './invitations';
-export { chatApi } from './chat';
 export { healthApi } from './health';
 export { progressionApi } from './progression';
-export type {
-  ChatEntryType,
-  ChatEventKey,
-  GroupChatEntryDto,
-  PostChatMessageInput,
-} from './chat';
 
 export type { UserDto, RegisterUserInput, SignInUserInput } from './users';
 export type {

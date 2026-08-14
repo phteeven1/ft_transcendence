@@ -188,7 +188,6 @@
     "selectMemberHint": "Sélectionnez un membre pour voir son profil.",
     "tabs": {
       "profile": "Profil du membre",
-      "chat": "Chat de groupe",
       "games": "Session de jeu"
     },
     "managePlayers": "Gérer les joueurs",
@@ -197,9 +196,6 @@
     "resignAdmin": "Démissionner comme admin",
     "sendInvite": "Envoyer une invitation",
     "expelMember": "Exclure un membre",
-    "messageAdmins": "Contacter les admins",
-    "messageGroup": "Contacter le groupe",
-    "askAdmin": "Demander à l'admin",
     "renameGroup": "Renommer le groupe",
     "leaveGroup": "Quitter le groupe",
     "deleteGroup": "Supprimer le groupe",
@@ -272,49 +268,6 @@
       "lastMemberTitle": "Le groupe sera supprimé",
       "lastMemberMessage": "Vous êtes le dernier membre de {groupName}. Si vous partez, le groupe sera définitivement supprimé.",
       "failed": "Une erreur s'est produite. Veuillez réessayer."
-    },
-    "messageAdminsModal": {
-      "title": "Contacter les admins",
-      "description": "Écrivez un message à tous les autres admins du groupe {groupName}. Il apparaîtra dans le chat de groupe, visible uniquement par les admins.",
-      "placeholder": "Votre message…",
-      "charCount": "{current} / {max}"
-    },
-    "messageGroupModal": {
-      "title": "Contacter le groupe",
-      "description": "Écrivez un message à tous les admins et membres du groupe {groupName}. Il apparaîtra dans le chat de groupe, visible par tous les membres du groupe.",
-      "placeholder": "Votre message…",
-      "charCount": "{current} / {max}"
-    },
-    "messageAdminModal": {
-      "title": "Contacter l'admin",
-      "description": "Écrivez une question ou une préoccupation aux admins du groupe {groupName}. Elle sera visible dans le chat de groupe, mais uniquement par les admins du groupe.",
-      "placeholder": "Votre message…",
-      "charCount": "{current} / {max}"
-    }
-  },
-  "chat": {
-    "filters": {
-      "log": "Journal",
-      "adm": "Adm",
-      "gen": "Gén",
-      "mem": "Mbr"
-    },
-    "noEntries": "Aucune entrée à afficher.",
-    "logEvents": {
-      "createGroup": "<author></author> a créé le groupe",
-      "joinGroup": "<author></author> a rejoint le groupe",
-      "leaveGroup": "<author></author> a quitté le groupe",
-      "promoteAdmin": "<author></author> a promu <target></target> au rang d'admin",
-      "resignAdmin": "<author></author> a démissionné comme admin",
-      "renameGroup": "<author></author> a renommé le groupe en \"{content}\"",
-      "expelMember": "<author></author> a exclu <target></target>",
-      "deleteGroup": "<author></author> a supprimé le groupe",
-      "uploadVocabulary": "<author></author> a téléchargé le vocabulaire \"{content}\"",
-      "setActiveVocabulary": "<author></author> a défini \"{content}\" comme vocabulaire actif",
-      "renameVocabulary": "<author></author> a renommé un vocabulaire en \"{content}\"",
-      "deleteVocabulary": "<author></author> a supprimé le vocabulaire \"{content}\"",
-      "sendInvite": "<author></author> a envoyé une invitation",
-      "unknown": "<author></author> a effectué une action inconnue"
     }
   },
   "players": {
@@ -694,7 +647,7 @@
             "items": [
               "Listes de vocabulaire (mots, traductions, notes) que vous importez ou saisissez manuellement",
               "Fichiers que vous téléchargez pour l'extraction de vocabulaire (ex. PDF, photos de listes de mots). Les images peuvent être traitées par OCR et structurées par IA pour créer des entrées de vocabulaire",
-              "Messages de chat de groupe et entrées de journal système visibles au sein de votre groupe",
+              "Appartenance au groupe et données d'administration (rôles et invitations)",
               "État de jeu, coups et scores générés pendant les sessions multijoueurs"
             ]
           },
@@ -715,7 +668,7 @@
             "Exploiter les groupes, invitations, bibliothèques de vocabulaire et jeux multijoueurs",
             "Envoyer des e-mails d'invitation lorsqu'un admin de groupe invite un parent par e-mail",
             "Extraire le vocabulaire des documents et images téléchargés",
-            "Afficher le chat, les journaux d'activité et les résultats de jeu au sein de votre groupe",
+            "Afficher le vocabulaire partagé et les résultats de jeu au sein de votre groupe",
             "Maintenir la sécurité, résoudre les erreurs et améliorer la fiabilité",
             "Respecter les obligations légales applicables"
           ],
@@ -735,7 +688,7 @@
           "items": [
             {
               "label": "Au sein de votre groupe :",
-              "text": "Les autres membres du même groupe peuvent voir les noms d'utilisateur, le vocabulaire partagé, les messages de chat (selon les règles de visibilité) et l'activité de jeu"
+              "text": "Les autres membres du même groupe peuvent voir les noms d'utilisateur, le vocabulaire partagé et l'activité de jeu"
             },
             {
               "label": "Prestataires de services :",
@@ -751,7 +704,7 @@
         "dataRetention": {
           "title": "6. Conservation des données",
           "paragraphs": [
-            "Nous conservons les données de compte et de groupe tant que votre compte ou groupe existe, sauf si vous demandez la suppression ou si nous devons les supprimer pour des raisons légales. Les journaux de chat et l'historique des jeux peuvent être conservés pour soutenir l'administration du groupe et les dossiers d'apprentissage.",
+            "Nous conservons les données de compte et de groupe tant que votre compte ou groupe existe, sauf si vous demandez la suppression ou si nous devons les supprimer pour des raisons légales. L'historique des jeux peut être conservé pour soutenir l'administration du groupe et les dossiers d'apprentissage.",
             "Les jetons d'invitation expirent après une période limitée. Les jetons de session de joueur expirent lorsque la session se termine ou expire."
           ]
         },
@@ -838,7 +791,7 @@
             "Télécharger des données personnelles de tiers sans autorisation (au-delà des supports d'apprentissage du vocabulaire)",
             "Tenter de contourner la sécurité, extraire des données du Service ou perturber les jeux ou serveurs",
             "Usurper l'identité d'une autre personne ou fausser votre affiliation à un groupe",
-            "Utiliser des bots automatisés pour jouer ou spammer le chat de groupe",
+            "Utiliser des bots automatisés pour jouer ou perturber le Service",
             "Rétro-ingénierie ou revendre le Service, sauf autorisation par les licences open source applicables"
           ],
           "moderation": "Les admins de groupe peuvent exclure les membres qui enfreignent les règles du groupe. Nous pouvons supprimer du contenu ou restreindre l'accès à notre discrétion pour protéger la communauté."
@@ -846,14 +799,14 @@
         "userContent": {
           "title": "5. Contenu utilisateur et vocabulaire",
           "paragraphs": [
-            "Vous conservez la propriété des listes de vocabulaire, messages et autres contenus que vous soumettez (« Contenu utilisateur »). En soumettant du Contenu utilisateur, vous accordez à Dicteé une licence non exclusive et mondiale pour héberger, stocker, afficher et traiter ce contenu uniquement pour exploiter le Service pour vous et votre groupe — y compris l'extraction assistée par OCR et IA lorsque vous téléchargez des fichiers.",
+            "Vous conservez la propriété des listes de vocabulaire et autres contenus que vous soumettez (« Contenu utilisateur »). En soumettant du Contenu utilisateur, vous accordez à Dicteé une licence non exclusive et mondiale pour héberger, stocker, afficher et traiter ce contenu uniquement pour exploiter le Service pour vous et votre groupe — y compris l'extraction assistée par OCR et IA lorsque vous téléchargez des fichiers.",
             "Vous déclarez avoir le droit de télécharger du Contenu utilisateur et qu'il ne viole pas les droits de propriété intellectuelle ou de confidentialité de tiers."
           ]
         },
         "groupsAndInvitations": {
           "title": "6. Groupes, invitations et actions d'administration",
           "paragraphs": [
-            "Les créateurs de groupes deviennent administrateurs avec des outils pour inviter des membres, gérer le vocabulaire, modérer la visibilité du chat et exclure des membres. Les actions d'administration (expulsions, promotions, suppression de groupe) sont enregistrées dans le fil d'activité du groupe lorsque configuré.",
+            "Les créateurs de groupes deviennent administrateurs avec des outils pour inviter des membres, gérer le vocabulaire et exclure des membres. Les actions d'administration (expulsions, promotions, suppression de groupe) s'appliquent immédiatement au groupe.",
             "Les invitations envoyées par e-mail incluent un lien unique. Ne partagez pas les liens d'invitation publiquement ; ils sont destinés à des destinataires spécifiques invités dans votre groupe de classe ou de famille."
           ]
         },

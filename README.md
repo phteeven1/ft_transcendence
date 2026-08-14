@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by `tsternbe`, `kmooney`, `smanthey`, `avarghes`, `sgavrilo`.*
+*This project has been created as part of the 42 curriculum by* `tsternbe`*,* `kmooney`*,* `smanthey`*,* `avarghes`*,* `sgavrilo`*.*
 
 # Dicteé — ft_transcendence
 
@@ -7,6 +7,8 @@ Dicteé helps children practice vocabulary through multiplayer language games. P
 Day-to-day development: [DEV.md](./DEV.md). Agent rules: [AGENTS.md](./AGENTS.md).
 
 ---
+
+
 
 ## Table of contents
 
@@ -27,25 +29,31 @@ Day-to-day development: [DEV.md](./DEV.md). Agent rules: [AGENTS.md](./AGENTS.md
 
 ---
 
+
+
 ## Description
 
 Turn shared vocabulary homework into live, group-based word games that parents can supervise.
 
 There are two kinds of account:
 
-- **Parent (`User`)** — registers, creates or joins a group, manages children and vocabulary.
-- **Child (`Player`)** — a profile owned by a parent. Play Now issues a time-limited session so the child can reach the lobby and games.
+- **Parent (**`User`**)** — registers, creates or joins a group, manages children and vocabulary.
+- **Child (**`Player`**)** — a profile owned by a parent. Play Now issues a time-limited session so the child can reach the lobby and games.
 
 ---
 
+
+
 ## Instructions
+
+
 
 ### Prerequisites
 
 - Docker and Docker Compose
 - Node.js 26 (matches CI; use `nvm use 26` if needed)
 - npm
-- Copy environment files from [`.env.example`](./.env.example):
+- Copy environment files from `[.env.example](./.env.example)`:
   - `packages/database/.env` — `DATABASE_URL`
   - `apps/backend/.env` — database, `OPENAI_API_KEY`, `MAIL_*`, `APP_URL`
   - `apps/frontend/.env` — `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`
@@ -58,13 +66,15 @@ There are two kinds of account:
 npm run dev:local
 ```
 
-[`scripts/dev-local.sh`](./scripts/dev-local.sh) installs dependencies if missing, starts PostgreSQL, runs Prisma migrations, then starts NestJS on [http://localhost:4000](http://localhost:4000) and Next.js on [http://localhost:3000](http://localhost:3000).
+`[scripts/dev-local.sh](./scripts/dev-local.sh)` installs dependencies if missing, starts PostgreSQL, runs Prisma migrations, then starts NestJS on [http://localhost:4000](http://localhost:4000) and Next.js on [http://localhost:3000](http://localhost:3000).
 
 Stop the Node apps with `Ctrl+C` (Postgres keeps running). Stop everything:
 
 ```bash
 npm run dev:stop
 ```
+
+
 
 ### Full Docker stack
 
@@ -83,54 +93,63 @@ npm run db:migrate:deploy   # apply migrations (CI / prod)
 npm run db:studio           # Prisma Studio GUI
 ```
 
+
+
 ### CI
 
 GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build and test → frontend lint and build.
 
 ---
 
+
+
 ## Features
 
-| Feature | Description | Paths |
-|---------|-------------|-------|
-| Registration / sign-in | Parent accounts; passwords hashed with bcrypt | `app/register`, `app/signin`, `users.service.ts` |
-| Dashboard | Group list, profile settings | `app/dashboard` |
-| Groups | Create, join, leave, admin roles | `app/create_group`, `app/manage_group` |
-| Email invitations | Tokenized invite links, Gmail SMTP | `app/accept_invitation`, `invitations.service.ts` |
-| Group chat | Messages plus activity log, visibility filters | `chat.service.ts`, `group-chat.tsx` |
-| Players | Child CRUD, passphrase, Play Now | `app/manage_players`, `players.service.ts` |
-| Vocabulary | CRUD, set active list for games | `app/manage_vocabulary` |
-| AI import | Photo OCR (Tesseract) + PDF extract + GPT-4o | `extraction.service.ts`, `import-vocabulary.tsx` |
-| Game lobby | Pending/ongoing games, optional warm-up puzzles | `app/select_game` |
-| Word Building | Multiplayer crossword, cell locks, scores | `word_building/`, `word-building.service.ts` |
-| Word Soup | Multiplayer word search | `word_soup/`, `word-soup.service.ts` |
-| Player sessions | One active Play Now token per child | `PlayerSession` model, `players.service.ts` |
-| Language picker | en / de / fr via next-intl | `language-context.tsx`, `flag-menu.tsx` |
-| Health | `GET /health` plus `/status` page | `app.controller.ts`, `app/status` |
-| Legal | Privacy Policy and Terms of Service | `app/privacy`, `app/terms` |
+
+| Feature                | Description                                     | Paths                                             |
+| ---------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| Registration / sign-in | Parent accounts; passwords hashed with bcrypt   | `app/register`, `app/signin`, `users.service.ts`  |
+| Dashboard              | Group list, profile settings                    | `app/dashboard`                                   |
+| Groups                 | Create, join, leave, admin roles                | `app/create_group`, `app/manage_group`            |
+| Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
+| Players                | Child CRUD, passphrase, Play Now                | `app/manage_players`, `players.service.ts`        |
+| Vocabulary             | CRUD, set active list for games                 | `app/manage_vocabulary`                           |
+| AI import              | Photo OCR (Tesseract) + PDF extract + GPT-4o    | `extraction.service.ts`, `import-vocabulary.tsx`  |
+| Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
+| Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
+| Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
+| Player sessions        | One active Play Now token per child             | `PlayerSession` model, `players.service.ts`       |
+| Language picker        | en / de / fr via next-intl                      | `language-context.tsx`, `flag-menu.tsx`           |
+| Health                 | `GET /health` plus `/status` page               | `app.controller.ts`, `app/status`                 |
+| Legal                  | Privacy Policy and Terms of Service             | `app/privacy`, `app/terms`                        |
+
 
 XP, avatars, and a lobby leaderboard exist under `progression/` but are **not claimed** as a gamification module.
 
 ---
 
+
+
 ## Modules (eval)
 
 **Target: 14+ points** (Major = 2, Minor = 1). Claim only modules that demo without errors.
 
-| Module | Type | Pts | What it is | Key files |
-|--------|------|-----|------------|-----------|
-| Frontend + backend frameworks | Major (Web) | 2 | Next.js 16 + NestJS 11 | `apps/frontend/`, `apps/backend/` |
-| Real-time (WebSockets) | Major (Web) | 2 | Socket.IO lobby + in-game | `games/game.gateway.ts`, `use-game-socket.ts` |
-| ORM | Minor (Web) | 1 | Prisma 7 + PostgreSQL 16 | `packages/database/prisma/schema.prisma` |
-| File upload | Minor (Web) | 1 | Multer, type/size checks, vocab import | `vocabularies.controller.ts`, `extraction.service.ts` |
-| Custom design system | Minor (Web) | 1 | Claymorphism, 13 UI components | `app/components/ui/`, `design-tokens.json` |
-| i18n (3 languages) | Minor (Accessibility) | 1 | next-intl, en / de / fr, flag switcher | `messages/{en,de,fr}.json`, `flag-menu.tsx` |
-| Health check | Minor (Devops) | 1 | `GET /health`, `/status`, DB probe | `app.service.ts`, `app/status` |
-| Organization system | Major (User) | 2 | Groups, ADMIN/MEMBER, invitations | `groups.service.ts`, `invitations.service.ts` |
-| Image recognition | Minor (AI) | 1 | Tesseract OCR + GPT-4o structuring | `extraction.service.ts` |
-| Complete web-based game | Major (Gaming) | 2 | Word Building crossword | `word-building.service.ts`, `word-building-puzzle-engine.ts` |
-| Remote players | Major (Gaming) | 2 | Live board sync over WebSockets | `game.gateway.ts`, `use-game-socket.ts` |
-| Multiplayer 3+ | Major (Gaming) | 2 | Several `GamePlayer` rows per game | `games.service.ts`, `select_game/page.tsx` |
+
+| Module                        | Type                  | Pts | What it is                             | Key files                                                    |
+| ----------------------------- | --------------------- | --- | -------------------------------------- | ------------------------------------------------------------ |
+| Frontend + backend frameworks | Major (Web)           | 2   | Next.js 16 + NestJS 11                 | `apps/frontend/`, `apps/backend/`                            |
+| Real-time (WebSockets)        | Major (Web)           | 2   | Socket.IO lobby + in-game              | `games/game.gateway.ts`, `use-game-socket.ts`                |
+| ORM                           | Minor (Web)           | 1   | Prisma 7 + PostgreSQL 16               | `packages/database/prisma/schema.prisma`                     |
+| File upload                   | Minor (Web)           | 1   | Multer, type/size checks, vocab import | `vocabularies.controller.ts`, `extraction.service.ts`        |
+| Custom design system          | Minor (Web)           | 1   | Claymorphism, 13 UI components         | `app/components/ui/`, `design-tokens.json`                   |
+| i18n (3 languages)            | Minor (Accessibility) | 1   | next-intl, en / de / fr, flag switcher | `messages/{en,de,fr}.json`, `flag-menu.tsx`                  |
+| Health check                  | Minor (Devops)        | 1   | `GET /health`, `/status`, DB probe     | `app.service.ts`, `app/status`                               |
+| Organization system           | Major (User)          | 2   | Groups, ADMIN/MEMBER, invitations      | `groups.service.ts`, `invitations.service.ts`                |
+| Image recognition             | Minor (AI)            | 1   | Tesseract OCR + GPT-4o structuring     | `extraction.service.ts`                                      |
+| Complete web-based game       | Major (Gaming)        | 2   | Word Building crossword                | `word-building.service.ts`, `word-building-puzzle-engine.ts` |
+| Remote players                | Major (Gaming)        | 2   | Live board sync over WebSockets        | `game.gateway.ts`, `use-game-socket.ts`                      |
+| Multiplayer 3+                | Major (Gaming)        | 2   | Several `GamePlayer` rows per game     | `games.service.ts`, `select_game/page.tsx`                   |
+
 
 **Total: 18 points** (above the 14-point minimum).
 
@@ -148,6 +167,8 @@ Not claimed: SSR, LLM streaming UI, gamification module, friends system, standar
 
 ---
 
+
+
 ## Eval demo
 
 Walk these in order. Use Chrome with the console open — no red errors.
@@ -155,7 +176,7 @@ Walk these in order. Use Chrome with the console open — no red errors.
 1. **Frameworks** — show `apps/frontend/` (Next.js App Router) and `apps/backend/src/app.module.ts` (Nest modules). Run `npm run dev:local`.
 2. **Design system** — Dashboard tiles, Manage Group tabs/panels, `app/components/ui/index.ts`, tokens in `app/design-tokens.json`.
 3. **i18n** — home in English, flag menu → Deutsch, then Français. Refresh; language stays. Legal pages (`/privacy`, `/terms`) switch too.
-4. **Auth + groups** — register, create a group, Manage Group (members, chat, promote). Send an invite email, open `/accept_invitation`.
+4. **Auth + groups** — register, create a group, Manage Group (members, promote). Send an invite email, open `/accept_invitation`.
 5. **ORM** — `schema.prisma` and a service using Prisma (e.g. `groups.service.ts`). Optional: `npm run db:studio`.
 6. **File upload + OCR** — Manage Vocabulary → AI Vocabulary Import → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
 7. **Players + Play Now** — create 3 child profiles, start Play Now (minutes). Child lands on Select Game.
@@ -167,21 +188,27 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 
 ---
 
+
+
 ## Technical stack
 
-| Layer | Technology | Role |
-|-------|------------|------|
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 | UI, App Router |
-| Backend | NestJS 11, TypeScript | REST API, WebSocket gateway |
-| Database | PostgreSQL 16, Prisma 7 | Persistence, migrations, typed client |
-| Real-time | Socket.IO | Lobby, grid, scores, cell locks |
-| AI / OCR | OpenAI GPT-4o, Tesseract.js, pdf-parse | Vocabulary extraction |
-| Mail | Nodemailer + Gmail SMTP | Group invitations |
-| Infra | Docker Compose, GitHub Actions | Local stack and CI |
+
+| Layer     | Technology                                       | Role                                  |
+| --------- | ------------------------------------------------ | ------------------------------------- |
+| Frontend  | Next.js 16, React 19, TypeScript, Tailwind CSS 4 | UI, App Router                        |
+| Backend   | NestJS 11, TypeScript                            | REST API, WebSocket gateway           |
+| Database  | PostgreSQL 16, Prisma 7                          | Persistence, migrations, typed client |
+| Real-time | Socket.IO                                        | Lobby, grid, scores, cell locks       |
+| AI / OCR  | OpenAI GPT-4o, Tesseract.js, pdf-parse           | Vocabulary extraction                 |
+| Mail      | Nodemailer + Gmail SMTP                          | Group invitations                     |
+| Infra     | Docker Compose, GitHub Actions                   | Local stack and CI                    |
+
 
 Parent auth is React context, not JWT.
 
 ---
+
+
 
 ## Database schema
 
@@ -192,31 +219,36 @@ User ──┬── GroupMembership ── Group ──┬── Player
        │                              ├── Vocabulary
        ├── Player                     ├── Game ── GamePlayer
        └── Vocabulary                 ├── Invitation
-                                      ├── GroupChatEntry
                                       └── Crossword (Word Building)
 
 Player ── PlayerSession (Play Now token)
 ```
 
-Full schema: [`packages/database/prisma/schema.prisma`](./packages/database/prisma/schema.prisma).
+Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prisma/schema.prisma)`.
 
 ---
+
+
 
 ## Team information
 
 > **Update with 42 logins before evaluation.**
 
-| Member | Role(s) | Responsibilities |
-|--------|---------|------------------|
-| `tsternbe` | Product Owner | Vision, backlog, feature priorities |
-| `kmooney` | Project Manager | Meetings, deadlines, coordination |
-| `smanthey` | Technical Lead | Architecture, code review, stack decisions |
-| `avarghes` | Developer | Backend, database, API |
-| `sgavrilo` | Developer | Frontend, games, UI |
+
+| Member     | Role(s)         | Responsibilities                           |
+| ---------- | --------------- | ------------------------------------------ |
+| `tsternbe` | Product Owner   | Vision, backlog, feature priorities        |
+| `kmooney`  | Project Manager | Meetings, deadlines, coordination, games   |
+| `smanthey` | Technical Lead  | Architecture, code review, stack decisions |
+| `avarghes` | Developer       | Games                                      |
+| `sgavrilo` | Developer       | Vocab-Import, UI                           |
+
 
 *Contributors in git history: Sergej Gavrilov, Steven Manthey, Kevin Mooney, Alvin Abraham Varghese, tsternbe, phteeven1.*
 
 ---
+
+
 
 ## Project management
 
@@ -228,9 +260,13 @@ Full schema: [`packages/database/prisma/schema.prisma`](./packages/database/pris
 
 ---
 
+
+
 ## Individual contributions
 
 > **Each member must fill in their section before evaluation.**
+
+
 
 ### `tsternbe` (Tobias Sternberg)
 
@@ -238,11 +274,15 @@ Full schema: [`packages/database/prisma/schema.prisma`](./packages/database/pris
 - Modules:
 - Challenges overcome:
 
+
+
 ### `kmooney` (Kevin Mooney)
 
 - Features:
 - Modules:
 - Challenges overcome:
+
+
 
 ### `smanthey` (Steven Manthey)
 
@@ -250,11 +290,15 @@ Full schema: [`packages/database/prisma/schema.prisma`](./packages/database/pris
 - Modules:
 - Challenges overcome:
 
+
+
 ### `avarghes` (Alvin Abraham Varghese)
 
 - Features:
 - Modules:
 - Challenges overcome:
+
+
 
 ### `sgavrilo` (Sergej Gavrilov)
 
@@ -264,21 +308,27 @@ Full schema: [`packages/database/prisma/schema.prisma`](./packages/database/pris
 
 ---
 
+
+
 ## Resources and AI usage
 
 - [Next.js](https://nextjs.org/docs), [NestJS](https://docs.nestjs.com), [Prisma](https://www.prisma.io/docs), [Socket.IO](https://socket.io/docs/v4/)
 - [OpenAI API](https://platform.openai.com/docs), [Tesseract.js](https://tesseract.projectnaptha.com/)
 
-| Task | Tool | Where |
-|------|------|-------|
-| Vocabulary extraction from text/OCR | OpenAI GPT-4o | `extraction.service.ts` |
-| OCR on uploaded photos | Tesseract.js | `extraction.service.ts` |
-| Development assistance | Cursor / Copilot | Review, debugging, documentation drafts |
-| Puzzle / game logic design | Team + AI brainstorming | Word Building engine |
+
+| Task                                | Tool                    | Where                                   |
+| ----------------------------------- | ----------------------- | --------------------------------------- |
+| Vocabulary extraction from text/OCR | OpenAI GPT-4o           | `extraction.service.ts`                 |
+| OCR on uploaded photos              | Tesseract.js            | `extraction.service.ts`                 |
+| Development assistance              | Cursor / Copilot        | Review, debugging, documentation drafts |
+| Puzzle / game logic design          | Team + AI brainstorming | Word Building engine                    |
+
 
 All AI-generated code was reviewed, tested, and understood by the team before merge.
 
 ---
+
+
 
 ## Known limitations
 
@@ -288,6 +338,8 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ---
 
+
+
 ## Legal and credits
 
 - Privacy Policy: `/privacy`
@@ -295,6 +347,8 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 - Flag icons: [flagicons.lipis.dev](https://flagicons.lipis.dev/), MIT license
 
 ---
+
+
 
 ## Project structure
 
@@ -311,3 +365,4 @@ ft_transcendence/
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```
+

@@ -9,7 +9,6 @@ import { InvitationsModule } from './invitations/invitations.module';
 import { PlayersModule } from './players/players.module';
 import { VocabulariesModule } from './vocabularies/vocabularies.module';
 import { GamesModule } from './games/games.module';
-import { ChatModule } from './chat/chat.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProgressionModule } from './progression/progression.module';
 
@@ -27,7 +26,6 @@ import { ProgressionModule } from './progression/progression.module';
     PlayersModule,
     VocabulariesModule,
     GamesModule,
-    ChatModule,
     ProgressionModule,
   ],
   controllers: [AppController],

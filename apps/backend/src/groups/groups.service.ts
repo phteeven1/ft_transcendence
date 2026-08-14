@@ -3,7 +3,6 @@ import { GroupRole } from '@ft-transcendence/database';
 import { groupWithMemberships, toApiGroup } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
-import { ChatService } from '../chat/chat.service';
 
 export type Group = {
   id: number;
@@ -24,7 +23,6 @@ export class GroupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
-    private readonly chatService: ChatService,
   ) {}
 
   async create(groupName: string, creatorId: number): Promise<Group> {
@@ -38,7 +36,6 @@ export class GroupsService {
       ...groupWithMemberships,
     });
     await this.usersService.addAdminGroup(creatorId, group.id);
-    await this.chatService.logEvent(group.id, creatorId, 'CREATE_GROUP');
     return toApiGroup(group);
   }
 
@@ -60,8 +57,6 @@ export class GroupsService {
     });
     await this.usersService.addMemberGroup(userId, groupId);
 
-    await this.chatService.logEvent(groupId, userId, 'JOIN_GROUP');
-
     return this.findById(groupId);
   }
 
@@ -82,9 +77,7 @@ export class GroupsService {
     });
     await this.usersService.removeMemberGroup(userId, groupId);
     await this.usersService.addAdminGroup(userId, groupId);
-
-    // Log the promotion event — targetId is the user being promoted
-    await this.chatService.logEvent(groupId, authorId, 'PROMOTE_ADMIN', userId);
+    void authorId;
 
     return this.findById(groupId);
   }
@@ -106,8 +99,7 @@ export class GroupsService {
     });
     await this.usersService.removeAdminGroup(userId, groupId);
     await this.usersService.addMemberGroup(userId, groupId);
-
-    await this.chatService.logEvent(groupId, authorId, 'RESIGN_ADMIN');
+    void authorId;
 
     return this.findById(groupId);
   }
@@ -123,8 +115,7 @@ export class GroupsService {
     if (deleted.count === 0) return this.findById(groupId);
     await this.usersService.removeAdminGroup(userId, groupId);
     await this.usersService.removeMemberGroup(userId, groupId);
-
-    await this.chatService.logEvent(groupId, authorId, 'LEAVE_GROUP');
+    void authorId;
 
     const remaining = await this.prisma.groupMembership.count({
       where: { groupId },
@@ -147,14 +138,7 @@ export class GroupsService {
         data: { name: groupName },
         ...groupWithMemberships,
       });
-
-      await this.chatService.logEvent(
-        groupId,
-        authorId,
-        'RENAME_GROUP',
-        undefined,
-        groupName,
-      );
+      void authorId;
 
       return toApiGroup(group);
     } catch {
@@ -172,8 +156,7 @@ export class GroupsService {
     });
     if (deleted.count === 0) return this.findById(groupId);
     await this.usersService.removeMemberGroup(userId, groupId);
-
-    await this.chatService.logEvent(groupId, authorId, 'EXPEL_MEMBER', userId);
+    void authorId;
 
     return this.findById(groupId);
   }
