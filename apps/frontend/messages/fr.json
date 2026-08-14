@@ -56,7 +56,6 @@
     "footerTagline": "© {year} Dicteé — jeux de vocabulaire pour les enfants",
     "privacyPolicy": "Politique de confidentialité",
     "termsOfService": "Conditions d'utilisation",
-    "systemStatus": "État du système",
     "legalNav": "Mentions légales",
     "languages": {
       "en": "English",
@@ -864,24 +863,6 @@
         }
       }
     }
-  },
-  "status": {
-    "title": "État du système",
-    "subtitle": "Contrôle de santé en direct de l'API Dicteé",
-    "overall": "Global",
-    "healthy": "Opérationnel",
-    "degraded": "Dégradé",
-    "unreachable": "Injoignable",
-    "version": "Version de l'API",
-    "uptime": "Durée de fonctionnement",
-    "uptimeSeconds": "{seconds} s",
-    "timestamp": "Dernière vérification",
-    "database": "PostgreSQL",
-    "up": "En ligne",
-    "down": "Hors ligne",
-    "latency": "Temps de réponse : {ms} ms",
-    "refresh": "Actualiser",
-    "loadError": "Impossible d'atteindre le point de contrôle de santé."
   },
   "errors": {
     "generic": "Une erreur s'est produite. Veuillez réessayer.",

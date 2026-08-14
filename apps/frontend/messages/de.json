@@ -56,7 +56,6 @@
     "footerTagline": "© {year} Dicteé — Wortschatzspiele für Kinder",
     "privacyPolicy": "Datenschutzerklärung",
     "termsOfService": "Nutzungsbedingungen",
-    "systemStatus": "Systemstatus",
     "legalNav": "Rechtliches",
     "languages": {
       "en": "English",
@@ -864,24 +863,6 @@
         }
       }
     }
-  },
-  "status": {
-    "title": "Systemstatus",
-    "subtitle": "Live-Gesundheitscheck der Dicteé-API",
-    "overall": "Gesamt",
-    "healthy": "Gesund",
-    "degraded": "Beeinträchtigt",
-    "unreachable": "Nicht erreichbar",
-    "version": "API-Version",
-    "uptime": "Laufzeit",
-    "uptimeSeconds": "{seconds} s",
-    "timestamp": "Zuletzt geprüft",
-    "database": "PostgreSQL",
-    "up": "Online",
-    "down": "Offline",
-    "latency": "Antwortzeit: {ms} ms",
-    "refresh": "Aktualisieren",
-    "loadError": "Der Health-Endpunkt konnte nicht erreicht werden."
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",

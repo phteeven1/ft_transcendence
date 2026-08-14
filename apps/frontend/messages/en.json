@@ -56,7 +56,6 @@
     "footerTagline": "© {year} Dicteé — vocabulary games for kids",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "systemStatus": "System Status",
     "legalNav": "Legal",
     "languages": {
       "en": "English",
@@ -864,24 +863,6 @@
         }
       }
     }
-  },
-  "status": {
-    "title": "System Status",
-    "subtitle": "Live health check from the Dicteé API",
-    "overall": "Overall",
-    "healthy": "Healthy",
-    "degraded": "Degraded",
-    "unreachable": "Unreachable",
-    "version": "API version",
-    "uptime": "Uptime",
-    "uptimeSeconds": "{seconds}s",
-    "timestamp": "Last checked",
-    "database": "PostgreSQL",
-    "up": "Up",
-    "down": "Down",
-    "latency": "Response time: {ms} ms",
-    "refresh": "Refresh",
-    "loadError": "Could not reach the health endpoint."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
