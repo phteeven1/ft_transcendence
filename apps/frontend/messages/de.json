@@ -188,7 +188,6 @@
     "selectMemberHint": "Wählen Sie ein Mitglied aus, um dessen Profil anzuzeigen.",
     "tabs": {
       "profile": "Mitgliederprofil",
-      "chat": "Gruppenchat",
       "games": "Spielsitzung"
     },
     "managePlayers": "Spieler verwalten",
@@ -197,9 +196,6 @@
     "resignAdmin": "Als Admin zurücktreten",
     "sendInvite": "Einladung senden",
     "expelMember": "Mitglied entfernen",
-    "messageAdmins": "Admins kontaktieren",
-    "messageGroup": "Gruppe kontaktieren",
-    "askAdmin": "Admin fragen",
     "renameGroup": "Gruppe umbenennen",
     "leaveGroup": "Gruppe verlassen",
     "deleteGroup": "Gruppe löschen",
@@ -272,49 +268,6 @@
       "lastMemberTitle": "Gruppe wird gelöscht",
       "lastMemberMessage": "Sie sind das letzte Mitglied von {groupName}. Wenn Sie gehen, wird die Gruppe dauerhaft entfernt.",
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
-    },
-    "messageAdminsModal": {
-      "title": "Admins kontaktieren",
-      "description": "Schreiben Sie eine Nachricht an alle anderen Admins der Gruppe {groupName}. Sie erscheint im Gruppenchat und ist nur für Admins sichtbar.",
-      "placeholder": "Ihre Nachricht…",
-      "charCount": "{current} / {max}"
-    },
-    "messageGroupModal": {
-      "title": "Gruppe kontaktieren",
-      "description": "Schreiben Sie eine Nachricht an alle Admins und Mitglieder der Gruppe {groupName}. Sie erscheint im Gruppenchat und ist für alle in der Gruppe sichtbar.",
-      "placeholder": "Ihre Nachricht…",
-      "charCount": "{current} / {max}"
-    },
-    "messageAdminModal": {
-      "title": "Admin kontaktieren",
-      "description": "Schreiben Sie eine Frage oder ein Anliegen an die Admins der Gruppe {groupName}. Sie ist im Gruppenchat sichtbar, aber nur für die Admins der Gruppe.",
-      "placeholder": "Ihre Nachricht…",
-      "charCount": "{current} / {max}"
-    }
-  },
-  "chat": {
-    "filters": {
-      "log": "Protokoll",
-      "adm": "Adm",
-      "gen": "Allg",
-      "mem": "Mitgl"
-    },
-    "noEntries": "Keine Einträge anzuzeigen.",
-    "logEvents": {
-      "createGroup": "<author></author> hat die Gruppe erstellt",
-      "joinGroup": "<author></author> ist der Gruppe beigetreten",
-      "leaveGroup": "<author></author> hat die Gruppe verlassen",
-      "promoteAdmin": "<author></author> hat <target></target> zum Admin befördert",
-      "resignAdmin": "<author></author> ist als Admin zurückgetreten",
-      "renameGroup": "<author></author> hat die Gruppe in \"{content}\" umbenannt",
-      "expelMember": "<author></author> hat <target></target> entfernt",
-      "deleteGroup": "<author></author> hat die Gruppe gelöscht",
-      "uploadVocabulary": "<author></author> hat Vokabular \"{content}\" hochgeladen",
-      "setActiveVocabulary": "<author></author> hat \"{content}\" als aktives Vokabular festgelegt",
-      "renameVocabulary": "<author></author> hat ein Vokabular in \"{content}\" umbenannt",
-      "deleteVocabulary": "<author></author> hat Vokabular \"{content}\" gelöscht",
-      "sendInvite": "<author></author> hat eine Einladung gesendet",
-      "unknown": "<author></author> hat eine unbekannte Aktion ausgeführt"
     }
   },
   "players": {
@@ -694,7 +647,7 @@
             "items": [
               "Vokabellisten (Wörter, Übersetzungen, Notizen), die Sie importieren oder manuell eingeben",
               "Dateien, die Sie für die Vokabelextraktion hochladen (z. B. PDFs, Fotos von Wortlisten). Bilder können mit OCR und KI-gestützter Strukturierung verarbeitet werden, um Vokabulareinträge zu erstellen",
-              "Gruppenchat-Nachrichten und Systemprotokolleinträge, die innerhalb Ihrer Gruppe sichtbar sind",
+              "Gruppenmitgliedschaft und Verwaltungsdaten (Rollen und Einladungen)",
               "Spielzustand, Züge und Punkte, die während Mehrspieler-Sitzungen generiert werden"
             ]
           },
@@ -715,7 +668,7 @@
             "Gruppen, Einladungen, Vokabularbibliotheken und Mehrspieler-Spiele zu betreiben",
             "Einladungs-E-Mails zu senden, wenn ein Gruppenadmin einen Elternteil per E-Mail einlädt",
             "Vokabular aus hochgeladenen Dokumenten und Bildern zu extrahieren",
-            "Chat, Aktivitätsprotokolle und Spielergebnisse innerhalb Ihrer Gruppe anzuzeigen",
+            "Geteiltes Vokabular und Spielergebnisse innerhalb Ihrer Gruppe anzuzeigen",
             "Sicherheit zu gewährleisten, Fehler zu beheben und die Zuverlässigkeit zu verbessern",
             "Geltenden rechtlichen Verpflichtungen nachzukommen"
           ],
@@ -735,7 +688,7 @@
           "items": [
             {
               "label": "Innerhalb Ihrer Gruppe:",
-              "text": "Andere Mitglieder derselben Gruppe können Benutzernamen, geteiltes Vokabular, Chat-Nachrichten (gemäß Sichtbarkeitsregeln) und Spielaktivität sehen"
+              "text": "Andere Mitglieder derselben Gruppe können Benutzernamen, geteiltes Vokabular und Spielaktivität sehen"
             },
             {
               "label": "Dienstleister:",
@@ -751,7 +704,7 @@
         "dataRetention": {
           "title": "6. Datenspeicherung",
           "paragraphs": [
-            "Wir speichern Konto- und Gruppendaten, solange Ihr Konto oder Ihre Gruppe existiert, es sei denn, Sie beantragen die Löschung oder wir müssen sie aus rechtlichen Gründen entfernen. Chat-Protokolle und Spielverlauf können aufbewahrt werden, um die Gruppenverwaltung und Lernaufzeichnungen zu unterstützen.",
+            "Wir speichern Konto- und Gruppendaten, solange Ihr Konto oder Ihre Gruppe existiert, es sei denn, Sie beantragen die Löschung oder wir müssen sie aus rechtlichen Gründen entfernen. Der Spielverlauf kann aufbewahrt werden, um die Gruppenverwaltung und Lernaufzeichnungen zu unterstützen.",
             "Einladungstoken laufen nach einem begrenzten Zeitraum ab. Spieler-Sitzungstoken laufen ab, wenn die Sitzung endet oder abläuft."
           ]
         },
@@ -838,7 +791,7 @@
             "Personenbezogene Daten Dritter ohne Erlaubnis hochzuladen (über Vokabellernmaterialien hinaus)",
             "Sicherheitsmaßnahmen zu umgehen, den Dienst zu scrapen oder Spiele oder Server zu stören",
             "Eine andere Person vorzutäuschen oder Ihre Zugehörigkeit zu einer Gruppe falsch darzustellen",
-            "Automatisierte Bots zum Spielen oder zum Spam im Gruppenchat zu verwenden",
+            "Automatisierte Bots zum Spielen oder zum Stören des Dienstes zu verwenden",
             "Den Dienst zurückzuentwickeln oder weiterzuverkaufen, außer wie durch anwendbare Open-Source-Lizenzen gestattet"
           ],
           "moderation": "Gruppenadmins können Mitglieder entfernen, die gegen Gruppenregeln verstoßen. Wir können Inhalte entfernen oder den Zugang nach eigenem Ermessen einschränken, um die Community zu schützen."
@@ -846,14 +799,14 @@
         "userContent": {
           "title": "5. Nutzerinhalte und Vokabular",
           "paragraphs": [
-            "Sie behalten das Eigentum an Vokabellisten, Nachrichten und anderen Inhalten, die Sie einreichen („Nutzerinhalte“). Durch das Einreichen von Nutzerinhalten gewähren Sie Dicteé eine nicht-exklusive, weltweite Lizenz, diese Inhalte ausschließlich zum Betrieb des Dienstes für Sie und Ihre Gruppe zu hosten, zu speichern, anzuzeigen und zu verarbeiten — einschließlich OCR- und KI-gestützter Extraktion, wenn Sie Dateien hochladen.",
+            "Sie behalten das Eigentum an Vokabellisten und anderen Inhalten, die Sie einreichen („Nutzerinhalte“). Durch das Einreichen von Nutzerinhalten gewähren Sie Dicteé eine nicht-exklusive, weltweite Lizenz, diese Inhalte ausschließlich zum Betrieb des Dienstes für Sie und Ihre Gruppe zu hosten, zu speichern, anzuzeigen und zu verarbeiten — einschließlich OCR- und KI-gestützter Extraktion, wenn Sie Dateien hochladen.",
             "Sie erklären, dass Sie das Recht haben, Nutzerinhalte hochzuladen und dass diese keine Rechte Dritter an geistigem Eigentum oder Datenschutz verletzen."
           ]
         },
         "groupsAndInvitations": {
           "title": "6. Gruppen, Einladungen und Admin-Aktionen",
           "paragraphs": [
-            "Gruppenersteller werden Administratoren mit Werkzeugen zum Einladen von Mitgliedern, Verwalten von Vokabular, Moderieren der Chat-Sichtbarkeit und Entfernen von Mitgliedern. Admin-Aktionen (Ausschlüsse, Beförderungen, Gruppenlöschung) werden im Gruppenaktivitätsfeed protokolliert, sofern konfiguriert.",
+            "Gruppenersteller werden Administratoren mit Werkzeugen zum Einladen von Mitgliedern, Verwalten von Vokabular und Entfernen von Mitgliedern. Admin-Aktionen (Ausschlüsse, Beförderungen, Gruppenlöschung) gelten sofort für die Gruppe.",
             "Per E-Mail gesendete Einladungen enthalten einen eindeutigen Link. Teilen Sie Einladungslinks nicht öffentlich; sie sind für bestimmte Empfänger gedacht, die zu Ihrer Klassen- oder Familiengruppe eingeladen wurden."
           ]
         },

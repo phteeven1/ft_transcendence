@@ -1,7 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ChatService } from '../chat/chat.service';
 
 export type Invitation = {
   token: string;
@@ -16,7 +15,6 @@ export class InvitationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
-    private readonly chatService: ChatService,
   ) {}
 
   async sendInvitation(
@@ -54,7 +52,7 @@ export class InvitationsService {
       );
     }
 
-    await this.chatService.logEvent(groupId, authorId, 'SEND_INVITE');
+    void authorId;
 
     return { success: true };
   }

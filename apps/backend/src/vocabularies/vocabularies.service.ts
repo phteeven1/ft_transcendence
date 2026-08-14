@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { toApiVocabulary } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
-import { ChatService } from '../chat/chat.service';
 
 export type Vocabulary = {
   id: number;
@@ -15,10 +14,7 @@ export type Vocabulary = {
 
 @Injectable()
 export class VocabulariesService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly chatService: ChatService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(
     inGroup: number,
@@ -38,14 +34,6 @@ export class VocabulariesService {
       },
     });
 
-    await this.chatService.logEvent(
-      inGroup,
-      byUser,
-      'UPLOAD_VOCABULARY',
-      vocabulary.id,
-      vocabulary.name,
-    );
-
     return toApiVocabulary(vocabulary);
   }
 
@@ -64,14 +52,7 @@ export class VocabulariesService {
         where: { id: inGroup },
         data: { currentVocabularyId: vocabularyId },
       });
-
-      await this.chatService.logEvent(
-        inGroup,
-        authorId,
-        'SET_ACTIVE_VOCABULARY',
-        vocabularyId,
-        vocabulary.name,
-      );
+      void authorId;
 
       return toApiVocabulary(vocabulary);
     } catch {
@@ -90,15 +71,8 @@ export class VocabulariesService {
         where: { id: vocabularyId },
         data: { name },
       });
-
-      // Store new name in content, same pattern as RENAME_GROUP
-      await this.chatService.logEvent(
-        inGroup,
-        authorId,
-        'RENAME_VOCABULARY',
-        vocabularyId,
-        name,
-      );
+      void inGroup;
+      void authorId;
 
       return toApiVocabulary(vocabulary);
     } catch {
@@ -128,21 +102,9 @@ export class VocabulariesService {
     authorId: number,
   ): Promise<boolean> {
     try {
-      // Fetch name before deletion so it can be stored in the log entry
-      const vocabulary = await this.prisma.vocabulary.findUnique({
-        where: { id: vocabularyId },
-      });
-
       await this.prisma.vocabulary.delete({ where: { id: vocabularyId } });
-
-      await this.chatService.logEvent(
-        inGroup,
-        authorId,
-        'DELETE_VOCABULARY',
-        vocabularyId,
-        vocabulary?.name,
-      );
-
+      void inGroup;
+      void authorId;
       return true;
     } catch {
       return false;

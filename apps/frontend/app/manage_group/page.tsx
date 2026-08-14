@@ -27,11 +27,6 @@ import ManagePlayers from './_components/manage-players';
 import ExpelMember from './_components/expel-member';
 import DeleteGroup from './_components/delete-group';
 import ManageVocabulary from './_components/manage-vocabulary';
-import { chatApi } from '@/lib/api/chat';
-import type { GroupChatEntryDto } from '@/lib/api/chat';
-import AdminToAdmins from './_components/admin-to-admins';
-import AdminToGroup from './_components/admin-to-group';
-import MemberToAdmin from './_components/member-to-admin';
 import { PageShell } from '../components/ui';
 
 export default function ManageGroup() {
@@ -40,17 +35,6 @@ export default function ManageGroup() {
   const router = useRouter();
   const [currentGroupMembers, setCurrentGroupMembers] = useState<Member[]>([]);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [chatEntries, setChatEntries] = useState<GroupChatEntryDto[]>([]);
-
-  const fetchChatEntries = useCallback(async () => {
-    if (!group || !user) return;
-    try {
-      const entries = await chatApi.getEntries(group.id, user.id);
-      setChatEntries(entries);
-    } catch (error) {
-      console.error('fetchChatEntries failed:', error);
-    }
-  }, [group, user]);
 
   const fetchMembers = useCallback(async () => {
     if (!group) return;
@@ -58,11 +42,10 @@ export default function ManageGroup() {
       const members = await groupsApi.getMembers(group.id);
       setCurrentGroupMembers(members);
       setSelectedMember((prev) => prev ?? members.find((m) => m.id === user?.id) ?? null);
-      await fetchChatEntries();
     } catch (error) {
       console.error('fetchMembers failed:', error);
     }
-  }, [group, user, fetchChatEntries]);
+  }, [group, user]);
 
   const syncAndRefresh = useCallback(async () => {
     if (!group || !user) return;
@@ -81,11 +64,10 @@ export default function ManageGroup() {
       }
 
       await fetchMembers();
-      await fetchChatEntries();
     } catch (error) {
       console.error('syncAndRefresh failed:', error);
     }
-  }, [group, user, syncGroup, leaveGroup, router, fetchMembers, fetchChatEntries]);
+  }, [group, user, syncGroup, leaveGroup, router, fetchMembers]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,11 +127,8 @@ export default function ManageGroup() {
           syncAndRefresh={syncAndRefresh}
         />
       )}
-      {isAdmin && <AdminToAdmins syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <AdminToGroup syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <LeaveGroup />
-      {!isAdmin && <MemberToAdmin syncAndRefresh={syncAndRefresh} />}
       {isAdmin && <DeleteGroup />}
       <BackToDashboard />
     </>
@@ -164,13 +143,7 @@ export default function ManageGroup() {
           selectedMember={selectedMember}
           onSelect={setSelectedMember}
         />
-        <ActionWindow
-          selectedMember={selectedMember}
-          groupId={group.id}
-          members={currentGroupMembers}
-          chatEntries={chatEntries}
-          isAdmin={isAdmin}
-        />
+        <ActionWindow selectedMember={selectedMember} />
         <div className="grid grid-cols-2 gap-3">{buttons}</div>
       </div>
 
@@ -184,13 +157,7 @@ export default function ManageGroup() {
           />
         </div>
         <div className="col-span-1">
-          <ActionWindow
-            selectedMember={selectedMember}
-            groupId={group.id}
-            members={currentGroupMembers}
-            chatEntries={chatEntries}
-            isAdmin={isAdmin}
-          />
+          <ActionWindow selectedMember={selectedMember} />
         </div>
         <div className="col-span-1 grid grid-cols-2 gap-2">
           {buttons}
@@ -219,13 +186,7 @@ export default function ManageGroup() {
             </div>
           </div>
         </div>
-        <ActionWindow
-          selectedMember={selectedMember}
-          groupId={group.id}
-          members={currentGroupMembers}
-          chatEntries={chatEntries}
-          isAdmin={isAdmin}
-        />
+        <ActionWindow selectedMember={selectedMember} />
       </div>
     </PageShell>
   );
