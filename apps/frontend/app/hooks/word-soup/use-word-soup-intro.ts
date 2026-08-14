@@ -14,10 +14,19 @@ export type IntroPhase =
   | 'words-intro-gap'
   | 'word'
   | 'word-gap'
+  | 'lets-go'
+  | 'lets-go-gap'
   | 'countdown'
   | 'done';
 
-export type IntroCountdownValue = 3 | 2 | 1 | 'GO!' | null;
+export type IntroCountdownValue = 3 | 2 | 1 | 'go' | null;
+
+export type IntroTexts = {
+  welcome: string;
+  briefing: string;
+  wordsIntro: string;
+  letsGo: string;
+};
 
 type UseWordSoupIntroProps = {
   gameId: number;
@@ -27,7 +36,10 @@ type UseWordSoupIntroProps = {
   hasPlayerSeenIntro: boolean;
   /** Shared server timeline start (epoch ms) so all clients stay in sync. */
   introStartedAt: number | null;
+  introTexts: IntroTexts;
   skipIntro?: boolean;
+  /** When true, do not call markIntroShown (e.g. game ended before intro finished). */
+  skipMarkIntroShown?: boolean;
 };
 
 const CHAR_MS = 42;
@@ -41,6 +53,14 @@ const GO_HOLD_MS = 900;
 const WELCOME_TEXT = 'Welcome to Word Soup!';
 const BRIEFING_TEXT = 'In this game, you have to find words in the grid.';
 const WORDS_INTRO_TEXT = 'Here are the words...';
+const LETS_GO_TEXT = "OK, let's go!";
+
+const DEFAULT_INTRO_TEXTS: IntroTexts = {
+  welcome: WELCOME_TEXT,
+  briefing: BRIEFING_TEXT,
+  wordsIntro: WORDS_INTRO_TEXT,
+  letsGo: LETS_GO_TEXT,
+};
 
 const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
 
@@ -67,7 +87,11 @@ function speechBlockMs(text: string, charMs: number): number {
  * Pure timeline: map wall-clock elapsed ms → intro frame.
  * Background tabs can catch up instantly because this does not rely on throttled timers.
  */
-function getIntroFrameAt(elapsedMs: number, solutionWords: string[]): IntroFrame {
+function getIntroFrameAt(
+  elapsedMs: number,
+  solutionWords: string[],
+  introTexts: IntroTexts = DEFAULT_INTRO_TEXTS,
+): IntroFrame {
   if (elapsedMs < 0) {
     return {
       phase: 'idle',
@@ -119,13 +143,13 @@ function getIntroFrameAt(elapsedMs: number, solutionWords: string[]): IntroFrame
     return null;
   };
 
-  let hit = runSpeech('welcome', 'welcome-gap', WELCOME_TEXT, CHAR_MS, 0);
+  let hit = runSpeech('welcome', 'welcome-gap', introTexts.welcome, CHAR_MS, 0);
   if (hit) return hit;
 
-  hit = runSpeech('briefing', 'briefing-gap', BRIEFING_TEXT, CHAR_MS, 0);
+  hit = runSpeech('briefing', 'briefing-gap', introTexts.briefing, CHAR_MS, 0);
   if (hit) return hit;
 
-  hit = runSpeech('words-intro', 'words-intro-gap', WORDS_INTRO_TEXT, CHAR_MS, 0);
+  hit = runSpeech('words-intro', 'words-intro-gap', introTexts.wordsIntro, CHAR_MS, 0);
   if (hit) return hit;
 
   for (let index = 0; index < solutionWords.length; index += 1) {
@@ -134,11 +158,20 @@ function getIntroFrameAt(elapsedMs: number, solutionWords: string[]): IntroFrame
     if (hit) return hit;
   }
 
+  hit = runSpeech(
+    'lets-go',
+    'lets-go-gap',
+    introTexts.letsGo,
+    CHAR_MS,
+    Math.max(0, solutionWords.length - 1),
+  );
+  if (hit) return hit;
+
   const countdownSteps: Array<{ value: IntroCountdownValue; hold: number }> = [
     { value: 3, hold: COUNTDOWN_STEP_MS },
     { value: 2, hold: COUNTDOWN_STEP_MS },
     { value: 1, hold: COUNTDOWN_STEP_MS },
-    { value: 'GO!', hold: GO_HOLD_MS },
+    { value: 'go', hold: GO_HOLD_MS },
   ];
 
   for (const step of countdownSteps) {
@@ -184,7 +217,9 @@ export function useWordSoupIntro({
   solutionWords,
   hasPlayerSeenIntro,
   introStartedAt,
+  introTexts,
   skipIntro = false,
+  skipMarkIntroShown = false,
 }: UseWordSoupIntroProps) {
   const [frame, setFrame] = useState<IntroFrame>(IDLE_FRAME);
   const [timelineReady, setTimelineReady] = useState(false);
@@ -218,12 +253,12 @@ export function useWordSoupIntro({
     const applyElapsed = () => {
       if (cancelled) return;
       const elapsed = Date.now() - introStartedAt;
-      const next = getIntroFrameAt(elapsed, wordsRef.current);
+      const next = getIntroFrameAt(elapsed, wordsRef.current, introTexts);
       setFrame(next);
 
       if (next.done) {
         setTimelineReady(true);
-        if (!markedIntroRef.current) {
+        if (!markedIntroRef.current && !skipMarkIntroShown) {
           markedIntroRef.current = true;
           void wordSoupApi.markIntroShown({ gameId, playerId }).catch((error) => {
             console.error('Failed to mark intro shown', error);
@@ -256,7 +291,9 @@ export function useWordSoupIntro({
     playerId,
     solutionWords,
     introStartedAt,
+    introTexts,
     shouldSkipIntro,
+    skipMarkIntroShown,
   ]);
 
   const gameReady = shouldSkipIntro ? courtReady : timelineReady;

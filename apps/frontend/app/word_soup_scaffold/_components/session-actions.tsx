@@ -1,10 +1,12 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '../../components/ui/button';
 
 type SessionActionsProps = {
   onLeave: () => void;
   onGameOver: () => void;
+  gameOverDisabled?: boolean;
   /** Stretch to match the submit button row height. */
   fillHeight?: boolean;
 };
@@ -13,8 +15,11 @@ type SessionActionsProps = {
 export default function SessionActions({
   onLeave,
   onGameOver,
+  gameOverDisabled = false,
   fillHeight = false,
 }: SessionActionsProps) {
+  const t = useTranslations('games.controls');
+
   return (
     <div
       className={[
@@ -29,19 +34,20 @@ export default function SessionActions({
         onClick={onLeave}
         className={fillHeight ? 'min-h-0 flex-1' : ''}
       >
-        Leave Game
+        {t('leaveGame')}
       </Button>
       <Button
         variant="ghost"
         size="sm"
         fullWidth
         onClick={onGameOver}
+        disabled={gameOverDisabled}
         className={[
           'border border-red-300/80 text-red-700 hover:bg-red-50 hover:text-red-800',
           fillHeight ? 'min-h-0 flex-1' : '',
         ].join(' ')}
       >
-        Game Over
+        {t('gameOver')}
       </Button>
     </div>
   );

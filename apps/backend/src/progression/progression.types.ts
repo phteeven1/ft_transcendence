@@ -1,4 +1,7 @@
-import type { AvatarTierDefinition } from './progression.constants';
+import type {
+  AvatarAnimalDefinition,
+  AvatarTierDefinition,
+} from './progression.constants';
 import type { LeaderboardGameType } from './progression.constants';
 
 export type GameFinishPlayerOutcome = {
@@ -7,6 +10,8 @@ export type GameFinishPlayerOutcome = {
   score: number;
   xpAwarded: number;
   isWinner: boolean;
+  /** Highest tier newly unlocked by this finish's XP; null if none. */
+  newlyUnlockedTier: number | null;
 };
 
 export type GameFinishOutcome = {
@@ -51,6 +56,7 @@ export type LeaderboardEntry = {
   gamesPlayed: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
   byGame: Record<LeaderboardGameType, PerGameTypeStats>;
 };
 
@@ -66,6 +72,7 @@ export type RecentGameEntry = {
   score: number;
   endedAt: string;
   isWinner: boolean;
+  xpAwarded: number;
 };
 
 export type PlayerGroupStats = {
@@ -78,6 +85,7 @@ export type PlayerGroupStats = {
   bestWinStreak: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
   byGame: Record<LeaderboardGameType, PerGameTypeStats>;
   recentGames: RecentGameEntry[];
 };
@@ -97,6 +105,8 @@ export type PlayerProgressionResponse = {
   bestWinStreak: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
   unlockedTiers: number[];
   tiers: AvatarTierDefinition[];
+  animals: AvatarAnimalDefinition[];
 };

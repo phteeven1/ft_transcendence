@@ -42,6 +42,8 @@ export type WordSoupFreezeNoticeDto = {
 export type WordSoupGuessResultDto = {
   success: boolean;
   message: string;
+  /** Optional i18n key under games.wordSoup.guess.* */
+  messageKey?: 'wrongPosition' | 'alreadyFoundElsewhere';
   frozen?: boolean;
   frozenUntil?: number;
   word?: string;

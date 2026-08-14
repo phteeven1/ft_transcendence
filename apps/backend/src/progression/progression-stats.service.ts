@@ -6,14 +6,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  AVATAR_ANIMALS,
   AVATAR_TIERS,
   LEADERBOARD_GAME_TYPES,
   RECENT_GAMES_LIMIT,
 } from './progression.constants';
 import {
+  getMaxUnlockedTier,
   getUnlockedTierIds,
-  isAvatarTierUnlocked,
-  isValidAvatarTier,
+  isValidAvatarAnimal,
+  computeXpAwarded,
   resolveWinnerIds,
 } from './progression.helpers';
 import {
@@ -66,7 +68,7 @@ export class ProgressionStatsService {
         wins: true,
         winStreak: true,
         bestWordStreak: true,
-        avatarTier: true,
+        avatarAnimal: true,
       },
       orderBy: [{ xp: 'desc' }, { id: 'asc' }],
     });
@@ -74,16 +76,18 @@ export class ProgressionStatsService {
     const entries: LeaderboardEntry[] = players.map((player, index) => {
       const byGame = byGameMap.get(player.id) ?? emptyByGame();
       const totals = totalsMap.get(player.id);
+      const xp = player.xp;
       return {
         rank: index + 1,
         playerId: player.id,
         playerName: player.name,
-        xp: totals?.xp ?? player.xp,
+        xp,
         wins: totals?.wins ?? player.wins,
         winStreak: totals?.winStreak ?? player.winStreak,
         gamesPlayed: multiplayerGamesPlayed(byGame),
         bestWordStreak: totals?.bestWordStreak ?? player.bestWordStreak,
-        avatarTier: player.avatarTier,
+        avatarTier: getMaxUnlockedTier(xp),
+        avatarAnimal: player.avatarAnimal,
         byGame,
       };
     });
@@ -113,7 +117,7 @@ export class ProgressionStatsService {
         winStreak: true,
         bestWinStreak: true,
         bestWordStreak: true,
-        avatarTier: true,
+        avatarAnimal: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -122,16 +126,18 @@ export class ProgressionStatsService {
       players.map(async (player) => {
         const byGame = byGameMap.get(player.id) ?? emptyByGame();
         const totals = totalsMap.get(player.id);
+        const xp = player.xp;
         return {
           playerId: player.id,
           playerName: player.name,
-          xp: totals?.xp ?? player.xp,
+          xp,
           gamesPlayed: totals?.gamesPlayed ?? player.gamesPlayed,
           wins: totals?.wins ?? player.wins,
           winStreak: totals?.winStreak ?? player.winStreak,
           bestWinStreak: totals?.bestWinStreak ?? player.bestWinStreak,
           bestWordStreak: totals?.bestWordStreak ?? player.bestWordStreak,
-          avatarTier: player.avatarTier,
+          avatarTier: getMaxUnlockedTier(xp),
+          avatarAnimal: player.avatarAnimal,
           byGame,
           recentGames: await this.getRecentGamesForPlayer(groupId, player.id),
         };
@@ -150,6 +156,7 @@ export class ProgressionStatsService {
       where: { id: playerId },
       select: {
         id: true,
+        inGroupId: true,
         xp: true,
         gamesPlayed: true,
         wins: true,
@@ -157,10 +164,41 @@ export class ProgressionStatsService {
         bestWinStreak: true,
         bestWordStreak: true,
         avatarTier: true,
+        avatarAnimal: true,
       },
     });
     if (!player) {
       throw new NotFoundException('Player not found');
+    }
+
+    // Align Player.xp with leaderboard history before returning.
+    if (player.inGroupId) {
+      const { totalsMap } = await buildGameHistoryStats(
+        this.prisma,
+        player.inGroupId,
+      );
+      await syncPlayersFromGameHistory(
+        this.prisma,
+        player.inGroupId,
+        totalsMap,
+      );
+      const refreshed = await this.prisma.player.findUnique({
+        where: { id: playerId },
+        select: {
+          id: true,
+          xp: true,
+          gamesPlayed: true,
+          wins: true,
+          winStreak: true,
+          bestWinStreak: true,
+          bestWordStreak: true,
+          avatarTier: true,
+          avatarAnimal: true,
+        },
+      });
+      if (refreshed) {
+        return toPlayerProgression(refreshed);
+      }
     }
 
     return toPlayerProgression(player);
@@ -168,10 +206,10 @@ export class ProgressionStatsService {
 
   async equipAvatar(
     playerId: number,
-    avatarTier: number,
+    input: { avatarAnimal: number },
   ): Promise<PlayerProgressionResponse> {
-    if (!isValidAvatarTier(avatarTier)) {
-      throw new BadRequestException('Invalid avatar tier');
+    if (!isValidAvatarAnimal(input.avatarAnimal)) {
+      throw new BadRequestException('Invalid avatar animal');
     }
 
     const player = await this.prisma.player.findUnique({
@@ -185,19 +223,16 @@ export class ProgressionStatsService {
         bestWinStreak: true,
         bestWordStreak: true,
         avatarTier: true,
+        avatarAnimal: true,
       },
     });
     if (!player) {
       throw new NotFoundException('Player not found');
     }
 
-    if (!isAvatarTierUnlocked(player.xp, avatarTier)) {
-      throw new BadRequestException('Avatar tier is not unlocked');
-    }
-
     const updated = await this.prisma.player.update({
       where: { id: playerId },
-      data: { avatarTier },
+      data: { avatarAnimal: input.avatarAnimal },
       select: {
         id: true,
         xp: true,
@@ -207,6 +242,7 @@ export class ProgressionStatsService {
         bestWinStreak: true,
         bestWordStreak: true,
         avatarTier: true,
+        avatarAnimal: true,
       },
     });
 
@@ -245,14 +281,17 @@ export class ProgressionStatsService {
         playerId: gp.playerId,
         score: gp.score,
       }));
+      const participantCount = participation.game.gamePlayers.length;
       const winnerIds = resolveWinnerIds(scores);
+      const isWinner = winnerIds.has(playerId);
 
       return {
         gameId: participation.game.id,
         gameName: participation.game.name,
         score: participation.score,
         endedAt: participation.game.endedAt!.toISOString(),
-        isWinner: winnerIds.has(playerId),
+        isWinner,
+        xpAwarded: computeXpAwarded(participantCount, isWinner),
       };
     });
   }
@@ -267,6 +306,7 @@ function toPlayerProgression(player: {
   bestWinStreak: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
 }): PlayerProgressionResponse {
   return {
     playerId: player.id,
@@ -276,8 +316,10 @@ function toPlayerProgression(player: {
     winStreak: player.winStreak,
     bestWinStreak: player.bestWinStreak,
     bestWordStreak: player.bestWordStreak,
-    avatarTier: player.avatarTier,
+    avatarTier: getMaxUnlockedTier(player.xp),
+    avatarAnimal: player.avatarAnimal,
     unlockedTiers: getUnlockedTierIds(player.xp),
     tiers: AVATAR_TIERS,
+    animals: AVATAR_ANIMALS,
   };
 }

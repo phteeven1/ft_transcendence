@@ -18,7 +18,12 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
-import { clearPlayerSession } from '@/lib/player-session';
+import {
+  clearPlayerSession,
+  getPlayerSession,
+  isSessionExpired,
+} from '@/lib/player-session';
+import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import { gamesApi } from '@/lib/api/games';
 import { wordBuildingApi } from '@/lib/api/games/word-building.api';
 import GameCourt, { COURT_COLS, COURT_ROWS } from './game-court';
@@ -26,6 +31,7 @@ import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
+import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import TileRack from './tile-rack';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
@@ -48,7 +54,7 @@ export default function WordBuildingGame() {
   const t = useTranslations('games.wordBuilding');
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { logoutPlayer } = useAuth();
+  const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
   useSessionGuard();
 
   const gameId   = Number(searchParams.get('gameId'));
@@ -69,6 +75,8 @@ export default function WordBuildingGame() {
   // ── UI state ────────────────────────────────────────────────────────────────
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [isAbandoning,     setIsAbandoning]     = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [isFinishingGame, setIsFinishingGame] = useState(false);
   const [playerNames,      setPlayerNames]      = useState<Map<number, string>>(new Map());
   const [gameName,         setGameName]         = useState('');
   const [startedTime,      setStartedTime]      = useState<string | null>(null);
@@ -111,48 +119,70 @@ export default function WordBuildingGame() {
 
     let cancelled = false;
 
-    wordBuildingApi.initCourt(gameId).then((data: IInitCourtResponse) => {
+    const redirectAfterEndedGame = async () => {
+      const stored = getPlayerSession();
+      if (stored && !isSessionExpired(stored.expiresAt)) {
+        await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
+        if (!cancelled) router.replace('/select_game');
+        return;
+      }
+      if (!cancelled) router.replace('/session_over');
+    };
+
+    const load = async () => {
+      const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
       if (cancelled) return;
-      setVisibleCourt(data.visibleCourt);
-      setCluesAcross(data.clues.across);
-      setCluesDown(data.clues.down);
-      
-      // Extract unique letters from the puzzle vocabulary for the tile rack.
-      // Extract as-is from the solution (already normalized/uppercased by backend).
-      // This avoids issues like 'ß' → 'SS' expansion that breaks matching.
-      const lettersSet = new Set<string>();
-      for (const row of data.trueCourt) {
-        for (const cell of row) {
-          if (cell.char && cell.status !== 'none' && /\p{L}/u.test(cell.char)) {
-            lettersSet.add(cell.char);
+
+      if (!loadedGame || loadedGame.isFinished) {
+        await redirectAfterEndedGame();
+        return;
+      }
+
+      setGameName(loadedGame.name);
+      setStartedTime(loadedGame.startedTime ?? null);
+
+      try {
+        const data = await wordBuildingApi.initCourt(gameId);
+        if (cancelled) return;
+        setVisibleCourt(data.visibleCourt);
+        setCluesAcross(data.clues.across);
+        setCluesDown(data.clues.down);
+
+        // Extract unique letters from the puzzle vocabulary for the tile rack.
+        // Extract as-is from the solution (already normalized/uppercased by backend).
+        // This avoids issues like 'ß' → 'SS' expansion that breaks matching.
+        const lettersSet = new Set<string>();
+        for (const row of data.trueCourt) {
+          for (const cell of row) {
+            if (cell.char && cell.status !== 'none' && /\p{L}/u.test(cell.char)) {
+              lettersSet.add(cell.char);
+            }
           }
         }
+        // Sort using locale-aware comparison for correct ordering in any language
+        const sortedLetters = Array.from(lettersSet).sort((a, b) =>
+          a.localeCompare(b),
+        );
+        setAvailableLetters(sortedLetters);
+        setLoading(false);
+      } catch {
+        if (!cancelled) await redirectAfterEndedGame();
       }
-      // Sort using locale-aware comparison for correct ordering in any language
-      const sortedLetters = Array.from(lettersSet).sort((a, b) => a.localeCompare(b));
-      setAvailableLetters(sortedLetters);
-      
-      setLoading(false);
-    }).catch(() => {
-      if (!cancelled) router.push('/');
-    });
+    };
 
-    gamesApi.getById({ gameId }).then(game => {
-      if (cancelled) return;
-      setGameName(game.name);
-      setStartedTime(game.startedTime ?? null);
-    });
+    void load();
 
-    wordBuildingApi.getPlayersForGame(gameId).then(players => {
+    wordBuildingApi.getPlayersForGame(gameId).then((players) => {
       if (cancelled) return;
       const map = new Map<number, string>();
       for (const p of players) map.set(p.id, p.name);
       setPlayerNames(map);
     });
 
-    return () => { cancelled = true; };
-  }, [gameId, playerId, router]);
-
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
     if (!gameState) return;
@@ -369,8 +399,22 @@ export default function WordBuildingGame() {
   /**
    * Ends the game from the parent controls and lets the backend broadcast completion.
    */
-  const handleGameOver = async () => {
-    await gamesApi.finish({ gameId });
+  const handleGameOverClick = () => {
+    if (solved || gameFinished || isFinishingGame) return;
+    setShowGameOverModal(true);
+  };
+
+  const confirmGameOver = async () => {
+    if (solved || gameFinished || isFinishingGame) return;
+    setIsFinishingGame(true);
+    try {
+      await gamesApi.finish({ gameId });
+      setShowGameOverModal(false);
+    } catch (error) {
+      console.error('finish failed:', error);
+    } finally {
+      setIsFinishingGame(false);
+    }
   };
 
   /**
@@ -463,7 +507,7 @@ export default function WordBuildingGame() {
             {/* Controls always visible at bottom — separated from the active gameplay area */}
             <GameControls
               onLeave={() => setShowAbandonModal(true)}
-              onGameOver={handleGameOver}
+              onGameOver={handleGameOverClick}
             />
           </div>
         </div>
@@ -475,6 +519,16 @@ export default function WordBuildingGame() {
           onStay={() => setShowAbandonModal(false)}
           onLeave={abandonPlay}
           isLeaving={isAbandoning}
+        />
+      )}
+
+      {showGameOverModal && (
+        <EndGameConfirmModal
+          onCancel={() => {
+            if (!isFinishingGame) setShowGameOverModal(false);
+          }}
+          onConfirm={confirmGameOver}
+          isConfirming={isFinishingGame}
         />
       )}
 

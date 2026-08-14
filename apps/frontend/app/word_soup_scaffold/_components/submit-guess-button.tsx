@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '../../components/ui/button';
 import type { CourtSize } from './court-size';
 
@@ -29,6 +30,8 @@ export default function SubmitGuessButton({
   courtSize,
   fillHeight = false,
 }: SubmitGuessButtonProps) {
+  const t = useTranslations('games.wordSoup');
+
   return (
     <div className={['z-10 w-full', fillHeight ? 'h-full' : 'sticky bottom-2'].join(' ')}>
       <Button
@@ -40,10 +43,10 @@ export default function SubmitGuessButton({
         className={['shadow-md', fillHeight ? '!h-full' : ''].join(' ')}
       >
         {isLocalPlayerFrozen
-          ? `Frozen! 🧊 ${freezeSecondsLeft}s`
+          ? t('frozen', { seconds: freezeSecondsLeft })
           : isSubmittingGuess
-            ? 'Submitting…'
-            : 'Submit Guess'}
+            ? t('submitting')
+            : t('submitGuess')}
       </Button>
     </div>
   );

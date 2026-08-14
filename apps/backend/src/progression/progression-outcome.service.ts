@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  clampEquippedAvatarTier,
   computeStreakUpdate,
   computeXpAwarded,
+  getMaxUnlockedTier,
   resolveWinnerIds,
 } from './progression.helpers';
 import type {
@@ -20,6 +20,7 @@ export class ProgressionOutcomeService {
 
   /**
    * Returns finish outcomes for a completed game (scores + XP that was or would be awarded).
+   * Unlock celebrations are only available on the live `recordGameOutcome` path.
    */
   async getFinishOutcome(gameId: number): Promise<GameFinishOutcome | null> {
     const game = await this.prisma.game.findUnique({
@@ -50,6 +51,7 @@ export class ProgressionOutcomeService {
           gp.score,
           winnerIds,
           participantCount,
+          null,
         ),
       ),
     };
@@ -82,17 +84,7 @@ export class ProgressionOutcomeService {
       })),
     );
 
-    const outcome: GameFinishOutcome = {
-      players: game.gamePlayers.map((gp) =>
-        toPlayerOutcome(
-          gp.playerId,
-          gp.player.name,
-          gp.score,
-          winnerIds,
-          participantCount,
-        ),
-      ),
-    };
+    const outcomePlayers: GameFinishPlayerOutcome[] = [];
 
     await this.prisma.$transaction(async (tx) => {
       for (const gp of game.gamePlayers) {
@@ -105,7 +97,10 @@ export class ProgressionOutcomeService {
         const streaks = computeStreakUpdate(player, isWinner);
         const xpGain = computeXpAwarded(participantCount, isWinner);
         const newXp = player.xp + xpGain;
-        const avatarTier = clampEquippedAvatarTier(newXp);
+        const avatarTier = getMaxUnlockedTier(newXp);
+        const previousMax = getMaxUnlockedTier(player.xp);
+        const newMax = avatarTier;
+        const newlyUnlockedTier = newMax > previousMax ? newMax : null;
 
         await tx.player.update({
           where: { id: gp.playerId },
@@ -118,6 +113,17 @@ export class ProgressionOutcomeService {
             avatarTier,
           },
         });
+
+        outcomePlayers.push(
+          toPlayerOutcome(
+            gp.playerId,
+            gp.player.name,
+            gp.score,
+            winnerIds,
+            participantCount,
+            newlyUnlockedTier,
+          ),
+        );
       }
 
       await tx.game.update({
@@ -126,7 +132,23 @@ export class ProgressionOutcomeService {
       });
     });
 
-    return outcome;
+    return { players: outcomePlayers };
+  }
+
+  /**
+   * Returns score standings for a finished game without XP (early termination).
+   */
+  async getUnrewardedFinishOutcome(
+    gameId: number,
+  ): Promise<GameFinishOutcome | null> {
+    const outcome = await this.getFinishOutcome(gameId);
+    if (!outcome) return null;
+    return {
+      players: outcome.players.map((player) => ({
+        ...player,
+        xpAwarded: 0,
+      })),
+    };
   }
 }
 
@@ -136,6 +158,7 @@ function toPlayerOutcome(
   score: number,
   winnerIds: Set<number>,
   participantCount: number,
+  newlyUnlockedTier: number | null,
 ): GameFinishPlayerOutcome {
   const isWinner = winnerIds.has(playerId);
   return {
@@ -144,5 +167,6 @@ function toPlayerOutcome(
     score,
     xpAwarded: computeXpAwarded(participantCount, isWinner),
     isWinner,
+    newlyUnlockedTier,
   };
 }

@@ -3,7 +3,13 @@ import { gameWithPlayers, toApiGame } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
 import { ProgressionService } from '../progression/progression.service';
+import { getMaxUnlockedTier } from '../progression/progression.helpers';
 import type { GameFinishOutcome } from '../progression/progression.types';
+import {
+  GAME_TYPE_WORD_BUILDING,
+  GAME_TYPE_WORD_SOUP,
+  matchLeaderboardGameType,
+} from '../progression/progression.constants';
 import { GameGateway } from './game.gateway';
 import { WordSoupService } from './word_soup/word-soup.service';
 
@@ -203,18 +209,34 @@ export class GamesService {
    * Returns the player roster for one game for scoreboard rendering.
    *
    * @param gameId Game whose players should be listed.
-   * @returns Player ids and names for the requested game.
+   * @returns Player ids, names, XP-derived rank, and equipped animal.
    */
-  async findPlayersForGame(
-    gameId: number,
-  ): Promise<Array<{ id: number; name: string }>> {
+  async findPlayersForGame(gameId: number): Promise<
+    Array<{
+      id: number;
+      name: string;
+      avatarTier: number;
+      avatarAnimal: number;
+    }>
+  > {
     const gamePlayers = await this.prisma.gamePlayer.findMany({
       where: { gameId },
-      include: { player: { select: { id: true, name: true } } },
+      include: {
+        player: {
+          select: {
+            id: true,
+            name: true,
+            xp: true,
+            avatarAnimal: true,
+          },
+        },
+      },
     });
     return gamePlayers.map((gp) => ({
       id: gp.player.id,
       name: gp.player.name,
+      avatarTier: getMaxUnlockedTier(gp.player.xp),
+      avatarAnimal: gp.player.avatarAnimal,
     }));
   }
 
@@ -373,7 +395,13 @@ export class GamesService {
       },
     });
 
-    const outcome = await this.progressionService.recordGameOutcome(gameId);
+    const awardProgression = await this.isProgressionEligible(
+      gameId,
+      dbGame.name,
+    );
+    const outcome = awardProgression
+      ? await this.progressionService.recordGameOutcome(gameId)
+      : await this.progressionService.getUnrewardedFinishOutcome(gameId);
 
     const game = toApiGame(dbGame);
     for (const pId of game.players) {
@@ -385,5 +413,31 @@ export class GamesService {
     this.gateway.emitGameFinished(gameId, outcome);
     this.wordSoupService.clearCourt(gameId);
     return { game: result, outcome };
+  }
+
+  /**
+   * Progression (XP, wins, streaks) applies only when the puzzle was fully solved.
+   */
+  private async isProgressionEligible(
+    gameId: number,
+    gameName: string,
+  ): Promise<boolean> {
+    const gameType = matchLeaderboardGameType(gameName);
+    if (gameType === GAME_TYPE_WORD_SOUP) {
+      if (this.wordSoupService.isGameComplete(gameId)) return true;
+      const completedPlayer = await this.prisma.gamePlayer.findFirst({
+        where: { gameId, completed: true },
+        select: { playerId: true },
+      });
+      return completedPlayer != null;
+    }
+    if (gameType === GAME_TYPE_WORD_BUILDING) {
+      const crossword = await this.prisma.crossword.findUnique({
+        where: { gameId },
+        select: { solved: true },
+      });
+      return crossword?.solved ?? false;
+    }
+    return false;
   }
 }

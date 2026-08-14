@@ -1,25 +1,32 @@
 'use client';
 
-import SoupHostCharacter from '@/app/word_soup_scaffold/_components/soup-host-character';
+import { useTranslations } from 'next-intl';
+import HostCharacter from '@/app/components/game/host-character';
 import {
+  getAvatarAnimalStyle,
   getAvatarTierStyle,
   resolveAvatarTier,
 } from './avatar-tier-styles';
+import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 
 type AvatarTierThumbProps = {
   tier: number;
+  animal?: number;
   className?: string;
   title?: string;
 };
 
 export function AvatarTierThumb({
   tier,
+  animal = 0,
   className = '',
   title,
 }: AvatarTierThumbProps) {
+  const t = useTranslations('games.lobby.progression');
   const definition = resolveAvatarTier(tier);
   const style = getAvatarTierStyle(definition);
-  const label = title ?? definition.label;
+  const animalStyle = getAvatarAnimalStyle(animal);
+  const label = title ?? translateAvatarTier(t, definition.tier);
 
   return (
     <span
@@ -32,11 +39,16 @@ export function AvatarTierThumb({
       title={label}
       aria-label={label}
       data-tier={definition.tier}
+      data-animal={animal}
       data-variant={definition.variantKey}
     >
-      <SoupHostCharacter
-        clothesColor={style.flairBg}
-        className="h-full w-full scale-[1.15]"
+      <HostCharacter
+        theme="animals"
+        tier={definition.tier}
+        animal={animal}
+        size="thumb"
+        clothesColor={animalStyle.flairBg || style.flairBg}
+        className="scale-[1.15]"
       />
     </span>
   );

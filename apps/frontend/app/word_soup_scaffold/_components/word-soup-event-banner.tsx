@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import SoupHostCharacter from './soup-host-character';
 import {
   getEventBannerDurations,
@@ -11,6 +12,11 @@ import {
 type WordSoupEventBannerProps = {
   event: WordSoupEventBanner | null;
   phase: EventBannerPhase;
+  /** Equipped avatar for the local player — same as intro/outro host. */
+  hostTier?: number;
+  hostAnimal?: number;
+  /** Local player's court outfit colour — keeps the announcer visually stable. */
+  hostClothesColor?: string;
 };
 
 const IDLE_CLOTHES = '#5EEAD4';
@@ -85,7 +91,11 @@ function useRevealProgress(phase: EventBannerPhase, event: WordSoupEventBanner |
 export default function WordSoupEventBannerView({
   event,
   phase,
+  hostTier = 0,
+  hostAnimal = 0,
+  hostClothesColor = IDLE_CLOTHES,
 }: WordSoupEventBannerProps) {
+  const t = useTranslations('games.wordSoup');
   const progress = useRevealProgress(phase, event);
   const bubbleVisible = phase === 'enter' || phase === 'hold';
   const showCaret = phase === 'enter' && progress < 1;
@@ -100,57 +110,69 @@ export default function WordSoupEventBannerView({
   const liveMessage = [revealed.headline, revealed.detail].filter(Boolean).join(' — ');
 
   return (
+    /*
+      Fixed-height layout slot so the court below does not jump. The bubble itself
+      is absolutely positioned and may grow downward over the court when the
+      message needs multiple lines.
+    */
     <div
-      className="word-soup-event-ticker-slot flex h-14 w-full items-center gap-0 sm:h-16"
+      className="word-soup-event-ticker-slot relative z-20 h-14 w-full sm:h-16"
       role="status"
       aria-live="polite"
-      aria-label={bubbleVisible ? liveMessage : 'Game message banner'}
+      aria-label={bubbleVisible ? liveMessage : t('messageBanner')}
     >
-      <SoupHostCharacter
-        clothesColor={event?.clothesColor ?? IDLE_CLOTHES}
-        animated
-        className="relative z-10 h-14 w-14 shrink-0 sm:h-16 sm:w-16"
-        title="Word Soup host"
-      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-0">
+        <SoupHostCharacter
+          theme="animals"
+          clothesColor={hostClothesColor}
+          tier={hostTier}
+          animal={hostAnimal}
+          animated
+          size="default"
+          className="relative z-10 h-14 w-14 shrink-0 sm:h-16 sm:w-16"
+          title={t('hostTitle')}
+        />
 
-      <div className="relative min-w-0 flex-1 self-stretch py-0.5">
-        <div
-          className={[
-            'word-soup-event-bubble relative flex h-full min-h-0 items-center rounded-2xl border-[3px] border-teal-700 bg-white px-3 shadow-[3px_4px_0_rgba(15,118,110,0.22)] transition-all duration-300 sm:px-4',
-            bubbleVisible
-              ? 'translate-x-0 scale-100 opacity-100'
-              : 'pointer-events-none -translate-x-1 scale-[0.98] opacity-0',
-          ].join(' ')}
-          aria-hidden={!bubbleVisible}
-        >
-          {/* Tail pointing left toward the host */}
-          <span
-            className="absolute right-full top-1/2 -translate-y-1/2"
-            aria-hidden="true"
+        <div className="relative min-w-0 flex-1 pt-0.5">
+          <div
+            className={[
+              'word-soup-event-bubble relative flex min-h-14 items-center rounded-2xl border-[3px] border-teal-700 bg-white px-3 py-2 shadow-[3px_4px_0_rgba(15,118,110,0.22)] transition-all duration-300 sm:min-h-16 sm:px-4',
+              bubbleVisible
+                ? 'translate-x-0 scale-100 opacity-100'
+                : 'pointer-events-none -translate-x-1 scale-[0.98] opacity-0',
+            ].join(' ')}
+            aria-hidden={!bubbleVisible}
           >
-            <span className="block h-0 w-0 border-y-[11px] border-r-[14px] border-y-transparent border-r-teal-700" />
-            <span className="absolute left-[3px] top-1/2 -translate-y-1/2 border-y-[8px] border-r-[10px] border-y-transparent border-r-white" />
-          </span>
+            {/* Tail pointing left toward the host */}
+            <span
+              className="absolute right-full top-5 -translate-y-1/2 sm:top-6"
+              aria-hidden="true"
+            >
+              <span className="block h-0 w-0 border-y-[11px] border-r-[14px] border-y-transparent border-r-teal-700" />
+              <span className="absolute left-[3px] top-1/2 -translate-y-1/2 border-y-[8px] border-r-[10px] border-y-transparent border-r-white" />
+            </span>
 
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-bold text-teal-950 sm:text-base">
-              <span>{revealed.headline}</span>
-              {showCaret && !(event?.detail && revealed.headline.length >= (event.headline.length)) && (
-                <span className="word-soup-intro-caret ml-0.5 inline-block align-baseline text-teal-500">
-                  ▌
-                </span>
-              )}
-            </p>
-            {event?.detail ? (
-              <p className="truncate text-xs font-semibold text-teal-800/75 sm:text-sm">
-                <span>{revealed.detail}</span>
-                {showCaret && revealed.headline.length >= event.headline.length && (
-                  <span className="word-soup-intro-caret ml-0.5 inline-block align-baseline text-teal-500">
-                    ▌
-                  </span>
-                )}
+            <div className="min-w-0 flex-1 leading-snug">
+              <p className="whitespace-pre-wrap break-words text-sm font-bold text-teal-950 sm:text-base">
+                <span>{revealed.headline}</span>
+                {showCaret &&
+                  !(event?.detail && revealed.headline.length >= event.headline.length) && (
+                    <span className="word-soup-intro-caret ml-0.5 inline-block align-baseline text-teal-500">
+                      ▌
+                    </span>
+                  )}
               </p>
-            ) : null}
+              {event?.detail ? (
+                <p className="mt-0.5 whitespace-pre-wrap break-words text-xs font-semibold text-teal-800/75 sm:text-sm">
+                  <span>{revealed.detail}</span>
+                  {showCaret && revealed.headline.length >= event.headline.length && (
+                    <span className="word-soup-intro-caret ml-0.5 inline-block align-baseline text-teal-500">
+                      ▌
+                    </span>
+                  )}
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

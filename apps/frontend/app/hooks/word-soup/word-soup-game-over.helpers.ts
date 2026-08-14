@@ -1,13 +1,21 @@
+import type { useTranslations } from 'next-intl';
 import type { GameFinishOutcomeDto, GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import { computeXpAwarded, isMultiplayerGame } from '@/lib/api/progression';
 
+export type OutroTranslateFn = ReturnType<
+  typeof useTranslations<'games.wordSoup.outro'>
+>;
+
 export function getGameOverClosingText(
   players: GameFinishPlayerOutcomeDto[],
+  t: OutroTranslateFn,
 ): string {
   if (players.length === 1) {
-    return `Well done ${players[0]?.playerName ?? 'everyone'}, great solo game! See you again soon!`;
+    return t('closingSolo', {
+      name: players[0]?.playerName ?? 'everyone',
+    });
   }
-  return 'Well done everyone, great game! See you again soon!';
+  return t('closingMulti');
 }
 
 export type GameOverAnnouncement = {
@@ -15,16 +23,9 @@ export type GameOverAnnouncement = {
   speech: string;
 };
 
-export function ordinal(place: number): string {
-  const mod100 = place % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${place}th`;
-  const suffixes = ['th', 'st', 'nd', 'rd'] as const;
-  const suffix = suffixes[place % 10] ?? 'th';
-  return `${place}${suffix}`;
-}
-
 export function buildGameOverAnnouncements(
   players: GameFinishPlayerOutcomeDto[],
+  t: OutroTranslateFn,
 ): GameOverAnnouncement[] {
   if (players.length === 0) return [];
 
@@ -39,7 +40,12 @@ export function buildGameOverAnnouncements(
     const place = totalPlayers - index;
     announcements.push({
       playerId: player.playerId,
-      speech: `In ${ordinal(place)} place, ${player.playerName}, with ${player.score} points and +${player.xpAwarded} XP!`,
+      speech: t('placeAnnouncement', {
+        place,
+        name: player.playerName,
+        score: player.score,
+        xp: player.xpAwarded,
+      }),
     });
   }
 
@@ -48,19 +54,27 @@ export function buildGameOverAnnouncements(
     if (totalPlayers === 1) {
       announcements.push({
         playerId: player.playerId,
-        speech: `In 1st place, ${player.playerName}, with ${player.score} points and +${player.xpAwarded} XP!`,
+        speech: t('firstPlaceSolo', {
+          name: player.playerName,
+          score: player.score,
+          xp: player.xpAwarded,
+        }),
       });
       continue;
     }
     const prefix =
       index === 0
         ? winners.length > 1
-          ? 'And finally, the winners! '
-          : 'And finally, the winner, '
+          ? t('winnersPrefix')
+          : t('winnerPrefix')
         : '';
     announcements.push({
       playerId: player.playerId,
-      speech: `${prefix}${player.playerName}, with ${player.score} points and +${player.xpAwarded} XP!`,
+      speech: `${prefix}${t('winnerAnnouncement', {
+        name: player.playerName,
+        score: player.score,
+        xp: player.xpAwarded,
+      })}`,
     });
   }
 
@@ -87,6 +101,7 @@ export function buildFallbackFinishOutcome(
         score,
         xpAwarded: computeXpAwarded(players.length, isWinner),
         isWinner,
+        newlyUnlockedTier: null,
       };
     }),
   };

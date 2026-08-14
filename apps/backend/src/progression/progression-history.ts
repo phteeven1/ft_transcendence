@@ -6,8 +6,8 @@ import {
 } from './progression.constants';
 import {
   aggregatePlayerTotals,
-  clampEquippedAvatarTier,
   computeXpAwarded,
+  getMaxUnlockedTier,
   resolveWinnerIds,
   type PlayerProgressionTotals,
 } from './progression.helpers';
@@ -29,7 +29,11 @@ export async function buildGameHistoryStats(
   groupId: number,
 ): Promise<GameHistoryStats> {
   const finishedGames = await prisma.game.findMany({
-    where: { inGroupId: groupId, isFinished: true },
+    where: {
+      inGroupId: groupId,
+      isFinished: true,
+      progressionAppliedAt: { not: null },
+    },
     select: {
       name: true,
       durationMs: true,
@@ -143,7 +147,10 @@ export async function buildGameHistoryStats(
   return { byGameMap: map, totalsMap };
 }
 
-/** Writes derived totals back onto Player rows when they drift from history. */
+/** Writes derived totals back onto Player rows when they drift from history.
+ * XP is included so the Player row stays aligned with sum(computeXpAwarded)
+ * over progression-applied games (same formula as recordGameOutcome).
+ */
 export async function syncPlayersFromGameHistory(
   prisma: PrismaService,
   groupId: number,
@@ -180,7 +187,7 @@ export async function syncPlayersFromGameHistory(
     const totals = totalsMap.get(player.id);
     if (!totals) continue;
 
-    const avatarTier = clampEquippedAvatarTier(totals.xp);
+    const avatarTier = getMaxUnlockedTier(totals.xp);
     const needsUpdate =
       player.xp !== totals.xp ||
       player.wins !== totals.wins ||

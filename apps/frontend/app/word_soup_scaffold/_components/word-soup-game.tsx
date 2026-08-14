@@ -8,6 +8,7 @@ import { useWordSoupGame } from '../../hooks/word-soup/use-word-soup-game';
 
 import GameCourt from './game-court';
 import AbandonPlayModal from './abandon-play-modal';
+import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
 import WordSoupIntroOverlay from './word-soup-intro-overlay';
 import WordSoupGameOverOverlay from './word-soup-game-over-overlay';
@@ -25,6 +26,7 @@ const MAX_COURT_FRAME_WIDTH = computeGridWidth('L');
 
 export default function WordSoupGame() {
   const tCommon = useTranslations('common');
+  const t = useTranslations('games.wordSoup');
   useSessionGuard();
 
   const searchParams = useSearchParams();
@@ -33,6 +35,7 @@ export default function WordSoupGame() {
   const socket = useGameSocket(gameId, playerId);
   const ws = useWordSoupGame({ gameId, playerId, socket });
   const { courtSize, courtWidthPx, frameRef, onCourtSizeChange } = useCourtSize();
+  const localHostClothesColor = ws.playerColours[playerId];
 
   const scoreboardProps = {
     players: ws.players,
@@ -58,14 +61,14 @@ export default function WordSoupGame() {
     return (
       <div className="game-shell flex-1 flex items-center justify-center px-4">
         <div className="max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-lg">
-          <h2 className="text-lg font-semibold text-rose-800">Couldn&apos;t start Word Soup</h2>
+          <h2 className="text-lg font-semibold text-rose-800">{t('initErrorTitle')}</h2>
           <p className="mt-2 text-sm text-gray-600">{ws.courtInitError}</p>
           <button
             type="button"
             onClick={ws.retryInitCourt}
             className="mt-5 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
           >
-            Try again
+            {t('tryAgain')}
           </button>
         </div>
       </div>
@@ -80,7 +83,7 @@ export default function WordSoupGame() {
           role="status"
           aria-live="polite"
         >
-          Reconnecting to the game server…
+          {t('reconnecting')}
         </div>
       )}
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
@@ -105,22 +108,28 @@ export default function WordSoupGame() {
               </div>
             </div>
 
-            {/* Message + court controls — right edge flush with court */}
-            <div className="lg:col-start-2 lg:row-start-1">
+            {/* Message + court controls — right edge flush with court.
+                Banner may expand downward over the court when messages wrap. */}
+            <div className="relative z-20 lg:col-start-2 lg:row-start-1">
               <div
-                className="flex items-center gap-2 sm:gap-3"
+                className="flex items-start gap-2 sm:gap-3"
                 style={{ width: courtWidthPx, maxWidth: '100%' }}
               >
                 <div className="min-w-0 flex-1">
                   <WordSoupEventBannerView
                     event={ws.eventBanner}
                     phase={ws.eventBannerPhase}
+                    hostTier={ws.localHostTier}
+                    hostAnimal={ws.localHostAnimal}
+                    hostClothesColor={localHostClothesColor}
                   />
                 </div>
-                <CourtControls
-                  courtSize={courtSize}
-                  onCourtSizeChange={onCourtSizeChange}
-                />
+                <div className="flex h-14 shrink-0 items-center sm:h-16">
+                  <CourtControls
+                    courtSize={courtSize}
+                    onCourtSizeChange={onCourtSizeChange}
+                  />
+                </div>
               </div>
             </div>
 
@@ -132,7 +141,7 @@ export default function WordSoupGame() {
             {/* Players + word stats — bottom of stats = bottom of court */}
             <aside
               className="hidden min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:flex"
-              aria-label="Players and word counts"
+              aria-label={t('playersAndStats')}
             >
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <PlayerScoreboardBanner {...scoreboardProps} orientation="vertical" />
@@ -142,7 +151,7 @@ export default function WordSoupGame() {
                   startedAtMs={ws.playStartedAt}
                   stopped={ws.isGameOver || ws.showGameOverOverlay}
                   className="w-full justify-between"
-                  label="Time"
+                  label={t('timeLabel')}
                 />
               </div>
               <div className="mt-auto shrink-0 pt-3">
@@ -157,7 +166,7 @@ export default function WordSoupGame() {
             {/* Court */}
             <div
               ref={frameRef}
-              className="min-w-0 lg:col-start-2 lg:row-start-2"
+              className="relative z-0 min-w-0 lg:col-start-2 lg:row-start-2"
               style={{ maxWidth: MAX_COURT_FRAME_WIDTH }}
             >
               <div style={{ width: courtWidthPx, maxWidth: '100%' }}>
@@ -175,16 +184,7 @@ export default function WordSoupGame() {
                   onSelectionContinue={ws.handleSelectionContinue}
                   onSelectionEnd={ws.handleSelectionEnd}
                   overlay={
-                    ws.showIntro ? (
-                      <WordSoupIntroOverlay
-                        phase={ws.introPhase}
-                        bubbleText={ws.introBubbleText}
-                        bubbleVisible={ws.introBubbleVisible}
-                        wordRevealIndex={ws.wordRevealIndex}
-                        totalWords={ws.introTotalWords}
-                        countdownValue={ws.introCountdownValue}
-                      />
-                    ) : ws.showGameOverOverlay ? (
+                    ws.showGameOverOverlay ? (
                       <WordSoupGameOverOverlay
                         phase={ws.gameOverPhase}
                         bubbleText={ws.gameOverBubbleText}
@@ -192,8 +192,30 @@ export default function WordSoupGame() {
                         revealedPlayerIds={ws.gameOverRevealedPlayerIds}
                         playersById={ws.gameOverPlayersById}
                         playerColours={ws.playerColours}
+                        playerAvatarTiers={ws.playerAvatarTiers}
+                        playerAvatarAnimals={ws.playerAvatarAnimals}
+                        hostTier={ws.localHostTier}
+                        hostAnimal={ws.localHostAnimal}
+                        hostClothesColor={localHostClothesColor}
+                        localPlayerId={playerId}
+                        newlyUnlockedTier={ws.newlyUnlockedTier}
                         showReturnButton={ws.showGameOverReturnButton}
                         onReturnToLobby={ws.handleReturnToLobby}
+                        courtSize={courtSize}
+                      />
+                    ) : ws.showIntro ? (
+                      <WordSoupIntroOverlay
+                        phase={ws.introPhase}
+                        bubbleText={ws.introBubbleText}
+                        bubbleVisible={ws.introBubbleVisible}
+                        wordRevealIndex={ws.wordRevealIndex}
+                        totalWords={ws.introTotalWords}
+                        countdownValue={ws.introCountdownValue}
+                        solutionWords={ws.solutionWords}
+                        hostTier={ws.localHostTier}
+                        hostAnimal={ws.localHostAnimal}
+                        hostClothesColor={localHostClothesColor}
+                        courtSize={courtSize}
                       />
                     ) : null
                   }
@@ -206,7 +228,8 @@ export default function WordSoupGame() {
               <SessionActions
                 fillHeight
                 onLeave={ws.handleLeaveClick}
-                onGameOver={ws.handleGameOver}
+                onGameOver={ws.handleGameOverClick}
+                gameOverDisabled={ws.isGameOver || ws.isFinishingGame}
               />
             </div>
 
@@ -234,7 +257,8 @@ export default function WordSoupGame() {
               />
               <SessionActions
                 onLeave={ws.handleLeaveClick}
-                onGameOver={ws.handleGameOver}
+                onGameOver={ws.handleGameOverClick}
+                gameOverDisabled={ws.isGameOver || ws.isFinishingGame}
               />
             </div>
           </div>
@@ -245,6 +269,14 @@ export default function WordSoupGame() {
             onStay={ws.closeAbandonModal}
             onLeave={ws.abandonPlay}
             isLeaving={ws.isAbandoning}
+          />
+        )}
+
+        {ws.showGameOverModal && (
+          <EndGameConfirmModal
+            onCancel={ws.closeGameOverModal}
+            onConfirm={ws.confirmGameOver}
+            isConfirming={ws.isFinishingGame}
           />
         )}
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { CourtSize } from './court-size';
 import GameRulesInfo from './game-rules-info';
 
@@ -13,9 +14,15 @@ export default function CourtControls({
   courtSize,
   onCourtSizeChange,
 }: CourtControlsProps) {
+  const t = useTranslations('games.wordSoup');
+
   return (
     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-      <div className="flex gap-1 sm:gap-1.5" role="group" aria-label="Court size">
+      <div
+        className="flex gap-1 sm:gap-1.5"
+        role="group"
+        aria-label={t('courtSizeLabel')}
+      >
         {(['S', 'M', 'L'] as CourtSize[]).map((size) => (
           <button
             key={size}

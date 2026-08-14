@@ -5,6 +5,12 @@ export type AvatarTierDefinitionDto = {
   xpRequired: number;
 };
 
+export type AvatarAnimalDefinitionDto = {
+  id: number;
+  label: string;
+  variantKey: string;
+};
+
 export type LeaderboardGameType = 'Word Soup' | 'Word Building';
 
 export type PlayerModeStatsDto = {
@@ -45,6 +51,7 @@ export type LeaderboardEntryDto = {
   gamesPlayed: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
   byGame: Record<LeaderboardGameType, PerGameTypeStatsDto>;
 };
 
@@ -60,6 +67,7 @@ export type RecentGameEntryDto = {
   score: number;
   endedAt: string;
   isWinner: boolean;
+  xpAwarded: number;
 };
 
 export type PlayerGroupStatsDto = {
@@ -72,6 +80,7 @@ export type PlayerGroupStatsDto = {
   bestWinStreak: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
   byGame: Record<LeaderboardGameType, PerGameTypeStatsDto>;
   recentGames: RecentGameEntryDto[];
 };
@@ -91,12 +100,14 @@ export type PlayerProgressionResponseDto = {
   bestWinStreak: number;
   bestWordStreak: number;
   avatarTier: number;
+  avatarAnimal: number;
   unlockedTiers: number[];
   tiers: AvatarTierDefinitionDto[];
+  animals: AvatarAnimalDefinitionDto[];
 };
 
 export type EquipAvatarInput = {
-  avatarTier: number;
+  avatarAnimal: number;
 };
 
 /** Mirrors backend constants for offline UI (e.g. tier previews). */
@@ -106,6 +117,14 @@ export const AVATAR_TIERS: AvatarTierDefinitionDto[] = [
   { tier: 2, label: 'Wordsmith', variantKey: 'tier-2', xpRequired: 150 },
   { tier: 3, label: 'Champion', variantKey: 'tier-3', xpRequired: 300 },
   { tier: 4, label: 'Legend', variantKey: 'tier-4', xpRequired: 500 },
+];
+
+export const AVATAR_ANIMALS: AvatarAnimalDefinitionDto[] = [
+  { id: 0, label: 'Rabbit', variantKey: 'animal-rabbit' },
+  { id: 1, label: 'Fox', variantKey: 'animal-fox' },
+  { id: 2, label: 'Bear', variantKey: 'animal-bear' },
+  { id: 3, label: 'Tiger', variantKey: 'animal-tiger' },
+  { id: 4, label: 'Lion', variantKey: 'animal-lion' },
 ];
 
 export const LEADERBOARD_GAME_TYPES: LeaderboardGameType[] = [

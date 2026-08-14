@@ -6,6 +6,7 @@ import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import {
   buildGameOverAnnouncements,
   getGameOverClosingText,
+  type OutroTranslateFn,
 } from './word-soup-game-over.helpers';
 import { GAME_OVER_COURT_HOLD_MS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
@@ -47,12 +48,16 @@ function speechBlockMs(text: string): number {
   return text.length * CHAR_MS + HOLD_AFTER_TYPE_MS;
 }
 
-function buildTimelineSegments(outcome: GameFinishOutcomeDto): TimelineSegment[] {
-  const segments: TimelineSegment[] = [
-    { kind: 'hold', duration: GAME_OVER_COURT_HOLD_MS },
-  ];
+function buildTimelineSegments(
+  outcome: GameFinishOutcomeDto,
+  t: OutroTranslateFn,
+  skipInitialHold = false,
+): TimelineSegment[] {
+  const segments: TimelineSegment[] = skipInitialHold
+    ? []
+    : [{ kind: 'hold', duration: GAME_OVER_COURT_HOLD_MS }];
 
-  for (const announcement of buildGameOverAnnouncements(outcome.players)) {
+  for (const announcement of buildGameOverAnnouncements(outcome.players, t)) {
     segments.push({
       kind: 'announce',
       playerId: announcement.playerId,
@@ -62,7 +67,7 @@ function buildTimelineSegments(outcome: GameFinishOutcomeDto): TimelineSegment[]
 
   segments.push({
     kind: 'closing',
-    text: getGameOverClosingText(outcome.players),
+    text: getGameOverClosingText(outcome.players, t),
   });
   return segments;
 }
@@ -154,9 +159,16 @@ const IDLE_FRAME: GameOverFrame = {
 type UseWordSoupGameOverProps = {
   active: boolean;
   outcome: GameFinishOutcomeDto | null;
+  outroT: OutroTranslateFn;
+  skipInitialHold?: boolean;
 };
 
-export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProps) {
+export function useWordSoupGameOver({
+  active,
+  outcome,
+  outroT,
+  skipInitialHold = false,
+}: UseWordSoupGameOverProps) {
   const [frame, setFrame] = useState<GameOverFrame>(IDLE_FRAME);
   const segmentsRef = useRef<TimelineSegment[]>([]);
   const sequenceActive = active && outcome != null;
@@ -164,7 +176,7 @@ export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProp
   useLayoutEffect(() => {
     if (!sequenceActive || !outcome) return;
 
-    segmentsRef.current = buildTimelineSegments(outcome);
+    segmentsRef.current = buildTimelineSegments(outcome, outroT, skipInitialHold);
 
     let rafId = 0;
     let cancelled = false;
@@ -196,7 +208,7 @@ export function useWordSoupGameOver({ active, outcome }: UseWordSoupGameOverProp
       window.cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [sequenceActive, outcome]);
+  }, [sequenceActive, outcome, outroT, skipInitialHold]);
 
   const displayFrame = sequenceActive ? frame : IDLE_FRAME;
   const displayedText = displayFrame.bubbleText.slice(0, displayFrame.typedLength);

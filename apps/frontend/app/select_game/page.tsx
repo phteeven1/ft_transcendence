@@ -26,12 +26,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { gamesApi, playersApi } from '@/lib/api';
+import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 import {
   clearPlayerSession,
   getPlayerSession,
   isSessionExpired,
 } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import { consumePendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { Game } from '../types';
 import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
@@ -43,6 +45,7 @@ import { useGroupSocket } from '../hooks/use-group-socket';
 import { useLobbyProgression } from '../hooks/use-lobby-progression';
 import PuzzleWindow from './_components/puzzle-window';
 import ProgressionPanel from './_components/progression/progression-panel';
+import { AvatarTierThumb } from './_components/progression/avatar-tier-thumb';
 import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
 
@@ -77,6 +80,7 @@ type ModalState =
 // modal tracks modal state
 export default function SelectGame() {
   const t = useTranslations('games.lobby');
+  const tProgression = useTranslations('games.lobby.progression');
   const { player, logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
   const router = useRouter();
   useSessionGuard();
@@ -84,6 +88,7 @@ export default function SelectGame() {
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
   const [sessionReady, setSessionReady] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
+  const [unlockToastTier, setUnlockToastTier] = useState<number | null>(null);
 
   const { markIntentionalExit } = usePlayerSessionExitGuard({
     enabled: sessionReady && player !== null,
@@ -171,6 +176,17 @@ export default function SelectGame() {
     refreshToken: lobbyRevision,
   });
 
+  // One-shot unlock toast after returning from a game (e.g. Word Building).
+  useEffect(() => {
+    if (!sessionReady || !player) return;
+    const tier = consumePendingAvatarUnlock(player.id);
+    if (tier === null) return;
+    const frameId = requestAnimationFrame(() => {
+      setUnlockToastTier(tier);
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [sessionReady, player]);
+
   // navigate to the matching game page as soon as the backend tells us our game has started
   useEffect(() => {
     if (startedGame && player) {
@@ -252,6 +268,34 @@ export default function SelectGame() {
   return (
     <>
       <PageShell>
+        {unlockToastTier !== null && (
+          <div
+            className="mb-4 flex items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50 px-4 py-3 text-teal-950 shadow-sm"
+            role="status"
+            aria-live="polite"
+          >
+            <AvatarTierThumb
+              tier={unlockToastTier}
+              animal={progression.myProgression?.avatarAnimal ?? 0}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">{tProgression('unlockToastTitle')}</p>
+              <p className="text-xs text-teal-900/80">
+                {tProgression('unlockToastBody', {
+                  label: translateAvatarTier(tProgression, unlockToastTier),
+                })}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setUnlockToastTier(null)}
+            >
+              {tProgression('unlockToastDismiss')}
+            </Button>
+          </div>
+        )}
+
         <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
           {t('greeting', { name: player.name })}
         </h1>
@@ -316,8 +360,14 @@ export default function SelectGame() {
             localPlayerId={player.id}
             leaderboard={progression.leaderboard}
             myStats={progression.myStats}
+            myProgression={progression.myProgression}
             loading={progression.loading}
             error={progression.error}
+            equipping={progression.equipping}
+            equipError={progression.equipError}
+            onEquipAnimal={(animal) => {
+              void progression.equipAnimal(animal);
+            }}
           />
         </div>
 

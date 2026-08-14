@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { gamesApi } from '@/lib/api';
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { clearPlayerSession } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import type {
   WordSoupWordGuessedDto,
   WordSoupGuessResultDto,
@@ -53,6 +55,38 @@ type UseWordSoupGameArgs = {
 export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArgs) {
   const router = useRouter();
   const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
+  const tGuess = useTranslations('games.wordSoup.guess');
+  const tIntro = useTranslations('games.wordSoup.intro');
+  const tOutro = useTranslations('games.wordSoup.outro');
+  const tEvents = useTranslations('games.wordSoup.events');
+
+  const introTexts = useMemo(
+    () => ({
+      welcome: tIntro('welcome'),
+      briefing: tIntro('briefing'),
+      wordsIntro: tIntro('wordsIntro'),
+      letsGo: tIntro('letsGo'),
+    }),
+    [tIntro],
+  );
+
+  const formatPlayerFoundWord = useCallback(
+    (name: string, word: string) => tEvents('playerFoundWord', { name, word }),
+    [tEvents],
+  );
+  const formatLastWord = useCallback(() => tEvents('lastWord'), [tEvents]);
+  const formatPlayerFrozen = useCallback(
+    (name: string) => tEvents('playerFrozen', { name }),
+    [tEvents],
+  );
+  const formatPlayerUnfrozen = useCallback(
+    (name: string) => tEvents('playerUnfrozen', { name }),
+    [tEvents],
+  );
+  const formatPlayerLeft = useCallback(
+    (name: string) => tEvents('playerLeft', { name }),
+    [tEvents],
+  );
 
   const {
     gameFinished,
@@ -98,6 +132,13 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     initialFrozenPlayers,
   } = useWordSoupInit(gameId, playerId);
 
+  const [manuallyFinished, setManuallyFinished] = useState(false);
+  const [isFinishingGame, setIsFinishingGame] = useState(false);
+  const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
+
+  const gameEnded =
+    manuallyFinished || gameFinished || Boolean(game?.isFinished);
+
   const {
     gameReady,
     showIntro,
@@ -114,7 +155,9 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     solutionWords,
     hasPlayerSeenIntro,
     introStartedAt,
-    skipIntro: initIsComplete || Boolean(game?.isFinished),
+    introTexts,
+    skipIntro: initIsComplete || gameEnded,
+    skipMarkIntroShown: gameEnded,
   });
 
   const mergedFrozenPlayers = useMemo(
@@ -150,18 +193,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     for (const [id, name] of Object.entries(leftPlayers)) {
       const playerIdNum = Number(id);
       if (!byId.has(playerIdNum)) {
-        const template = initialPlayers[0];
         byId.set(playerIdNum, {
-          ...(template ?? {
-            inGroup: 0,
-            ofUser: 0,
-            passQuestion: '',
-            currentGameId: null,
-            lastSignout: '',
-            sessionExpiresAt: null,
-          }),
           id: playerIdNum,
           name,
+          avatarTier: 0,
+          avatarAnimal: 0,
         });
       }
     }
@@ -185,8 +221,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   const { scorePopup, showScorePopup } = useWordSoupScorePopup();
 
   const isGameOver = Boolean(
-    gameFinished ||
-      game?.isFinished ||
+    gameEnded ||
       initIsComplete ||
       serverState?.isComplete ||
       (solutionWords.length > 0 && foundWords.length >= solutionWords.length),
@@ -205,18 +240,18 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       const colour = playerColours[result.playerId] ?? '#10B981';
       pushEvent({
         kind: 'word-found',
-        headline: `${result.playerName} found ${result.word}`,
+        headline: formatPlayerFoundWord(result.playerName, result.word),
         clothesColor: colour,
       });
       if (result.isPenultimate) {
         pushEvent({
           kind: 'final-word',
-          headline: 'Last word!',
+          headline: formatLastWord(),
           clothesColor: '#F59E0B',
         });
       }
     },
-    [playerColours, pushEvent],
+    [playerColours, pushEvent, formatPlayerFoundWord, formatLastWord],
   );
 
   const handleScoreAwarded = useCallback(
@@ -254,12 +289,16 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     latestPlayerLeft,
     playerColours,
     pushEvent,
+    formatPlayerFrozen,
+    formatPlayerUnfrozen,
+    formatPlayerLeft,
   });
 
   const startGameOverSequence = useWordSoupGameOverOverlay(
     isGameOver,
     isCelebrating,
     celebrationActiveRef,
+    manuallyFinished,
   );
 
   const [finishOutcomeFromApi, setFinishOutcomeFromApi] =
@@ -298,11 +337,19 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     if (finishOutcomeFromSocket) return finishOutcomeFromSocket;
     if (finishOutcomeFromApi) return finishOutcomeFromApi;
     if (!startGameOverSequence) return null;
-    return buildFallbackFinishOutcome(players, playerScores);
+    const fallback = buildFallbackFinishOutcome(players, playerScores);
+    if (!manuallyFinished) return fallback;
+    return {
+      players: fallback.players.map((player) => ({
+        ...player,
+        xpAwarded: 0,
+      })),
+    };
   }, [
     finishOutcomeFromSocket,
     finishOutcomeFromApi,
     startGameOverSequence,
+    manuallyFinished,
     players,
     playerScores,
   ]);
@@ -314,6 +361,32 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     );
   }, [finishOutcome]);
 
+  const playerAvatarTiers = useMemo(() => {
+    const tiers: Record<number, number> = {};
+    for (const player of players) {
+      tiers[player.id] = player.avatarTier ?? 0;
+    }
+    return tiers;
+  }, [players]);
+
+  const playerAvatarAnimals = useMemo(() => {
+    const animals: Record<number, number> = {};
+    for (const player of players) {
+      animals[player.id] = player.avatarAnimal ?? 0;
+    }
+    return animals;
+  }, [players]);
+
+  const localHostTier = playerAvatarTiers[playerId] ?? 0;
+  const localHostAnimal = playerAvatarAnimals[playerId] ?? 0;
+
+  const newlyUnlockedTier = useMemo(() => {
+    const fromOutcome = finishOutcome?.players.find(
+      (entry) => entry.playerId === playerId,
+    )?.newlyUnlockedTier;
+    return typeof fromOutcome === 'number' ? fromOutcome : null;
+  }, [finishOutcome, playerId]);
+
   const {
     showOverlay: showGameOverOverlay,
     phase: gameOverPhase,
@@ -324,6 +397,8 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   } = useWordSoupGameOver({
     active: startGameOverSequence,
     outcome: finishOutcome,
+    outroT: tOutro,
+    skipInitialHold: finishedDuringIntro,
   });
 
   const handleGuessSubmitted = useCallback(() => {
@@ -345,6 +420,19 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     }, 800);
   }, [celebrationActiveRef]);
 
+  const resolveGuessMessage = useCallback(
+    (result: WordSoupGuessResultDto) => {
+      if (
+        result.messageKey === 'wrongPosition' ||
+        result.messageKey === 'alreadyFoundElsewhere'
+      ) {
+        return tGuess(result.messageKey);
+      }
+      return result.message;
+    },
+    [tGuess],
+  );
+
   const {
     selection,
     selectionMessage,
@@ -362,6 +450,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     isCelebrating,
     guessResult,
     emitSubmitGuess,
+    resolveGuessMessage,
     onGuessSubmitted: handleGuessSubmitted,
     onGuessFailed: handleGuessFailed,
     onGuessSucceeded: handleGuessSucceeded,
@@ -404,6 +493,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
   const [isAbandoning, setIsAbandoning] = useState(false);
   const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
 
   const navigateToLobby = useCallback(async () => {
     await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
@@ -461,18 +551,68 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     setShowAbandonModal(true);
   }, []);
 
-  const handleGameOver = useCallback(async () => {
-    const result = await gamesApi.finish({ gameId });
-    if (result.outcome) {
-      setFinishOutcomeFromApi(result.outcome);
+  const handleGameOverClick = useCallback(() => {
+    if (isGameOver || isFinishingGame) return;
+    setShowGameOverModal(true);
+  }, [isFinishingGame, isGameOver]);
+
+  useEffect(() => {
+    if (isGameOver) {
+      setShowGameOverModal(false);
     }
-  }, [gameId]);
+  }, [isGameOver]);
+
+  const closeGameOverModal = useCallback(() => {
+    if (isFinishingGame) return;
+    setShowGameOverModal(false);
+  }, [isFinishingGame]);
+
+  const confirmGameOver = useCallback(async () => {
+    if (isGameOver || isFinishingGame) return;
+
+    const wasDuringIntro = showIntro;
+    setIsFinishingGame(true);
+    setManuallyFinished(true);
+    if (wasDuringIntro) {
+      setFinishedDuringIntro(true);
+    }
+
+    try {
+      const result = await gamesApi.finish({ gameId });
+      setShowGameOverModal(false);
+      if (result.outcome) {
+        const unlock = result.outcome.players.find(
+        (entry) =>
+          entry.playerId === playerId &&
+          typeof entry.newlyUnlockedTier === 'number',
+      )?.newlyUnlockedTier;
+      if (typeof unlock === 'number') {
+        stashPendingAvatarUnlock(playerId, unlock);
+      }
+      setFinishOutcomeFromApi(result.outcome);
+      }
+    } catch (error) {
+      console.error('finish failed:', error);
+      setManuallyFinished(false);
+      setFinishedDuringIntro(false);
+    } finally {
+      setIsFinishingGame(false);
+    }
+  }, [gameId, isFinishingGame, isGameOver, showIntro, playerId]);
 
   const handleReturnToLobby = useCallback(async () => {
     try {
-      if (!gameFinished && !game?.isFinished) {
+      if (!gameEnded) {
         const result = await gamesApi.finish({ gameId });
         if (result.outcome) {
+          const unlock = result.outcome.players.find(
+            (entry) =>
+              entry.playerId === playerId &&
+              typeof entry.newlyUnlockedTier === 'number',
+          )?.newlyUnlockedTier;
+          if (typeof unlock === 'number') {
+            stashPendingAvatarUnlock(playerId, unlock);
+          }
           setFinishOutcomeFromApi(result.outcome);
         }
       }
@@ -480,7 +620,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       console.error('finish failed:', error);
     }
     await navigateToLobby();
-  }, [gameId, game?.isFinished, gameFinished, navigateToLobby]);
+  }, [gameId, gameEnded, navigateToLobby, playerId]);
 
   const abandonPlay = useCallback(async () => {
     setIsAbandoning(true);
@@ -522,6 +662,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     gameOverBubbleVisible,
     gameOverRevealedPlayerIds,
     gameOverPlayersById: playersByOutcomeId,
+    playerAvatarTiers,
+    playerAvatarAnimals,
+    localHostTier,
+    localHostAnimal,
+    newlyUnlockedTier,
     showGameOverReturnButton,
     eventBanner,
     eventBannerPhase,
@@ -540,16 +685,20 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     playStartedAt,
     showAbandonModal,
     isAbandoning,
+    showGameOverModal,
     wordsFound,
     wordsLeft,
     isGameOver,
+    isFinishingGame,
     isSubmittingGuess,
     handleSelectionStart,
     handleSelectionContinue,
     handleSelectionEnd,
     handleSubmitGuess,
     handleLeaveClick,
-    handleGameOver,
+    handleGameOverClick,
+    confirmGameOver,
+    closeGameOverModal,
     handleReturnToLobby,
     abandonPlay,
     closeAbandonModal: () => setShowAbandonModal(false),

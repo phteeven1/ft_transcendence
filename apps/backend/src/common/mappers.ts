@@ -65,15 +65,18 @@ export function toApiGroup(group: GroupWithMemberships): Group {
   };
 }
 
-export function toSafePlayer(player: PlayerWithSession): Player {
-  const { inGroupId, ofUserId, session, ...rest } = player;
-  delete (rest as Partial<typeof rest & { passAnswer?: unknown }>).passAnswer;
+export function toSafePlayer(
+  player: PlayerWithSession,
+): Omit<Player, 'passAnswer'> {
   return {
-    ...rest,
-    inGroup: inGroupId,
-    ofUser: ofUserId,
+    id: player.id,
+    inGroup: player.inGroupId,
+    ofUser: player.ofUserId,
+    name: player.name,
+    passQuestion: player.passQuestion,
+    currentGameId: player.currentGameId,
     lastSignout: player.lastSignout.toISOString(),
-    sessionExpiresAt: session?.expiresAt.toISOString() ?? null,
+    sessionExpiresAt: player.session?.expiresAt.toISOString() ?? null,
   };
 }
 

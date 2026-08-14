@@ -3,9 +3,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
+import { gamesApi, wordSoupApi } from '@/lib/api';
+import type { GameRosterPlayerDto } from '@/lib/api/games';
 import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
-import type { Game, Player } from '@/app/types';
+import type { Game } from '@/app/types';
+import { useAuth } from '@/app/context/auth-context';
+import {
+  getPlayerSession,
+  isSessionExpired,
+} from '@/lib/player-session';
+import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import { COURT_COLS, COURT_ROWS } from '@/app/word_soup_scaffold/_lib/word-soup-constants';
 
 function createEmptyCourt(): WordSoupCourtCell[][] {
@@ -17,13 +24,6 @@ function createEmptyCourt(): WordSoupCourtCell[][] {
   );
 }
 
-async function loadPlayersByIds(playerIds: number[]): Promise<Player[]> {
-  const results = await Promise.all(
-    playerIds.map((id) => playersApi.getById(id).catch(() => null)),
-  );
-  return results.filter((player): player is Player => player !== null);
-}
-
 function formatInitError(error: unknown): string {
   if (error && typeof error === 'object' && 'message' in error) {
     const message = (error as { message?: unknown }).message;
@@ -33,15 +33,30 @@ function formatInitError(error: unknown): string {
   return 'Could not load the Word Soup board.';
 }
 
+function isEndedGameError(error: unknown): boolean {
+  const message = formatInitError(error).toLowerCase();
+  return (
+    message.includes('already finished') ||
+    message.includes('game not found') ||
+    /game \d+ not found/.test(message)
+  );
+}
+
+function hasActivePlayerSession(): boolean {
+  const stored = getPlayerSession();
+  return Boolean(stored && !isSessionExpired(stored.expiresAt));
+}
+
 export function useWordSoupInit(gameId: number, playerId: number) {
   const router = useRouter();
+  const { loginAsPlayer, setSessionExpiresAt } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [courtReady, setCourtReady] = useState(false);
   const [courtInitError, setCourtInitError] = useState<string | null>(null);
   const [courtRetryToken, setCourtRetryToken] = useState(0);
   const [game, setGame] = useState<Game | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<GameRosterPlayerDto[]>([]);
   const [visibleCourt, setVisibleCourt] = useState<WordSoupCourtCell[][]>(createEmptyCourt);
   const [playerColours, setPlayerColours] = useState<Record<number, string>>({});
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
@@ -64,6 +79,15 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     setCourtInitError(null);
   }
 
+  const leaveFinishedGameForLobby = useCallback(async () => {
+    if (hasActivePlayerSession()) {
+      await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
+      router.replace('/select_game');
+      return;
+    }
+    router.replace('/session_over');
+  }, [loginAsPlayer, router, setSessionExpiresAt]);
+
   useEffect(() => {
     if (!gameId || !playerId) {
       router.push('/');
@@ -75,11 +99,24 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     const load = async () => {
       const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
       if (!loadedGame) {
-        router.push('/');
+        // Game gone (e.g. cleaned up after finish) — return to lobby if session is live.
+        if (hasActivePlayerSession()) {
+          await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
+          if (isMounted) router.replace('/select_game');
+          return;
+        }
+        if (isMounted) router.replace('/session_over');
         return;
       }
 
-      const loadedPlayers = await loadPlayersByIds(loadedGame.players);
+      if (loadedGame.isFinished) {
+        await leaveFinishedGameForLobby();
+        return;
+      }
+
+      const loadedPlayers = await gamesApi
+        .getPlayersForGame(gameId)
+        .catch(() => [] as GameRosterPlayerDto[]);
 
       if (!isMounted) return;
 
@@ -88,12 +125,19 @@ export function useWordSoupInit(gameId: number, playerId: number) {
       setLoading(false);
     };
 
-    load();
+    void load();
 
     return () => {
       isMounted = false;
     };
-  }, [gameId, playerId, router]);
+  }, [
+    gameId,
+    playerId,
+    router,
+    loginAsPlayer,
+    setSessionExpiresAt,
+    leaveFinishedGameForLobby,
+  ]);
 
   useEffect(() => {
     if (!game) return;
@@ -123,17 +167,21 @@ export function useWordSoupInit(gameId: number, playerId: number) {
         setCourtReady(true);
       } catch (error) {
         if (!isMounted) return;
+        if (isEndedGameError(error) || game.isFinished) {
+          await leaveFinishedGameForLobby();
+          return;
+        }
         setCourtReady(false);
         setCourtInitError(formatInitError(error));
       }
     };
 
-    init();
+    void init();
 
     return () => {
       isMounted = false;
     };
-  }, [game, gameId, playerId, courtRetryToken]);
+  }, [game, gameId, playerId, courtRetryToken, leaveFinishedGameForLobby]);
 
   const retryInitCourt = useCallback(() => {
     setCourtRetryToken((token) => token + 1);

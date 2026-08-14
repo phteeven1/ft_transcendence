@@ -1,5 +1,9 @@
 import { createEmptyCourt } from './word-soup-placement-engine';
-import type { SharedWordSoupCourt } from './word-soup.types';
+import { resolveEmbeddedWordHintKey } from './word-soup-guess-helpers';
+import type {
+  PlacedWordMetadata,
+  SharedWordSoupCourt,
+} from './word-soup.types';
 
 /**
  * Lightweight coverage for selection-direction rules that live on the service.
@@ -87,7 +91,24 @@ describe('getSelectionDirection', () => {
 describe('post-complete guard', () => {
   it('marks the court complete when all solution words are found', () => {
     const court = {
-      solutionWords: ['CAT', 'DOG'],
+      solutionWords: [
+        {
+          word: 'CAT',
+          startRow: 0,
+          startCol: 0,
+          endRow: 0,
+          endCol: 2,
+          direction: [0, 1] as [number, number],
+        },
+        {
+          word: 'DOG',
+          startRow: 1,
+          startCol: 0,
+          endRow: 1,
+          endCol: 2,
+          direction: [0, 1] as [number, number],
+        },
+      ],
       foundWords: [
         {
           word: 'CAT',
@@ -104,14 +125,107 @@ describe('post-complete guard', () => {
       ],
     };
     expect(isCourtComplete(court)).toBe(true);
-    expect(isCourtComplete({ solutionWords: ['CAT'], foundWords: [] })).toBe(
-      false,
-    );
+    expect(
+      isCourtComplete({
+        solutionWords: [
+          {
+            word: 'CAT',
+            startRow: 0,
+            startCol: 0,
+            endRow: 0,
+            endCol: 2,
+            direction: [0, 1],
+          },
+        ],
+        foundWords: [],
+      }),
+    ).toBe(false);
   });
 
   it('createEmptyCourt matches configured dimensions', () => {
     const court = createEmptyCourt();
     expect(court).toHaveLength(10);
     expect(court[0]).toHaveLength(18);
+  });
+});
+
+describe('resolveEmbeddedWordHintKey', () => {
+  const tableTennis: PlacedWordMetadata = {
+    word: 'TABLE TENNIS',
+    startRow: 0,
+    startCol: 0,
+    endRow: 0,
+    endCol: 11,
+    direction: [0, 1],
+  };
+  const tennis: PlacedWordMetadata = {
+    word: 'TENNIS',
+    startRow: 2,
+    startCol: 0,
+    endRow: 2,
+    endCol: 5,
+    direction: [0, 1],
+  };
+
+  function courtWithPhrase() {
+    const trueCourt = createEmptyCourt();
+    for (let i = 0; i < tableTennis.word.length; i++) {
+      trueCourt[0][i] = { char: tableTennis.word[i] };
+    }
+    for (let i = 0; i < tennis.word.length; i++) {
+      trueCourt[2][i] = { char: tennis.word[i] };
+    }
+    return trueCourt;
+  }
+
+  it('hints wrongPosition when TENNIS is selected from TABLE TENNIS', () => {
+    const selection = Array.from({ length: 6 }, (_, i) => ({
+      row: 0,
+      col: 6 + i,
+    }));
+
+    expect(
+      resolveEmbeddedWordHintKey(
+        [tableTennis, tennis],
+        [],
+        courtWithPhrase(),
+        selection,
+      ),
+    ).toBe('wrongPosition');
+  });
+
+  it('hints alreadyFoundElsewhere when the shorter word was already found', () => {
+    const selection = Array.from({ length: 6 }, (_, i) => ({
+      row: 0,
+      col: 6 + i,
+    }));
+
+    expect(
+      resolveEmbeddedWordHintKey(
+        [tableTennis, tennis],
+        [
+          {
+            word: 'TENNIS',
+            playerId: 1,
+            cells: Array.from({ length: 6 }, (_, i) => ({ row: 2, col: i })),
+            direction: [0, 1],
+          },
+        ],
+        courtWithPhrase(),
+        selection,
+      ),
+    ).toBe('alreadyFoundElsewhere');
+  });
+
+  it('returns null for unrelated incorrect selections', () => {
+    const trueCourt = createEmptyCourt();
+    trueCourt[0][0] = { char: 'X' };
+    trueCourt[0][1] = { char: 'Y' };
+    expect(
+      resolveEmbeddedWordHintKey([tableTennis, tennis], [], trueCourt, [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ]),
+    ).toBeNull();
   });
 });

@@ -214,11 +214,11 @@ Setup guide: [DATABASE_SETUP.md](./DATABASE_SETUP.md)
 
 | Member | Role(s) | Responsibilities |
 |--------|---------|------------------|
-| `<login1>` | Product Owner | Vision, backlog, feature priorities |
-| `<login2>` | Project Manager | Meetings, deadlines, coordination |
-| `<login3>` | Technical Lead | Architecture, code review, stack decisions |
-| `<login4>` | Developer | Backend, database, API |
-| `<login5>` | Developer | Frontend, games, UI |
+| `<tsternbe>` | Product Owner | Vision, backlog, feature priorities |
+| `<kmooney>` | Project Manager | Meetings, deadlines, coordination |
+| `<smanthey>` | Technical Lead | Architecture, code review, stack decisions |
+| `<avarghes>` | Developer | Backend, database, API |
+| `<sgavrilo>` | Developer | Frontend, games, UI |
 
 *Contributors in git history: Sergej Gavrilov, Steven Manthey, Kevin Mooney, Alvin Abraham Varghese, tsternbe, phteeven1.*
 
@@ -299,11 +299,9 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 These items are **not yet production-ready** and may block parts of the eval if not fixed:
 
-1. **Password hashing** — passwords stored/compared in plain text; hashing planned
-2. **No JWT auth guards** on API routes — parent auth is client-side context
-3. **Friends system** — not implemented (groups used instead)
-4. **Word Soup** — scaffold/placeholder only
-5. **Redis** — in Docker Compose but not used by application logic yet
+1. **No JWT auth guards** on API routes — parent auth is client-side context
+2. **Friends system** — not implemented (groups used instead)
+3. **Redis** — in Docker Compose but not used by application logic yet
 
 ---
 
