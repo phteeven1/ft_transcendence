@@ -39,9 +39,6 @@ export function toApiUser(user: UserWithMemberships): User {
     showRealName: user.showRealName,
     showEmail: user.showEmail,
     showRelationshipComment: user.showRelationshipComment,
-    ...(user.currentGroupId != null
-      ? { currentGroup: user.currentGroupId }
-      : {}),
   };
 }
 
@@ -70,7 +67,6 @@ export function toSafePlayer(player: PlayerWithSession): Player {
     ofUser: player.ofUserId,
     name: player.name,
     currentGameId: player.currentGameId,
-    lastSignout: player.lastSignout.toISOString(),
     sessionExpiresAt: player.session?.expiresAt.toISOString() ?? null,
   };
 }

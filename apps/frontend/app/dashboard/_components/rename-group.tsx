@@ -67,7 +67,6 @@ function RenameGroupForm({
       await groupsApi.rename({
         groupId: group.id,
         groupName: newName.trim(),
-        authorId: user.id,
       });
       if (currentGroup?.id === group.id) {
         await syncGroup(group.id);

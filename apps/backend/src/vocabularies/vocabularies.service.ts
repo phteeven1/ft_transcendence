@@ -40,7 +40,6 @@ export class VocabulariesService {
   async setActive(
     vocabularyId: number,
     inGroup: number,
-    authorId: number,
   ): Promise<Vocabulary | undefined> {
     try {
       const vocabulary = await this.prisma.vocabulary.findUnique({
@@ -52,7 +51,6 @@ export class VocabulariesService {
         where: { id: inGroup },
         data: { currentVocabularyId: vocabularyId },
       });
-      void authorId;
 
       return toApiVocabulary(vocabulary);
     } catch {
@@ -64,7 +62,6 @@ export class VocabulariesService {
     vocabularyId: number,
     name: string,
     inGroup: number,
-    authorId: number,
   ): Promise<Vocabulary | undefined> {
     try {
       const vocabulary = await this.prisma.vocabulary.update({
@@ -72,7 +69,6 @@ export class VocabulariesService {
         data: { name },
       });
       void inGroup;
-      void authorId;
 
       return toApiVocabulary(vocabulary);
     } catch {
@@ -99,12 +95,10 @@ export class VocabulariesService {
   async remove(
     vocabularyId: number,
     inGroup: number,
-    authorId: number,
   ): Promise<boolean> {
     try {
       await this.prisma.vocabulary.delete({ where: { id: vocabularyId } });
       void inGroup;
-      void authorId;
       return true;
     } catch {
       return false;

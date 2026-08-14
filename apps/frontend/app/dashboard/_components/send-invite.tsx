@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { invitationsApi, ApiError } from '@/lib/api';
 import { Button, Dialog, Input } from '../../components/ui';
-import { Group, User } from '../../types';
+import { Group } from '../../types';
 
 type Props = {
   open: boolean;
@@ -18,7 +18,6 @@ export default function SendInvite({ open, onClose }: Props) {
     <SendInviteForm
       key={String(open)}
       group={group}
-      user={user}
       open={open}
       onClose={onClose}
     />
@@ -27,12 +26,10 @@ export default function SendInvite({ open, onClose }: Props) {
 
 function SendInviteForm({
   group,
-  user,
   open,
   onClose,
 }: {
   group: Group;
-  user: User;
   open: boolean;
   onClose: () => void;
 }) {
@@ -62,7 +59,6 @@ function SendInviteForm({
         groupName: group.name,
         toEmail: inviteEmail,
         invitationText: inviteText,
-        authorId: user.id,
       });
       handleClose();
     } catch (error) {

@@ -5,7 +5,6 @@ export type UserDto = {
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
-  currentGroup?: number;
   realName?: string;
   relationshipComment?: string;
   showEmail: boolean;

@@ -49,25 +49,15 @@
   },
   "nav": {
     "brand": "Dicteé",
-    "playingAs": "Joue en tant que",
-    "inGroup": "dans le groupe",
-    "minLeft": "{minutes} min restantes",
-    "signedInAs": "Connecté en tant que",
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
     "profileMenu": "Menu du compte",
     "leaveSession": "Quitter la session",
-    "register": "S'inscrire",
     "selectLanguage": "Choisir la langue",
     "footerTagline": "© {year} Dicteé — jeux de vocabulaire pour les enfants",
     "privacyPolicy": "Politique de confidentialité",
     "termsOfService": "Conditions d'utilisation",
-    "legalNav": "Mentions légales",
-    "languages": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français"
-    }
+    "legalNav": "Mentions légales"
   },
   "home": {
     "metaTitle": "Dicteé",
@@ -153,10 +143,8 @@
   },
   "dashboard": {
     "title": "Gérer les groupes",
-    "welcome": "Bon retour, {name} !",
     "userSettings": "Paramètres utilisateur",
     "newGroup": "Nouveau groupe",
-    "noGroups": "Vous n'êtes encore dans aucun groupe.",
     "selectGroup": "Sélectionnez un groupe pour gérer les membres et les joueurs.",
     "settings": {
       "title": "Paramètres utilisateur",
@@ -184,7 +172,6 @@
     }
   },
   "group": {
-    "noMembers": "Aucun membre pour le moment.",
     "rowOptions": "Options pour {name}",
     "tabs": {
       "members": "Membres",
@@ -266,7 +253,6 @@
   },
   "vocabulary": {
     "newVocabulary": "Nouveau vocabulaire",
-    "noVocabularies": "Aucun vocabulaire pour le moment.",
     "importTitle": "Import de vocabulaire par IA",
     "fromLanguage": "Langue source",
     "toLanguage": "Langue cible",
@@ -295,8 +281,7 @@
       "en": "Anglais",
       "fr": "Français",
       "de": "Allemand"
-    },
-    "testListName": "Liste de test Anglais - Allemand"
+    }
   },
   "games": {
     "lobby": {
@@ -305,7 +290,6 @@
       "wordBuilding": "Construction de mots",
       "wordSoup": "Soupe de mots",
       "createNewGame": "Créer un nouveau jeu",
-      "exitGames": "Quitter les jeux",
       "progression": {
         "tabsLabel": "Progression du groupe",
         "myStatsTabsLabel": "Sections de mes statistiques",
@@ -411,14 +395,6 @@
       "false": "FAUX",
       "meansWhatPrompt": "Quelle traduction correspond le mieux…"
     },
-    "info": {
-      "game": "Jeu",
-      "gameNumber": "Jeu #{id}",
-      "started": "Démarré",
-      "initiatedBy": "Initié par",
-      "players": "Joueurs",
-      "startedAt": "Démarré {time}"
-    },
     "controls": {
       "leaveGame": "Quitter le jeu",
       "gameOver": "Partie terminée"
@@ -436,7 +412,6 @@
       "confirm": "Terminer la partie"
     },
     "wordBuilding": {
-      "defaultName": "Construction de mots",
       "generating": "Génération de la grille…",
       "instructions": "Clique sur une case pour sélectionner automatiquement la direction · Tape des lettres pour remplir · Vert = correct · Bleu = vide · Rouge = faux · Espace/Tab pour changer de direction",
       "directionAcross": "→ Horizontal",
@@ -451,9 +426,6 @@
     },
     "wordSoup": {
       "title": "Soupe de mots",
-      "courtSizeSmall": "S",
-      "courtSizeMedium": "M",
-      "courtSizeLarge": "L",
       "courtSizeLabel": "Taille du plateau",
       "cellTitle": "Ligne {row}, Colonne {col}",
       "cellHidden": "masquée",
@@ -798,32 +770,5 @@
         }
       }
     }
-  },
-  "errors": {
-    "generic": "Une erreur s'est produite. Veuillez réessayer.",
-    "unknown": "Erreur inconnue",
-    "signInFailed": "Nom d'utilisateur ou mot de passe invalide. Veuillez réessayer.",
-    "registrationFailed": "Inscription échouée. Veuillez réessayer.",
-    "registrationUsernameTaken": "Inscription échouée. Le nom d'utilisateur est peut-être déjà pris.",
-    "createGroupFailed": "Échec de la création du groupe. Veuillez réessayer.",
-    "createPlayerFailed": "Échec de la création du joueur. Veuillez réessayer.",
-    "startSessionFailed": "Impossible de démarrer la session. Veuillez réessayer.",
-    "activeSessionExists": "{name} a déjà une session active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
-    "activePlaySessionExists": "{name} a déjà une session de jeu active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
-    "invitationSendFailed": "Échec de l'envoi de l'invitation : {error}",
-    "vocabularyMinimumWords": "Une liste de vocabulaire doit contenir au moins 5 mots.",
-    "vocabularyExtractionFailed": "L'extraction par IA a échoué. Veuillez vous assurer que le fichier contient au moins 5 mots et réessayer.",
-    "joinGroupFailed": "Une erreur s'est produite lors de l'adhésion au groupe. Veuillez réessayer.",
-    "authRequiredForJoin": "Veuillez vous connecter ou vous inscrire avant de rejoindre le groupe.",
-    "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
-    "passwordEmpty": "Le nouveau mot de passe ne peut pas être vide.",
-    "oldPasswordIncorrect": "L'ancien mot de passe est incorrect. Veuillez réessayer.",
-    "allFieldsRequired": "Tous les champs sont obligatoires.",
-    "loadProfileFailed": "Impossible de charger le profil.",
-    "leaveGroupFailed": "Une erreur s'est produite. Veuillez réessayer.",
-    "promoteNoSelection": "Aucun membre n'a été sélectionné pour la promotion au rang d'admin.",
-    "deleteGroupOtherAdmins": "Vous ne pouvez pas supprimer {groupName} tant qu'il y a d'autres admins. Veuillez d'abord rétrograder tous les autres admins.",
-    "resignOnlyAdmin": "Vous êtes le seul admin de ce groupe. Promouvez un autre membre admin avant de démissionner.",
-    "leaveOnlyAdmin": "Vous êtes le seul admin de ce groupe. Avant de partir, vous devez nommer un autre membre admin."
   }
 }

@@ -21,15 +21,13 @@ export type UseGroupsPanelResult = {
 };
 
 export function useGroupsPanel(): UseGroupsPanelResult {
-  const { user, group, player, syncGroup, refreshUser, leaveGroup } = useAuth();
+  const { user, group, player, syncGroup, refreshUser } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [actionGroup, setActionGroup] = useState<Group | null>(null);
   const [groupDialog, setGroupDialog] = useState<GroupAction | null>(null);
 
   const userId = user?.id;
   const selectedGroupId = group?.id;
-  const restoreGroupId = user?.currentGroup;
-  const hasGroup = Boolean(group);
 
   const loadGroups = useCallback(async (): Promise<void> => {
     if (!userId) return;
@@ -60,17 +58,6 @@ export function useGroupsPanel(): UseGroupsPanelResult {
       clearInterval(interval);
     };
   }, [userId, player, loadGroups]);
-
-  useEffect(() => {
-    if (player || !userId || hasGroup || !restoreGroupId) return;
-    void (async () => {
-      const synced = await syncGroup(restoreGroupId);
-      if (!synced) return;
-      const isMember =
-        synced.members.includes(userId) || synced.admins.includes(userId);
-      if (!isMember) leaveGroup();
-    })();
-  }, [userId, restoreGroupId, hasGroup, player, syncGroup, leaveGroup]);
 
   const selectGroup = useCallback(
     async (groupId: number): Promise<void> => {

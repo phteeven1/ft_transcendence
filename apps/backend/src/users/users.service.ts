@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { GroupRole } from '@ft-transcendence/database';
 import { hash, compare } from 'bcryptjs';
 import { toApiUser, userWithMemberships } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,7 +11,6 @@ export type User = {
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
-  currentGroup?: number;
   realName?: string;
   relationshipComment?: string;
   showRealName: boolean;
@@ -41,14 +39,6 @@ export class UsersService {
     return user ? toApiUser(user) : undefined;
   }
 
-  async findByName(name: string): Promise<User | undefined> {
-    const user = await this.prisma.user.findUnique({
-      where: { name },
-      ...userWithMemberships,
-    });
-    return user ? toApiUser(user) : undefined;
-  }
-
   async findByCredentials(
     name: string,
     password: string,
@@ -61,34 +51,6 @@ export class UsersService {
 
     const passwordMatches = await compare(password, user.password);
     return passwordMatches ? toApiUser(user) : undefined;
-  }
-
-  async addMemberGroup(userId: number, groupId: number): Promise<void> {
-    await this.prisma.groupMembership.upsert({
-      where: { userId_groupId: { userId, groupId } },
-      create: { userId, groupId, role: GroupRole.MEMBER },
-      update: { role: GroupRole.MEMBER },
-    });
-  }
-
-  async addAdminGroup(userId: number, groupId: number): Promise<void> {
-    await this.prisma.groupMembership.upsert({
-      where: { userId_groupId: { userId, groupId } },
-      create: { userId, groupId, role: GroupRole.ADMIN },
-      update: { role: GroupRole.ADMIN },
-    });
-  }
-
-  async removeMemberGroup(userId: number, groupId: number): Promise<void> {
-    await this.prisma.groupMembership.deleteMany({
-      where: { userId, groupId, role: GroupRole.MEMBER },
-    });
-  }
-
-  async removeAdminGroup(userId: number, groupId: number): Promise<void> {
-    await this.prisma.groupMembership.deleteMany({
-      where: { userId, groupId, role: GroupRole.ADMIN },
-    });
   }
 
   async updateProfile(

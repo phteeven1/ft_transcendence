@@ -5,6 +5,6 @@ import { UsersService } from './users.service';
 @Module({
   controllers: [UsersController],
   providers: [UsersService],
-  exports: [UsersService], // allows GroupsService to inject it
+  exports: [UsersService],
 })
 export class UsersModule {}

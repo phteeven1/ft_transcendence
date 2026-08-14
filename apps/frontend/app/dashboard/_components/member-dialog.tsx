@@ -42,7 +42,6 @@ export default function MemberDialog({
       await groupsApi.promote({
         groupId: group.id,
         userId: member.id,
-        authorId: user.id,
       });
       await syncAndRefresh();
       handleClose();
@@ -59,7 +58,6 @@ export default function MemberDialog({
       await groupsApi.expel({
         groupId: group.id,
         userId: member.id,
-        authorId: user.id,
       });
       await syncAndRefresh();
       handleClose();
@@ -79,7 +77,6 @@ export default function MemberDialog({
       await groupsApi.demote({
         groupId: group.id,
         userId: user.id,
-        authorId: user.id,
       });
       await syncAndRefresh();
       handleClose();

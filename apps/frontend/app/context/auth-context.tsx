@@ -4,6 +4,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   useRef,
   ReactNode,
 } from 'react';
@@ -37,8 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [group, setGroup] = useState<Group | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
-  const userRef = useRef(user);
-  userRef.current = user;
+  const userRef = useRef<User | null>(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const setSessionExpiry = useCallback((expiresAt: number) => {
     setSessionExpiresAt((prev) => (prev === expiresAt ? prev : expiresAt));
@@ -62,9 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const leaveGroup = useCallback(() => {
     setGroup(null);
-    setUser((prev) =>
-      prev ? { ...prev, currentGroup: undefined } : prev,
-    );
   }, []);
 
   const logout = useCallback(() => {
@@ -77,10 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const updatedGroup = await groupsApi.getById(groupId);
         setGroup(updatedGroup);
-        setUser((prev) => {
-          if (!prev || prev.currentGroup === groupId) return prev;
-          return { ...prev, currentGroup: groupId };
-        });
         return updatedGroup;
       } catch (error) {
         console.error('syncGroup failed:', error);

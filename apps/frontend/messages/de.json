@@ -49,25 +49,15 @@
   },
   "nav": {
     "brand": "Dicteé",
-    "playingAs": "Spielt als",
-    "inGroup": "in der Gruppe",
-    "minLeft": "noch {minutes} Min.",
-    "signedInAs": "Angemeldet als",
     "signIn": "Anmelden",
     "signOut": "Abmelden",
     "profileMenu": "Kontomenü",
     "leaveSession": "Sitzung verlassen",
-    "register": "Registrieren",
     "selectLanguage": "Sprache auswählen",
     "footerTagline": "© {year} Dicteé — Wortschatzspiele für Kinder",
     "privacyPolicy": "Datenschutzerklärung",
     "termsOfService": "Nutzungsbedingungen",
-    "legalNav": "Rechtliches",
-    "languages": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français"
-    }
+    "legalNav": "Rechtliches"
   },
   "home": {
     "metaTitle": "Dicteé",
@@ -153,10 +143,8 @@
   },
   "dashboard": {
     "title": "Gruppen verwalten",
-    "welcome": "Willkommen zurück, {name}!",
     "userSettings": "Benutzereinstellungen",
     "newGroup": "Neue Gruppe",
-    "noGroups": "Sie sind noch in keiner Gruppe.",
     "selectGroup": "Wählen Sie eine Gruppe, um Mitglieder und Spieler zu verwalten.",
     "settings": {
       "title": "Benutzereinstellungen",
@@ -184,7 +172,6 @@
     }
   },
   "group": {
-    "noMembers": "Noch keine Mitglieder.",
     "rowOptions": "Optionen für {name}",
     "tabs": {
       "members": "Mitglieder",
@@ -266,7 +253,6 @@
   },
   "vocabulary": {
     "newVocabulary": "Neues Vokabular",
-    "noVocabularies": "Noch keine Vokabulare.",
     "importTitle": "KI-Vokabularimport",
     "fromLanguage": "Ausgangssprache",
     "toLanguage": "Zielsprache",
@@ -295,8 +281,7 @@
       "en": "Englisch",
       "fr": "Französisch",
       "de": "Deutsch"
-    },
-    "testListName": "Englisch - Deutsch Testliste"
+    }
   },
   "games": {
     "lobby": {
@@ -305,7 +290,6 @@
       "wordBuilding": "Wortbau",
       "wordSoup": "Wortsuppe",
       "createNewGame": "Neues Spiel erstellen",
-      "exitGames": "Spiele verlassen",
       "progression": {
         "tabsLabel": "Gruppenfortschritt",
         "myStatsTabsLabel": "Meine Statistik-Bereiche",
@@ -411,14 +395,6 @@
       "false": "FALSCH",
       "meansWhatPrompt": "Was übersetzt am besten…"
     },
-    "info": {
-      "game": "Spiel",
-      "gameNumber": "Spiel #{id}",
-      "started": "Gestartet",
-      "initiatedBy": "Gestartet von",
-      "players": "Spieler",
-      "startedAt": "Gestartet {time}"
-    },
     "controls": {
       "leaveGame": "Spiel verlassen",
       "gameOver": "Spiel vorbei"
@@ -436,7 +412,6 @@
       "confirm": "Spiel beenden"
     },
     "wordBuilding": {
-      "defaultName": "Wortbau",
       "generating": "Kreuzworträtsel wird erstellt…",
       "instructions": "Klicke auf eine Zelle, um die Richtung automatisch auszuwählen · Tippe Buchstaben zum Ausfüllen · Grün = richtig · Blau = leer · Rot = falsch · Leertaste/Tab zum Umschalten der Richtung",
       "directionAcross": "→ Waagerecht",
@@ -451,9 +426,6 @@
     },
     "wordSoup": {
       "title": "Wortsuppe",
-      "courtSizeSmall": "S",
-      "courtSizeMedium": "M",
-      "courtSizeLarge": "L",
       "courtSizeLabel": "Spielfeldgröße",
       "cellTitle": "Zeile {row}, Spalte {col}",
       "cellHidden": "verborgen",
@@ -798,32 +770,5 @@
         }
       }
     }
-  },
-  "errors": {
-    "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-    "unknown": "Unbekannter Fehler",
-    "signInFailed": "Ungültiger Benutzername oder Passwort. Bitte versuchen Sie es erneut.",
-    "registrationFailed": "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "registrationUsernameTaken": "Registrierung fehlgeschlagen. Der Benutzername ist möglicherweise bereits vergeben.",
-    "createGroupFailed": "Gruppe konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
-    "createPlayerFailed": "Spieler konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
-    "startSessionFailed": "Sitzung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
-    "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
-    "activePlaySessionExists": "{name} hat bereits eine aktive Spielsitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
-    "invitationSendFailed": "Einladung senden fehlgeschlagen: {error}",
-    "vocabularyMinimumWords": "Eine Vokabelliste muss mindestens 5 Wörter enthalten.",
-    "vocabularyExtractionFailed": "KI-Extraktion fehlgeschlagen. Bitte stellen Sie sicher, dass die Datei mindestens 5 Wörter enthält, und versuchen Sie es erneut.",
-    "joinGroupFailed": "Beim Beitritt zur Gruppe ist etwas schiefgelaufen. Bitte versuchen Sie es erneut.",
-    "authRequiredForJoin": "Bitte melden Sie sich an oder registrieren Sie sich, bevor Sie der Gruppe beitreten.",
-    "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
-    "passwordEmpty": "Das neue Passwort darf nicht leer sein.",
-    "oldPasswordIncorrect": "Das alte Passwort ist falsch. Bitte versuchen Sie es erneut.",
-    "allFieldsRequired": "Alle Felder sind erforderlich.",
-    "loadProfileFailed": "Profil konnte nicht geladen werden.",
-    "leaveGroupFailed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-    "promoteNoSelection": "Es wurden keine Mitglieder zur Beförderung zum Admin ausgewählt.",
-    "deleteGroupOtherAdmins": "Sie können {groupName} nicht löschen, solange es andere Admins gibt. Bitte degradieren Sie zuerst alle anderen Admins.",
-    "resignOnlyAdmin": "Sie sind der einzige Admin dieser Gruppe. Befördern Sie ein anderes Mitglied zum Admin, bevor Sie zurücktreten.",
-    "leaveOnlyAdmin": "Sie sind der einzige Admin dieser Gruppe. Bevor Sie gehen, müssen Sie ein anderes Mitglied zum Admin machen."
   }
 }

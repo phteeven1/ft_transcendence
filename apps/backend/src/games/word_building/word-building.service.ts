@@ -23,8 +23,7 @@
  * State Flow:
  * 1. POST /initWordBuildingCourt: Generate puzzle → persist → return initial grid
  * 2. WebSocket placeLetter: Validate → update live state → broadcast payload
- * 3. GET /wordBuildingState: Return current state for reconnecting clients
- * 4. On solve: Persist final grid + scores → mark game finished → evict from memory
+ * 3. On solve: Persist final grid + scores → mark game finished → evict from memory
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -299,25 +298,6 @@ export class WordBuildingService {
     }
 
     return payload;
-  }
-
-  /**
-   * Retrieves current game state for reconnecting clients or state refresh requests.
-   *
-   * Unlike initCourt (which generates and returns a NEW puzzle), this method returns
-   * the CURRENT state of an existing puzzle, including all player placements and scores.
-   *
-   * Use cases:
-   * - Player refreshes browser mid-game
-   * - Player reconnects after network interruption
-   * - Frontend needs to sync state after WebSocket reconnection
-   *
-   * @param gameId Game whose current state should be retrieved.
-   * @returns Current game state payload with visibleCourt (showing all placements), scores, solved flag.
-   */
-  async getState(gameId: number): Promise<IGameStatePayload> {
-    const state = await this.loadOrHydrate(gameId);
-    return this.buildPayload(state);
   }
 
   // ─── Private helpers ───────────────────────────────────────────────────────

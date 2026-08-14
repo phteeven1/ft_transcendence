@@ -46,13 +46,11 @@ export class VocabulariesController {
     body: {
       vocabularyId: number;
       vocabularyInGroup: number;
-      authorId: number;
     },
   ) {
     return this.vocabulariesService.setActive(
       body.vocabularyId,
       body.vocabularyInGroup,
-      body.authorId,
     );
   }
 
@@ -63,14 +61,12 @@ export class VocabulariesController {
       vocabularyId: number;
       vocabularyName: string;
       vocabularyInGroup: number;
-      authorId: number;
     },
   ) {
     return this.vocabulariesService.rename(
       body.vocabularyId,
       body.vocabularyName,
       body.vocabularyInGroup,
-      body.authorId,
     );
   }
 
@@ -96,13 +92,11 @@ export class VocabulariesController {
     body: {
       vocabularyId: number;
       vocabularyInGroup: number;
-      authorId: number;
     },
   ) {
     return this.vocabulariesService.remove(
       body.vocabularyId,
       body.vocabularyInGroup,
-      body.authorId,
     );
   }
 

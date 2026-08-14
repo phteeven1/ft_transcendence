@@ -22,7 +22,6 @@ export class InvitationsService {
     groupName: string,
     toEmail: string,
     invitationText: string,
-    authorId: number,
   ): Promise<{ success: boolean }> {
     const createdAt = new Date();
     const expiresAt = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -51,8 +50,6 @@ export class InvitationsService {
         `Could not send invitation email. ${detail}`,
       );
     }
-
-    void authorId;
 
     return { success: true };
   }

@@ -49,25 +49,15 @@
   },
   "nav": {
     "brand": "Dicteé",
-    "playingAs": "Playing as",
-    "inGroup": "in group",
-    "minLeft": "{minutes} min left",
-    "signedInAs": "Signed in as",
     "signIn": "Sign In",
     "signOut": "Sign Out",
     "profileMenu": "Account menu",
     "leaveSession": "Leave session",
-    "register": "Register",
     "selectLanguage": "Select language",
     "footerTagline": "© {year} Dicteé — vocabulary games for kids",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "legalNav": "Legal",
-    "languages": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français"
-    }
+    "legalNav": "Legal"
   },
   "home": {
     "metaTitle": "Dicteé",
@@ -153,10 +143,8 @@
   },
   "dashboard": {
     "title": "Manage Groups",
-    "welcome": "Welcome back, {name}!",
     "userSettings": "User Settings",
     "newGroup": "New Group",
-    "noGroups": "You are not in any groups yet.",
     "selectGroup": "Select a group to manage members and players.",
     "settings": {
       "title": "User Settings",
@@ -184,7 +172,6 @@
     }
   },
   "group": {
-    "noMembers": "No members yet.",
     "rowOptions": "Options for {name}",
     "tabs": {
       "members": "Members",
@@ -266,7 +253,6 @@
   },
   "vocabulary": {
     "newVocabulary": "New Vocabulary",
-    "noVocabularies": "No vocabularies yet.",
     "importTitle": "AI Vocabulary Import",
     "fromLanguage": "From Language",
     "toLanguage": "To Language",
@@ -295,8 +281,7 @@
       "en": "English",
       "fr": "French",
       "de": "German"
-    },
-    "testListName": "English - German Test List"
+    }
   },
   "games": {
     "lobby": {
@@ -305,7 +290,6 @@
       "wordBuilding": "Word Building",
       "wordSoup": "Word Soup",
       "createNewGame": "Create new game",
-      "exitGames": "Exit Games",
       "progression": {
         "tabsLabel": "Group progress",
         "myStatsTabsLabel": "My stats sections",
@@ -411,14 +395,6 @@
       "false": "FALSE",
       "meansWhatPrompt": "What best translates…"
     },
-    "info": {
-      "game": "Game",
-      "gameNumber": "Game #{id}",
-      "started": "Started",
-      "initiatedBy": "Initiated by",
-      "players": "Players",
-      "startedAt": "Started {time}"
-    },
     "controls": {
       "leaveGame": "Leave Game",
       "gameOver": "Game Over"
@@ -436,7 +412,6 @@
       "confirm": "End game"
     },
     "wordBuilding": {
-      "defaultName": "Word Building",
       "generating": "Generating crossword…",
       "instructions": "Click a cell to auto-select direction · Type letters to fill · Green = correct · Blue = empty · Red = wrong · Space/Tab to toggle direction",
       "directionAcross": "→ Across",
@@ -451,9 +426,6 @@
     },
     "wordSoup": {
       "title": "Word Soup",
-      "courtSizeSmall": "S",
-      "courtSizeMedium": "M",
-      "courtSizeLarge": "L",
       "courtSizeLabel": "Court size",
       "cellTitle": "Row {row}, Column {col}",
       "cellHidden": "hidden",
@@ -798,32 +770,5 @@
         }
       }
     }
-  },
-  "errors": {
-    "generic": "Something went wrong. Please try again.",
-    "unknown": "Unknown error",
-    "signInFailed": "Invalid username or password. Please try again.",
-    "registrationFailed": "Registration failed. Please try again.",
-    "registrationUsernameTaken": "Registration failed. Username may already be taken.",
-    "createGroupFailed": "Failed to create group. Please try again.",
-    "createPlayerFailed": "Failed to create player. Please try again.",
-    "startSessionFailed": "Could not start session. Please try again.",
-    "activeSessionExists": "{name} already has an active session. It will end when the timer expires or they leave the game.",
-    "activePlaySessionExists": "{name} already has an active play session. It will end when the timer expires or they leave the game.",
-    "invitationSendFailed": "Sending invitation failed: {error}",
-    "vocabularyMinimumWords": "A vocabulary list must have at least 5 words.",
-    "vocabularyExtractionFailed": "AI extraction failed. Please ensure the file has at least 5 words and try again.",
-    "joinGroupFailed": "Something went wrong while joining the group. Please try again.",
-    "authRequiredForJoin": "Please sign in or register before joining the group.",
-    "passwordMismatch": "New passwords do not match.",
-    "passwordEmpty": "New password cannot be empty.",
-    "oldPasswordIncorrect": "Old password is incorrect. Please try again.",
-    "allFieldsRequired": "All fields are required.",
-    "loadProfileFailed": "Could not load profile.",
-    "leaveGroupFailed": "Something went wrong. Please try again.",
-    "promoteNoSelection": "No members were selected for promotion to admin.",
-    "deleteGroupOtherAdmins": "You cannot delete {groupName} while there are other admins. Please demote all other admins first.",
-    "resignOnlyAdmin": "You are the only admin of this group. Promote another member to admin before resigning.",
-    "leaveOnlyAdmin": "You are the only admin of this group. Before leaving, you need to make another member admin."
   }
 }

@@ -19,7 +19,6 @@ model User {
   name           String   @unique
   email          String   @unique
   password       String
-  currentGroupId Int?
   createdAt      DateTime @default(now())
   realName                 String?
   relationshipComment      String?
@@ -27,7 +26,6 @@ model User {
   showEmail                Boolean  @default(false)
   showRelationshipComment  Boolean  @default(false)
 
-  currentGroup Group?            @relation("UserCurrentGroup", fields: [currentGroupId], references: [id], onDelete: SetNull)
   memberships  GroupMembership[]
   players      Player[]
   vocabularies Vocabulary[]
@@ -44,7 +42,6 @@ model Group {
   currentVocabulary   Vocabulary? @relation("GroupCurrentVocabulary", fields: [currentVocabularyId], references: [id], onDelete: SetNull)
   games        Game[]
   invitations  Invitation[]
-  currentUsers User[] @relation("UserCurrentGroup")
 }
 
 /// Replaces parallel admins[] / members[] on Group and isAdminOf / isMemberOf on User.
@@ -67,7 +64,6 @@ model Player {
   ofUserId      Int
   name          String
   currentGameId Int?
-  lastSignout   DateTime @default(now())
   xp            Int      @default(0)
   gamesPlayed   Int      @default(0)
   wins          Int      @default(0)

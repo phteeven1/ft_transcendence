@@ -19,12 +19,10 @@ export type CreateGroupInput = {
 
 export type GroupMemberActionInput = {
   groupId: number;
-  userId: number;     // the user being acted upon
-  authorId: number;   // the user performing the action
+  userId: number;
 };
 
 export type RenameGroupInput = {
   groupId: number;
   groupName: string;
-  authorId: number;
 };

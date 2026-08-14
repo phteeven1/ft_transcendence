@@ -4,7 +4,6 @@ export type PlayerDto = {
   ofUser: number;
   name: string;
   currentGameId: number | null;
-  lastSignout: string;
   sessionExpiresAt: string | null;
 };
 
