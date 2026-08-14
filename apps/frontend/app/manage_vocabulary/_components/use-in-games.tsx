@@ -4,6 +4,7 @@ import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { Button } from '../../components/ui/button';
+import { Icon } from '../../components/ui';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -39,6 +40,7 @@ export default function UseInGames({ selectedVocabulary, onActivated }: Props) {
       onClick={handleClick}
       disabled={!isActive}
     >
+      <Icon name="game" size={18} />
       {t('useInGames')}
     </Button>
   );

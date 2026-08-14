@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
-import { Button, Dialog, Input } from '../../components/ui';
+import { Button, Dialog, Input, Icon } from '../../components/ui';
 
 type Props = {
   syncAndRefresh: () => Promise<void>;
@@ -70,6 +70,7 @@ export default function RenameGroup({ syncAndRefresh }: Props) {
         fullWidth
         className="clay-action-btn"
       >
+        <Icon name="pencil" size={18} />
         {t('renameGroup')}
       </Button>
 

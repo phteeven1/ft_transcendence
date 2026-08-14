@@ -38,7 +38,6 @@ import InitiateGameModal from './_components/initiate-game-modal';
 import JoinGameModal from './_components/join-game-modal';
 import PendingGameButton from './_components/pending-game-button';
 import { useSessionGuard } from '../hooks/use-session-guard';
-import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guard';
 import ForceStartModal from './_components/force-start-modal';
 import { useGroupSocket } from '../hooks/use-group-socket';
 import { useLobbyProgression } from '../hooks/use-lobby-progression';
@@ -47,6 +46,7 @@ import ProgressionPanel from './_components/progression/progression-panel';
 import { AvatarTierThumb } from './_components/progression/avatar-tier-thumb';
 import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
+import { Icon } from '../components/ui';
 
 function getStartedGameRoute(
   gameName: string,
@@ -84,11 +84,6 @@ export default function SelectGame() {
   const [sessionReady, setSessionReady] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [unlockToastTier, setUnlockToastTier] = useState<number | null>(null);
-
-  const { markIntentionalExit } = usePlayerSessionExitGuard({
-    enabled: sessionReady && player !== null,
-    playerId: player?.id ?? 0,
-  });
 
   useEffect(() => {
     let cancelled = false;
@@ -235,18 +230,6 @@ export default function SelectGame() {
     setModal({ kind: 'none' });
   };
 
-  const handleFinishGame = async () => {
-    if (!player) return;
-    markIntentionalExit();
-    try {
-      await playersApi.clearSession(player.id);
-    } catch (error) {
-      console.error('handleFinishGame clearSession failed:', error);
-    }
-    logoutPlayer();
-    router.push('/register');
-  };
-
   if (!player || !sessionReady) {
     if (bootstrapping) return null;
     return null;
@@ -256,7 +239,6 @@ export default function SelectGame() {
   // 'Word Building' and 'Word Soup' buttons open initiateGameModal to create new game
   // one pending game button for each game in pendingGames
   // clicking button opens JoinGameModal, if player isn't already in game
-  // then a 'Exit Games' button to log out
   return (
     <>
       <PageShell>
@@ -306,6 +288,7 @@ export default function SelectGame() {
             }
             disabled={hasInitiated('Word Building')}
           >
+            <Icon name="puzzle" size={28} />
             <span className="text-lg font-bold">{t('wordBuilding')}</span>
             <span className="text-xs font-normal opacity-90">
               {t('createNewGame')}
@@ -322,6 +305,7 @@ export default function SelectGame() {
             }
             disabled={hasInitiated('Word Soup')}
           >
+            <Icon name="game" size={28} />
             <span className="text-lg font-bold">{t('wordSoup')}</span>
             <span className="text-xs font-normal opacity-90">
               {t('createNewGame')}
@@ -361,12 +345,6 @@ export default function SelectGame() {
               void progression.equipAnimal(animal);
             }}
           />
-        </div>
-
-        <div className="mt-6 text-center">
-          <Button variant="ghost" onClick={handleFinishGame}>
-            {t('exitGames')}
-          </Button>
         </div>
       </PageShell>
 

@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { Button } from '../../components/ui';
+import { Button, Icon } from '../../components/ui';
 
 export default function BackToDashboard() {
   const t = useTranslations('group');
@@ -23,6 +23,7 @@ export default function BackToDashboard() {
       fullWidth
       className="clay-action-btn"
     >
+      <Icon name="arrow-left" size={18} />
       {t('backToDashboard')}
     </Button>
   );

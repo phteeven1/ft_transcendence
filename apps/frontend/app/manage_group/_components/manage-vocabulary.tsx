@@ -1,7 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button } from '../../components/ui';
+import { Button, Icon } from '../../components/ui';
 
 export default function ManageVocabulary() {
   const t = useTranslations('group');
@@ -14,6 +14,7 @@ export default function ManageVocabulary() {
       fullWidth
       className="clay-action-btn"
     >
+      <Icon name="book" size={18} />
       {t('manageVocabulary')}
     </Button>
   );

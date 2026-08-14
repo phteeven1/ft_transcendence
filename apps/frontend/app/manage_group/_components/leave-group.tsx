@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { Button, Dialog } from '../../components/ui';
+import { Button, Dialog, Icon } from '../../components/ui';
 
 type ModalState =
   | 'none'
@@ -74,6 +74,7 @@ export default function LeaveGroup() {
         fullWidth
         className="clay-action-btn"
       >
+        <Icon name="sign-out" size={18} />
         {t('leaveGroup')}
       </Button>
 

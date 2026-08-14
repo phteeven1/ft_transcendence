@@ -8,6 +8,7 @@ import { Player } from '../../types';
 import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import { Icon } from '../../components/ui';
 
 type Props = {
   onCreated: (player: Player) => void;
@@ -68,6 +69,7 @@ export default function CreatePlayer({ onCreated, compact = false }: Props) {
         className={compact ? '' : 'clay-action-btn'}
         onClick={() => setIsOpen(true)}
       >
+        <Icon name="user-plus" size={compact ? 16 : 18} />
         {t('createPlayer')}
       </Button>
 

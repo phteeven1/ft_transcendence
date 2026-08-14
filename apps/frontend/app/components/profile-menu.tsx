@@ -1,0 +1,118 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useAuth } from '../context/auth-context';
+import { playersApi } from '@/lib/api';
+import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guard';
+import { Button, Dropdown, DropdownItem, Icon } from './ui';
+import UserSettings from '../dashboard/_components/user-settings';
+
+export default function ProfileMenu() {
+  const t = useTranslations('nav');
+  const tDashboard = useTranslations('dashboard');
+  const { user, player, logout, logoutPlayer } = useAuth();
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { markIntentionalExit } = usePlayerSessionExitGuard({
+    enabled: player !== null,
+    playerId: player?.id ?? 0,
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  if (!user && !player) return null;
+
+  const displayName = user?.name ?? player?.name ?? '';
+
+  const handleSignOut = () => {
+    setIsOpen(false);
+    logout();
+    router.push('/');
+  };
+
+  const handleLeaveSession = async () => {
+    if (!player) return;
+    setIsOpen(false);
+    markIntentionalExit();
+    try {
+      await playersApi.clearSession(player.id);
+    } catch (error) {
+      console.error('leaveSession clearSession failed:', error);
+    }
+    logoutPlayer();
+    router.push('/register');
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-label={t('profileMenu')}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        className="px-2"
+      >
+        <Icon name="user" size={20} />
+      </Button>
+
+      {isOpen && (
+        <Dropdown
+          role="menu"
+          className="absolute right-0 mt-2 flex flex-col min-w-[12rem] z-50"
+        >
+          <div className="px-3 py-2 text-sm font-semibold text-foreground truncate border-b border-border">
+            {displayName}
+          </div>
+
+          {user ? (
+            <>
+              <DropdownItem
+                role="menuitem"
+                onClick={() => {
+                  setIsOpen(false);
+                  setSettingsOpen(true);
+                }}
+              >
+                <Icon name="gear" size={16} />
+                {tDashboard('userSettings')}
+              </DropdownItem>
+              <DropdownItem role="menuitem" onClick={handleSignOut}>
+                <Icon name="sign-out" size={16} />
+                {t('signOut')}
+              </DropdownItem>
+            </>
+          ) : (
+            <DropdownItem role="menuitem" onClick={() => void handleLeaveSession()}>
+              <Icon name="sign-out" size={16} />
+              {t('leaveSession')}
+            </DropdownItem>
+          )}
+        </Dropdown>
+      )}
+
+      <UserSettings
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+    </div>
+  );
+}

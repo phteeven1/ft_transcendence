@@ -6,6 +6,7 @@ import { Vocabulary } from '../../types';
 import { useAuth } from '../../context/auth-context';
 import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
+import { Icon } from '../../components/ui';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -46,6 +47,7 @@ export default function DeleteVocabulary({
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
       >
+        <Icon name="trash" size={18} />
         {t('deleteVocabulary')}
       </Button>
 

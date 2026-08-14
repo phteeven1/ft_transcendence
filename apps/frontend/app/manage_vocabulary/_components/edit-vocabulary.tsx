@@ -5,6 +5,7 @@ import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
+import { Icon } from '../../components/ui';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -118,6 +119,7 @@ export default function EditVocabulary({
         onClick={handleOpen}
         disabled={!isActive}
       >
+        <Icon name="pencil" size={18} />
         {t('editVocabulary')}
       </Button>
 

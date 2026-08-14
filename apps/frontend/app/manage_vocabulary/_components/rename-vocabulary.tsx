@@ -7,6 +7,7 @@ import { useAuth } from '../../context/auth-context';
 import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import { Icon } from '../../components/ui';
 
 type Props = {
   selectedVocabulary: Vocabulary | null;
@@ -56,6 +57,7 @@ export default function RenameVocabulary({
         onClick={() => isActive && setIsOpen(true)}
         disabled={!isActive}
       >
+        <Icon name="pencil" size={18} />
         {t('renameVocabulary')}
       </Button>
 

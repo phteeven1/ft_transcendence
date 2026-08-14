@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Dropdown, DropdownItem, Icon } from '../../components/ui';
+import { Button, Dropdown, DropdownItem, Icon, type IconName } from '../../components/ui';
 
 export type RowMenuItem = {
   id: string;
   label: string;
   onSelect: () => void;
+  icon?: IconName;
   destructive?: boolean;
   disabled?: boolean;
 };
@@ -49,7 +50,7 @@ export default function RowMenu({ labelledBy, items }: Props) {
         aria-haspopup="menu"
         className="px-2"
       >
-        <Icon name="chevron-down" size={16} />
+        <Icon name="dots-three" size={16} />
       </Button>
 
       {isOpen && (
@@ -73,6 +74,7 @@ export default function RowMenu({ labelledBy, items }: Props) {
                 item.onSelect();
               }}
             >
+              {item.icon ? <Icon name={item.icon} size={16} /> : null}
               {item.label}
             </DropdownItem>
           ))}

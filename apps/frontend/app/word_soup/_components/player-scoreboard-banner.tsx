@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { GameRosterPlayerDto } from '@/lib/api/games';
 import SoupHostCharacter from './soup-host-character';
+import { Icon } from '@/app/components/ui';
 
 type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
 
@@ -50,38 +51,6 @@ function FlameIcon({ className = '' }: { className?: string }) {
   );
 }
 
-function SnowflakeIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M12 2v20M4.9 6.5l14.2 11M4.9 17.5l14.2-11M2 12h20" />
-    </svg>
-  );
-}
-
-function CrossIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  );
-}
-
 function StatusSymbol({
   status,
   streak,
@@ -96,7 +65,7 @@ function StatusSymbol({
   if (status === 'left') {
     return (
       <span className="inline-flex items-center text-gray-500" title={t('leftGame')}>
-        <CrossIcon className="h-4 w-4" />
+        <Icon name="close" size={16} />
       </span>
     );
   }
@@ -107,7 +76,7 @@ function StatusSymbol({
         className="inline-flex items-center gap-0.5 text-sky-700"
         title={t('frozenSeconds', { seconds: freezeSeconds })}
       >
-        <SnowflakeIcon className="h-4 w-4" />
+        <Icon name="snowflake" size={16} />
         <span className="text-xs font-bold tabular-nums">{freezeSeconds}</span>
       </span>
     );

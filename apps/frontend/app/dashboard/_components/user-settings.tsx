@@ -1,17 +1,10 @@
 'use client';
 
 /*
-  Renders a User Settings button on the dashboard.
-  Opens a modal where the user can view and edit:
-    - Username (read-only)
-    - Real name + show-to-group toggle
-    - Email + show-to-group toggle
-    - Relationship comment + show-to-group toggle + hint text
-    - Password display + Change Password button
-  Change Password opens a nested modal: old password, new password, confirm new password.
-  On success, shows a result message before returning to the main modal.
-  Confirm saves all fields via POST /users/update then refreshes auth context.
-  Cancel closes without saving.
+  User settings dialogs:
+    - Username, real name, email, relationship comment + show-to-group toggles
+    - Change password (nested modal)
+  Confirm saves via POST /users/update then refreshes auth context.
 */
 
 import { useState } from 'react';
@@ -21,55 +14,53 @@ import { usersApi } from '@/lib/api';
 import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import type { User } from '../../types';
 
-export default function UserSettings() {
+type Props = {
+  open: boolean;
+  onClose: () => void;
+};
+
+export default function UserSettings({ open, onClose }: Props) {
+  const { user } = useAuth();
+  if (!open || !user) return null;
+  return <UserSettingsDialog user={user} onClose={onClose} />;
+}
+
+function UserSettingsDialog({
+  user,
+  onClose,
+}: {
+  user: User;
+  onClose: () => void;
+}) {
   const t = useTranslations('dashboard.settings');
   const tCommon = useTranslations('common');
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
 
-  // main modal
-  const [showModal, setShowModal] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [originalUserName, setOriginalUserName] = useState('');
-  const [realName, setRealName] = useState('');
-  const [email, setEmail] = useState('');
-  const [relationshipComment, setRelationshipComment] = useState('');
-  const [showRealName, setShowRealName] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
-  const [showRelationshipComment, setShowRelationshipComment] = useState(false);
+  const [userName, setUserName] = useState(user.name);
+  const [originalUserName] = useState(user.name);
+  const [realName, setRealName] = useState(user.realName ?? '');
+  const [email, setEmail] = useState(user.email ?? '');
+  const [relationshipComment, setRelationshipComment] = useState(
+    user.relationshipComment ?? '',
+  );
+  const [showRealName, setShowRealName] = useState(user.showRealName ?? false);
+  const [showEmail, setShowEmail] = useState(user.showEmail ?? false);
+  const [showRelationshipComment, setShowRelationshipComment] = useState(
+    user.showRelationshipComment ?? false,
+  );
 
-  // change password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  // result modal (for change password outcome)
   const [showResult, setShowResult] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
-
-  // result modal for username change reminder
   const [showUsernameReminder, setShowUsernameReminder] = useState(false);
-
-  if (!user) return null;
-
-  // populate local state from current user when opening
-  const handleOpen = () => {
-    setUserName(user.name);
-    setOriginalUserName(user.name);
-    setRealName(user.realName ?? '');
-    setEmail(user.email ?? '');
-    setRelationshipComment(user.relationshipComment ?? '');
-    setShowRealName(user.showRealName ?? false);
-    setShowEmail(user.showEmail ?? false);
-    setShowRelationshipComment(user.showRelationshipComment ?? false);
-    setShowModal(true);
-  };
-
-  const handleCancel = () => {
-    setShowModal(false);
-  };
+  const [showMain, setShowMain] = useState(true);
 
   const handleConfirm = async () => {
     try {
@@ -83,26 +74,23 @@ export default function UserSettings() {
         showRelationshipComment,
       });
       await refreshUser();
-      setShowModal(false);
+      setShowMain(false);
       if (userName !== originalUserName) {
         setShowUsernameReminder(true);
+      } else {
+        onClose();
       }
     } catch (error) {
       console.error('Failed to save user settings:', error);
     }
   };
 
-  // change password modal handlers
   const handleOpenPasswordModal = () => {
     setOldPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
     setShowPasswordModal(true);
-  };
-
-  const handleCancelPassword = () => {
-    setShowPasswordModal(false);
   };
 
   const handleConfirmPassword = async () => {
@@ -124,32 +112,16 @@ export default function UserSettings() {
       setResultMessage(t('passwordChangedSuccess'));
       setShowResult(true);
     } catch (error) {
-      // backend returns 401 if old password is wrong
       setPasswordError(t('oldPasswordIncorrect'));
       console.error('changePassword failed:', error);
     }
   };
 
-  const handleCloseResult = () => {
-    setShowResult(false);
-    setResultMessage('');
-  };
-
   return (
     <>
-      <Button
-        onClick={handleOpen}
-        variant="secondary"
-        size="lg"
-        fullWidth
-        className="clay-tile min-h-[5rem]"
-      >
-        {t('title')}
-      </Button>
-
       <Dialog
-        open={showModal}
-        onClose={handleCancel}
+        open={showMain}
+        onClose={onClose}
         title={t('title')}
         onConfirm={handleConfirm}
         confirmLabel={tCommon('confirm')}
@@ -239,7 +211,7 @@ export default function UserSettings() {
 
       <Dialog
         open={showPasswordModal}
-        onClose={handleCancelPassword}
+        onClose={() => setShowPasswordModal(false)}
         title={t('changePasswordTitle')}
         onConfirm={handleConfirmPassword}
         confirmLabel={tCommon('confirm')}
@@ -271,8 +243,14 @@ export default function UserSettings() {
 
       <Dialog
         open={showResult}
-        onClose={handleCloseResult}
-        onConfirm={handleCloseResult}
+        onClose={() => {
+          setShowResult(false);
+          setResultMessage('');
+        }}
+        onConfirm={() => {
+          setShowResult(false);
+          setResultMessage('');
+        }}
         showCancel={false}
       >
         {resultMessage}
@@ -280,8 +258,14 @@ export default function UserSettings() {
 
       <Dialog
         open={showUsernameReminder}
-        onClose={() => setShowUsernameReminder(false)}
-        onConfirm={() => setShowUsernameReminder(false)}
+        onClose={() => {
+          setShowUsernameReminder(false);
+          onClose();
+        }}
+        onConfirm={() => {
+          setShowUsernameReminder(false);
+          onClose();
+        }}
         showCancel={false}
       >
         {t('usernameChangedReminder', { username: userName })}

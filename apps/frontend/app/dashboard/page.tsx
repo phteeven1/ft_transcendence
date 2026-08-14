@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../types';
-import UserSettings from './_components/user-settings';
 import { PageShell, Tile } from '../components/ui';
 
 export default function Dashboard() {
@@ -70,7 +69,6 @@ export default function Dashboard() {
         {t('welcome', { name: user.name })}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        <UserSettings />
         <Tile
           tileVariant="create"
           onClick={() => router.push('/create_group')}
