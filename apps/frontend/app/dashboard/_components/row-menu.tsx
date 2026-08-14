@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Dropdown, DropdownItem, Icon, type IconName } from '../../components/ui';
+import { Dropdown, DropdownItem, Icon, type IconName } from '../../components/ui';
 
 export type RowMenuItem = {
   id: string;
@@ -41,17 +41,16 @@ export default function RowMenu({ labelledBy, items }: Props) {
 
   return (
     <div className="relative shrink-0" ref={containerRef}>
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
+        type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={t('rowOptions', { name: labelledBy })}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className="px-2"
+        className="shrink-0 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
       >
-        <Icon name="dots-three" size={16} />
-      </Button>
+        <Icon name="dots-three" size={20} />
+      </button>
 
       {isOpen && (
         <Dropdown

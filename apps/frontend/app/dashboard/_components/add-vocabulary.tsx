@@ -8,24 +8,25 @@ import { Vocabulary } from '../../types';
 import { Button, Dialog, Icon } from '../../components/ui';
 
 type Props = {
+  open: boolean;
+  onClose: () => void;
   onImported: (vocabulary: Vocabulary) => void;
 };
 
 const LANGUAGE_CODES = ['en', 'fr', 'de'] as const;
 
-export default function AddVocabulary({ onImported }: Props) {
+export default function AddVocabulary({ open, onClose, onImported }: Props) {
   const t = useTranslations('vocabulary');
   const tCommon = useTranslations('common');
   const { user, group } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [fromLanguage, setFromLanguage] = useState('fr');
   const [toLanguage, setToLanguage] = useState('en');
 
   const handleClose = () => {
-    setIsOpen(false);
     setSelectedFile(null);
+    onClose();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,85 +68,78 @@ export default function AddVocabulary({ onImported }: Props) {
   };
 
   return (
-    <>
-      <Button variant="primary" size="sm" onClick={() => setIsOpen(true)}>
-        <Icon name="book" size={16} />
-        {t('addVocabulary')}
-      </Button>
-
-      <Dialog
-        open={isOpen}
-        onClose={handleClose}
-        title={t('importTitle')}
-        wide
-        footer={
-          <div className="flex justify-end border-t border-border pt-4">
-            <Button variant="ghost" onClick={handleClose}>
-              {tCommon('cancel')}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
-                {t('fromLanguage')}
-              </label>
-              <select
-                value={fromLanguage}
-                onChange={(e) => setFromLanguage(e.target.value)}
-                className="clay-input w-full text-sm"
-              >
-                {LANGUAGE_CODES.map((code) => (
-                  <option key={code} value={code}>
-                    {t(`languages.${code}`)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
-                {t('toLanguage')}
-              </label>
-              <select
-                value={toLanguage}
-                onChange={(e) => setToLanguage(e.target.value)}
-                className="clay-input w-full text-sm"
-              >
-                {LANGUAGE_CODES.map((code) => (
-                  <option key={code} value={code}>
-                    {t(`languages.${code}`)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <input
-            type="file"
-            accept="image/*,.pdf"
-            onChange={handleFileChange}
-            className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-muted file:text-foreground hover:file:bg-muted/80 cursor-pointer"
-          />
-
-          <Button
-            variant="accent"
-            fullWidth
-            onClick={handleAiExtract}
-            disabled={!selectedFile || isExtracting}
-          >
-            {isExtracting ? (
-              <span className="flex items-center justify-center gap-2">
-                <Icon name="spinner" size={20} className="animate-spin" />
-                {t('aiReading')}
-              </span>
-            ) : (
-              t('extractAndSave')
-            )}
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title={t('importTitle')}
+      wide
+      footer={
+        <div className="flex justify-end border-t border-border pt-4">
+          <Button variant="ghost" onClick={handleClose}>
+            {tCommon('cancel')}
           </Button>
         </div>
-      </Dialog>
-    </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">
+              {t('fromLanguage')}
+            </label>
+            <select
+              value={fromLanguage}
+              onChange={(e) => setFromLanguage(e.target.value)}
+              className="clay-input w-full text-sm"
+            >
+              {LANGUAGE_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {t(`languages.${code}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">
+              {t('toLanguage')}
+            </label>
+            <select
+              value={toLanguage}
+              onChange={(e) => setToLanguage(e.target.value)}
+              className="clay-input w-full text-sm"
+            >
+              {LANGUAGE_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {t(`languages.${code}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={handleFileChange}
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-muted file:text-foreground hover:file:bg-muted/80 cursor-pointer"
+        />
+
+        <Button
+          variant="accent"
+          fullWidth
+          onClick={handleAiExtract}
+          disabled={!selectedFile || isExtracting}
+        >
+          {isExtracting ? (
+            <span className="flex items-center justify-center gap-2">
+              <Icon name="spinner" size={20} className="animate-spin" />
+              {t('aiReading')}
+            </span>
+          ) : (
+            t('extractAndSave')
+          )}
+        </Button>
+      </div>
+    </Dialog>
   );
 }

@@ -156,7 +156,7 @@
     "title": "Manage Groups",
     "welcome": "Welcome back, {name}!",
     "userSettings": "User Settings",
-    "createNewGroup": "Create New Group",
+    "newGroup": "New Group",
     "noGroups": "You are not in any groups yet.",
     "selectGroup": "Select a group to manage members and players.",
     "settings": {
@@ -181,28 +181,21 @@
     },
     "createGroup": {
       "title": "Create New Group",
-      "subtitle": "Choose a name for your new group.",
       "groupNameLabel": "Group Name",
       "groupNamePlaceholder": "Enter a group name",
-      "submit": "Create Group",
-      "backToDashboard": "Back to Dashboard",
       "failed": "Failed to create group. Please try again."
     }
   },
   "group": {
-    "roleAdmin": "You are an admin of this group.",
-    "roleMember": "You are a member of this group.",
     "noMembers": "No members yet.",
     "rowOptions": "Options for {name}",
-    "ofParent": "of {name}",
-    "ofParentYou": "of {name} ({you})",
     "tabs": {
       "members": "Members",
       "players": "Players",
       "vocabulary": "Vocabulary"
     },
     "resignAdmin": "Resign as Admin",
-    "sendInvite": "Send Invite",
+    "newMember": "New Member",
     "sendInviteModal": {
       "title": "Send Invitation",
       "invitationLabel": "Invitation",
@@ -256,7 +249,8 @@
   },
   "players": {
     "noPlayers": "No players yet.",
-    "createPlayer": "Create Player",
+    "newPlayer": "New Player",
+    "play": "Play",
     "create": {
       "title": "Create Player Profile",
       "playerNameLabel": "Player Name",
@@ -284,9 +278,8 @@
     }
   },
   "vocabulary": {
-    "addVocabulary": "Add vocabulary",
+    "newVocabulary": "New Vocabulary",
     "noVocabularies": "No vocabularies yet.",
-    "active": "Active",
     "importTitle": "AI Vocabulary Import",
     "fromLanguage": "From Language",
     "toLanguage": "To Language",

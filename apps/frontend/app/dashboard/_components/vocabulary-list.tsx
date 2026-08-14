@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import { Vocabulary } from '../../types';
 import RowMenu, { RowMenuItem } from './row-menu';
 import ListRow from './list-row';
+import NewListRow from './new-list-row';
 
 export type VocabularyAction = 'rename' | 'edit' | 'delete';
 
@@ -12,6 +13,7 @@ type Props = {
   isLoading: boolean;
   onSelect: (vocabulary: Vocabulary) => void;
   onAction: (action: VocabularyAction, vocabulary: Vocabulary) => void;
+  onNew: () => void;
 };
 
 export default function VocabularyList({
@@ -20,24 +22,10 @@ export default function VocabularyList({
   isLoading,
   onSelect,
   onAction,
+  onNew,
 }: Props) {
   const t = useTranslations('vocabulary');
   const tCommon = useTranslations('common');
-
-  if (isLoading) {
-    return (
-      <p className="px-3 py-3 text-sm text-muted-foreground">
-        {tCommon('loadingEllipsis')}
-      </p>
-    );
-  }
-  if (vocabularies.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground italic">
-        {t('noVocabularies')}
-      </p>
-    );
-  }
 
   function menuItems(vocabulary: Vocabulary): RowMenuItem[] {
     return [
@@ -62,6 +50,14 @@ export default function VocabularyList({
     ];
   }
 
+  if (isLoading) {
+    return (
+      <p className="px-3 py-3 text-sm text-muted-foreground">
+        {tCommon('loadingEllipsis')}
+      </p>
+    );
+  }
+
   return (
     <ul className="list-none m-0 flex flex-col gap-1 p-0">
       {vocabularies.map((vocabulary) => (
@@ -76,16 +72,10 @@ export default function VocabularyList({
             />
           }
         >
-          <span className="flex items-center justify-between gap-2">
-            <span className="min-w-0 truncate">{vocabulary.name}</span>
-            {vocabulary.id === currentVocabulary && (
-              <span className="text-xs font-semibold text-primary">
-                {t('active')}
-              </span>
-            )}
-          </span>
+          <span className="min-w-0 truncate">{vocabulary.name}</span>
         </ListRow>
       ))}
+      <NewListRow label={t('newVocabulary')} onSelect={onNew} />
     </ul>
   );
 }
