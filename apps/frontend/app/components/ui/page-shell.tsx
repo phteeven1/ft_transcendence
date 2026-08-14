@@ -3,16 +3,18 @@ import { HTMLAttributes } from 'react';
 export interface PageShellProps extends HTMLAttributes<HTMLDivElement> {
   centered?: boolean;
   narrow?: boolean;
+  wide?: boolean;
 }
 
 export function PageShell({
   centered = false,
   narrow = false,
+  wide = false,
   className = '',
   children,
   ...props
 }: PageShellProps) {
-  const maxWidth = narrow ? 'max-w-md' : 'max-w-4xl';
+  const maxWidth = narrow ? 'max-w-md' : wide ? 'max-w-6xl' : 'max-w-4xl';
 
   return (
     <div

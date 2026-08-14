@@ -115,20 +115,6 @@ body {
   box-shadow: var(--shadow-clay);
 }
 
-.clay-card-interactive {
-  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
-}
-
-.clay-card-interactive:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-clay-hover);
-}
-
-.clay-card-interactive:active {
-  transform: translateY(1px);
-  box-shadow: var(--shadow-clay-pressed);
-}
-
 .clay-card-feature {
   background: linear-gradient(145deg, #ffffff 0%, var(--color-muted) 100%);
 }
@@ -353,24 +339,6 @@ body {
   text-align: center;
 }
 
-.clay-tile-admin {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  --btn-shadow: var(--color-primary-dark);
-}
-
-.clay-tile-member {
-  background: var(--color-secondary);
-  color: var(--color-foreground);
-  --btn-shadow: var(--color-primary);
-}
-
-.clay-tile-create {
-  background: var(--color-accent);
-  color: var(--color-on-primary);
-  --btn-shadow: var(--color-accent-dark);
-}
-
 .link-accent {
   color: var(--color-primary);
   font-weight: 600;
@@ -407,7 +375,12 @@ body {
   gap: var(--space-sm);
   padding: 0.5rem 0.75rem;
   cursor: pointer;
+  color: var(--color-foreground);
   transition: background 150ms ease;
+}
+
+.clay-dropdown-item.clay-dropdown-item-destructive {
+  color: var(--color-destructive);
 }
 
 .clay-dropdown-item:hover {
@@ -416,78 +389,6 @@ body {
 
 .text-muted {
   color: var(--color-muted-foreground);
-}
-
-/* Action grid buttons (manage group, manage players, etc.) */
-.clay-action-btn {
-  width: 100%;
-  min-height: 3rem;
-}
-
-/* Tab bar (action window, etc.) */
-.clay-tabs {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.5rem 0.5rem 0;
-  border-bottom: 3px solid var(--color-border);
-  background: var(--color-muted);
-}
-
-.clay-tab {
-  font-family: var(--font-heading);
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border: 3px solid transparent;
-  border-bottom: none;
-  border-radius: var(--radius-clay) var(--radius-clay) 0 0;
-  background: transparent;
-  color: var(--color-muted-foreground);
-  cursor: pointer;
-  transition: background 200ms ease, color 200ms ease, transform 200ms ease;
-}
-
-.clay-tab:hover {
-  color: var(--color-foreground);
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.clay-tab-active {
-  background: var(--color-surface);
-  color: var(--color-foreground);
-  border-color: var(--color-border);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.85),
-    0 -2px 8px rgba(19, 78, 74, 0.06);
-  transform: translateY(1px);
-}
-
-/* Selectable list rows (member list, etc.) */
-.clay-list-btn {
-  width: 100%;
-  text-align: left;
-  padding: 0.625rem 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border: 2px solid transparent;
-  border-radius: 0;
-  background: var(--color-surface);
-  color: var(--color-foreground);
-  cursor: pointer;
-  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
-}
-
-.clay-list-btn:hover {
-  background: var(--color-muted);
-}
-
-.clay-list-btn-active {
-  background: var(--color-muted);
-  border-color: var(--color-border);
-  box-shadow: inset 0 2px 4px rgba(19, 78, 74, 0.08);
-  font-weight: 600;
 }
 
 /* Filter chips (chat type toggles, etc.) */

@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react';
 
-type CardVariant = 'default' | 'interactive' | 'feature';
+type CardVariant = 'default' | 'feature';
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: CardVariant;
@@ -8,7 +8,6 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const variantClass: Record<CardVariant, string> = {
   default: 'clay-card',
-  interactive: 'clay-card clay-card-interactive cursor-pointer',
   feature: 'clay-card clay-card-feature',
 };
 

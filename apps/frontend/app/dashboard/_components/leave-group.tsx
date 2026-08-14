@@ -1,20 +1,18 @@
 'use client';
 
-/* renders Leave Group button, that handles several scenarios before actually leaving
-  all controlled by ModalState variable, that tells us where in the process we are at
-  Pre rendering, it calculates the following: total member count, is current user the only admin, 
-  and is current user the last member. The four stages are:
+/* Leave-group confirmation flow, controlled by the parent `open` flag plus an
+  internal ModalState for the four stages:
   1. confirmLeave: initial 'are you sure?'
-  2. onlyAdmin: blocks leaving group, tells user to promote someone else to admin first
-  3. confirmLastMamber: warns that the group will be deleted if last member leaves
+  2. onlyAdmin: blocks leaving, tells user to promote someone else first
+  3. confirmLastMember: warns that the group will be deleted if last member leaves
   4. error: shown if backend call fails.
 */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
-import { useRouter } from 'next/navigation';
-import { Button, Dialog, Icon } from '../../components/ui';
+import { Group } from '../../types';
+import { Dialog } from '../../components/ui';
 
 type ModalState =
   | 'none'
@@ -23,12 +21,23 @@ type ModalState =
   | 'confirmLastMember'
   | 'error';
 
-export default function LeaveGroup() {
+type Props = {
+  group: Group | null;
+  open: boolean;
+  onClose: () => void;
+  onDone: () => Promise<void>;
+};
+
+export default function LeaveGroup({ group, open, onClose, onDone }: Props) {
   const t = useTranslations('group');
   const tCommon = useTranslations('common');
-  const { user, group, refreshUser, leaveGroup } = useAuth();
-  const router = useRouter();
+  const { user, group: currentGroup, refreshUser, leaveGroup } = useAuth();
   const [modal, setModal] = useState<ModalState>('none');
+
+  useEffect(() => {
+    if (open) setModal('confirmLeave');
+    else setModal('none');
+  }, [open]);
 
   if (!user || !group) return null;
 
@@ -37,8 +46,9 @@ export default function LeaveGroup() {
     group.admins.includes(user.id) && group.admins.length === 1;
   const isLastMember = totalMembers === 1;
 
-  const handleClick = () => {
-    setModal('confirmLeave');
+  const handleClose = () => {
+    setModal('none');
+    onClose();
   };
 
   const handleConfirmLeave = () => {
@@ -50,16 +60,20 @@ export default function LeaveGroup() {
       setModal('confirmLastMember');
       return;
     }
-    executeLeave();
+    void executeLeave();
   };
 
   const executeLeave = async () => {
-    if (!user || !group) return;
     try {
-      await groupsApi.leave({ groupId: group.id, userId: user.id, authorId: user.id });
+      await groupsApi.leave({
+        groupId: group.id,
+        userId: user.id,
+        authorId: user.id,
+      });
       await refreshUser();
-      leaveGroup();
-      router.push('/dashboard');
+      if (currentGroup?.id === group.id) leaveGroup();
+      handleClose();
+      await onDone();
     } catch (error) {
       console.error('Failed to leave group:', error);
       setModal('error');
@@ -68,19 +82,9 @@ export default function LeaveGroup() {
 
   return (
     <>
-      <Button
-        onClick={handleClick}
-        variant="primary"
-        fullWidth
-        className="clay-action-btn"
-      >
-        <Icon name="sign-out" size={18} />
-        {t('leaveGroup')}
-      </Button>
-
       <Dialog
         open={modal === 'confirmLeave'}
-        onClose={() => setModal('none')}
+        onClose={handleClose}
         title={t('leave.confirmTitle')}
         cancelLabel={tCommon('cancel')}
         confirmLabel={tCommon('leave')}
@@ -93,8 +97,8 @@ export default function LeaveGroup() {
 
       <Dialog
         open={modal === 'onlyAdmin'}
-        onClose={() => setModal('none')}
-        onConfirm={() => setModal('none')}
+        onClose={handleClose}
+        onConfirm={handleClose}
         showCancel={false}
       >
         {t('leave.onlyAdminBlock')}
@@ -102,11 +106,11 @@ export default function LeaveGroup() {
 
       <Dialog
         open={modal === 'confirmLastMember'}
-        onClose={() => setModal('none')}
+        onClose={handleClose}
         title={t('leave.lastMemberTitle')}
         cancelLabel={tCommon('cancel')}
         confirmLabel={tCommon('leave')}
-        onConfirm={executeLeave}
+        onConfirm={() => void executeLeave()}
         confirmVariant="primary"
         cancelVariant="ghost"
       >
@@ -115,8 +119,8 @@ export default function LeaveGroup() {
 
       <Dialog
         open={modal === 'error'}
-        onClose={() => setModal('none')}
-        onConfirm={() => setModal('none')}
+        onClose={handleClose}
+        onConfirm={handleClose}
         showCancel={false}
       >
         {t('leave.failed')}

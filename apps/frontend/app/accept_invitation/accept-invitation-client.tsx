@@ -170,7 +170,7 @@ export default function AcceptInvitationClient() {
       if (!synced) {
         throw new Error('Could not load group after joining');
       }
-      router.push('/manage_group');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Failed to join group:', error);
       setErrorMessage(t('error.joinFailed'));
@@ -186,7 +186,7 @@ export default function AcceptInvitationClient() {
       return;
     }
     await syncGroup(groupId);
-    router.push('/manage_group');
+    router.push('/dashboard');
   };
   const handleRetry = () => {
     if (currentUser ?? authUser) {

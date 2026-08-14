@@ -12,10 +12,9 @@ import { Icon } from '../../components/ui';
 
 type Props = {
   onCreated: (player: Player) => void;
-  compact?: boolean;
 };
 
-export default function CreatePlayer({ onCreated, compact = false }: Props) {
+export default function CreatePlayer({ onCreated }: Props) {
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
   const { user, group } = useAuth();
@@ -62,14 +61,8 @@ export default function CreatePlayer({ onCreated, compact = false }: Props) {
 
   return (
     <>
-      <Button
-        variant="primary"
-        size={compact ? 'sm' : 'md'}
-        fullWidth={!compact}
-        className={compact ? '' : 'clay-action-btn'}
-        onClick={() => setIsOpen(true)}
-      >
-        <Icon name="user-plus" size={compact ? 16 : 18} />
+      <Button variant="primary" size="sm" onClick={() => setIsOpen(true)}>
+        <Icon name="user-plus" size={16} />
         {t('createPlayer')}
       </Button>
 

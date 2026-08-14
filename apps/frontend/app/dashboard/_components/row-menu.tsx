@@ -58,26 +58,29 @@ export default function RowMenu({ labelledBy, items }: Props) {
           role="menu"
           className="absolute right-0 mt-1 flex flex-col min-w-[12rem] z-50"
         >
-          {items.map((item) => (
-            <DropdownItem
-              key={item.id}
-              role="menuitem"
-              disabled={item.disabled}
-              className={
-                item.destructive
-                  ? 'text-destructive disabled:opacity-50 disabled:cursor-not-allowed'
-                  : 'disabled:opacity-50 disabled:cursor-not-allowed'
-              }
-              onClick={() => {
-                if (item.disabled) return;
-                setIsOpen(false);
-                item.onSelect();
-              }}
-            >
-              {item.icon ? <Icon name={item.icon} size={16} /> : null}
-              {item.label}
-            </DropdownItem>
-          ))}
+          {items.map((item) => {
+            const isDestructive = item.destructive || item.id === 'delete';
+            return (
+              <DropdownItem
+                key={item.id}
+                role="menuitem"
+                disabled={item.disabled}
+                className={
+                  isDestructive
+                    ? 'clay-dropdown-item-destructive disabled:opacity-50 disabled:cursor-not-allowed'
+                    : 'disabled:opacity-50 disabled:cursor-not-allowed'
+                }
+                onClick={() => {
+                  if (item.disabled) return;
+                  setIsOpen(false);
+                  item.onSelect();
+                }}
+              >
+                {item.icon ? <Icon name={item.icon} size={16} /> : null}
+                {item.label}
+              </DropdownItem>
+            );
+          })}
         </Dropdown>
       )}
     </div>
