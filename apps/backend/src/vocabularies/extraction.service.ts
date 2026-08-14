@@ -17,22 +17,16 @@ type ExtractionResult = { title: string; words: string[]; meanings: string[] };
 const TESSERACT_LANG: Record<string, string> = {
   en: 'eng',
   english: 'eng',
+  englisch: 'eng',
+  anglais: 'eng',
   fr: 'fra',
   french: 'fra',
+  französisch: 'fra',
+  français: 'fra',
   de: 'deu',
   german: 'deu',
-  es: 'spa',
-  spanish: 'spa',
-  it: 'ita',
-  italian: 'ita',
-  pt: 'por',
-  portuguese: 'por',
-  ru: 'rus',
-  russian: 'rus',
-  zh: 'chi_sim',
-  chinese: 'chi_sim',
-  ja: 'jpn',
-  japanese: 'jpn',
+  deutsch: 'deu',
+  allemand: 'deu',
 };
 
 @Injectable()
