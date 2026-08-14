@@ -11,7 +11,6 @@ dist/
 .next/
 coverage/
 *.tsbuildinfo
-*.traineddata
 
 # Logs and OS junk
 *.log

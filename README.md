@@ -114,7 +114,7 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
 | Players                | Child CRUD, passphrase, Play Now                | `app/manage_players`, `players.service.ts`        |
 | Vocabulary             | CRUD, set active list for games                 | `app/manage_vocabulary`                           |
-| AI import              | Photo OCR (Tesseract) + PDF extract + GPT-4o    | `extraction.service.ts`, `import-vocabulary.tsx`  |
+| AI import              | GPT-4o vision + PDF extract                     | `extraction.service.ts`, `import-vocabulary.tsx`  |
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
 | Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
 | Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
@@ -145,7 +145,7 @@ XP, avatars, and a lobby leaderboard exist under `progression/` but are **not cl
 | i18n (3 languages)            | Minor (Accessibility) | 1   | next-intl, en / de / fr, flag switcher | `messages/{en,de,fr}.json`, `flag-menu.tsx`                  |
 | Health check                  | Minor (Devops)        | 1   | `GET /health`, `/status`, DB probe     | `app.service.ts`, `app/status`                               |
 | Organization system           | Major (User)          | 2   | Groups, ADMIN/MEMBER, invitations      | `groups.service.ts`, `invitations.service.ts`                |
-| Image recognition             | Minor (AI)            | 1   | Tesseract OCR + GPT-4o structuring     | `extraction.service.ts`                                      |
+| Image recognition             | Minor (AI)            | 1   | GPT-4o vision on uploaded photos       | `extraction.service.ts`                                      |
 | Complete web-based game       | Major (Gaming)        | 2   | Word Building crossword                | `word-building.service.ts`, `word-building-puzzle-engine.ts` |
 | Remote players                | Major (Gaming)        | 2   | Live board sync over WebSockets        | `game.gateway.ts`, `use-game-socket.ts`                      |
 | Multiplayer 3+                | Major (Gaming)        | 2   | Several `GamePlayer` rows per game     | `games.service.ts`, `select_game/page.tsx`                   |
@@ -178,7 +178,7 @@ Walk these in order. Use Chrome with the console open — no red errors.
 3. **i18n** — home in English, flag menu → Deutsch, then Français. Refresh; language stays. Legal pages (`/privacy`, `/terms`) switch too.
 4. **Auth + groups** — register, create a group, Manage Group (members, promote). Send an invite email, open `/accept_invitation`.
 5. **ORM** — `schema.prisma` and a service using Prisma (e.g. `groups.service.ts`). Optional: `npm run db:studio`.
-6. **File upload + OCR** — Manage Vocabulary → AI Vocabulary Import → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
+6. **File upload + AI import** — Manage Vocabulary → AI Vocabulary Import → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
 7. **Players + Play Now** — create 3 child profiles, start Play Now (minutes). Child lands on Select Game.
 8. **WebSockets + Word Building + remote** — two browsers, same group. Start Word Building. Place a letter in A; B updates without refresh. Show cell lock. Finish puzzle.
 9. **Multiplayer 3+** — third player joins the same pending game (or force-start). Scoreboard shows three names on one grid.
@@ -199,7 +199,7 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 | Backend   | NestJS 11, TypeScript                            | REST API, WebSocket gateway           |
 | Database  | PostgreSQL 16, Prisma 7                          | Persistence, migrations, typed client |
 | Real-time | Socket.IO                                        | Lobby, grid, scores, cell locks       |
-| AI / OCR  | OpenAI GPT-4o, Tesseract.js, pdf-parse           | Vocabulary extraction                 |
+| AI / import | OpenAI GPT-4o, pdf-parse                         | Vocabulary extraction                 |
 | Mail      | Nodemailer + Gmail SMTP                          | Group invitations                     |
 | Infra     | Docker Compose, GitHub Actions                   | Local stack and CI                    |
 
@@ -313,13 +313,12 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 ## Resources and AI usage
 
 - [Next.js](https://nextjs.org/docs), [NestJS](https://docs.nestjs.com), [Prisma](https://www.prisma.io/docs), [Socket.IO](https://socket.io/docs/v4/)
-- [OpenAI API](https://platform.openai.com/docs), [Tesseract.js](https://tesseract.projectnaptha.com/)
+- [OpenAI API](https://platform.openai.com/docs)
 
 
 | Task                                | Tool                    | Where                                   |
 | ----------------------------------- | ----------------------- | --------------------------------------- |
-| Vocabulary extraction from text/OCR | OpenAI GPT-4o           | `extraction.service.ts`                 |
-| OCR on uploaded photos              | Tesseract.js            | `extraction.service.ts`                 |
+| Vocabulary extraction from photos/PDFs | OpenAI GPT-4o        | `extraction.service.ts`                 |
 | Development assistance              | Cursor / Copilot        | Review, debugging, documentation drafts |
 | Puzzle / game logic design          | Team + AI brainstorming | Word Building engine                    |
 

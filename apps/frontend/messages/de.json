@@ -646,7 +646,7 @@
             "title": "2.3 Inhalte, die Sie hochladen oder erstellen",
             "items": [
               "Vokabellisten (Wörter, Übersetzungen, Notizen), die Sie importieren oder manuell eingeben",
-              "Dateien, die Sie für die Vokabelextraktion hochladen (z. B. PDFs, Fotos von Wortlisten). Bilder können mit OCR und KI-gestützter Strukturierung verarbeitet werden, um Vokabulareinträge zu erstellen",
+              "Dateien, die Sie für die Vokabelextraktion hochladen (z. B. PDFs, Fotos von Wortlisten). Bilder können an das Sprachmodell gesendet werden, um Vokabulareinträge zu erstellen",
               "Gruppenmitgliedschaft und Verwaltungsdaten (Rollen und Einladungen)",
               "Spielzustand, Züge und Punkte, die während Mehrspieler-Sitzungen generiert werden"
             ]
@@ -692,14 +692,14 @@
             },
             {
               "label": "Dienstleister:",
-              "text": "Wir nutzen Infrastruktur und Tools zum Betrieb der App, einschließlich Hosting, E-Mail-Zustellung (SMTP) und KI/OCR-Dienste für die Vokabelextraktion aus hochgeladenen Dateien. Diese Anbieter verarbeiten Daten nur, um den Dienst in unserem Auftrag auszuführen"
+              "text": "Wir nutzen Infrastruktur und Tools zum Betrieb der App, einschließlich Hosting, E-Mail-Zustellung (SMTP) und KI-Dienste für die Vokabelextraktion aus hochgeladenen Dateien. Diese Anbieter verarbeiten Daten nur, um den Dienst in unserem Auftrag auszuführen"
             },
             {
               "label": "Rechtliche Anforderungen:",
               "text": "Wir können Informationen offenlegen, wenn dies gesetzlich vorgeschrieben ist oder um die Rechte, Sicherheit und den Schutz der Nutzer und des Dienstes zu schützen"
             }
           ],
-          "uploadWarning": "Wenn Sie Bilder oder Dokumente für den Vokabularimport hochladen, kann der Dateiinhalt an automatisierte Erkennungsdienste gesendet werden, um Wörter zu erkennen und zu strukturieren. Laden Sie keine Dokumente mit sensiblen personenbezogenen Daten hoch, die nicht mit dem Vokabellernen zusammenhängen."
+          "uploadWarning": "Wenn Sie Bilder oder Dokumente für den Vokabularimport hochladen, kann der Dateiinhalt an das Sprachmodell gesendet werden, um Wörter zu erkennen und zu strukturieren. Laden Sie keine Dokumente mit sensiblen personenbezogenen Daten hoch, die nicht mit dem Vokabellernen zusammenhängen."
         },
         "dataRetention": {
           "title": "6. Datenspeicherung",
@@ -799,7 +799,7 @@
         "userContent": {
           "title": "5. Nutzerinhalte und Vokabular",
           "paragraphs": [
-            "Sie behalten das Eigentum an Vokabellisten und anderen Inhalten, die Sie einreichen („Nutzerinhalte“). Durch das Einreichen von Nutzerinhalten gewähren Sie Dicteé eine nicht-exklusive, weltweite Lizenz, diese Inhalte ausschließlich zum Betrieb des Dienstes für Sie und Ihre Gruppe zu hosten, zu speichern, anzuzeigen und zu verarbeiten — einschließlich OCR- und KI-gestützter Extraktion, wenn Sie Dateien hochladen.",
+            "Sie behalten das Eigentum an Vokabellisten und anderen Inhalten, die Sie einreichen („Nutzerinhalte“). Durch das Einreichen von Nutzerinhalten gewähren Sie Dicteé eine nicht-exklusive, weltweite Lizenz, diese Inhalte ausschließlich zum Betrieb des Dienstes für Sie und Ihre Gruppe zu hosten, zu speichern, anzuzeigen und zu verarbeiten — einschließlich KI-gestützter Extraktion, wenn Sie Dateien hochladen.",
             "Sie erklären, dass Sie das Recht haben, Nutzerinhalte hochzuladen und dass diese keine Rechte Dritter an geistigem Eigentum oder Datenschutz verletzen."
           ]
         },
@@ -820,7 +820,7 @@
         "thirdPartyServices": {
           "title": "8. Drittanbieterdienste",
           "paragraphs": [
-            "Der Dienst kann E-Mail-Zustellung, optische Zeichenerkennung und Sprachmodelle integrieren, um hochgeladene Vokabularmaterialien zu verarbeiten. Ihre Nutzung dieser Funktionen unterliegt auch den Richtlinien der zugrunde liegenden Anbieter, soweit anwendbar."
+            "Der Dienst kann E-Mail-Zustellung und Sprachmodelle integrieren, um hochgeladene Vokabularmaterialien zu verarbeiten. Ihre Nutzung dieser Funktionen unterliegt auch den Richtlinien der zugrunde liegenden Anbieter, soweit anwendbar."
           ]
         },
         "disclaimer": {
