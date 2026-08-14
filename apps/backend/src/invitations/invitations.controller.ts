@@ -13,7 +13,6 @@ export class InvitationsController {
       groupName: string;
       toEmail: string;
       invitationText: string;
-      authorId: number;
     },
   ) {
     return this.invitationsService.sendInvitation(
@@ -21,7 +20,6 @@ export class InvitationsController {
       body.groupName,
       body.toEmail,
       body.invitationText,
-      body.authorId,
     );
   }
 

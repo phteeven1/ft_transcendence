@@ -231,27 +231,6 @@ export class GamesService {
   }
 
   /**
-   * Finds stale pending games and starts the ones that have expired.
-   * This is used as a best-effort cleanup and auto-start path for abandoned lobbies.
-   */
-  async cleanupExpired(): Promise<void> {
-    const now = new Date();
-    const THIRTY_MINUTES_MS = 30 * 60 * 1000;
-
-    const pending = await this.prisma.game.findMany({
-      where: { isActive: false, isFinished: false },
-      ...gameWithPlayers,
-    });
-
-    for (const game of pending) {
-      const age = now.getTime() - game.initiatedTime.getTime();
-      if (age > THIRTY_MINUTES_MS) {
-        await this.startGame(toApiGame(game));
-      }
-    }
-  }
-
-  /**
    * Promotes a pending game to active status, updates related player state,
    * and removes empty stale games that were left behind in the same cleanup pass.
    *

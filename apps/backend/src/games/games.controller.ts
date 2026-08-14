@@ -83,17 +83,6 @@ export class GamesController {
     return this.gamesService.finish(body.gameId);
   }
 
-  /**
-   * Runs the cleanup pass that auto-starts or prunes expired pending games.
-   *
-   * @returns A small acknowledgement payload for the caller.
-   */
-  @Post('cleanup')
-  async cleanup() {
-    await this.gamesService.cleanupExpired();
-    return { ok: true };
-  }
-
   @Get(':id/finish-outcome')
   getFinishOutcome(@Param('id') id: string) {
     return this.gamesService.getFinishOutcome(Number(id));

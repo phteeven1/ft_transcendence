@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { GroupRole } from '@ft-transcendence/database';
 import { groupWithMemberships, toApiGroup } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
-import { UsersService } from '../users/users.service';
 
 export type Group = {
   id: number;
@@ -20,10 +19,7 @@ export type Member = {
 
 @Injectable()
 export class GroupsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(groupName: string, creatorId: number): Promise<Group> {
     const group = await this.prisma.group.create({
@@ -35,16 +31,13 @@ export class GroupsService {
       },
       ...groupWithMemberships,
     });
-    await this.usersService.addAdminGroup(creatorId, group.id);
     return toApiGroup(group);
   }
 
   async addMember(
     groupId: number,
     userId: number,
-    authorId: number,
   ): Promise<Group | undefined> {
-    void authorId;
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
       ...groupWithMemberships,
@@ -55,7 +48,6 @@ export class GroupsService {
     await this.prisma.groupMembership.create({
       data: { groupId, userId, role: GroupRole.MEMBER },
     });
-    await this.usersService.addMemberGroup(userId, groupId);
 
     return this.findById(groupId);
   }
@@ -63,7 +55,6 @@ export class GroupsService {
   async promote(
     groupId: number,
     userId: number,
-    authorId: number, // the admin performing the promotion
   ): Promise<Group | undefined> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
@@ -75,9 +66,6 @@ export class GroupsService {
       where: { userId_groupId: { userId, groupId } },
       data: { role: GroupRole.ADMIN },
     });
-    await this.usersService.removeMemberGroup(userId, groupId);
-    await this.usersService.addAdminGroup(userId, groupId);
-    void authorId;
 
     return this.findById(groupId);
   }
@@ -85,7 +73,6 @@ export class GroupsService {
   async demote(
     groupId: number,
     userId: number,
-    authorId: number,
   ): Promise<Group | undefined> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
@@ -97,25 +84,15 @@ export class GroupsService {
       where: { userId_groupId: { userId, groupId } },
       data: { role: GroupRole.MEMBER },
     });
-    await this.usersService.removeAdminGroup(userId, groupId);
-    await this.usersService.addMemberGroup(userId, groupId);
-    void authorId;
 
     return this.findById(groupId);
   }
 
-  async leave(
-    groupId: number,
-    userId: number,
-    authorId: number,
-  ): Promise<Group | undefined> {
+  async leave(groupId: number, userId: number): Promise<Group | undefined> {
     const deleted = await this.prisma.groupMembership.deleteMany({
       where: { userId, groupId },
     });
     if (deleted.count === 0) return this.findById(groupId);
-    await this.usersService.removeAdminGroup(userId, groupId);
-    await this.usersService.removeMemberGroup(userId, groupId);
-    void authorId;
 
     const remaining = await this.prisma.groupMembership.count({
       where: { groupId },
@@ -130,7 +107,6 @@ export class GroupsService {
   async rename(
     groupId: number,
     groupName: string,
-    authorId: number,
   ): Promise<Group | undefined> {
     try {
       const group = await this.prisma.group.update({
@@ -138,7 +114,6 @@ export class GroupsService {
         data: { name: groupName },
         ...groupWithMemberships,
       });
-      void authorId;
 
       return toApiGroup(group);
     } catch {
@@ -149,35 +124,22 @@ export class GroupsService {
   async expel(
     groupId: number,
     userId: number,
-    authorId: number,
   ): Promise<Group | undefined> {
     const deleted = await this.prisma.groupMembership.deleteMany({
       where: { userId, groupId, role: GroupRole.MEMBER },
     });
     if (deleted.count === 0) return this.findById(groupId);
-    await this.usersService.removeMemberGroup(userId, groupId);
-    void authorId;
 
     return this.findById(groupId);
   }
 
   async delete(groupId: number): Promise<boolean> {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
-      ...groupWithMemberships,
-    });
-    if (!group) return false;
-
-    for (const m of group.memberships) {
-      if (m.role === GroupRole.ADMIN) {
-        await this.usersService.removeAdminGroup(m.userId, groupId);
-      } else {
-        await this.usersService.removeMemberGroup(m.userId, groupId);
-      }
+    try {
+      await this.prisma.group.delete({ where: { id: groupId } });
+      return true;
+    } catch {
+      return false;
     }
-
-    await this.prisma.group.delete({ where: { id: groupId } });
-    return true;
   }
 
   async findMembers(groupId: number): Promise<Member[]> {
@@ -195,14 +157,6 @@ export class GroupsService {
   async findById(groupId: number): Promise<Group | undefined> {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      ...groupWithMemberships,
-    });
-    return group ? toApiGroup(group) : undefined;
-  }
-
-  async findByName(groupName: string): Promise<Group | undefined> {
-    const group = await this.prisma.group.findFirst({
-      where: { name: groupName },
       ...groupWithMemberships,
     });
     return group ? toApiGroup(group) : undefined;

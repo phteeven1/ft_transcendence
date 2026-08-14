@@ -20,15 +20,14 @@ export default function DeleteVocabulary({
 }: Props) {
   const t = useTranslations('vocabulary');
   const tCommon = useTranslations('common');
-  const { group, user } = useAuth();
+  const { group } = useAuth();
 
   const handleDelete = async () => {
-    if (!vocabulary || !group || !user) return;
+    if (!vocabulary || !group) return;
     try {
       await vocabulariesApi.remove({
         vocabularyId: vocabulary.id,
         vocabularyInGroup: group.id,
-        authorId: user.id,
       });
       onDeleted(vocabulary.id);
       onClose();

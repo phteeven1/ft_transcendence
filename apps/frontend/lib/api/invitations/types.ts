@@ -8,7 +8,6 @@ export type SendInvitationInput = {
   groupName: string;
   toEmail: string;
   invitationText: string;
-  authorId: number;
 };
 
 export type AcceptInvitationInput = {

@@ -23,7 +23,7 @@ export default function RenameVocabulary({
   const t = useTranslations('vocabulary');
   const tCommon = useTranslations('common');
   const [newName, setNewName] = useState('');
-  const { group, user } = useAuth();
+  const { group } = useAuth();
 
   useEffect(() => {
     if (open && vocabulary) setNewName(vocabulary.name);
@@ -35,13 +35,12 @@ export default function RenameVocabulary({
   };
 
   const handleRename = async () => {
-    if (!vocabulary || !newName.trim() || !group || !user) return;
+    if (!vocabulary || !newName.trim() || !group) return;
     try {
       const updated = await vocabulariesApi.rename({
         vocabularyId: vocabulary.id,
         vocabularyName: newName.trim(),
         vocabularyInGroup: group.id,
-        authorId: user.id,
       });
       if (!updated) throw new Error('Failed to rename vocabulary');
       onRenamed(updated);

@@ -74,7 +74,6 @@ function LeaveGroupFlow({
       await groupsApi.leave({
         groupId: group.id,
         userId: user.id,
-        authorId: user.id,
       });
       await refreshUser();
       if (currentGroup?.id === group.id) leaveGroup();

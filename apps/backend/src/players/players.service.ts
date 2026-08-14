@@ -15,7 +15,6 @@ export type Player = {
   ofUser: number;
   name: string;
   currentGameId: number | null;
-  lastSignout: string;
   sessionExpiresAt: string | null;
 };
 
@@ -259,10 +258,6 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   }
 
   async clearSession(playerId: number): Promise<void> {
-    await this.prisma.player.update({
-      where: { id: playerId },
-      data: { lastSignout: new Date() },
-    });
     await this.prisma.playerSession.deleteMany({ where: { playerId } });
     await this.clearCurrentGame(playerId);
   }

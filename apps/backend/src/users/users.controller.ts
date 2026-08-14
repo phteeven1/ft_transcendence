@@ -25,12 +25,6 @@ export class UsersController {
     );
   }
 
-  //@Post('signin')
-  //signin(@Body() body: { userName: string; userPassword: string }) {
-  //  const user = this.usersService.findByCredentials(body.userName, body.userPassword);
-  //  if (!user) throw new Error('Invalid credentials');
-  //  return user;
-  //}
   @Post('signin')
   async signin(@Body() body: { userName: string; userPassword: string }) {
     const user = await this.usersService.findByCredentials(
@@ -81,10 +75,5 @@ export class UsersController {
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.usersService.findById(Number(id));
-  }
-
-  @Get('name/:name')
-  findByName(@Param('name') name: string) {
-    return this.usersService.findByName(name);
   }
 }

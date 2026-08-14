@@ -11,45 +11,33 @@ export class GroupsController {
   }
 
   @Post('addMember')
-  addMember(
-    @Body() body: { groupId: number; userId: number; authorId: number },
-  ) {
-    return this.groupsService.addMember(
-      body.groupId,
-      body.userId,
-      body.authorId,
-    );
+  addMember(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.addMember(body.groupId, body.userId);
   }
 
   @Post('promote')
-  promote(@Body() body: { groupId: number; userId: number; authorId: number }) {
-    return this.groupsService.promote(body.groupId, body.userId, body.authorId);
+  promote(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.promote(body.groupId, body.userId);
   }
 
   @Post('demote')
-  demote(@Body() body: { groupId: number; userId: number; authorId: number }) {
-    return this.groupsService.demote(body.groupId, body.userId, body.authorId);
+  demote(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.demote(body.groupId, body.userId);
   }
 
   @Post('leave')
-  leave(@Body() body: { groupId: number; userId: number; authorId: number }) {
-    return this.groupsService.leave(body.groupId, body.userId, body.authorId);
+  leave(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.leave(body.groupId, body.userId);
   }
 
   @Post('rename')
-  rename(
-    @Body() body: { groupId: number; groupName: string; authorId: number },
-  ) {
-    return this.groupsService.rename(
-      body.groupId,
-      body.groupName,
-      body.authorId,
-    );
+  rename(@Body() body: { groupId: number; groupName: string }) {
+    return this.groupsService.rename(body.groupId, body.groupName);
   }
 
   @Post('expel')
-  expel(@Body() body: { groupId: number; userId: number; authorId: number }) {
-    return this.groupsService.expel(body.groupId, body.userId, body.authorId);
+  expel(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.expel(body.groupId, body.userId);
   }
 
   @Post('delete')
@@ -60,11 +48,6 @@ export class GroupsController {
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.groupsService.findById(Number(id));
-  }
-
-  @Get('name/:name')
-  findByName(@Param('name') name: string) {
-    return this.groupsService.findByName(name);
   }
 
   @Get(':id/members')

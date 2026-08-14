@@ -162,7 +162,7 @@ export default function AcceptInvitationClient() {
         return;
       }
 
-      await groupsApi.addMember({ groupId, userId: joinUser.id, authorId: joinUser.id });
+      await groupsApi.addMember({ groupId, userId: joinUser.id });
       await invitationsApi.accept({ token });
 
       await refreshUser();

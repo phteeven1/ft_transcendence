@@ -7,10 +7,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/auth-context';
-import {
-  getPlayerSession,
-  //isSessionExpired,
-} from '@/lib/player-session';
+import { getPlayerSession } from '@/lib/player-session';
 
 export function useSessionGuard() {
   const { sessionExpiresAt } = useAuth();

@@ -42,8 +42,7 @@ export default function SignIn() {
       });
       login(user);
       router.push('/dashboard');
-    } catch (error) {
-      // console.error('Sign in failed:', error);
+    } catch {
       setShowError(true);
     }
   };

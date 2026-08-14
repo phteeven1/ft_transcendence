@@ -239,13 +239,12 @@ export function usePeoplePanel(): UsePeoplePanelResult {
 
   const activateVocabulary = useCallback(
     async (vocabulary: Vocabulary): Promise<void> => {
-      if (!group || !user) return;
+      if (!group) return;
       if (vocabulary.id === group.currentVocabulary) return;
       try {
         const updated = await vocabulariesApi.setActive({
           vocabularyId: vocabulary.id,
           vocabularyInGroup: group.id,
-          authorId: user.id,
         });
         if (!updated) throw new Error('Failed to activate vocabulary');
         await syncGroup(group.id);
@@ -253,7 +252,7 @@ export function usePeoplePanel(): UsePeoplePanelResult {
         console.error('setActive vocabulary failed:', error);
       }
     },
-    [group, user, syncGroup],
+    [group, syncGroup],
   );
 
   const closeVocabDialog = (): void => {

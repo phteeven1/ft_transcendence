@@ -107,7 +107,7 @@ export default function PeoplePanel() {
 
   return (
     <>
-    <Panel className="flex flex-col overflow-hidden p-4 sm:p-5 max-h-[32rem] md:max-h-none md:h-full">
+      <Panel className="flex flex-col overflow-hidden p-4 sm:p-5 max-h-[32rem] md:max-h-none md:h-full">
       <h2 className="mb-4 font-heading text-lg font-semibold text-foreground">
         {groupName}
       </h2>
@@ -263,8 +263,8 @@ export default function PeoplePanel() {
         onClose={() => setAddVocabularyOpen(false)}
         onImported={handleVocabularyImported}
       />
-    </Panel>
-    <PeopleDialogs panel={panel} />
+      </Panel>
+      <PeopleDialogs panel={panel} />
     </>
   );
 }
