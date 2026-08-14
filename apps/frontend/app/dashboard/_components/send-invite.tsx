@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { invitationsApi, ApiError } from '@/lib/api';
 import { Button, Dialog, Input } from '../../components/ui';
+import { Group, User } from '../../types';
 
 type Props = {
   open: boolean;
@@ -11,31 +12,44 @@ type Props = {
 };
 
 export default function SendInvite({ open, onClose }: Props) {
+  const { group, user } = useAuth();
+  if (!group || !user) return null;
+  return (
+    <SendInviteForm
+      key={String(open)}
+      group={group}
+      user={user}
+      open={open}
+      onClose={onClose}
+    />
+  );
+}
+
+function SendInviteForm({
+  group,
+  user,
+  open,
+  onClose,
+}: {
+  group: Group;
+  user: User;
+  open: boolean;
+  onClose: () => void;
+}) {
   const t = useTranslations('group');
   const tInvitation = useTranslations('invitation');
   const tCommon = useTranslations('common');
-  const { group, user } = useAuth();
 
-  const [inviteText, setInviteText] = useState('');
+  const [inviteText, setInviteText] = useState(
+    tInvitation('defaultInviteText', { groupName: group.name }),
+  );
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteStatus, setInviteStatus] = useState<
-    'idle' | 'sending' | 'success' | 'error'
-  >('idle');
+  const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'error'>(
+    'idle',
+  );
   const [inviteError, setInviteError] = useState('');
 
-  useEffect(() => {
-    if (!open || !group) return;
-    setInviteText(tInvitation('defaultInviteText', { groupName: group.name }));
-    setInviteEmail('');
-    setInviteStatus('idle');
-    setInviteError('');
-  }, [open, group, tInvitation]);
-
-  if (!group || !user) return null;
-
   const handleClose = () => {
-    setInviteStatus('idle');
-    setInviteError('');
     onClose();
   };
 
@@ -50,7 +64,7 @@ export default function SendInvite({ open, onClose }: Props) {
         invitationText: inviteText,
         authorId: user.id,
       });
-      setInviteStatus('success');
+      handleClose();
     } catch (error) {
       console.error('Failed to send invitation:', error);
       setInviteError(
@@ -63,22 +77,6 @@ export default function SendInvite({ open, onClose }: Props) {
       setInviteStatus('error');
     }
   };
-
-  if (inviteStatus === 'success') {
-    return (
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        onConfirm={handleClose}
-        showCancel={false}
-        confirmLabel={tCommon('close')}
-      >
-        <p className="text-primary font-medium">
-          {t('sendInviteModal.success', { email: inviteEmail })}
-        </p>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog

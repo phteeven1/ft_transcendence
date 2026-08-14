@@ -22,7 +22,6 @@
     "promote": "Befördern",
     "resign": "Zurücktreten",
     "expel": "Entfernen",
-    "invite": "Einladen",
     "stay": "Bleiben",
     "skip": "Überspringen",
     "next": "Weiter",
@@ -173,11 +172,9 @@
       "oldPasswordLabel": "Altes Passwort",
       "newPasswordLabel": "Neues Passwort",
       "confirmNewPasswordLabel": "Neues Passwort bestätigen",
-      "passwordChangedSuccess": "Ihr Passwort wurde erfolgreich geändert.",
       "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
       "passwordEmpty": "Das neue Passwort darf nicht leer sein.",
-      "oldPasswordIncorrect": "Das alte Passwort ist falsch. Bitte versuchen Sie es erneut.",
-      "usernameChangedReminder": "Ihr Benutzername wurde in {username} geändert. Denken Sie daran, ihn bei der nächsten Anmeldung zu verwenden."
+      "oldPasswordIncorrect": "Das alte Passwort ist falsch. Bitte versuchen Sie es erneut."
     },
     "createGroup": {
       "title": "Neue Gruppe erstellen",
@@ -200,36 +197,29 @@
       "title": "Einladung senden",
       "invitationLabel": "Einladung",
       "emailPlaceholder": "empfaenger@beispiel.de",
-      "submit": "Absenden",
-      "success": "Einladung erfolgreich an {email} gesendet.",
       "failedPrefix": "Einladung senden fehlgeschlagen:"
     },
     "promote": {
       "confirmTitle": "{name} befördern?",
       "confirmMessage": "{name} in der Gruppe {groupName} zum Admin befördern?",
       "promoteButton": "Befördern",
-      "success": "{name} wurde in der Gruppe {groupName} zum Admin befördert.",
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "resign": {
       "onlyAdminWarning": "Sie sind der einzige Admin dieser Gruppe. Befördern Sie ein anderes Mitglied zum Admin, bevor Sie zurücktreten.",
       "confirm": "Sind Sie sicher, dass Sie als Admin von {groupName} zurücktreten möchten? Sie werden ein reguläres Mitglied.",
-      "success": "Sie sind erfolgreich als Admin von {groupName} zurückgetreten. Sie sind jetzt ein reguläres Mitglied.",
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "rename": {
       "title": "Gruppe umbenennen",
       "newNameLabel": "Neuer Gruppenname",
       "newNamePlaceholder": "Neuen Gruppennamen eingeben",
-      "unchanged": "Der Gruppenname wurde nicht geändert.",
-      "success": "Gruppe erfolgreich in {name} umbenannt.",
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "expel": {
       "expelButton": "Entfernen",
       "confirmTitle": "Sind Sie sicher?",
       "confirmMessage": "Dies wird {memberName} aus {groupName} entfernen. Dies kann nicht rückgängig gemacht werden.",
-      "success": "{memberName} wurde aus {groupName} entfernt.",
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "delete": {
@@ -248,7 +238,6 @@
     }
   },
   "players": {
-    "noPlayers": "Noch keine Spieler.",
     "newPlayer": "Neuer Spieler",
     "play": "Spielen",
     "create": {
@@ -267,8 +256,6 @@
       "confirmMessage": "Beim Löschen des Spielers werden auch dessen Daten (Spielstatistiken, XP, Ranglistenstatus) gelöscht (nur für diese Gruppe)."
     },
     "invite": {
-      "title": "{name} zum Spielen einladen",
-      "playNow": "Jetzt spielen",
       "activeSessionWarning": "{name} hat bereits eine aktive Spielsitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
       "sessionDurationTitle": "Wie lange darf {name} spielen?",
       "minutesLabel": "Minuten",

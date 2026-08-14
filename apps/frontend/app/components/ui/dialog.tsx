@@ -54,12 +54,14 @@ export function Dialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'dialog-title' : undefined}
+      onClick={onClose}
     >
       <div
         className={[
           'clay-modal flex flex-col w-full max-h-[90vh]',
           wide ? 'max-w-lg' : 'max-w-md',
         ].join(' ')}
+        onClick={(event) => event.stopPropagation()}
       >
         {title && (
           <h2 id="dialog-title" className="font-heading text-xl font-bold text-foreground mb-4 shrink-0">

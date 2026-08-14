@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
@@ -19,30 +19,47 @@ export default function RenameGroup({
   onClose,
   onDone,
 }: Props) {
+  if (!group) return null;
+  return (
+    <RenameGroupForm
+      key={`${group.id}-${String(open)}`}
+      group={group}
+      open={open}
+      onClose={onClose}
+      onDone={onDone}
+    />
+  );
+}
+
+function RenameGroupForm({
+  group,
+  open,
+  onClose,
+  onDone,
+}: {
+  group: Group;
+  open: boolean;
+  onClose: () => void;
+  onDone: () => Promise<void>;
+}) {
   const t = useTranslations('group');
   const tCommon = useTranslations('common');
   const { user, group: currentGroup, syncGroup } = useAuth();
-  const [newName, setNewName] = useState('');
-  const [showResult, setShowResult] = useState(false);
-  const [resultMessage, setResultMessage] = useState('');
-
-  useEffect(() => {
-    if (open && group) setNewName(group.name);
-  }, [open, group]);
+  const [newName, setNewName] = useState(group.name);
+  const [error, setError] = useState('');
 
   if (!user) return null;
 
   const handleClose = () => {
-    setNewName('');
+    setNewName(group.name);
+    setError('');
     onClose();
   };
 
   const handleRename = async () => {
-    if (!group || !newName.trim()) return;
+    if (!newName.trim()) return;
     if (newName.trim() === group.name) {
       handleClose();
-      setResultMessage(t('rename.unchanged'));
-      setShowResult(true);
       return;
     }
 
@@ -57,54 +74,35 @@ export default function RenameGroup({
       }
       await onDone();
       handleClose();
-      setResultMessage(t('rename.success', { name: newName.trim() }));
-      setShowResult(true);
-    } catch (error) {
-      console.error('Rename failed:', error);
-      handleClose();
-      setResultMessage(t('rename.failed'));
-      setShowResult(true);
+    } catch (renameError) {
+      console.error('Rename failed:', renameError);
+      setError(t('rename.failed'));
     }
   };
 
-  const handleCloseResult = () => {
-    setShowResult(false);
-    setResultMessage('');
-  };
-
   return (
-    <>
-      {group && (
-        <Dialog
-          open={open}
-          onClose={handleClose}
-          title={t('rename.title')}
-          cancelLabel={tCommon('cancel')}
-          confirmLabel={tCommon('rename')}
-          onConfirm={handleRename}
-          confirmVariant="primary"
-          cancelVariant="ghost"
-          confirmDisabled={!newName.trim()}
-        >
-          <Input
-            label={t('rename.newNameLabel')}
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder={t('rename.newNamePlaceholder')}
-            autoFocus
-          />
-        </Dialog>
-      )}
-
-      <Dialog
-        open={showResult}
-        onClose={handleCloseResult}
-        onConfirm={handleCloseResult}
-        showCancel={false}
-      >
-        {resultMessage}
-      </Dialog>
-    </>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title={t('rename.title')}
+      cancelLabel={tCommon('cancel')}
+      confirmLabel={tCommon('rename')}
+      onConfirm={handleRename}
+      confirmVariant="primary"
+      cancelVariant="ghost"
+      confirmDisabled={!newName.trim()}
+    >
+      <div className="space-y-3">
+        <Input
+          label={t('rename.newNameLabel')}
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder={t('rename.newNamePlaceholder')}
+          autoFocus
+        />
+        {error && <p className="text-destructive text-sm">{error}</p>}
+      </div>
+    </Dialog>
   );
 }

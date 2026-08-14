@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
@@ -24,31 +24,41 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
   const tCommon = useTranslations('common');
   const { loginAsPlayer, setSessionExpiresAt, group } = useAuth();
   const router = useRouter();
-  const [isSessionOpen, setIsSessionOpen] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [startError, setStartError] = useState('');
   const [sessionMinutes, setSessionMinutes] = useState('');
 
-  const handlePlayNow = async () => {
-    if (!player) return;
-    setIsChecking(true);
+  useEffect(() => {
+    if (!open || !player) return;
+    let cancelled = false;
     setHasActiveSession(false);
-    try {
-      const activeSession = await playersApi.getActiveSession(player.id);
-      if (activeSession) {
-        setHasActiveSession(true);
-        return;
+    setStartError('');
+    setSessionMinutes('');
+    setIsChecking(true);
+
+    void (async () => {
+      try {
+        const activeSession = await playersApi.getActiveSession(player.id);
+        if (!cancelled) setHasActiveSession(Boolean(activeSession));
+      } catch {
+        if (!cancelled) setHasActiveSession(true);
+      } finally {
+        if (!cancelled) setIsChecking(false);
       }
-      setSessionMinutes('');
-      setStartError('');
-      setIsSessionOpen(true);
-    } catch {
-      setHasActiveSession(true);
-    } finally {
-      setIsChecking(false);
-    }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, player]);
+
+  const handleClose = () => {
+    setHasActiveSession(false);
+    setStartError('');
+    setSessionMinutes('');
+    onClose();
   };
 
   const handleSessionStart = async () => {
@@ -68,7 +78,6 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
 
       loginAsPlayer(player);
       setSessionExpiresAt(new Date(session.expiresAt).getTime());
-      setIsSessionOpen(false);
       router.replace('/select_game');
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -81,102 +90,72 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     }
   };
 
-  const closeInvite = () => {
-    setHasActiveSession(false);
-    onClose();
-  };
-
-  const closeSession = () => {
-    setIsSessionOpen(false);
-    onClose();
-  };
-
   const canStart =
-    !isStarting && sessionMinutes !== '' && parseInt(sessionMinutes, 10) > 0;
+    !isStarting &&
+    !isChecking &&
+    !hasActiveSession &&
+    sessionMinutes !== '' &&
+    parseInt(sessionMinutes, 10) > 0;
 
   if (!player || !group) return null;
 
   return (
-    <>
-      <Dialog
-        open={open && !isSessionOpen}
-        onClose={closeInvite}
-        title={t('invite.title', { name: player.name })}
-        footer={
-          <div className="flex flex-col gap-3 shrink-0 border-t border-border pt-4">
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={handlePlayNow}
-              disabled={isChecking}
-            >
-              {isChecking ? tCommon('checking') : t('invite.playNow')}
-            </Button>
-            <Button variant="ghost" fullWidth onClick={closeInvite}>
-              {tCommon('cancel')}
-            </Button>
-          </div>
-        }
-      >
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title={t('invite.sessionDurationTitle', { name: player.name })}
+      footer={
+        <div className="flex gap-3 shrink-0 border-t border-border pt-4">
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={handleClose}
+            disabled={isStarting}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            variant="accent"
+            fullWidth
+            onClick={handleSessionStart}
+            disabled={!canStart}
+          >
+            {isStarting ? tCommon('starting') : tCommon('start')}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-2">
         {hasActiveSession && (
           <p className="text-destructive text-sm">
             {t('invite.activeSessionWarning', { name: player.name })}
           </p>
         )}
-      </Dialog>
-
-      <Dialog
-        open={isSessionOpen}
-        onClose={closeSession}
-        title={t('invite.sessionDurationTitle', { name: player.name })}
-        footer={
-          <div className="flex gap-3 shrink-0 border-t border-border pt-4">
+        <Input
+          label={t('invite.minutesLabel')}
+          type="number"
+          min="1"
+          value={sessionMinutes}
+          onChange={(e) => setSessionMinutes(e.target.value)}
+          placeholder={t('invite.minutesPlaceholder')}
+        />
+        <div className="flex gap-2 pt-1">
+          {SESSION_SHORTCUTS.map((mins) => (
             <Button
+              key={mins}
               variant="ghost"
-              fullWidth
-              onClick={closeSession}
-              disabled={isStarting}
+              size="sm"
+              className="w-10 h-10 rounded-full p-0"
+              onClick={() => setSessionMinutes(String(mins))}
             >
-              {tCommon('cancel')}
+              {mins}
             </Button>
-            <Button
-              variant="accent"
-              fullWidth
-              onClick={handleSessionStart}
-              disabled={!canStart}
-            >
-              {isStarting ? tCommon('starting') : tCommon('start')}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-2">
-          <Input
-            label={t('invite.minutesLabel')}
-            type="number"
-            min="1"
-            value={sessionMinutes}
-            onChange={(e) => setSessionMinutes(e.target.value)}
-            placeholder={t('invite.minutesPlaceholder')}
-          />
-          <div className="flex gap-2 pt-1">
-            {SESSION_SHORTCUTS.map((mins) => (
-              <Button
-                key={mins}
-                variant="ghost"
-                size="sm"
-                className="w-10 h-10 rounded-full p-0"
-                onClick={() => setSessionMinutes(String(mins))}
-              >
-                {mins}
-              </Button>
-            ))}
-          </div>
-          {startError && (
-            <p className="text-destructive text-sm">{startError}</p>
-          )}
+          ))}
         </div>
-      </Dialog>
-    </>
+        {startError && (
+          <p className="text-destructive text-sm">{startError}</p>
+        )}
+      </div>
+    </Dialog>
   );
 }
