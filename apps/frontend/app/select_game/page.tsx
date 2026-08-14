@@ -72,11 +72,7 @@ type ModalState =
   | { kind: 'join'; game: Game }
   | { kind: 'forceStart'; game: Game };
 
-// manages list of pending games and modal states via WebSocket
 // pendingGames is kept in sync by lobby:update events pushed from the backend
-// manages list of pending games and modal states via WebSocket
-// pendingGames is kept in sync by lobby:update events pushed from the backend
-// modal tracks modal state
 export default function SelectGame() {
   const t = useTranslations('games.lobby');
   const tProgression = useTranslations('games.lobby.progression');
@@ -92,10 +88,6 @@ export default function SelectGame() {
   const { markIntentionalExit } = usePlayerSessionExitGuard({
     enabled: sessionReady && player !== null,
     playerId: player?.id ?? 0,
-    onIntentionalExit: () => {
-      clearPlayerSession();
-      logoutPlayer();
-    },
   });
 
   useEffect(() => {
@@ -188,11 +180,11 @@ export default function SelectGame() {
 
   // navigate to the matching game page as soon as the backend tells us our game has started
   useEffect(() => {
-    if (startedGame && player) {
-      const route = getStartedGameRoute(startedGame.name);
-      if (!route) return;
-      router.push(`${route}?gameId=${startedGame.id}&playerId=${player.id}`);
-    }
+    if (!startedGame || !player) return;
+    if (startedGame.isFinished || !startedGame.isActive) return;
+    const route = getStartedGameRoute(startedGame.name);
+    if (!route) return;
+    router.push(`${route}?gameId=${startedGame.id}&playerId=${player.id}`);
   }, [startedGame, player, router]);
 
   const hasInitiated = (gameName: string): boolean =>

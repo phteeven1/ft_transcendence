@@ -1,34 +1,25 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { sendAbandonPlayOnUnload } from '@/lib/session-exit-beacon';
-import { useBeforeUnloadWarning } from './use-before-unload-warning';
 
 type Options = {
   enabled: boolean;
   gameId: number;
   playerId: number;
-  onIntentionalExit: () => void;
 };
 
 /**
- * Warns before tab close. If the user confirms "Leave site",
- * leaves the game and clears the session on the server.
+ * On tab close, leaves the game and clears the Play Now session.
+ * In-app Leave or Return to Lobby should call markIntentionalExit so this
+ * does not fire during client navigation.
  */
-export function useGameExitGuard({
-  enabled,
-  gameId,
-  playerId,
-  onIntentionalExit,
-}: Options) {
+export function useGameExitGuard({ enabled, gameId, playerId }: Options) {
   const intentionalExitRef = useRef(false);
 
-  useBeforeUnloadWarning(enabled);
-
-  const markIntentionalExit = () => {
+  const markIntentionalExit = useCallback(() => {
     intentionalExitRef.current = true;
-    onIntentionalExit();
-  };
+  }, []);
 
   useEffect(() => {
     if (!enabled || !gameId || !playerId) return;

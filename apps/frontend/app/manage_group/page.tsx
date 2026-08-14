@@ -1,51 +1,84 @@
 'use client';
 
-/*
-Layout for manage group
-Will sync and refresh the group and the attached members and admins arrays every 5 s.
-Three responsive tiers:
-  - Mobile portrait (below md): single column stack
-  - Landscape mobile (md to lg, landscape): three column, compact inline header
-  - Desktop (lg+): three column, large centered header
-*/
-
-import { useAuth } from '../context/auth-context';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { groupsApi } from '@/lib/api';
-import { Member } from '../types';
-import MemberList from './_components/member-list';
-import ActionWindow from './_components/action-window';
+import { useAuth } from '../context/auth-context';
+import { groupsApi, playersApi } from '@/lib/api';
+import { Member, Player } from '../types';
+import PeoplePanel, {
+  PeopleTab,
+  PlayerAction,
+} from './_components/people-panel';
 import BackToDashboard from './_components/back-to-dashboard';
 import LeaveGroup from './_components/leave-group';
-import SendInvite from './_components/send-invite';
 import PromoteToAdmin from './_components/promote-to-admin';
 import ResignAdmin from './_components/resign-admin';
 import RenameGroup from './_components/rename-group';
-import ManagePlayers from './_components/manage-players';
 import ExpelMember from './_components/expel-member';
 import DeleteGroup from './_components/delete-group';
 import ManageVocabulary from './_components/manage-vocabulary';
+import RenamePlayer from '../manage_players/_components/rename-player';
+import EditPassphrase from '../manage_players/_components/edit-passphrase';
+import DeletePlayer from '../manage_players/_components/delete-player';
+import InviteToPlay from '../manage_players/_components/invite-to-play';
+import EndGameSession from '../manage_players/_components/end-game-session';
 import { PageShell } from '../components/ui';
 
-export default function ManageGroup() {
+function isPeopleTab(value: string | null): value is PeopleTab {
+  return value === 'members' || value === 'players';
+}
+
+export default function ManageGroupPage() {
+  return (
+    <Suspense fallback={null}>
+      <ManageGroup />
+    </Suspense>
+  );
+}
+
+function ManageGroup() {
   const t = useTranslations('group');
-  const { user, group, syncGroup, leaveGroup } = useAuth();
+  const { user, group, player, syncGroup, leaveGroup } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+
   const [currentGroupMembers, setCurrentGroupMembers] = useState<Member[]>([]);
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isPlayersLoading, setIsPlayersLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<PeopleTab>(
+    isPeopleTab(requestedTab) ? requestedTab : 'members',
+  );
+
+  const [promoteMember, setPromoteMember] = useState<Member | null>(null);
+  const [expelMember, setExpelMember] = useState<Member | null>(null);
+  const [resignOpen, setResignOpen] = useState(false);
+
+  const [activePlayer, setActivePlayer] = useState<Player | null>(null);
+  const [playerDialog, setPlayerDialog] = useState<PlayerAction | null>(null);
 
   const fetchMembers = useCallback(async () => {
     if (!group) return;
     try {
       const members = await groupsApi.getMembers(group.id);
       setCurrentGroupMembers(members);
-      setSelectedMember((prev) => prev ?? members.find((m) => m.id === user?.id) ?? null);
     } catch (error) {
       console.error('fetchMembers failed:', error);
     }
-  }, [group, user]);
+  }, [group]);
+
+  const fetchPlayers = useCallback(async () => {
+    if (!group) return;
+    try {
+      const data = await playersApi.findByGroup(group.id);
+      setPlayers(data);
+    } catch (error) {
+      console.error('fetchPlayers failed:', error);
+    } finally {
+      setIsPlayersLoading(false);
+    }
+  }, [group]);
 
   const syncAndRefresh = useCallback(async () => {
     if (!group || !user) return;
@@ -63,16 +96,19 @@ export default function ManageGroup() {
         return;
       }
 
-      await fetchMembers();
+      await Promise.all([fetchMembers(), fetchPlayers()]);
     } catch (error) {
       console.error('syncAndRefresh failed:', error);
     }
-  }, [group, user, syncGroup, leaveGroup, router, fetchMembers]);
+  }, [group, user, syncGroup, leaveGroup, router, fetchMembers, fetchPlayers]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
+      // Parent just handed off to Play Now — InviteToPlay navigates to the lobby.
+      if (player) return;
+
       if (!user) {
         if (!cancelled) router.push('/signin');
         return;
@@ -88,13 +124,14 @@ export default function ManageGroup() {
       }
 
       fetchMembers();
+      fetchPlayers();
     }
 
     init();
     return () => {
       cancelled = true;
     };
-  }, [user, group, router, syncGroup, fetchMembers]);
+  }, [user, group, player, router, syncGroup, fetchMembers, fetchPlayers]);
 
   useEffect(() => {
     if (!group || !user) return;
@@ -105,28 +142,37 @@ export default function ManageGroup() {
     return () => clearInterval(interval);
   }, [group, user, syncAndRefresh]);
 
+  const closePlayerDialog = () => {
+    setPlayerDialog(null);
+    setActivePlayer(null);
+  };
+
+  const handlePlayerAction = (action: PlayerAction, player: Player) => {
+    setActivePlayer(player);
+    setPlayerDialog(action);
+  };
+
+  const handlePlayerCreated = (player: Player) => {
+    setPlayers((prev) => [...prev, player]);
+  };
+
+  const handlePlayerUpdated = (updated: Player) => {
+    setPlayers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setActivePlayer(updated);
+  };
+
+  const handlePlayerDeleted = (playerId: number) => {
+    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    closePlayerDialog();
+  };
+
   if (!user || !group) return null;
 
   const isAdmin = group.admins.includes(user.id);
 
   const buttons = (
     <>
-      <ManagePlayers />
       {isAdmin && <ManageVocabulary />}
-      {isAdmin && (
-        <PromoteToAdmin
-          currentGroupMembers={currentGroupMembers}
-          syncAndRefresh={syncAndRefresh}
-        />
-      )}
-      {isAdmin && <ResignAdmin syncAndRefresh={syncAndRefresh} />}
-      {isAdmin && <SendInvite />}
-      {isAdmin && (
-        <ExpelMember
-          currentGroupMembers={currentGroupMembers}
-          syncAndRefresh={syncAndRefresh}
-        />
-      )}
       {isAdmin && <RenameGroup syncAndRefresh={syncAndRefresh} />}
       <LeaveGroup />
       {isAdmin && <DeleteGroup />}
@@ -136,58 +182,84 @@ export default function ManageGroup() {
 
   return (
     <PageShell>
-      {/* Mobile portrait (below md): single column stack */}
-      <div className="flex flex-col gap-4 md:hidden">
-        <MemberList
-          members={currentGroupMembers}
-          selectedMember={selectedMember}
-          onSelect={setSelectedMember}
-        />
-        <ActionWindow selectedMember={selectedMember} />
-        <div className="grid grid-cols-2 gap-3">{buttons}</div>
+      <div className="hidden md:block text-center mb-4 lg:mb-6">
+        <h1 className="font-heading text-2xl font-bold text-foreground">
+          {group.name}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isAdmin ? t('roleAdmin') : t('roleMember')}
+        </p>
       </div>
 
-      {/* Landscape mobile (md to lg): three columns side by side, no header */}
-      <div className="hidden md:grid lg:hidden grid-cols-3 gap-3 items-start">
-        <div className="col-span-1">
-          <MemberList
+      <div className="flex flex-col md:grid md:grid-cols-3 gap-4 lg:gap-6">
+        <div className="md:col-span-2 flex flex-col">
+          <PeoplePanel
             members={currentGroupMembers}
-            selectedMember={selectedMember}
-            onSelect={setSelectedMember}
+            players={players}
+            isPlayersLoading={isPlayersLoading}
+            isAdmin={isAdmin}
+            currentUserId={user.id}
+            hasActiveVocabulary={!!group.currentVocabulary}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onPromote={setPromoteMember}
+            onExpel={setExpelMember}
+            onResign={() => setResignOpen(true)}
+            onPlayerAction={handlePlayerAction}
+            onPlayerCreated={handlePlayerCreated}
           />
         </div>
-        <div className="col-span-1">
-          <ActionWindow selectedMember={selectedMember} />
-        </div>
-        <div className="col-span-1 grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-3 content-start">
           {buttons}
         </div>
       </div>
 
-      {/* Desktop (lg+): member list + buttons side by side, action window below */}
-      <div className="hidden lg:flex flex-col gap-6">
-        <div className="hidden lg:block text-center">
-          <h1 className="font-heading text-2xl font-bold text-foreground">{group.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {isAdmin ? t('roleAdmin') : t('roleMember')}
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-1 flex flex-col">
-            <MemberList
-              members={currentGroupMembers}
-              selectedMember={selectedMember}
-              onSelect={setSelectedMember}
-            />
-          </div>
-          <div className="col-span-2 flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3 content-start">
-              {buttons}
-            </div>
-          </div>
-        </div>
-        <ActionWindow selectedMember={selectedMember} />
-      </div>
+      <PromoteToAdmin
+        member={promoteMember}
+        open={promoteMember !== null}
+        onClose={() => setPromoteMember(null)}
+        syncAndRefresh={syncAndRefresh}
+      />
+      <ExpelMember
+        member={expelMember}
+        open={expelMember !== null}
+        onClose={() => setExpelMember(null)}
+        syncAndRefresh={syncAndRefresh}
+      />
+      <ResignAdmin
+        open={resignOpen}
+        onClose={() => setResignOpen(false)}
+        syncAndRefresh={syncAndRefresh}
+      />
+      <RenamePlayer
+        player={activePlayer}
+        open={playerDialog === 'rename'}
+        onClose={closePlayerDialog}
+        onRenamed={handlePlayerUpdated}
+      />
+      <EditPassphrase
+        player={activePlayer}
+        open={playerDialog === 'passphrase'}
+        onClose={closePlayerDialog}
+        onUpdated={handlePlayerUpdated}
+      />
+      <DeletePlayer
+        player={activePlayer}
+        open={playerDialog === 'delete'}
+        onClose={closePlayerDialog}
+        onDeleted={handlePlayerDeleted}
+      />
+      <InviteToPlay
+        player={activePlayer}
+        open={playerDialog === 'invite'}
+        onClose={closePlayerDialog}
+      />
+      <EndGameSession
+        player={activePlayer}
+        open={playerDialog === 'endSession'}
+        onClose={closePlayerDialog}
+        onCleared={handlePlayerUpdated}
+      />
     </PageShell>
   );
 }

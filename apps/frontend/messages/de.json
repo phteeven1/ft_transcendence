@@ -184,12 +184,14 @@
     "roleAdmin": "Sie sind Administrator dieser Gruppe.",
     "roleMember": "Sie sind Mitglied dieser Gruppe.",
     "members": "Mitglieder",
-    "selectMemberHint": "Wählen Sie ein Mitglied aus, um dessen Profil anzuzeigen.",
+    "noMembers": "Noch keine Mitglieder.",
+    "rowOptions": "Optionen für {name}",
+    "ofParent": "von {name}",
+    "ofParentYou": "von {name} ({you})",
     "tabs": {
-      "profile": "Mitgliederprofil",
-      "games": "Spielsitzung"
+      "members": "Mitglieder",
+      "players": "Spieler"
     },
-    "managePlayers": "Spieler verwalten",
     "manageVocabulary": "Vokabular verwalten",
     "promoteToAdmin": "Zum Admin befördern",
     "resignAdmin": "Als Admin zurücktreten",
@@ -199,21 +201,6 @@
     "leaveGroup": "Gruppe verlassen",
     "deleteGroup": "Gruppe löschen",
     "backToDashboard": "Zurück zum Dashboard",
-    "gameSessionOverviewComingSoon": "Spielsitzungsübersicht demnächst verfügbar.",
-    "profile": {
-      "loading": "Profil wird geladen...",
-      "loadFailed": "Profil konnte nicht geladen werden.",
-      "noPlayers": "Keine Spieler in dieser Gruppe.",
-      "inGameSession": "In Spielsitzung",
-      "currentlyOffline": "Derzeit offline",
-      "expiresIn": "läuft ab in {time}",
-      "since": "seit {time}",
-      "justNow": "gerade eben",
-      "minutesAgo": "{count, plural, one {vor # Min.} other {vor # Min.}}",
-      "hoursAgo": "{count, plural, one {vor # Stunde} other {vor # Stunden}}",
-      "daysAgo": "{count, plural, one {vor # Tag} other {vor # Tagen}}",
-      "zeroMins": "0 Min."
-    },
     "sendInviteModal": {
       "title": "Einladung senden",
       "invitationLabel": "Einladung",
@@ -223,12 +210,10 @@
       "failedPrefix": "Einladung senden fehlgeschlagen:"
     },
     "promote": {
-      "title": "Zum Admin befördern",
-      "selectMembers": "Wählen Sie Mitglieder zur Beförderung aus.",
+      "confirmTitle": "{name} befördern?",
+      "confirmMessage": "{name} in der Gruppe {groupName} zum Admin befördern?",
       "promoteButton": "Befördern",
-      "noSelection": "Es wurden keine Mitglieder zur Beförderung zum Admin ausgewählt.",
-      "successOne": "{name} wurde in der Gruppe {groupName} zum Admin befördert.",
-      "successMany": "{names} wurden in der Gruppe {groupName} zu Admins befördert.",
+      "success": "{name} wurde in der Gruppe {groupName} zum Admin befördert.",
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "resign": {
@@ -246,8 +231,6 @@
       "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "expel": {
-      "title": "Mitglied entfernen",
-      "selectMember": "Wählen Sie ein Mitglied zum Entfernen aus.",
       "expelButton": "Entfernen",
       "confirmTitle": "Sind Sie sicher?",
       "confirmMessage": "Dies wird {memberName} aus {groupName} entfernen. Dies kann nicht rückgängig gemacht werden.",

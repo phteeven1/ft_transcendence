@@ -184,12 +184,14 @@
     "roleAdmin": "Vous êtes administrateur de ce groupe.",
     "roleMember": "Vous êtes membre de ce groupe.",
     "members": "Membres",
-    "selectMemberHint": "Sélectionnez un membre pour voir son profil.",
+    "noMembers": "Aucun membre pour le moment.",
+    "rowOptions": "Options pour {name}",
+    "ofParent": "de {name}",
+    "ofParentYou": "de {name} ({you})",
     "tabs": {
-      "profile": "Profil du membre",
-      "games": "Session de jeu"
+      "members": "Membres",
+      "players": "Joueurs"
     },
-    "managePlayers": "Gérer les joueurs",
     "manageVocabulary": "Gérer le vocabulaire",
     "promoteToAdmin": "Promouvoir admin",
     "resignAdmin": "Démissionner comme admin",
@@ -199,21 +201,6 @@
     "leaveGroup": "Quitter le groupe",
     "deleteGroup": "Supprimer le groupe",
     "backToDashboard": "Retour au tableau de bord",
-    "gameSessionOverviewComingSoon": "Aperçu des sessions de jeu bientôt disponible.",
-    "profile": {
-      "loading": "Chargement du profil...",
-      "loadFailed": "Impossible de charger le profil.",
-      "noPlayers": "Aucun joueur dans ce groupe.",
-      "inGameSession": "En session de jeu",
-      "currentlyOffline": "Actuellement hors ligne",
-      "expiresIn": "expire dans {time}",
-      "since": "depuis {time}",
-      "justNow": "à l'instant",
-      "minutesAgo": "{count, plural, one {il y a # min} other {il y a # min}}",
-      "hoursAgo": "{count, plural, one {il y a # heure} other {il y a # heures}}",
-      "daysAgo": "{count, plural, one {il y a # jour} other {il y a # jours}}",
-      "zeroMins": "0 min"
-    },
     "sendInviteModal": {
       "title": "Envoyer une invitation",
       "invitationLabel": "Invitation",
@@ -223,12 +210,10 @@
       "failedPrefix": "Échec de l'envoi de l'invitation :"
     },
     "promote": {
-      "title": "Promouvoir admin",
-      "selectMembers": "Sélectionnez les membres à promouvoir.",
+      "confirmTitle": "Promouvoir {name} ?",
+      "confirmMessage": "Promouvoir {name} admin du groupe {groupName} ?",
       "promoteButton": "Promouvoir",
-      "noSelection": "Aucun membre n'a été sélectionné pour la promotion au rang d'admin.",
-      "successOne": "{name} a été promu admin dans le groupe {groupName}.",
-      "successMany": "{names} ont été promus admins dans le groupe {groupName}.",
+      "success": "{name} a été promu admin dans le groupe {groupName}.",
       "failed": "Une erreur s'est produite. Veuillez réessayer."
     },
     "resign": {
@@ -246,8 +231,6 @@
       "failed": "Une erreur s'est produite. Veuillez réessayer."
     },
     "expel": {
-      "title": "Exclure un membre",
-      "selectMember": "Sélectionnez un membre à exclure.",
       "expelButton": "Exclure",
       "confirmTitle": "Êtes-vous sûr ?",
       "confirmMessage": "Cela exclura {memberName} de {groupName}. Cette action est irréversible.",

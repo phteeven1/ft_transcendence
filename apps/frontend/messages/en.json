@@ -184,12 +184,14 @@
     "roleAdmin": "You are an admin of this group.",
     "roleMember": "You are a member of this group.",
     "members": "Members",
-    "selectMemberHint": "Select a member to view their profile.",
+    "noMembers": "No members yet.",
+    "rowOptions": "Options for {name}",
+    "ofParent": "of {name}",
+    "ofParentYou": "of {name} ({you})",
     "tabs": {
-      "profile": "Member Profile",
-      "games": "Game Session"
+      "members": "Members",
+      "players": "Players"
     },
-    "managePlayers": "Manage Players",
     "manageVocabulary": "Manage Vocabulary",
     "promoteToAdmin": "Promote to Admin",
     "resignAdmin": "Resign as Admin",
@@ -199,21 +201,6 @@
     "leaveGroup": "Leave Group",
     "deleteGroup": "Delete Group",
     "backToDashboard": "Back to Dashboard",
-    "gameSessionOverviewComingSoon": "Game Session Overview coming soon.",
-    "profile": {
-      "loading": "Loading profile...",
-      "loadFailed": "Could not load profile.",
-      "noPlayers": "No players in this group.",
-      "inGameSession": "In Game Session",
-      "currentlyOffline": "Currently Offline",
-      "expiresIn": "expires in {time}",
-      "since": "since {time}",
-      "justNow": "just now",
-      "minutesAgo": "{count, plural, one {# min ago} other {# mins ago}}",
-      "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
-      "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
-      "zeroMins": "0 mins"
-    },
     "sendInviteModal": {
       "title": "Send Invitation",
       "invitationLabel": "Invitation",
@@ -223,12 +210,10 @@
       "failedPrefix": "Sending invitation failed:"
     },
     "promote": {
-      "title": "Promote to Admin",
-      "selectMembers": "Select members to promote.",
+      "confirmTitle": "Promote {name}?",
+      "confirmMessage": "Promote {name} to admin of {groupName}?",
       "promoteButton": "Promote",
-      "noSelection": "No members were selected for promotion to admin.",
-      "successOne": "{name} was promoted to an admin in group {groupName}.",
-      "successMany": "{names} were promoted to admins in group {groupName}.",
+      "success": "{name} was promoted to an admin in group {groupName}.",
       "failed": "Something went wrong. Please try again."
     },
     "resign": {
@@ -246,8 +231,6 @@
       "failed": "Something went wrong. Please try again."
     },
     "expel": {
-      "title": "Expel Member",
-      "selectMember": "Select a member to expel.",
       "expelButton": "Expel",
       "confirmTitle": "Are you sure?",
       "confirmMessage": "This will expel {memberName} from {groupName}. This cannot be undone.",

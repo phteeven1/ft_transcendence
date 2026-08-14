@@ -1,65 +1,49 @@
 'use client';
 
-/*
-creates button Delete Player and confirmation modal. states are:
-- isOpen, controls confirmation modal
-- isActive, derived from selectedPlayer, is null or not, used to enable/disable button
-*/
-
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
-import { Button } from '../../components/ui/button';
 import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
-  selectedPlayer: Player | null;
+  player: Player | null;
+  open: boolean;
+  onClose: () => void;
   onDeleted: (playerId: number) => void;
 };
 
-export default function DeletePlayer({ selectedPlayer, onDeleted }: Props) {
+export default function DeletePlayer({
+  player,
+  open,
+  onClose,
+  onDeleted,
+}: Props) {
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
-  const [isOpen, setIsOpen] = useState(false);
-
-  const isActive = selectedPlayer !== null;
 
   const handleDelete = async () => {
-    if (!selectedPlayer) return;
+    if (!player) return;
     try {
-      await playersApi.remove(selectedPlayer.id);
-      onDeleted(selectedPlayer.id);
-      setIsOpen(false);
+      await playersApi.remove(player.id);
+      onDeleted(player.id);
+      onClose();
     } catch (error) {
       console.error('deletePlayer failed:', error);
     }
   };
 
-  return (
-    <>
-      <Button
-        variant="destructive"
-        fullWidth
-        className="clay-action-btn"
-        onClick={() => isActive && setIsOpen(true)}
-        disabled={!isActive}
-      >
-        {t('deletePlayer')}
-      </Button>
+  if (!player) return null;
 
-      {selectedPlayer && (
-        <Dialog
-          open={isOpen}
-          onClose={() => setIsOpen(false)}
-          title={t('delete.title', { name: selectedPlayer.name })}
-          confirmLabel={tCommon('delete')}
-          confirmVariant="destructive"
-          onConfirm={handleDelete}
-        >
-          <p>{t('delete.confirmMessage')}</p>
-        </Dialog>
-      )}
-    </>
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={t('delete.title', { name: player.name })}
+      confirmLabel={tCommon('delete')}
+      confirmVariant="destructive"
+      onConfirm={handleDelete}
+    >
+      <p>{t('delete.confirmMessage')}</p>
+    </Dialog>
   );
 }

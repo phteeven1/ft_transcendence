@@ -5,7 +5,11 @@ import { useAuth } from '../../context/auth-context';
 import { invitationsApi, ApiError } from '@/lib/api';
 import { Button, Dialog, Input } from '../../components/ui';
 
-export default function SendInvite() {
+type Props = {
+  compact?: boolean;
+};
+
+export default function SendInvite({ compact = false }: Props) {
   const t = useTranslations('group');
   const tInvitation = useTranslations('invitation');
   const tCommon = useTranslations('common');
@@ -65,8 +69,9 @@ export default function SendInvite() {
       <Button
         onClick={handleOpen}
         variant="accent"
-        fullWidth
-        className="clay-action-btn"
+        size={compact ? 'sm' : 'md'}
+        fullWidth={!compact}
+        className={compact ? '' : 'clay-action-btn'}
       >
         {t('sendInvite')}
       </Button>
@@ -99,7 +104,9 @@ export default function SendInvite() {
                 onClick={handleSend}
                 disabled={inviteStatus === 'sending' || !inviteEmail}
               >
-                {inviteStatus === 'sending' ? tCommon('sendingEllipsis') : tCommon('submit')}
+                {inviteStatus === 'sending'
+                  ? tCommon('sendingEllipsis')
+                  : tCommon('submit')}
               </Button>
             </div>
           }

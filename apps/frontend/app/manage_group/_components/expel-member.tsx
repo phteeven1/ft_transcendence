@@ -1,54 +1,56 @@
 'use client';
 
-// Expel Member button drives a three step modal flow.
-// 1. showModal: Shows all group members - admins greyed out - and allows user to select.
-//    'Expel' button stays disabled until a selection is made. Clicking 'Expel' closes modal.
-// 2. showConfirm: Asks user to confirm expelling the selected members.
-//    'Back' returns to showModal, 'Expel' calls handleConfirmExpel, which POSTs to /groups/expel
-//    with id's of group and selected members. On success, it calls syncAndRefresh to update.
-// 3. showResult: shows either successful result or error message. 'OK' button to close.
-
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Member } from '../../types';
-import { Button, Dialog } from '../../components/ui';
+import { Dialog } from '../../components/ui';
 
 type Props = {
-  currentGroupMembers: Member[];
+  member: Member | null;
+  open: boolean;
+  onClose: () => void;
   syncAndRefresh: () => Promise<void>;
 };
 
 export default function ExpelMember({
-  currentGroupMembers,
+  member,
+  open,
+  onClose,
   syncAndRefresh,
 }: Props) {
   const t = useTranslations('group');
   const tCommon = useTranslations('common');
   const { group, user } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
 
   if (!group || !user) return null;
 
-  const nonAdmins = currentGroupMembers.filter((m) => !m.isAdmin);
-  const admins = currentGroupMembers.filter((m) => m.isAdmin);
-
-  const selectedMember =
-    currentGroupMembers.find((m) => m.id === selectedId) ?? null;
-
-  const handleOpen = () => {
-    setSelectedId(null);
-    setShowModal(true);
-  };
-
-  const handleClose = () => {
-    setShowModal(false);
-    setSelectedId(null);
+  const handleConfirmExpel = async () => {
+    if (!member) return;
+    try {
+      await groupsApi.expel({
+        groupId: group.id,
+        userId: member.id,
+        authorId: user.id,
+      });
+      await syncAndRefresh();
+      onClose();
+      setResultMessage(
+        t('expel.success', {
+          memberName: member.name,
+          groupName: group.name,
+        }),
+      );
+      setShowResult(true);
+    } catch (error) {
+      console.error('Expel failed:', error);
+      onClose();
+      setResultMessage(t('expel.failed'));
+      setShowResult(true);
+    }
   };
 
   const handleCloseResult = () => {
@@ -56,134 +58,30 @@ export default function ExpelMember({
     setResultMessage('');
   };
 
-  const handleSelect = (memberId: number) => {
-    setSelectedId((prev) => (prev === memberId ? null : memberId));
-  };
-
-  const handleExpelClick = () => {
-    if (!selectedId) return;
-    setShowModal(false);
-    setShowConfirm(true);
-  };
-
-  const handleConfirmExpel = async () => {
-    if (!selectedId || !selectedMember) return;
-    try {
-      await groupsApi.expel({ groupId: group.id, userId: selectedId, authorId: user.id });
-      await syncAndRefresh();
-      setShowConfirm(false);
-      setSelectedId(null);
-      setResultMessage(
-        t('expel.success', {
-          memberName: selectedMember.name,
-          groupName: group.name,
-        }),
-      );
-      setShowResult(true);
-    } catch (error) {
-      console.error('Expel failed:', error);
-      setShowConfirm(false);
-      setResultMessage(t('expel.failed'));
-      setShowResult(true);
-    }
-  };
-
   return (
     <>
-      <Button
-        onClick={handleOpen}
-        variant="accent"
-        fullWidth
-        className="clay-action-btn"
-      >
-        {t('expelMember')}
-      </Button>
-
-      <Dialog
-        open={showModal}
-        onClose={handleClose}
-        title={t('expel.title')}
-        scrollable
-        footer={
-          <div className="flex gap-3 justify-end shrink-0 border-t border-border pt-4">
-            <Button variant="ghost" onClick={handleClose}>
-              {tCommon('cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleExpelClick}
-              disabled={!selectedId}
-            >
-              {t('expel.expelButton')}
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-muted-foreground mb-4">
-          {t('expel.selectMember')}
-        </p>
-        <ul>
-          {admins.map((member) => (
-            <li
-              key={member.id}
-              className="flex items-center justify-between py-2 border-b border-border"
-            >
-              <span className="text-muted-foreground">{member.name}</span>
-              <span className="text-xs text-muted-foreground">{tCommon('admin')}</span>
-            </li>
-          ))}
-          {nonAdmins.map((member) => {
-            const isSelected = selectedId === member.id;
-            return (
-              <li key={member.id} className="py-0.5">
-                <button
-                  type="button"
-                  onClick={() => handleSelect(member.id)}
-                  className={
-                    isSelected
-                      ? 'clay-list-btn clay-list-btn-active rounded-lg'
-                      : 'clay-list-btn rounded-lg'
-                  }
-                >
-                  <span className="text-foreground">{member.name}</span>
-                  <input
-                    type="radio"
-                    checked={isSelected}
-                    onChange={() => {}}
-                    readOnly
-                    className="w-4 h-4 accent-destructive pointer-events-none"
-                  />
-                </button>
-              </li>
-            );
+      {member && (
+        <Dialog
+          open={open}
+          onClose={onClose}
+          title={t('expel.confirmTitle')}
+          confirmLabel={t('expel.expelButton')}
+          onConfirm={handleConfirmExpel}
+          confirmVariant="destructive"
+        >
+          {t('expel.confirmMessage', {
+            memberName: member.name,
+            groupName: group.name,
           })}
-        </ul>
-      </Dialog>
-
-      <Dialog
-        open={showConfirm && !!selectedMember}
-        onClose={() => {
-          setShowConfirm(false);
-          setShowModal(true);
-        }}
-        title={t('expel.confirmTitle')}
-        cancelLabel={tCommon('back')}
-        confirmLabel={t('expel.expelButton')}
-        onConfirm={handleConfirmExpel}
-        confirmVariant="destructive"
-        cancelVariant="ghost"
-      >
-        {t('expel.confirmMessage', {
-          memberName: selectedMember?.name ?? '',
-          groupName: group.name,
-        })}
-      </Dialog>
+        </Dialog>
+      )}
 
       <Dialog
         open={showResult}
         onClose={handleCloseResult}
         onConfirm={handleCloseResult}
         showCancel={false}
+        confirmLabel={tCommon('ok')}
       >
         {resultMessage}
       </Dialog>

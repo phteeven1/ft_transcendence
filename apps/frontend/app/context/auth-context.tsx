@@ -31,15 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [player, setPlayer] = useState<Player | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
 
-  const setSessionExpiry = (expiresAt: number) => {
-    setSessionExpiresAt(expiresAt);
-  };
+  const setSessionExpiry = useCallback((expiresAt: number) => {
+    setSessionExpiresAt((prev) => (prev === expiresAt ? prev : expiresAt));
+  }, []);
 
-  const loginAsPlayer = (playerData: Player) => {
+  const loginAsPlayer = useCallback((playerData: Player) => {
     setUser(null);
     setGroup(null);
     setPlayer(playerData);
-  };
+  }, []);
 
   const logoutPlayer = useCallback(() => {
     clearPlayerSession();

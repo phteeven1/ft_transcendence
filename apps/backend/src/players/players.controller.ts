@@ -63,17 +63,7 @@ export class PlayersController {
 
   @Post('clearSession')
   clearSession(@Body() body: { playerId: number }) {
-    return this.playersService.clearSession(body.playerId);
-  }
-
-  @Get(':id/activeSession')
-  getActiveSession(@Param('id') id: string) {
-    return this.playersService.getActiveSession(Number(id));
-  }
-
-  @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.playersService.findById(Number(id));
+    return this.playersService.clearSession(Number(body.playerId));
   }
 
   @Get('parent/:userId/group/:groupId')
@@ -90,5 +80,15 @@ export class PlayersController {
   @Get('group/:groupId')
   findByGroup(@Param('groupId') groupId: string) {
     return this.playersService.findByGroup(Number(groupId));
+  }
+
+  @Get(':id/activeSession')
+  getActiveSession(@Param('id') id: string) {
+    return this.playersService.getActiveSession(Number(id));
+  }
+
+  @Get(':id')
+  findById(@Param('id') id: string) {
+    return this.playersService.findById(Number(id));
   }
 }

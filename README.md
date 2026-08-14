@@ -8,8 +8,6 @@ Day-to-day development: [DEV.md](./DEV.md). Agent rules: [AGENTS.md](./AGENTS.md
 
 ---
 
-
-
 ## Table of contents
 
 - [Description](#description)
@@ -29,8 +27,6 @@ Day-to-day development: [DEV.md](./DEV.md). Agent rules: [AGENTS.md](./AGENTS.md
 
 ---
 
-
-
 ## Description
 
 Turn shared vocabulary homework into live, group-based word games that parents can supervise.
@@ -42,11 +38,7 @@ There are two kinds of account:
 
 ---
 
-
-
 ## Instructions
-
-
 
 ### Prerequisites
 
@@ -74,8 +66,6 @@ Stop the Node apps with `Ctrl+C` (Postgres keeps running). Stop everything:
 npm run dev:stop
 ```
 
-
-
 ### Full Docker stack
 
 ```bash
@@ -93,15 +83,11 @@ npm run db:migrate:deploy   # apply migrations (CI / prod)
 npm run db:studio           # Prisma Studio GUI
 ```
 
-
-
 ### CI
 
 GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build and test → frontend lint and build.
 
 ---
-
-
 
 ## Features
 
@@ -112,7 +98,7 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Dashboard              | Group list, profile settings                    | `app/dashboard`                                   |
 | Groups                 | Create, join, leave, admin roles                | `app/create_group`, `app/manage_group`            |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
-| Players                | Child CRUD, passphrase, Play Now                | `app/manage_players`, `players.service.ts`        |
+| Players                | Child CRUD, passphrase, Play Now                | `app/manage_group` (Players tab), `players.service.ts` |
 | Vocabulary             | CRUD, set active list for games                 | `app/manage_vocabulary`                           |
 | AI import              | GPT-4o vision + PDF extract                     | `extraction.service.ts`, `import-vocabulary.tsx`  |
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
@@ -126,8 +112,6 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 XP, avatars, and a lobby leaderboard live under `progression/` and are claimed as gamification plus game statistics (see Modules below).
 
 ---
-
-
 
 ## Modules (eval)
 
@@ -147,7 +131,7 @@ XP, avatars, and a lobby leaderboard live under `progression/` and are claimed a
 | Complete web-based game       | Major (Gaming)        | 2   | Word Building crossword                | `word-building.service.ts`, `word-building-puzzle-engine.ts` |
 | Remote players                | Major (Gaming)        | 2   | Live board sync over WebSockets        | `game.gateway.ts`, `use-game-socket.ts`                      |
 | Multiplayer 3+                | Major (Gaming)        | 2   | Several `GamePlayer` rows per game     | `games.service.ts`, `select_game/page.tsx`                   |
-| Add another game              | Major (Gaming)        | 2   | Word Soup + lobby join pending         | `word_soup/`, `word-soup.service.ts`, `select_game/page.tsx`  |
+| Add another game              | Major (Gaming)        | 2   | Word Soup + lobby join pending         | `word_soup/`, `word-soup.service.ts`, `select_game/page.tsx` |
 | Gamification                  | Minor (Gaming)        | 1   | XP, avatar tiers, leaderboard          | `progression/`, lobby `ProgressionPanel`                     |
 
 
@@ -165,8 +149,6 @@ Gaming:  Game (2) + Remote (2) + Multiplayer 3+ (2) + Another game (2)
 Not claimed: SSR, LLM streaming UI, friends system, standard user management (no JWT, no online status). File upload exists in the product (vocab import) but is **not claimed** — import is not a file-management system. Game statistics history shows date, score, and win; it does not list opponent names.
 
 ---
-
-
 
 ## Eval demo
 
@@ -188,27 +170,23 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 
 ---
 
-
-
 ## Technical stack
 
 
-| Layer     | Technology                                       | Role                                  |
-| --------- | ------------------------------------------------ | ------------------------------------- |
-| Frontend  | Next.js 16, React 19, TypeScript, Tailwind CSS 4 | UI, App Router                        |
-| Backend   | NestJS 11, TypeScript                            | REST API, WebSocket gateway           |
-| Database  | PostgreSQL 16, Prisma 7                          | Persistence, migrations, typed client |
-| Real-time | Socket.IO                                        | Lobby, grid, scores, cell locks       |
+| Layer       | Technology                                       | Role                                  |
+| ----------- | ------------------------------------------------ | ------------------------------------- |
+| Frontend    | Next.js 16, React 19, TypeScript, Tailwind CSS 4 | UI, App Router                        |
+| Backend     | NestJS 11, TypeScript                            | REST API, WebSocket gateway           |
+| Database    | PostgreSQL 16, Prisma 7                          | Persistence, migrations, typed client |
+| Real-time   | Socket.IO                                        | Lobby, grid, scores, cell locks       |
 | AI / import | OpenAI GPT-4o, pdf-parse                         | Vocabulary extraction                 |
-| Mail      | Nodemailer + Gmail SMTP                          | Group invitations                     |
-| Infra     | Docker Compose, GitHub Actions                   | Local stack and CI                    |
+| Mail        | Nodemailer + Gmail SMTP                          | Group invitations                     |
+| Infra       | Docker Compose, GitHub Actions                   | Local stack and CI                    |
 
 
 Parent auth is React context, not JWT.
 
 ---
-
-
 
 ## Database schema
 
@@ -228,8 +206,6 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ---
 
-
-
 ## Team information
 
 > **Update with 42 logins before evaluation.**
@@ -241,14 +217,12 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 | `kmooney`  | Project Manager | Meetings, deadlines, coordination, games   |
 | `smanthey` | Technical Lead  | Architecture, code review, stack decisions |
 | `avarghes` | Developer       | Games                                      |
-| `sgavrilo` | Developer       | Vocab-Import, UI                           |
+| `sgavrilo` | Developer       | Vocab-Import, Design System                |
 
 
 *Contributors in git history: Sergej Gavrilov, Steven Manthey, Kevin Mooney, Alvin Abraham Varghese, tsternbe, phteeven1.*
 
 ---
-
-
 
 ## Project management
 
@@ -260,13 +234,9 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ---
 
-
-
 ## Individual contributions
 
 > **Each member must fill in their section before evaluation.**
-
-
 
 ### `tsternbe` (Tobias Sternberg)
 
@@ -274,15 +244,11 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 - Modules:
 - Challenges overcome:
 
-
-
 ### `kmooney` (Kevin Mooney)
 
 - Features:
 - Modules:
 - Challenges overcome:
-
-
 
 ### `smanthey` (Steven Manthey)
 
@@ -290,15 +256,11 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 - Modules:
 - Challenges overcome:
 
-
-
 ### `avarghes` (Alvin Abraham Varghese)
 
 - Features:
 - Modules:
 - Challenges overcome:
-
-
 
 ### `sgavrilo` (Sergej Gavrilov)
 
@@ -308,26 +270,22 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ---
 
-
-
 ## Resources and AI usage
 
 - [Next.js](https://nextjs.org/docs), [NestJS](https://docs.nestjs.com), [Prisma](https://www.prisma.io/docs), [Socket.IO](https://socket.io/docs/v4/)
 - [OpenAI API](https://platform.openai.com/docs)
 
 
-| Task                                | Tool                    | Where                                   |
-| ----------------------------------- | ----------------------- | --------------------------------------- |
-| Vocabulary extraction from photos/PDFs | OpenAI GPT-4o        | `extraction.service.ts`                 |
-| Development assistance              | Cursor / Copilot        | Review, debugging, documentation drafts |
-| Puzzle / game logic design          | Team + AI brainstorming | Word Building engine                    |
+| Task                                   | Tool                    | Where                                   |
+| -------------------------------------- | ----------------------- | --------------------------------------- |
+| Vocabulary extraction from photos/PDFs | OpenAI GPT-4o           | `extraction.service.ts`                 |
+| Development assistance                 | Cursor / Copilot        | Review, debugging, documentation drafts |
+| Puzzle / game logic design             | Team + AI brainstorming | Word Building engine                    |
 
 
 All AI-generated code was reviewed, tested, and understood by the team before merge.
 
 ---
-
-
 
 ## Known limitations
 
@@ -337,8 +295,6 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ---
 
-
-
 ## Legal and credits
 
 - Privacy Policy: `/privacy`
@@ -346,8 +302,6 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 - Flag icons: [flagicons.lipis.dev](https://flagicons.lipis.dev/), MIT license
 
 ---
-
-
 
 ## Project structure
 
