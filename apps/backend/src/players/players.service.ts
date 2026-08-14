@@ -14,8 +14,6 @@ export type Player = {
   inGroup: number;
   ofUser: number;
   name: string;
-  passQuestion: string;
-  passAnswer: string;
   currentGameId: number | null;
   lastSignout: string;
   sessionExpiresAt: string | null;
@@ -47,51 +45,23 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
   }
 
-  async create(
-    inGroup: number,
-    ofUser: number,
-    name: string,
-    passQuestion: string,
-    passAnswer: string,
-  ): Promise<Omit<Player, 'passAnswer'>> {
+  async create(inGroup: number, ofUser: number, name: string): Promise<Player> {
     const player = await this.prisma.player.create({
       data: {
         inGroupId: inGroup,
         ofUserId: ofUser,
         name,
-        passQuestion,
-        passAnswer,
       },
       ...playerWithSession,
     });
     return toSafePlayer(player);
   }
 
-  async rename(
-    playerId: number,
-    name: string,
-  ): Promise<Omit<Player, 'passAnswer'> | undefined> {
+  async rename(playerId: number, name: string): Promise<Player | undefined> {
     try {
       const player = await this.prisma.player.update({
         where: { id: playerId },
         data: { name },
-        ...playerWithSession,
-      });
-      return toSafePlayer(player);
-    } catch {
-      return undefined;
-    }
-  }
-
-  async updatePassPhrase(
-    playerId: number,
-    passQuestion: string,
-    passAnswer: string,
-  ): Promise<Omit<Player, 'passAnswer'> | undefined> {
-    try {
-      const player = await this.prisma.player.update({
-        where: { id: playerId },
-        data: { passQuestion, passAnswer },
         ...playerWithSession,
       });
       return toSafePlayer(player);
@@ -170,9 +140,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     await this.prisma.player.deleteMany({ where: { inGroupId: inGroup } });
   }
 
-  async findById(
-    playerId: number,
-  ): Promise<Omit<Player, 'passAnswer'> | undefined> {
+  async findById(playerId: number): Promise<Player | undefined> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
       ...playerWithSession,
@@ -183,7 +151,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   async findByParentInGroup(
     ofUser: number,
     inGroup: number,
-  ): Promise<Omit<Player, 'passAnswer'>[]> {
+  ): Promise<Player[]> {
     const players = await this.prisma.player.findMany({
       where: { ofUserId: ofUser, inGroupId: inGroup },
       ...playerWithSession,
@@ -191,7 +159,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     return players.map((p) => toSafePlayer(p));
   }
 
-  async findByGroup(inGroup: number): Promise<Omit<Player, 'passAnswer'>[]> {
+  async findByGroup(inGroup: number): Promise<Player[]> {
     const players = await this.prisma.player.findMany({
       where: { inGroupId: inGroup },
       ...playerWithSession,

@@ -20,13 +20,11 @@ export default function CreatePlayer({ onCreated }: Props) {
   const { user, group } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [playerName, setPlayerName] = useState('');
-  const [passQuestion, setPassQuestion] = useState('');
-  const [passAnswer, setPassAnswer] = useState('');
   const [error, setError] = useState('');
 
   const handleCreate = async () => {
     if (!user || !group) return;
-    if (!playerName.trim() || !passQuestion.trim() || !passAnswer.trim()) {
+    if (!playerName.trim()) {
       setError(t('create.allFieldsRequired'));
       return;
     }
@@ -35,8 +33,6 @@ export default function CreatePlayer({ onCreated }: Props) {
         playerInGroup: group.id,
         playerParent: user.id,
         playerName: playerName.trim(),
-        playerPassQuestion: passQuestion.trim(),
-        playerPassAnswer: passAnswer.trim(),
       });
       onCreated(created);
       handleClose();
@@ -49,15 +45,10 @@ export default function CreatePlayer({ onCreated }: Props) {
   const handleClose = () => {
     setIsOpen(false);
     setPlayerName('');
-    setPassQuestion('');
-    setPassAnswer('');
     setError('');
   };
 
-  const canCreate =
-    playerName.trim() !== '' &&
-    passQuestion.trim() !== '' &&
-    passAnswer.trim() !== '';
+  const canCreate = playerName.trim() !== '';
 
   return (
     <>
@@ -81,22 +72,6 @@ export default function CreatePlayer({ onCreated }: Props) {
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             placeholder={t('create.playerNamePlaceholder')}
-            autoComplete="new-password"
-          />
-          <Input
-            label={t('create.secretQuestionLabel')}
-            type="text"
-            value={passQuestion}
-            onChange={(e) => setPassQuestion(e.target.value)}
-            placeholder={t('create.secretQuestionPlaceholder')}
-            autoComplete="new-password"
-          />
-          <Input
-            label={t('create.answerLabel')}
-            type="text"
-            value={passAnswer}
-            onChange={(e) => setPassAnswer(e.target.value)}
-            placeholder={t('create.answerPlaceholder')}
             autoComplete="new-password"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}

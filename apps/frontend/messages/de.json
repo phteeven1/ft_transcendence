@@ -23,8 +23,6 @@
     "resign": "Zurücktreten",
     "expel": "Entfernen",
     "invite": "Einladen",
-    "passphrase": "PassPhrase",
-    "endSession": "Beenden",
     "stay": "Bleiben",
     "skip": "Überspringen",
     "next": "Weiter",
@@ -263,22 +261,12 @@
       "title": "Spielerprofil erstellen",
       "playerNameLabel": "Spielername",
       "playerNamePlaceholder": "z. B. Adam",
-      "secretQuestionLabel": "Geheime Frage",
-      "secretQuestionPlaceholder": "z. B. Wie heißt dein Hund?",
-      "answerLabel": "Antwort",
-      "answerPlaceholder": "z. B. Rex",
       "allFieldsRequired": "Alle Felder sind erforderlich.",
       "failed": "Spieler konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
     },
     "rename": {
       "title": "{name} umbenennen",
       "placeholder": "Neuer Name"
-    },
-    "editPassphrase": {
-      "title": "PassPhrase für {name} bearbeiten",
-      "secretQuestionLabel": "Geheime Frage",
-      "answerLabel": "Antwort",
-      "answerPlaceholder": "Neue Antwort"
     },
     "delete": {
       "title": "{name} löschen?",
@@ -287,18 +275,12 @@
     "invite": {
       "title": "{name} zum Spielen einladen",
       "playNow": "Jetzt spielen",
-      "activeSessionWarning": "{name} hat bereits eine aktive Spielsitzung. Bitte beenden Sie sie zuerst mit der Schaltfläche „Spielsitzung beenden“.",
+      "activeSessionWarning": "{name} hat bereits eine aktive Spielsitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
       "sessionDurationTitle": "Wie lange darf {name} spielen?",
       "minutesLabel": "Minuten",
       "minutesPlaceholder": "Minuten eingeben",
-      "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Beenden Sie sie zuerst.",
+      "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
       "startFailed": "Sitzung konnte nicht gestartet werden. Bitte versuchen Sie es erneut."
-    },
-    "endSession": {
-      "title": "Spielsitzung beenden",
-      "confirmMessage": "Sind Sie sicher, dass Sie die aktuelle Spielsitzung von {name} beenden möchten? Die Person wird sofort abgemeldet.",
-      "endSessionButton": "Sitzung beenden",
-      "failed": "Sitzung konnte nicht beendet werden. Bitte versuchen Sie es erneut."
     }
   },
   "vocabulary": {
@@ -609,7 +591,7 @@
           "playerProfiles": {
             "title": "2.2 Spielerprofile (Kinder)",
             "items": [
-              "Spieler-Anzeigename und optionale Passphrase für den Sitzungszugang",
+              "Spieler-Anzeigename",
               "Gruppenzugehörigkeit, Spielteilnahme und Punkte während aktiver Sitzungen",
               "Spielersitzungen verwenden kurzlebige Token, die in der Browsersitzung gespeichert werden, bis die Sitzung endet oder abläuft"
             ]
@@ -735,7 +717,7 @@
             },
             {
               "label": "Spieler (Kinder):",
-              "text": "Dürfen Spielerprofile nutzen, die unter einem Nutzerkonto erstellt wurden. Spieler greifen über Sitzungslinks oder Passphrasen zu, die von einem Elternteil oder Gruppenadmin bereitgestellt werden."
+              "text": "Dürfen Spielerprofile nutzen, die unter einem Nutzerkonto erstellt wurden. Spieler greifen über „Jetzt spielen“-Sitzungen zu, die von einem Elternteil gestartet werden."
             },
             {
               "label": "Gruppen:",
@@ -786,7 +768,7 @@
           "title": "7. Spiele und Mehrspieler-Funktionen",
           "paragraphs": [
             "Mehrspieler-Spiele basieren auf Echtzeitverbindungen. Wir garantieren keine ununterbrochene Verfügbarkeit. Punkte und Spielergebnisse werden zur Anzeige innerhalb Ihrer Gruppensitzung gespeichert. Spielregeln sind in der Anwendung definiert; Streitigkeiten zwischen Spielern sollten von Eltern oder Gruppenadmins gelöst werden.",
-            "„Jetzt spielen“-Spielersitzungen sind zeitlich begrenzt. Eltern sind dafür verantwortlich, Sitzungen zu beenden und das Online-Spielen zu beaufsichtigen."
+            "„Jetzt spielen“-Spielersitzungen sind zeitlich begrenzt. Eltern sind dafür verantwortlich, das Online-Spielen zu beaufsichtigen."
           ]
         },
         "thirdPartyServices": {
@@ -845,10 +827,9 @@
     "registrationUsernameTaken": "Registrierung fehlgeschlagen. Der Benutzername ist möglicherweise bereits vergeben.",
     "createGroupFailed": "Gruppe konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
     "createPlayerFailed": "Spieler konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
-    "endSessionFailed": "Sitzung konnte nicht beendet werden. Bitte versuchen Sie es erneut.",
     "startSessionFailed": "Sitzung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
-    "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Beenden Sie sie zuerst.",
-    "activePlaySessionExists": "{name} hat bereits eine aktive Spielsitzung. Bitte beenden Sie sie zuerst mit der Schaltfläche „Spielsitzung beenden“.",
+    "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
+    "activePlaySessionExists": "{name} hat bereits eine aktive Spielsitzung. Sie endet, wenn der Timer abläuft oder die Person das Spiel verlässt.",
     "invitationSendFailed": "Einladung senden fehlgeschlagen: {error}",
     "vocabularyMinimumWords": "Eine Vokabelliste muss mindestens 5 Wörter enthalten.",
     "vocabularyExtractionFailed": "KI-Extraktion fehlgeschlagen. Bitte stellen Sie sicher, dass die Datei mindestens 5 Wörter enthält, und versuchen Sie es erneut.",

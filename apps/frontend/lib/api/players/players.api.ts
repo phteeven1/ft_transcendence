@@ -5,7 +5,6 @@ import type {
   PlayerSessionDto,
   RenamePlayerInput,
   StartSessionInput,
-  UpdatePassPhraseInput,
   ValidateSessionInput,
   ValidateSessionResult,
 } from './types';
@@ -34,13 +33,6 @@ export const playersApi = {
 
   rename(input: RenamePlayerInput): Promise<PlayerDto> {
     return apiRequest<PlayerDto>('/players/rename', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
-  },
-
-  updatePassPhrase(input: UpdatePassPhraseInput): Promise<PlayerDto> {
-    return apiRequest<PlayerDto>('/players/updatePassPhrase', {
       method: 'POST',
       body: JSON.stringify(input),
     });

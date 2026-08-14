@@ -11,18 +11,19 @@ import GroupsPanel, { GroupAction } from './_components/groups-panel';
 import PeoplePanel, {
   PeopleTab,
   PlayerAction,
+  VocabularyAction,
+  MemberAction,
 } from './_components/people-panel';
 import RenameGroup from './_components/rename-group';
 import LeaveGroup from './_components/leave-group';
 import DeleteGroup from './_components/delete-group';
-import PromoteToAdmin from './_components/promote-to-admin';
-import ResignAdmin from './_components/resign-admin';
-import ExpelMember from './_components/expel-member';
+import MemberDialog from './_components/member-dialog';
 import RenamePlayer from './_components/rename-player';
-import EditPassphrase from './_components/edit-passphrase';
 import DeletePlayer from './_components/delete-player';
 import InviteToPlay from './_components/invite-to-play';
-import EndGameSession from './_components/end-game-session';
+import RenameVocabulary from './_components/rename-vocabulary';
+import EditVocabulary from './_components/edit-vocabulary';
+import DeleteVocabulary from './_components/delete-vocabulary';
 import { TEST_VOCABULARY } from './_components/test-vocabulary';
 
 function isPeopleTab(value: string | null): value is PeopleTab {
@@ -56,18 +57,23 @@ function Dashboard() {
     isPeopleTab(requestedTab) ? requestedTab : 'members',
   );
 
-  const [promoteMember, setPromoteMember] = useState<Member | null>(null);
-  const [expelMember, setExpelMember] = useState<Member | null>(null);
-  const [resignOpen, setResignOpen] = useState(false);
+  const [actionMember, setActionMember] = useState<Member | null>(null);
+  const [memberDialog, setMemberDialog] = useState<MemberAction | null>(null);
 
   const [activePlayer, setActivePlayer] = useState<Player | null>(null);
   const [playerDialog, setPlayerDialog] = useState<PlayerAction | null>(null);
 
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
+  const [actionVocabulary, setActionVocabulary] = useState<Vocabulary | null>(
+    null,
+  );
+  const [vocabDialog, setVocabDialog] = useState<VocabularyAction | null>(null);
   const [isVocabLoading, setIsVocabLoading] = useState(false);
 
   const selectedGroupId = group?.id;
   const userId = user?.id;
+  const restoreGroupId = user?.currentGroup;
+  const hasGroup = Boolean(group);
   const isAdminOfSelected = Boolean(
     userId && group && group.admins.includes(userId),
   );
@@ -172,22 +178,19 @@ function Dashboard() {
       router.push('/');
       return;
     }
-    queueMicrotask(() => {
-      void loadDashboard();
-    });
+    void loadDashboard();
   }, [userId, player, router, loadDashboard]);
 
   useEffect(() => {
-    if (player || !user || group || !user.currentGroup) return;
-    const restoreGroupId = user.currentGroup;
+    if (player || !userId || hasGroup || !restoreGroupId) return;
     void (async () => {
       const synced = await syncGroup(restoreGroupId);
       if (!synced) return;
       const isMember =
-        synced.members.includes(user.id) || synced.admins.includes(user.id);
+        synced.members.includes(userId) || synced.admins.includes(userId);
       if (!isMember) leaveGroup();
     })();
-  }, [user, group, player, syncGroup, leaveGroup]);
+  }, [userId, restoreGroupId, hasGroup, player, syncGroup, leaveGroup]);
 
   useEffect(() => {
     if (!selectedGroupId) {
@@ -252,6 +255,16 @@ function Dashboard() {
     }
   };
 
+  const closeMemberDialog = () => {
+    setMemberDialog(null);
+    setActionMember(null);
+  };
+
+  const handleMemberAction = (action: MemberAction, member?: Member) => {
+    setActionMember(member ?? null);
+    setMemberDialog(action);
+  };
+
   const closePlayerDialog = () => {
     setPlayerDialog(null);
     setActivePlayer(null);
@@ -292,8 +305,14 @@ function Dashboard() {
     }
   };
 
-  const handleSelectVocabulary = (vocabulary: Vocabulary) => {
-    void activateVocabulary(vocabulary);
+  const closeVocabDialog = () => {
+    setVocabDialog(null);
+    setActionVocabulary(null);
+  };
+
+  const handleVocabAction = (action: VocabularyAction, target: Vocabulary) => {
+    setActionVocabulary(target);
+    setVocabDialog(action);
   };
 
   const handleVocabularyImported = (vocabulary: Vocabulary) => {
@@ -301,7 +320,7 @@ function Dashboard() {
     void activateVocabulary(vocabulary);
   };
 
-  const handleVocabularyRenamed = (updated: Vocabulary) => {
+  const handleVocabularyUpdated = (updated: Vocabulary) => {
     setVocabularies((prev) =>
       prev.map((v) => (v.id === updated.id ? updated : v)),
     );
@@ -312,12 +331,6 @@ function Dashboard() {
     if (group && vocabularyId === group.currentVocabulary) {
       void syncGroup(group.id);
     }
-  };
-
-  const handleVocabularyEdited = (updated: Vocabulary) => {
-    setVocabularies((prev) =>
-      prev.map((v) => (v.id === updated.id ? updated : v)),
-    );
   };
 
   if (!user || player) return null;
@@ -361,19 +374,15 @@ function Dashboard() {
                 hasActiveVocabulary={!!group.currentVocabulary}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                onPromote={setPromoteMember}
-                onExpel={setExpelMember}
-                onResign={() => setResignOpen(true)}
+                onMemberAction={handleMemberAction}
                 onPlayerAction={handlePlayerAction}
                 onPlayerCreated={handlePlayerCreated}
                 vocabularies={vocabularies}
                 currentVocabulary={group.currentVocabulary}
                 isVocabLoading={isVocabLoading}
-                onSelectVocabulary={handleSelectVocabulary}
+                onSelectVocabulary={activateVocabulary}
                 onVocabularyImported={handleVocabularyImported}
-                onVocabularyRenamed={handleVocabularyRenamed}
-                onVocabularyEdited={handleVocabularyEdited}
-                onVocabularyDeleted={handleVocabularyDeleted}
+                onVocabAction={handleVocabAction}
               />
             </>
           ) : (
@@ -404,21 +413,11 @@ function Dashboard() {
         onClose={closeGroupDialog}
         onDone={loadDashboard}
       />
-      <PromoteToAdmin
-        member={promoteMember}
-        open={promoteMember !== null}
-        onClose={() => setPromoteMember(null)}
-        syncAndRefresh={syncAndRefresh}
-      />
-      <ExpelMember
-        member={expelMember}
-        open={expelMember !== null}
-        onClose={() => setExpelMember(null)}
-        syncAndRefresh={syncAndRefresh}
-      />
-      <ResignAdmin
-        open={resignOpen}
-        onClose={() => setResignOpen(false)}
+      <MemberDialog
+        action={memberDialog}
+        member={actionMember}
+        open={memberDialog !== null}
+        onClose={closeMemberDialog}
         syncAndRefresh={syncAndRefresh}
       />
       <RenamePlayer
@@ -426,12 +425,6 @@ function Dashboard() {
         open={playerDialog === 'rename'}
         onClose={closePlayerDialog}
         onRenamed={handlePlayerUpdated}
-      />
-      <EditPassphrase
-        player={activePlayer}
-        open={playerDialog === 'passphrase'}
-        onClose={closePlayerDialog}
-        onUpdated={handlePlayerUpdated}
       />
       <DeletePlayer
         player={activePlayer}
@@ -444,11 +437,23 @@ function Dashboard() {
         open={playerDialog === 'invite'}
         onClose={closePlayerDialog}
       />
-      <EndGameSession
-        player={activePlayer}
-        open={playerDialog === 'endSession'}
-        onClose={closePlayerDialog}
-        onCleared={handlePlayerUpdated}
+      <RenameVocabulary
+        vocabulary={actionVocabulary}
+        open={vocabDialog === 'rename'}
+        onClose={closeVocabDialog}
+        onRenamed={handleVocabularyUpdated}
+      />
+      <EditVocabulary
+        vocabulary={actionVocabulary}
+        open={vocabDialog === 'edit'}
+        onClose={closeVocabDialog}
+        onEdited={handleVocabularyUpdated}
+      />
+      <DeleteVocabulary
+        vocabulary={actionVocabulary}
+        open={vocabDialog === 'delete'}
+        onClose={closeVocabDialog}
+        onDeleted={handleVocabularyDeleted}
       />
     </PageShell>
   );
