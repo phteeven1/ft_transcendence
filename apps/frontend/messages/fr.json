@@ -51,6 +51,8 @@
     "signedInAs": "Connecté en tant que",
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
+    "profileMenu": "Menu du compte",
+    "leaveSession": "Quitter la session",
     "register": "S'inscrire",
     "selectLanguage": "Choisir la langue",
     "footerTagline": "© {year} Dicteé — jeux de vocabulaire pour les enfants",

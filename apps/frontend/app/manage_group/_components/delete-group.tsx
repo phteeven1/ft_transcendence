@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { Button, Dialog } from '../../components/ui';
+import { Button, Dialog, Icon } from '../../components/ui';
 
 export default function DeleteGroup() {
   const t = useTranslations('group');
@@ -50,6 +50,7 @@ export default function DeleteGroup() {
         fullWidth
         className="clay-action-btn"
       >
+        <Icon name="trash" size={18} />
         {t('deleteGroup')}
       </Button>
 

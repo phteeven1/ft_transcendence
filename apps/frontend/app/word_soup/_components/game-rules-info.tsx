@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Icon } from '@/app/components/ui';
 
 const HOW_TO_PLAY_KEYS = ['howToPlay1', 'howToPlay2', 'howToPlay3'] as const;
 const RULES_KEYS = ['rules1', 'rules2', 'rules3', 'rules4', 'rules5'] as const;
@@ -27,20 +28,7 @@ export default function GameRulesInfo() {
         aria-label={open ? t('hide') : t('show')}
         title={t('title')}
       >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 16v-5" />
-          <path d="M12 8h.01" />
-        </svg>
+        <Icon name="info" size={20} />
       </button>
 
       {open && (

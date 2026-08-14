@@ -10,7 +10,7 @@ type Options = {
 
 /**
  * On tab close, clears the Play Now session so the parent can start a new one.
- * In-app Exit Games should call markIntentionalExit so this does not double-fire.
+ * In-app Leave session should call markIntentionalExit so this does not double-fire.
  */
 export function usePlayerSessionExitGuard({ enabled, playerId }: Options) {
   const intentionalExitRef = useRef(false);

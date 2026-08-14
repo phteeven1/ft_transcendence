@@ -6,6 +6,7 @@ import { vocabulariesApi } from '@/lib/api';
 import { Vocabulary } from '../../types';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import { Icon } from '../../components/ui';
 
 type Props = {
   onImported: (vocabulary: Vocabulary) => void;
@@ -101,8 +102,8 @@ export default function ImportVocabulary({ onImported }: Props) {
         disabled={!selectedFile || isExtracting}
       >
         {isExtracting ? (
-          <span className="flex items-center justify-center">
-            <svg className="animate-spin h-5 w-5 mr-3 border-2 border-current border-t-transparent rounded-full" viewBox="0 0 24 24"></svg>
+          <span className="flex items-center justify-center gap-2">
+            <Icon name="spinner" size={20} className="animate-spin" />
             {t('aiReading')}
           </span>
         ) : t('extractAndSave')}

@@ -25,6 +25,7 @@ import DeleteVocabulary from './_components/delete-vocabulary';
 import UseInGames from './_components/use-in-games';
 import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
+import { Icon } from '../components/ui';
 
 export default function ManageVocabulary() {
   const t = useTranslations('vocabulary');
@@ -160,6 +161,7 @@ export default function ManageVocabulary() {
             className="clay-action-btn"
             onClick={() => router.push('/manage_group')}
           >
+            <Icon name="arrow-left" size={18} />
             {t('backToGroup')}
           </Button>
         </div>

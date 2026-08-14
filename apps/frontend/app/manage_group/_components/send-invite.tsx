@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { invitationsApi, ApiError } from '@/lib/api';
-import { Button, Dialog, Input } from '../../components/ui';
+import { Button, Dialog, Input, Icon } from '../../components/ui';
 
 type Props = {
   compact?: boolean;
@@ -73,6 +73,7 @@ export default function SendInvite({ compact = false }: Props) {
         fullWidth={!compact}
         className={compact ? '' : 'clay-action-btn'}
       >
+        <Icon name="envelope" size={compact ? 16 : 18} />
         {t('sendInvite')}
       </Button>
 

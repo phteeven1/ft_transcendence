@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Member, Player } from '../../types';
-import { Panel, Tab, TabPanel, Tabs } from '../../components/ui';
+import { Panel, Tab, TabPanel, Tabs, Icon } from '../../components/ui';
 import RowMenu, { RowMenuItem } from './row-menu';
 import SendInvite from './send-invite';
 import CreatePlayer from '../../manage_players/_components/create-player';
@@ -99,6 +99,7 @@ export default function PeoplePanel({
         {
           id: 'resign',
           label: t('resignAdmin'),
+          icon: 'sign-out',
           onSelect: onResign,
         },
       ];
@@ -110,11 +111,13 @@ export default function PeoplePanel({
       {
         id: 'promote',
         label: t('promoteToAdmin'),
+        icon: 'crown',
         onSelect: () => onPromote(member),
       },
       {
         id: 'expel',
         label: t('expelMember'),
+        icon: 'trash',
         onSelect: () => onExpel(member),
         destructive: true,
       },
@@ -131,28 +134,33 @@ export default function PeoplePanel({
       {
         id: 'invite',
         label: tPlayers('inviteToPlay'),
+        icon: 'play',
         onSelect: () => onPlayerAction('invite', player),
         disabled: !hasActiveVocabulary,
       },
       {
         id: 'endSession',
         label: tPlayers('endGameSession'),
+        icon: 'stop',
         onSelect: () => onPlayerAction('endSession', player),
         disabled: !hasSession,
       },
       {
         id: 'rename',
         label: tPlayers('renamePlayer'),
+        icon: 'pencil',
         onSelect: () => onPlayerAction('rename', player),
       },
       {
         id: 'passphrase',
         label: tPlayers('editPassphraseButton'),
+        icon: 'key',
         onSelect: () => onPlayerAction('passphrase', player),
       },
       {
         id: 'delete',
         label: tPlayers('deletePlayer'),
+        icon: 'trash',
         onSelect: () => onPlayerAction('delete', player),
         destructive: true,
       },
@@ -168,7 +176,9 @@ export default function PeoplePanel({
             panelId="members-panel"
             active={activeTab === 'members'}
             onClick={() => onTabChange('members')}
+            className="inline-flex items-center gap-1.5"
           >
+            <Icon name="users" size={16} />
             {t('tabs.members')}
           </Tab>
           <Tab
@@ -176,7 +186,9 @@ export default function PeoplePanel({
             panelId="players-panel"
             active={activeTab === 'players'}
             onClick={() => onTabChange('players')}
+            className="inline-flex items-center gap-1.5"
           >
+            <Icon name="user" size={16} />
             {t('tabs.players')}
           </Tab>
         </Tabs>
