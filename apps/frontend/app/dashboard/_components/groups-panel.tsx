@@ -8,29 +8,26 @@ import RowMenu, { RowMenuItem } from './row-menu';
 import ListRow from './list-row';
 import NewListRow from './new-list-row';
 import CreateGroup from './create-group';
+import RenameGroup from './rename-group';
+import LeaveGroup from './leave-group';
+import DeleteGroup from './delete-group';
+import { useGroupsPanel } from '../_hooks/use-groups-panel';
 
-export type GroupAction = 'rename' | 'leave' | 'delete';
-
-type Props = {
-  groups: Group[];
-  selectedGroupId: number | undefined;
-  currentUserId: number;
-  onSelect: (groupId: number) => void;
-  onAction: (action: GroupAction, group: Group) => void;
-  onCreated: () => void;
-};
-
-export default function GroupsPanel({
-  groups,
-  selectedGroupId,
-  currentUserId,
-  onSelect,
-  onAction,
-  onCreated,
-}: Props) {
+export default function GroupsPanel() {
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const [createOpen, setCreateOpen] = useState(false);
+  const {
+    groups,
+    selectedGroupId,
+    currentUserId,
+    loadGroups,
+    selectGroup,
+    actionGroup,
+    groupDialog,
+    handleAction,
+    closeDialog,
+  } = useGroupsPanel();
 
   function groupMenuItems(group: Group): RowMenuItem[] {
     const isAdmin = group.admins.includes(currentUserId);
@@ -40,21 +37,21 @@ export default function GroupsPanel({
         id: 'rename',
         label: tCommon('rename'),
         icon: 'pencil',
-        onSelect: () => onAction('rename', group),
+        onSelect: () => handleAction('rename', group),
       });
     }
     items.push({
       id: 'leave',
       label: tCommon('leave'),
       icon: 'sign-out',
-      onSelect: () => onAction('leave', group),
+      onSelect: () => handleAction('leave', group),
     });
     if (isAdmin) {
       items.push({
         id: 'delete',
         label: tCommon('delete'),
         icon: 'trash',
-        onSelect: () => onAction('delete', group),
+        onSelect: () => handleAction('delete', group),
       });
     }
     return items;
@@ -71,7 +68,7 @@ export default function GroupsPanel({
           <ListRow
             key={group.id}
             active={group.id === selectedGroupId}
-            onSelect={() => onSelect(group.id)}
+            onSelect={() => void selectGroup(group.id)}
             menu={
               <RowMenu
                 labelledBy={group.name}
@@ -98,7 +95,25 @@ export default function GroupsPanel({
       <CreateGroup
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreated={onCreated}
+        onCreated={loadGroups}
+      />
+      <RenameGroup
+        group={actionGroup}
+        open={groupDialog === 'rename'}
+        onClose={closeDialog}
+        onDone={loadGroups}
+      />
+      <LeaveGroup
+        group={actionGroup}
+        open={groupDialog === 'leave'}
+        onClose={closeDialog}
+        onDone={loadGroups}
+      />
+      <DeleteGroup
+        group={actionGroup}
+        open={groupDialog === 'delete'}
+        onClose={closeDialog}
+        onDone={loadGroups}
       />
     </Panel>
   );

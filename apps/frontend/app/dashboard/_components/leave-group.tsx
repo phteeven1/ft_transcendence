@@ -1,13 +1,6 @@
 'use client';
 
-/* Leave-group confirmation flow, controlled by the parent `open` flag plus an
-  internal ModalState for the four stages:
-  1. confirmLeave: initial 'are you sure?'
-  2. onlyAdmin: blocks leaving, tells user to promote someone else first
-  3. confirmLastMember: warns that the group will be deleted if last member leaves
-  4. error: shown if backend call fails.
-*/
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
@@ -15,7 +8,6 @@ import { Group } from '../../types';
 import { Dialog } from '../../components/ui';
 
 type ModalState =
-  | 'none'
   | 'confirmLeave'
   | 'onlyAdmin'
   | 'confirmLastMember'
@@ -29,17 +21,32 @@ type Props = {
 };
 
 export default function LeaveGroup({ group, open, onClose, onDone }: Props) {
+  if (!open || !group) return null;
+  return (
+    <LeaveGroupFlow
+      key={group.id}
+      group={group}
+      onClose={onClose}
+      onDone={onDone}
+    />
+  );
+}
+
+function LeaveGroupFlow({
+  group,
+  onClose,
+  onDone,
+}: {
+  group: Group;
+  onClose: () => void;
+  onDone: () => Promise<void>;
+}) {
   const t = useTranslations('group');
   const tCommon = useTranslations('common');
   const { user, group: currentGroup, refreshUser, leaveGroup } = useAuth();
-  const [modal, setModal] = useState<ModalState>('none');
+  const [modal, setModal] = useState<ModalState>('confirmLeave');
 
-  useEffect(() => {
-    if (open) setModal('confirmLeave');
-    else setModal('none');
-  }, [open]);
-
-  if (!user || !group) return null;
+  if (!user) return null;
 
   const totalMembers = group.members.length + group.admins.length;
   const isOnlyAdmin =
@@ -47,7 +54,6 @@ export default function LeaveGroup({ group, open, onClose, onDone }: Props) {
   const isLastMember = totalMembers === 1;
 
   const handleClose = () => {
-    setModal('none');
     onClose();
   };
 

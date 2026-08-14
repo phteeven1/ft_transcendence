@@ -1,12 +1,5 @@
 'use client';
 
-/*
-  User settings dialogs:
-    - Username, real name, email, relationship comment + show-to-group toggles
-    - Change password (nested modal)
-  Confirm saves via POST /users/update then refreshes auth context.
-*/
-
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
