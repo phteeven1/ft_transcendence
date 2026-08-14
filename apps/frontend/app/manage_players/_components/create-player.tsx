@@ -1,12 +1,5 @@
 'use client';
 
-/*
-opens modal form, using the following states:
-- isOpen controls whether the modal is visible
-- playerName, passQuestion, passAnswer, controlled inputs, one per field
-- error, holds validation or server error to display
-*/
-
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
@@ -18,9 +11,10 @@ import { Input } from '../../components/ui/input';
 
 type Props = {
   onCreated: (player: Player) => void;
+  compact?: boolean;
 };
 
-export default function CreatePlayer({ onCreated }: Props) {
+export default function CreatePlayer({ onCreated, compact = false }: Props) {
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
   const { user, group } = useAuth();
@@ -69,8 +63,9 @@ export default function CreatePlayer({ onCreated }: Props) {
     <>
       <Button
         variant="primary"
-        fullWidth
-        className="clay-action-btn"
+        size={compact ? 'sm' : 'md'}
+        fullWidth={!compact}
+        className={compact ? '' : 'clay-action-btn'}
         onClick={() => setIsOpen(true)}
       >
         {t('createPlayer')}

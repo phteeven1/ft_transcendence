@@ -28,6 +28,10 @@ export const playersApi = {
     );
   },
 
+  findByGroup(groupId: number): Promise<PlayerDto[]> {
+    return apiRequest<PlayerDto[]>(`/players/group/${groupId}`);
+  },
+
   rename(input: RenamePlayerInput): Promise<PlayerDto> {
     return apiRequest<PlayerDto>('/players/rename', {
       method: 'POST',

@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
+import { useGameExitGuard } from '../../hooks/use-game-exit-guard';
 import {
   clearPlayerSession,
   getPlayerSession,
@@ -58,6 +59,11 @@ export default function WordBuildingGame() {
 
   const gameId   = Number(searchParams.get('gameId'));
   const playerId = Number(searchParams.get('playerId'));
+  const { markIntentionalExit } = useGameExitGuard({
+    enabled: Number.isFinite(gameId) && Number.isFinite(playerId) && gameId > 0 && playerId > 0,
+    gameId,
+    playerId,
+  });
 
   // ── Grid state ──────────────────────────────────────────────────────────────
   const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(EMPTY_COURT);
@@ -90,6 +96,7 @@ export default function WordBuildingGame() {
   const prevSelectionRef = useRef<{ row: number; col: number } | null>(null);
   /** Up-to-date player name map for lock payloads — updated in sync with playerNames state. */
   const playerNamesRef = useRef<Map<number, string>>(new Map());
+  const hasLeftForLobbyRef = useRef(false);
   useEffect(() => { playerNamesRef.current = playerNames; }, [playerNames]);
 
   // ── Derive locks map from WS payload ────────────────────────────────────────
@@ -115,12 +122,16 @@ export default function WordBuildingGame() {
       router.push('/');
       return;
     }
+    if (hasLeftForLobbyRef.current) return;
 
     let cancelled = false;
 
     const redirectAfterEndedGame = async () => {
+      if (hasLeftForLobbyRef.current) return;
+      hasLeftForLobbyRef.current = true;
       const stored = getPlayerSession();
       if (stored && !isSessionExpired(stored.expiresAt)) {
+        markIntentionalExit();
         await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
         if (!cancelled) router.replace('/select_game');
         return;
@@ -181,7 +192,7 @@ export default function WordBuildingGame() {
     return () => {
       cancelled = true;
     };
-  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
+  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt, markIntentionalExit]);
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
     if (!gameState) return;
@@ -196,9 +207,14 @@ export default function WordBuildingGame() {
     // When the puzzle was solved, let players see the completed board before leaving.
     // When the game was force-ended by a parent (not solved), redirect immediately.
     const delay = solved ? 3000 : 0;
-    const t = setTimeout(() => router.push('/select_game'), delay);
+    const t = setTimeout(() => {
+      if (hasLeftForLobbyRef.current) return;
+      hasLeftForLobbyRef.current = true;
+      markIntentionalExit();
+      router.push('/select_game');
+    }, delay);
     return () => clearTimeout(t);
-  }, [gameFinished, router, solved]);
+  }, [gameFinished, router, solved, markIntentionalExit]);
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -433,6 +449,7 @@ export default function WordBuildingGame() {
    * This is the escape path when the child leaves the game intentionally.
    */
   const abandonPlay = async () => {
+    markIntentionalExit();
     setIsAbandoning(true);
     try {
       await gamesApi.abandonPlay({ gameId, playerId });

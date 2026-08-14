@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { gamesApi, wordSoupApi } from '@/lib/api';
@@ -47,9 +47,18 @@ function hasActivePlayerSession(): boolean {
   return Boolean(stored && !isSessionExpired(stored.expiresAt));
 }
 
-export function useWordSoupInit(gameId: number, playerId: number) {
+type UseWordSoupInitOptions = {
+  beforeLobbyNavigation?: () => void;
+};
+
+export function useWordSoupInit(
+  gameId: number,
+  playerId: number,
+  options: UseWordSoupInitOptions = {},
+) {
   const router = useRouter();
   const { loginAsPlayer, setSessionExpiresAt } = useAuth();
+  const beforeLobbyNavigation = options.beforeLobbyNavigation;
 
   const [loading, setLoading] = useState(true);
   const [courtReady, setCourtReady] = useState(false);
@@ -79,20 +88,26 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     setCourtInitError(null);
   }
 
+  const hasLeftForLobbyRef = useRef(false);
+
   const leaveFinishedGameForLobby = useCallback(async () => {
+    if (hasLeftForLobbyRef.current) return;
+    hasLeftForLobbyRef.current = true;
     if (hasActivePlayerSession()) {
+      beforeLobbyNavigation?.();
       await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
       router.replace('/select_game');
       return;
     }
     router.replace('/session_over');
-  }, [loginAsPlayer, router, setSessionExpiresAt]);
+  }, [beforeLobbyNavigation, loginAsPlayer, router, setSessionExpiresAt]);
 
   useEffect(() => {
     if (!gameId || !playerId) {
       router.push('/');
       return;
     }
+    if (hasLeftForLobbyRef.current) return;
 
     let isMounted = true;
 
@@ -100,12 +115,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
       const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
       if (!loadedGame) {
         // Game gone (e.g. cleaned up after finish) — return to lobby if session is live.
-        if (hasActivePlayerSession()) {
-          await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
-          if (isMounted) router.replace('/select_game');
-          return;
-        }
-        if (isMounted) router.replace('/session_over');
+        await leaveFinishedGameForLobby();
         return;
       }
 
@@ -130,17 +140,11 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     return () => {
       isMounted = false;
     };
-  }, [
-    gameId,
-    playerId,
-    router,
-    loginAsPlayer,
-    setSessionExpiresAt,
-    leaveFinishedGameForLobby,
-  ]);
+  }, [gameId, playerId, router, leaveFinishedGameForLobby]);
 
   useEffect(() => {
     if (!game) return;
+    if (hasLeftForLobbyRef.current) return;
 
     let isMounted = true;
 

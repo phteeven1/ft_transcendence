@@ -17,6 +17,7 @@ import type {
  } from '@/lib/api/games/word-soup/types';
 
 import { useAuth } from '../../context/auth-context';
+import { useGameExitGuard } from '../use-game-exit-guard';
 import { useWordSoupInit } from './use-word-soup-init';
 import { useWordSoupIntro } from './use-word-soup-intro';
 import { useWordSoupFreeze } from './use-word-soup-freeze';
@@ -55,6 +56,11 @@ type UseWordSoupGameArgs = {
 export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArgs) {
   const router = useRouter();
   const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
+  const { markIntentionalExit } = useGameExitGuard({
+    enabled: gameId > 0 && playerId > 0,
+    gameId,
+    playerId,
+  });
   const tGuess = useTranslations('games.wordSoup.guess');
   const tIntro = useTranslations('games.wordSoup.intro');
   const tOutro = useTranslations('games.wordSoup.outro');
@@ -130,7 +136,9 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     playStartedAt,
     isComplete: initIsComplete,
     initialFrozenPlayers,
-  } = useWordSoupInit(gameId, playerId);
+  } = useWordSoupInit(gameId, playerId, {
+    beforeLobbyNavigation: markIntentionalExit,
+  });
 
   const [manuallyFinished, setManuallyFinished] = useState(false);
   const [isFinishingGame, setIsFinishingGame] = useState(false);
@@ -494,11 +502,15 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   const [isAbandoning, setIsAbandoning] = useState(false);
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const hasNavigatedToLobbyRef = useRef(false);
 
   const navigateToLobby = useCallback(async () => {
+    if (hasNavigatedToLobbyRef.current) return;
+    hasNavigatedToLobbyRef.current = true;
+    markIntentionalExit();
     await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
     router.push('/select_game');
-  }, [loginAsPlayer, router, setSessionExpiresAt]);
+  }, [loginAsPlayer, markIntentionalExit, router, setSessionExpiresAt]);
 
   useEffect(() => {
     if (!serverState) return;
@@ -623,6 +635,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   }, [gameId, gameEnded, navigateToLobby, playerId]);
 
   const abandonPlay = useCallback(async () => {
+    markIntentionalExit();
     setIsAbandoning(true);
     try {
       await gamesApi.abandonPlay({ gameId, playerId });
@@ -634,7 +647,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       setShowAbandonModal(false);
       router.push('/session_over');
     }
-  }, [gameId, playerId, logoutPlayer, router]);
+  }, [gameId, playerId, logoutPlayer, router, markIntentionalExit]);
 
   return {
     game,
