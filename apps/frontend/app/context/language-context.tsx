@@ -5,11 +5,12 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useSyncExternalStore,
+  useState,
   ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { LOCALE_COOKIE, type LocaleCode } from '@/i18n/config';
+import { useAuth } from './auth-context';
 
 export type Language = {
   code: LocaleCode;
@@ -22,10 +23,12 @@ type LanguageContextType = {
   setSelected: (lang: Language) => void;
 };
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
-export const STORAGE_KEY = 'selectedLanguage';
-const CHANGE_EVENT = 'language-change';
+const LEGACY_KEY = 'selectedLanguage';
+const GUEST_KEY = 'selectedLanguage:guest';
 
 export const LANGUAGES: Language[] = [
   { code: 'en', label: 'English', flag: '/flags/gb.svg' },
@@ -39,8 +42,14 @@ const languagesByCode = Object.fromEntries(
   LANGUAGES.map((lang) => [lang.code, lang]),
 ) as Record<string, Language>;
 
-let cachedRaw: string | null | undefined;
-let cachedSnapshot: Language = DEFAULT_LANGUAGE;
+function identityStorageKey(
+  userId: number | null,
+  playerId: number | null,
+): string {
+  if (playerId != null) return `selectedLanguage:player:${playerId}`;
+  if (userId != null) return `selectedLanguage:user:${userId}`;
+  return GUEST_KEY;
+}
 
 function parseStoredLanguage(raw: string | null): Language {
   if (!raw) return DEFAULT_LANGUAGE;
@@ -52,49 +61,42 @@ function parseStoredLanguage(raw: string | null): Language {
   }
 }
 
-function getSnapshot(): Language {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw === cachedRaw) return cachedSnapshot;
-  cachedRaw = raw;
-  cachedSnapshot = parseStoredLanguage(raw);
-  return cachedSnapshot;
+function readLanguage(key: string): Language {
+  const stored = localStorage.getItem(key);
+  if (stored) return parseStoredLanguage(stored);
+  return parseStoredLanguage(localStorage.getItem(LEGACY_KEY));
 }
 
-function getServerSnapshot(): Language {
-  return DEFAULT_LANGUAGE;
-}
-
-function subscribe(onStoreChange: () => void) {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY) onStoreChange();
-  };
-  window.addEventListener('storage', onStorage);
-  window.addEventListener(CHANGE_EVENT, onStoreChange);
-  return () => {
-    window.removeEventListener('storage', onStorage);
-    window.removeEventListener(CHANGE_EVENT, onStoreChange);
-  };
+function writeCookie(code: LocaleCode): void {
+  document.cookie = `${LOCALE_COOKIE}=${code};path=/;max-age=31536000;SameSite=Lax`;
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const selected = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
+  const { user, player } = useAuth();
+  const storageKey = identityStorageKey(user?.id ?? null, player?.id ?? null);
+  const [selected, setSelectedState] = useState<Language>(DEFAULT_LANGUAGE);
 
   useEffect(() => {
-    document.cookie = `${LOCALE_COOKIE}=${selected.code};path=/;max-age=31536000;SameSite=Lax`;
-  }, [selected.code]);
+    const lang = readLanguage(storageKey);
+    setSelectedState(lang);
+    writeCookie(lang.code);
+  }, [storageKey]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === storageKey) {
+        setSelectedState(readLanguage(storageKey));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [storageKey]);
 
   const setSelected = (lang: Language) => {
     const normalized = languagesByCode[lang.code] ?? DEFAULT_LANGUAGE;
-    const raw = JSON.stringify(normalized);
-    localStorage.setItem(STORAGE_KEY, raw);
-    document.cookie = `${LOCALE_COOKIE}=${normalized.code};path=/;max-age=31536000;SameSite=Lax`;
-    cachedRaw = raw;
-    cachedSnapshot = normalized;
-    window.dispatchEvent(new Event(CHANGE_EVENT));
+    localStorage.setItem(storageKey, JSON.stringify(normalized));
+    writeCookie(normalized.code);
+    setSelectedState(normalized);
   };
 
   return (
@@ -106,7 +108,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
   return context;
 }
 
