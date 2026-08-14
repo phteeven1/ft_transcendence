@@ -32,6 +32,7 @@ import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from './abandon-play-modal';
 import EndGameConfirmModal from '../../components/end-game-confirm-modal';
+import GameCompleteModal from './game-complete-modal';
 import TileRack from './tile-rack';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
@@ -77,11 +78,15 @@ export default function WordBuildingGame() {
   const [isAbandoning,     setIsAbandoning]     = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [isFinishingGame, setIsFinishingGame] = useState(false);
+  const [showGameCompleteModal, setShowGameCompleteModal] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [playerNames,      setPlayerNames]      = useState<Map<number, string>>(new Map());
   const [gameName,         setGameName]         = useState('');
   const [startedTime,      setStartedTime]      = useState<string | null>(null);
   const [loading,          setLoading]          = useState(true);
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
+  const [dragTargetRow, setDragTargetRow] = useState<number | null>(null);
+  const [dragTargetCol, setDragTargetCol] = useState<number | null>(null);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
   const { gameState, gameFinished, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock } = useGameSocket(gameId, playerId);
@@ -148,22 +153,11 @@ export default function WordBuildingGame() {
         setCluesAcross(data.clues.across);
         setCluesDown(data.clues.down);
 
-        // Extract unique letters from the puzzle vocabulary for the tile rack.
-        // Extract as-is from the solution (already normalized/uppercased by backend).
-        // This avoids issues like 'ß' → 'SS' expansion that breaks matching.
-        const lettersSet = new Set<string>();
-        for (const row of data.trueCourt) {
-          for (const cell of row) {
-            if (cell.char && cell.status !== 'none' && /\p{L}/u.test(cell.char)) {
-              lettersSet.add(cell.char);
-            }
-          }
-        }
-        // Sort using locale-aware comparison for correct ordering in any language
-        const sortedLetters = Array.from(lettersSet).sort((a, b) =>
-          a.localeCompare(b),
-        );
-        setAvailableLetters(sortedLetters);
+        // availableLetters is pre-computed by the backend from the solution grid.
+        // trueCourt.char is intentionally empty (solution hidden), so extracting
+        // letters from it would always yield nothing — use the backend value directly.
+        setAvailableLetters(data.availableLetters);
+
         setLoading(false);
       } catch {
         if (!cancelled) await redirectAfterEndedGame();
@@ -183,23 +177,30 @@ export default function WordBuildingGame() {
       cancelled = true;
     };
   }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
+
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
     if (!gameState) return;
     setVisibleCourt(gameState.visibleCourt);
     setScores(gameState.scores);
+    const wasSolved = solved;
     setSolved(gameState.solved);
-  }, [gameState]);
+    
+    // Show the game complete modal when the puzzle becomes solved
+    if (!wasSolved && gameState.solved) {
+      setShowGameCompleteModal(true);
+    }
+  }, [gameState, solved]);
 
   // ── React to game:finished WS event ───────────────────────────────────────
   useEffect(() => {
     if (!gameFinished) return;
-    // When the puzzle was solved, let players see the completed board before leaving.
     // When the game was force-ended by a parent (not solved), redirect immediately.
-    const delay = solved ? 3000 : 0;
-    const t = setTimeout(() => router.push('/select_game'), delay);
-    return () => clearTimeout(t);
-  }, [gameFinished, router, solved]);
+    // If solved, the modal handles the redirect timing.
+    if (!gameState?.solved) {
+      router.push('/select_game');
+    }
+  }, [gameFinished, gameState?.solved, router]);
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -429,6 +430,12 @@ export default function WordBuildingGame() {
     emitPlaceLetter({ gameId, playerId, row, col, letter });
   }, [solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
 
+  /** Tracks which cell the ant is hovering over so GameCourt can highlight it. */
+  const handleDragTarget = useCallback((row: number | null, col: number | null) => {
+    setDragTargetRow(row);
+    setDragTargetCol(col);
+  }, []);
+
   /**
    * Ends the active play session, clears the local session token, and redirects out.
    * This is the escape path when the child leaves the game intentionally.
@@ -445,6 +452,15 @@ export default function WordBuildingGame() {
       setShowAbandonModal(false);
       router.push('/session_over');
     }
+  };
+
+  /**
+   * Handles the "Return to Lobby" button in the game complete modal.
+   * Redirects to the game selection lobby.
+   */
+  const handleReturnToLobby = () => {
+    setIsRedirecting(true);
+    router.push('/select_game');
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -482,12 +498,13 @@ export default function WordBuildingGame() {
               selectedRow={selectedRow}
               selectedCol={selectedCol}
               onCellClick={handleCellClick}
-              onCellDrop={handleCellDrop}
               locks={locksMap}
               myPlayerId={playerId}
+              dragTargetRow={dragTargetRow}
+              dragTargetCol={dragTargetCol}
             />
             {/* Tile rack — drag language-specific tiles onto cells as an alternative to keyboard */}
-            <TileRack letters={availableLetters} disabled={solved} />
+            <TileRack letters={availableLetters} disabled={solved} onDrop={handleCellDrop} onDragTarget={handleDragTarget} />
           </main>
 
           {/* Info panel + controls — sticky on desktop, stacked on mobile */}
@@ -532,15 +549,14 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Puzzle-complete overlay — shown as soon as the board is solved */}
-      {solved && (
-        <div className="clay-modal-overlay fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="clay-modal text-center max-w-sm mx-4">
-            <p className="text-5xl mb-3">🎉</p>
-            <p className="font-heading text-2xl font-bold text-primary mb-2">{t('puzzleComplete')}</p>
-            <p className="text-sm text-muted-foreground">{t('returningToLobby')}</p>
-          </div>
-        </div>
+      {/* Game complete modal — shown when puzzle is successfully solved */}
+      {showGameCompleteModal && solved && (
+        <GameCompleteModal
+          scores={scores}
+          playerNames={playerNames}
+          onReturnToLobby={handleReturnToLobby}
+          isRedirecting={isRedirecting}
+        />
       )}
     </div>
   );

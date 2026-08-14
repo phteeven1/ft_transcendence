@@ -16,9 +16,9 @@
  * - Trimmed puzzles are centered within this fixed canvas
  *
  * Quality Guarantee:
- * - Generates puzzle, checks placement ratio (≥50% of vocabulary)
- * - Retries once with fresh seed if first attempt is too sparse
- * - Keeps better result (higher placement count)
+ * - Generates multiple puzzle candidates (each with fresh randomness)
+ * - Selects the densest puzzle (highest placement count)
+ * - Early exits if any candidate achieves ≥80% vocabulary placement
  *
  * State Flow:
  * 1. POST /initWordBuildingCourt: Generate puzzle → persist → return initial grid
@@ -80,17 +80,17 @@ export class WordBuildingService {
    * 1. Check for existing crossword in database (idempotent - returns cached if exists)
    * 2. Fetch game + group + active vocabulary
    * 3. Generate puzzle with quality guarantee:
-   *    - Run engine with seed
-   *    - If placement ratio < MIN_PLACEMENT_RATIO (50%), retry once with fresh seed
-   *    - Keep better result (higher placement count)
+   *    - Run engine multiple times (each with fresh randomness)
+   *    - Track the best result (highest word placement count)
+   *    - Early exit if any candidate achieves ≥80% placement ratio
    * 4. Pad trimmed puzzle to fixed 18×18 grid (centered)
    * 5. Persist to database: solution, playerGrid (all null), creditGrid (all null), clues
    * 6. Return initial courts + clues (without exposing solution letters)
    *
    * Quality Guarantee:
-   * - Ensures puzzles use ≥50% of vocabulary words
-   * - Prevents sparse/unsolvable puzzles from bad random seeds
-   * - Single retry balances quality with performance
+   * - Generates multiple puzzle candidates with different randomness
+   * - Prevents sparse/unsolvable puzzles by selecting the best candidate
+   * - Multiple candidates balance quality with performance
    *
    * @param gameId Game ID requiring crossword initialization.
    * @returns Initial grid state for frontend rendering.
@@ -486,7 +486,20 @@ export class WordBuildingService {
       })),
     };
 
-    return { trueCourt, visibleCourt, clues: sanitizedClues };
+    // Extract unique letters from the solution for the tile rack
+    const lettersSet = new Set<string>();
+    for (const row of solution) {
+      for (const cell of row) {
+        if (cell !== null && /\p{L}/u.test(cell)) {
+          lettersSet.add(cell);
+        }
+      }
+    }
+    const availableLetters = Array.from(lettersSet).sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    return { trueCourt, visibleCourt, availableLetters, clues: sanitizedClues };
   }
 
   /**
@@ -566,7 +579,20 @@ export class WordBuildingService {
       })),
     };
 
-    return { trueCourt, visibleCourt, clues: sanitizedClues };
+    // Extract unique letters from the solution for the tile rack
+    const lettersSet = new Set<string>();
+    for (const row of solution) {
+      for (const cell of row) {
+        if (cell !== null && /\p{L}/u.test(cell)) {
+          lettersSet.add(cell);
+        }
+      }
+    }
+    const availableLetters = Array.from(lettersSet).sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    return { trueCourt, visibleCourt, availableLetters, clues: sanitizedClues };
   }
 
   /**

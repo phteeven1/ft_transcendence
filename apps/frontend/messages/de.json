@@ -571,7 +571,14 @@
       "down": "Senkrecht",
       "puzzleSolved": "🎉 Rätsel gelöst!",
       "puzzleComplete": "Rätsel abgeschlossen!",
-      "returningToLobby": "Zurück zur Lobby…"
+      "returningToLobby": "Zurück zur Lobby…",
+      "gameComplete": {
+        "title": "Rätsel abgeschlossen!",
+        "subtitle": "Herzlichen Glückwunsch zum Lösen des Kreuzworträtsels!",
+        "finalScores": "Endergebnis",
+        "playAgain": "Nochmal spielen",
+        "returnToLobby": "Zurück zur Lobby"
+      }
     },
     "wordSoup": {
       "title": "Wortsuppe",

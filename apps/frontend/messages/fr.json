@@ -571,7 +571,14 @@
       "down": "Vertical",
       "puzzleSolved": "🎉 Puzzle résolu !",
       "puzzleComplete": "Puzzle terminé !",
-      "returningToLobby": "Retour au lobby…"
+      "returningToLobby": "Retour au lobby…",
+      "gameComplete": {
+        "title": "Puzzle terminé !",
+        "subtitle": "Félicitations pour avoir résolu les mots croisés !",
+        "finalScores": "Scores finaux",
+        "playAgain": "Rejouer",
+        "returnToLobby": "Retour au lobby"
+      }
     },
     "wordSoup": {
       "title": "Soupe de mots",

@@ -571,7 +571,14 @@
       "down": "Down",
       "puzzleSolved": "🎉 Puzzle solved!",
       "puzzleComplete": "Puzzle Complete!",
-      "returningToLobby": "Returning to lobby…"
+      "returningToLobby": "Returning to lobby…",
+      "gameComplete": {
+        "title": "Puzzle Complete!",
+        "subtitle": "Congratulations on solving the crossword!",
+        "finalScores": "Final Scores",
+        "playAgain": "Play Again",
+        "returnToLobby": "Return to Lobby"
+      }
     },
     "wordSoup": {
       "title": "Word Soup",

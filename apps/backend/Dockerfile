@@ -13,11 +13,11 @@ RUN cd packages/database && npm ci && npm run db:generate
 COPY packages/database ./packages/database
 
 COPY apps/backend/package.json apps/backend/package-lock.json apps/backend/.npmrc ./apps/backend/
-RUN cd apps/backend && npm ci
+RUN cd apps/backend && npm ci --ignore-scripts
 
 COPY apps/backend ./apps/backend
 
-RUN cd apps/backend && npm run build
+RUN cd apps/backend && npm run build && npm run generate:database
 
 # ---- Production ----
 FROM node:22-alpine AS runner

@@ -32,12 +32,12 @@ const STATUS_TEXT: Record<CellStatus, string> = {
 
 type CourtTileProps = {
   cell:          CourtCell;
+  row:           number;
+  col:           number;
   isSelected:    boolean;
+  isDragTarget?: boolean;
   onClick:       () => void;
-  /** Name of another player who has reserved this cell (shown as overlay). Absent for own lock. */
   lockedByName?: string;
-  /** Called when a letter tile from the rack is dropped onto this cell. */
-  onTileDrop?:   (letter: string) => void;
 };
 
 /**
@@ -52,29 +52,14 @@ type CourtTileProps = {
  * @param onTileDrop Callback invoked when a letter tile from the rack is dropped here.
  * @returns A responsive tile that fills its CSS Grid cell with a square aspect ratio.
  */
-export function CourtTile({ cell, isSelected, onClick, lockedByName, onTileDrop }: CourtTileProps) {
+export function CourtTile({ cell, row, col, isSelected, isDragTarget, onClick, lockedByName }: CourtTileProps) {
   if (cell.status === 'none') {
     return <div className="aspect-square bg-gray-900" />;
   }
 
-  const isDroppable = cell.status === 'empty' || cell.status === 'wrong';
-
-  const handleDragOver = (e: React.DragEvent) => {
-    if (isDroppable) e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    if (!isDroppable || !onTileDrop) return;
-    e.preventDefault();
-    const letter = e.dataTransfer.getData('text/plain');
-    if (letter) onTileDrop(letter);
-  };
-
   return (
     <div
       onClick={onClick}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
       className={[
         'relative aspect-square flex items-center justify-center overflow-hidden',
         'font-bold border cursor-pointer select-none',
@@ -82,8 +67,13 @@ export function CourtTile({ cell, isSelected, onClick, lockedByName, onTileDrop 
         STATUS_BG[cell.status],
         STATUS_TEXT[cell.status],
         isSelected ? 'ring-2 ring-yellow-400 ring-inset z-10' : '',
+        // Orange ring when the ant is hovering — only on cells that can accept a drop
+        isDragTarget && !isSelected && cell.status !== 'correct' ? 'ring-2 ring-orange-400 ring-inset z-10 brightness-110' : '',
         lockedByName ? 'ring-2 ring-purple-400 ring-inset' : '',
       ].join(' ')}
+      data-word-cell={true}
+      data-row={row}
+      data-col={col}
     >
       {/* Clue number — small, top-left */}
       {cell.clueNumber !== undefined && (
