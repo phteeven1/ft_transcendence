@@ -2,7 +2,6 @@
 
 //
 // Orchestrator for the Word Building crossword game.
-// Replaces the scaffold placeholder.
 //
 // Data flow:
 //   REST  POST /games/:id/initWordBuildingCourt → trueCourt + visibleCourt + clues
@@ -30,7 +29,7 @@ import GameCourt, { COURT_COLS, COURT_ROWS } from './game-court';
 import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
-import AbandonPlayModal from './abandon-play-modal';
+import AbandonPlayModal from '../../components/abandon-play-modal';
 import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import TileRack from './tile-rack';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';

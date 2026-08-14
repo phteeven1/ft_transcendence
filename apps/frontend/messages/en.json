@@ -356,8 +356,6 @@
     "invite": {
       "title": "Invite {name} to Play",
       "playNow": "Play Now",
-      "createPlayButton": "Create Play Button",
-      "sendInviteToPlay": "Send Invite to Play",
       "activeSessionWarning": "{name} already has an active play session. Please end it first using the End Game Session button.",
       "sessionDurationTitle": "How long can {name} play?",
       "minutesLabel": "Minutes",
@@ -386,7 +384,6 @@
     "useInGames": "Use in Games",
     "renameVocabulary": "Rename Vocabulary",
     "editVocabulary": "Edit Vocabulary",
-    "shareVocabulary": "Share Vocabulary",
     "deleteVocabulary": "Delete Vocabulary",
     "wordColumn": "Word",
     "meaningColumn": "Meaning",
@@ -531,9 +528,7 @@
       "scrambleInstruction": "Move the scrambled letters, to find the word meaning…",
       "success": "SUCCESS!",
       "false": "FALSE",
-      "meansWhatPrompt": "What best translates…",
-      "correctionTitle": "Correction Puzzle",
-      "correctionSubtitle": "Find and fix the misstake"
+      "meansWhatPrompt": "What best translates…"
     },
     "info": {
       "game": "Game",
@@ -661,10 +656,6 @@
       "messageWithName": "Great playing, {name}! Your session has ended.",
       "messageGeneric": "Your session has ended.",
       "askParent": "Ask a parent to start a new session when you want to play again."
-    },
-    "alreadyInGame": {
-      "title": "Already in a game",
-      "message": "You are already playing a game in another tab. Please go back to that tab to continue."
     }
   },
   "legal": {

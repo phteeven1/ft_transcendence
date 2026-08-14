@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { Button, Dialog, Modal } from '../../components/ui';
+import { Button, Dialog } from '../../components/ui';
 
 type ModalState =
   | 'none'
@@ -90,12 +90,14 @@ export default function LeaveGroup() {
         {t('leave.confirmMessage', { groupName: group.name })}
       </Dialog>
 
-      <Modal
+      <Dialog
         open={modal === 'onlyAdmin'}
         onClose={() => setModal('none')}
+        onConfirm={() => setModal('none')}
+        showCancel={false}
       >
         {t('leave.onlyAdminBlock')}
-      </Modal>
+      </Dialog>
 
       <Dialog
         open={modal === 'confirmLastMember'}
@@ -110,12 +112,14 @@ export default function LeaveGroup() {
         {t('leave.lastMemberMessage', { groupName: group.name })}
       </Dialog>
 
-      <Modal
+      <Dialog
         open={modal === 'error'}
         onClose={() => setModal('none')}
+        onConfirm={() => setModal('none')}
+        showCancel={false}
       >
         {t('leave.failed')}
-      </Modal>
+      </Dialog>
     </>
   );
 }

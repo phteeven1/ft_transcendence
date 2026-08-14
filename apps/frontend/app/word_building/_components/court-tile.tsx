@@ -1,7 +1,7 @@
 'use client';
 //
-// Extends the minimal scaffold CourtCell with status info for word building.
-// word_soup uses its own copy of court-tile.tsx with its own CourtCell — no conflict.
+// Word Building cell: letter plus correct/wrong/empty status.
+// Word Soup has its own court-tile.tsx.
 
 export type CellStatus = 'correct' | 'wrong' | 'empty' | 'none';
 

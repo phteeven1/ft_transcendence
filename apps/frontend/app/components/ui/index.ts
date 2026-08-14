@@ -4,8 +4,6 @@ export { Input } from './input';
 export type { InputProps } from './input';
 export { Card } from './card';
 export type { CardProps } from './card';
-export { Modal } from './modal';
-export type { ModalProps } from './modal';
 export { Dialog } from './dialog';
 export type { DialogProps } from './dialog';
 export { PageShell } from './page-shell';

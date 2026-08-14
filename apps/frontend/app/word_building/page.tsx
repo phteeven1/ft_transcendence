@@ -5,9 +5,7 @@ import { useTranslations } from 'next-intl';
 import WordBuildingPlaceholderClient from './_components/word-building-game';
 
 /**
- * Lightweight loading shell shown while the crossword scaffold client initializes.
- *
- * @returns A minimal loading screen that matches the game background.
+ * Loading shell shown while the crossword client initializes.
  */
 function WordBuildingLoading() {
   const t = useTranslations('common');
@@ -20,10 +18,7 @@ function WordBuildingLoading() {
 }
 
 /**
- * Suspense wrapper for the word-building scaffold route.
- * This lets the page defer client bootstrapping without showing a blank screen.
- *
- * @returns The playable word-building scaffold page.
+ * Word Building page. Defers the client game until hydration finishes.
  */
 export default function WordBuildingPage() {
   return (

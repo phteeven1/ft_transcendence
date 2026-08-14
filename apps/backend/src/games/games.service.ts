@@ -196,16 +196,6 @@ export class GamesService {
   }
 
   /**
-   * Returns every game visible to the application.
-   *
-   * @returns The full game list in API shape.
-   */
-  async findAll(): Promise<Game[]> {
-    const games = await this.prisma.game.findMany(gameWithPlayers);
-    return games.map(toApiGame);
-  }
-
-  /**
    * Returns the player roster for one game for scoreboard rendering.
    *
    * @param gameId Game whose players should be listed.

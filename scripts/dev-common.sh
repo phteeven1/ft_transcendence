@@ -21,28 +21,28 @@ dev_ensure_npm_deps() {
     return 0
   fi
 
-  echo "[dev] Installiere Abhaengigkeiten in $label (npm ci)..."
+  echo "[dev] Installing dependencies in $label (npm ci)..."
   if ! (cd "$dir" && npm ci); then
-    echo "[error] npm ci fehlgeschlagen in $label"
+    echo "[error] npm ci failed in $label"
     exit 1
   fi
 
   if [ ! -x "$dir/node_modules/.bin/$bin_name" ]; then
-    echo "[error] $bin_name nicht gefunden nach npm ci in $label"
+    echo "[error] $bin_name not found after npm ci in $label"
     exit 1
   fi
 }
 
 dev_warn_node_version() {
-  local expected_major="${1:-22}"
+  local expected_major="${1:-26}"
   if ! command -v node >/dev/null 2>&1; then
-    echo "[error] node ist nicht installiert."
+    echo "[error] node is not installed."
     exit 1
   fi
   local major
   major="$(node -p "process.versions.node.split('.')[0]")"
   if [ "$major" != "$expected_major" ]; then
-    echo "[warn] Node $major aktiv — CI nutzt Node $expected_major (nvm use $expected_major empfohlen)."
+    echo "[warn] Node $major is active — CI uses Node $expected_major (nvm use $expected_major recommended)."
   fi
 }
 
@@ -53,19 +53,19 @@ dev_stop_port() {
   local pids
 
   if ! command -v lsof >/dev/null 2>&1; then
-    echo "[warn] lsof nicht gefunden — kann $label nicht per Port beenden."
+    echo "[warn] lsof not found — cannot stop $label by port."
     return 0
   fi
 
   pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
   if [ -z "$pids" ]; then
     if [ "${DEV_STOP_QUIET:-false}" != true ]; then
-      echo "[stop] $label: nichts aktiv"
+      echo "[stop] $label: nothing listening"
     fi
     return 0
   fi
 
-  echo "[stop] $label (Port $port)..."
+  echo "[stop] $label (port $port)..."
   # shellcheck disable=SC2086
   kill -TERM $pids 2>/dev/null || true
   sleep 1
@@ -74,7 +74,7 @@ dev_stop_port() {
     # shellcheck disable=SC2086
     kill -KILL $pids 2>/dev/null || true
   fi
-  echo "[stop] $label: beendet"
+  echo "[stop] $label: stopped"
 }
 
 dev_stop_pid_file() {
@@ -93,8 +93,8 @@ dev_stop_pid_file() {
     return 0
   fi
 
-  echo "[stop] Prozess $name (PID $pid)..."
-  # Prozessgruppe beenden (Kindprozesse von npm/nest/next)
+  echo "[stop] Process $name (PID $pid)..."
+  # Stop the process group (child processes of npm/nest/next)
   local pgid
   pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ' || true)
   if [ -n "$pgid" ] && [ "$pgid" != "0" ]; then
@@ -121,24 +121,24 @@ dev_stop_docker_services() {
   local remove_volumes="${2:-false}"
 
   if ! command -v docker >/dev/null 2>&1; then
-    echo "[warn] docker nicht installiert."
+    echo "[warn] docker is not installed."
     return 0
   fi
 
   cd "$(dev_root_dir)"
 
   if [ "$down_all" = true ]; then
-    echo "[stop] Docker Compose: alle Services herunterfahren..."
+    echo "[stop] Docker Compose: stopping all services..."
     if [ "$remove_volumes" = true ]; then
       docker compose down -v --remove-orphans
-      echo "[stop] Container und Volumes entfernt."
+      echo "[stop] Containers and volumes removed."
     else
       docker compose down --remove-orphans
-      echo "[stop] Alle Container gestoppt."
+      echo "[stop] All containers stopped."
     fi
   else
-    echo "[stop] Docker: postgres + redis stoppen..."
-    docker compose stop postgres redis 2>/dev/null || true
-    echo "[stop] postgres/redis gestoppt (Frontend/Backend-Container unberührt)."
+    echo "[stop] Docker: stopping postgres..."
+    docker compose stop postgres 2>/dev/null || true
+    echo "[stop] postgres stopped (frontend/backend containers left running)."
   fi
 }

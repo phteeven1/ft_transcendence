@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   GAME_OVER_OVERLAY_GRACE_MS,
   SCORE_POPUP_MS,
-} from '@/app/word_soup_scaffold/_lib/word-soup-constants';
+} from '@/app/word_soup/_lib/word-soup-constants';
 import type { WordSoupEventBanner } from './use-word-soup-event-banner';
 import type { WordSoupFreezeNoticeDto } from '@/lib/api/games/word-soup/types';
 

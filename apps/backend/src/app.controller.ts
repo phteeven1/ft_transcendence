@@ -1,11 +1,9 @@
-import { Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  private counter = 0;
-
   constructor(private readonly appService: AppService) {}
 
   @Get('health')
@@ -15,16 +13,5 @@ export class AppController {
       res.status(HttpStatus.SERVICE_UNAVAILABLE);
     }
     return health;
-  }
-
-  @Get('counter')
-  getCounter(): number {
-    return this.counter;
-  }
-
-  @Post('counter')
-  incrementCounter(): number {
-    this.counter += 1;
-    return this.counter;
   }
 }

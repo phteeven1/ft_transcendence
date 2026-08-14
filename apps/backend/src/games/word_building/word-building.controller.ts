@@ -6,11 +6,10 @@ export class WordBuildingController {
   constructor(private readonly wordBuildingService: WordBuildingService) {}
 
   /**
-   * Builds the initial crossword payload for the scaffold route.
-   * The service creates the puzzle on first load and rehydrates persisted state on reconnect.
+   * Builds the initial crossword for this game (or restores persisted state).
    *
-   * @param id Route parameter carrying the game id.
-   * @returns The initial trueCourt, visibleCourt, and clue metadata.
+   * @param id Game id from the route.
+   * @returns trueCourt, visibleCourt, and clues.
    */
   @Post(':id/initWordBuildingCourt')
   initCourt(@Param('id') id: string) {

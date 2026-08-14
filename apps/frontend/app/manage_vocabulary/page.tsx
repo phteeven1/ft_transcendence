@@ -21,7 +21,6 @@ import ImportVocabulary from './_components/import-vocabulary';
 import { TEST_VOCABULARY } from './_components/test-vocabulary';
 import RenameVocabulary from './_components/rename-vocabulary';
 import EditVocabulary from './_components/edit-vocabulary';
-import ShareVocabulary from './_components/share-vocabulary';
 import DeleteVocabulary from './_components/delete-vocabulary';
 import UseInGames from './_components/use-in-games';
 import { PageShell } from '../components/ui/page-shell';
@@ -151,7 +150,6 @@ export default function ManageVocabulary() {
             selectedVocabulary={selectedVocabulary}
             onEdited={handleEdited}
           />
-          <ShareVocabulary />
           <DeleteVocabulary
             selectedVocabulary={selectedVocabulary}
             onDeleted={handleDeleted}

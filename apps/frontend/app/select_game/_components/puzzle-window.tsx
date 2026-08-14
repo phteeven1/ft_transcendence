@@ -14,10 +14,9 @@ import { vocabulariesApi } from '@/lib/api';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import ScramblePuzzle from '../_puzzles/scramble-puzzle';
 import MeansWhatPuzzle from '../_puzzles/means-what-puzzle';
-import CorrectionPuzzle from '../_puzzles/correction-puzzle';
 import { Button } from '../../components/ui/button';
 
-const PUZZLE_COUNT = 3;
+const PUZZLE_COUNT = 2;
 
 function randomPuzzleIndex(): number {
   return Math.floor(Math.random() * PUZZLE_COUNT);
@@ -97,7 +96,6 @@ export default function PuzzleWindow() {
     switch (puzzleIndex) {
       case 0: return <ScramblePuzzle key={key} {...props} />;
       case 1: return <MeansWhatPuzzle key={key} {...props} />;
-      case 2: return <CorrectionPuzzle key={key} {...props} />;
       default: return <ScramblePuzzle key={key} {...props} />;
     }
   };

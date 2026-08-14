@@ -30,8 +30,6 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/transcendence
-      JWT_SECRET: ci-test-secret
-      REDIS_URL: redis://localhost:6379
       MAIL_USER: ci@example.com
       MAIL_PASS: ci-password
       MAIL_FROM: ci@example.com

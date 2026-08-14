@@ -26,16 +26,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
 
     environment:
 
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/transcendence
-
-      REDIS_URL: redis://redis:6379
-
-      JWT_SECRET: supersecret
 
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
@@ -69,16 +63,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-
-  redis:
-
-    image: redis:7
-
-    restart: always
-
-    ports:
-      - "6379:6379"
 
 
 volumes:

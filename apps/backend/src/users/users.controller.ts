@@ -87,9 +87,4 @@ export class UsersController {
   findByName(@Param('name') name: string) {
     return this.usersService.findByName(name);
   }
-
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
 }

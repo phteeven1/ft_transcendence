@@ -356,8 +356,6 @@
     "invite": {
       "title": "Inviter {name} à jouer",
       "playNow": "Jouer maintenant",
-      "createPlayButton": "Créer un bouton de jeu",
-      "sendInviteToPlay": "Envoyer une invitation à jouer",
       "activeSessionWarning": "{name} a déjà une session de jeu active. Veuillez d'abord la terminer avec le bouton Terminer la session de jeu.",
       "sessionDurationTitle": "Combien de temps {name} peut-il/elle jouer ?",
       "minutesLabel": "Minutes",
@@ -386,7 +384,6 @@
     "useInGames": "Utiliser dans les jeux",
     "renameVocabulary": "Renommer le vocabulaire",
     "editVocabulary": "Modifier le vocabulaire",
-    "shareVocabulary": "Partager le vocabulaire",
     "deleteVocabulary": "Supprimer le vocabulaire",
     "wordColumn": "Mot",
     "meaningColumn": "Signification",
@@ -531,9 +528,7 @@
       "scrambleInstruction": "Déplace les lettres mélangées pour trouver la signification du mot…",
       "success": "SUCCÈS !",
       "false": "FAUX",
-      "meansWhatPrompt": "Quelle traduction correspond le mieux…",
-      "correctionTitle": "Puzzle de correction",
-      "correctionSubtitle": "Trouve et corrige l'erreur"
+      "meansWhatPrompt": "Quelle traduction correspond le mieux…"
     },
     "info": {
       "game": "Jeu",
@@ -661,10 +656,6 @@
       "messageWithName": "Bravo {name} ! Ta session est terminée.",
       "messageGeneric": "Ta session est terminée.",
       "askParent": "Demande à un parent de démarrer une nouvelle session quand tu voudras rejouer."
-    },
-    "alreadyInGame": {
-      "title": "Déjà dans un jeu",
-      "message": "Tu joues déjà dans un autre onglet. Retourne dans cet onglet pour continuer."
     }
   },
   "legal": {

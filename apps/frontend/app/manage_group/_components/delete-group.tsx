@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { Button, Dialog, Modal } from '../../components/ui';
+import { Button, Dialog } from '../../components/ui';
 
 export default function DeleteGroup() {
   const t = useTranslations('group');
@@ -66,9 +66,14 @@ export default function DeleteGroup() {
         {t('delete.confirmMessage')}
       </Dialog>
 
-      <Modal open={showResult} onClose={() => setShowResult(false)}>
+      <Dialog
+        open={showResult}
+        onClose={() => setShowResult(false)}
+        onConfirm={() => setShowResult(false)}
+        showCancel={false}
+      >
         {resultMessage}
-      </Modal>
+      </Dialog>
     </>
   );
 }

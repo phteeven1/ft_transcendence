@@ -7,7 +7,7 @@ import {
   MessageBody,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server, Socket, type DefaultEventsMap } from 'socket.io';
 import { GamesService, Game } from './games.service';
 import type { GameFinishOutcome } from '../progression/progression.types';
 import { WordBuildingService } from './word_building/word-building.service';
@@ -28,7 +28,12 @@ interface SocketData {
   gameId?: number;
 }
 
-type TypedSocket = Socket<any, any, any, SocketData>;
+type TypedSocket = Socket<
+  DefaultEventsMap,
+  DefaultEventsMap,
+  DefaultEventsMap,
+  SocketData
+>;
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GameGateway implements OnGatewayDisconnect, OnModuleInit {

@@ -8,10 +8,6 @@ export class AppService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
-
   async getHealth(): Promise<HealthResponse> {
     const database = await this.checkDatabase();
     const status = database.status === 'up' ? 'ok' : 'error';
