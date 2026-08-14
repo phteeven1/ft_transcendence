@@ -11,7 +11,7 @@ type Props = {
   onImported: (vocabulary: Vocabulary) => void;
 };
 
-const LANGUAGE_CODES = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja'] as const;
+const LANGUAGE_CODES = ['en', 'fr', 'de'] as const;
 
 export default function ImportVocabulary({ onImported }: Props) {
   const t = useTranslations('vocabulary');

@@ -407,13 +407,7 @@
     "languages": {
       "en": "Englisch",
       "fr": "Französisch",
-      "de": "Deutsch",
-      "es": "Spanisch",
-      "it": "Italienisch",
-      "pt": "Portugiesisch",
-      "ru": "Russisch",
-      "zh": "Chinesisch",
-      "ja": "Japanisch"
+      "de": "Deutsch"
     },
     "testListName": "Englisch - Deutsch Testliste"
   },
