@@ -40,20 +40,12 @@ export class UsersController {
     body: {
       userId: number;
       userName?: string;
-      realName?: string;
-      relationshipComment?: string;
-      showRealName: boolean;
-      showEmail: boolean;
-      showRelationshipComment: boolean;
+      showEmail?: boolean;
     },
   ) {
     return this.usersService.updateProfile(body.userId, {
       userName: body.userName,
-      realName: body.realName,
-      relationshipComment: body.relationshipComment,
-      showRealName: body.showRealName,
       showEmail: body.showEmail,
-      showRelationshipComment: body.showRelationshipComment,
     });
   }
 

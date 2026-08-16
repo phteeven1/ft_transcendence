@@ -108,9 +108,8 @@ export function useLobbyProgression({
           loading: false,
           error: null,
         }));
-      } catch (error) {
+      } catch {
         if (cancelled) return;
-        console.error('Failed to load lobby progression', error);
         setState((prev) => ({
           ...prev,
           loading: false,
@@ -159,8 +158,7 @@ export function useLobbyProgression({
           avatarAnimal: animal,
         });
         applyEquipResult(myProgression);
-      } catch (error) {
-        console.error('Failed to equip avatar animal', error);
+      } catch {
         setState((prev) => ({
           ...prev,
           equipping: false,

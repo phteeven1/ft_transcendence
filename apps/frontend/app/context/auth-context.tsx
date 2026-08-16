@@ -11,6 +11,14 @@ import {
 import { groupsApi, usersApi, type UserDto } from '@/lib/api';
 import type { GroupDto } from '@/lib/api/groups/types';
 import { clearPlayerSession } from '@/lib/player-session';
+import {
+  clearStoredGroupId,
+  clearStoredParentAuth,
+  getStoredGroupId,
+  getStoredUserId,
+  setStoredGroupId,
+  setStoredUserId,
+} from '@/lib/parent-session';
 import { Player } from '../types';
 
 type User = UserDto;
@@ -20,6 +28,7 @@ type AuthContextType = {
   user: User | null;
   group: Group | null;
   player: Player | null;
+  authReady: boolean;
   login: (userData: User) => void;
   logout: () => void;
   leaveGroup: () => void;
@@ -38,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [group, setGroup] = useState<Group | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const userRef = useRef<User | null>(null);
   useEffect(() => {
     userRef.current = user;
@@ -60,14 +70,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback((userData: User) => {
+    setStoredUserId(userData.id);
     setUser(userData);
   }, []);
 
   const leaveGroup = useCallback(() => {
+    clearStoredGroupId();
     setGroup(null);
   }, []);
 
   const logout = useCallback(() => {
+    clearStoredParentAuth();
     setUser(null);
     setGroup(null);
   }, []);
@@ -76,10 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (groupId: number): Promise<Group | null> => {
       try {
         const updatedGroup = await groupsApi.getById(groupId);
+        setStoredGroupId(groupId);
         setGroup(updatedGroup);
         return updatedGroup;
-      } catch (error) {
-        console.error('syncGroup failed:', error);
+      } catch {
         return null;
       }
     },
@@ -93,10 +106,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await usersApi.getById(current.id);
       setUser(data);
       return data;
-    } catch (error) {
-      console.error('refreshUser failed:', error);
+    } catch {
       return null;
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async () => {
+      const storedUserId = getStoredUserId();
+      if (!storedUserId) {
+        if (!cancelled) setAuthReady(true);
+        return;
+      }
+
+      try {
+        const data = await usersApi.getById(storedUserId);
+        if (cancelled) return;
+        setUser(data);
+
+        const storedGroupId = getStoredGroupId();
+        if (storedGroupId) {
+          const isMember =
+            data.isMemberOf.includes(storedGroupId) ||
+            data.isAdminOf.includes(storedGroupId);
+          if (isMember) {
+            try {
+              const restoredGroup = await groupsApi.getById(storedGroupId);
+              if (!cancelled) setGroup(restoredGroup);
+            } catch {
+              clearStoredGroupId();
+            }
+          } else {
+            clearStoredGroupId();
+          }
+        }
+      } catch {
+        clearStoredParentAuth();
+      } finally {
+        if (!cancelled) setAuthReady(true);
+      }
+    };
+
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -105,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         group,
         player,
+        authReady,
         login,
         logout,
         leaveGroup,

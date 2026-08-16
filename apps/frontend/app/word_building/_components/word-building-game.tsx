@@ -17,9 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
-import { useGameExitGuard } from '../../hooks/use-game-exit-guard';
 import {
-  clearPlayerSession,
   getPlayerSession,
   isSessionExpired,
 } from '@/lib/player-session';
@@ -31,7 +29,6 @@ import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from '../../components/abandon-play-modal';
-import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import TileRack from './tile-rack';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
@@ -54,16 +51,11 @@ export default function WordBuildingGame() {
   const t = useTranslations('games.wordBuilding');
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
+  const { loginAsPlayer, setSessionExpiresAt } = useAuth();
   useSessionGuard();
 
   const gameId   = Number(searchParams.get('gameId'));
   const playerId = Number(searchParams.get('playerId'));
-  const { markIntentionalExit } = useGameExitGuard({
-    enabled: Number.isFinite(gameId) && Number.isFinite(playerId) && gameId > 0 && playerId > 0,
-    gameId,
-    playerId,
-  });
 
   // ── Grid state ──────────────────────────────────────────────────────────────
   const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(EMPTY_COURT);
@@ -80,8 +72,6 @@ export default function WordBuildingGame() {
   // ── UI state ────────────────────────────────────────────────────────────────
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [isAbandoning,     setIsAbandoning]     = useState(false);
-  const [showGameOverModal, setShowGameOverModal] = useState(false);
-  const [isFinishingGame, setIsFinishingGame] = useState(false);
   const [playerNames,      setPlayerNames]      = useState<Map<number, string>>(new Map());
   const [gameName,         setGameName]         = useState('');
   const [startedTime,      setStartedTime]      = useState<string | null>(null);
@@ -89,7 +79,7 @@ export default function WordBuildingGame() {
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
-  const { gameState, gameFinished, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock } = useGameSocket(gameId, playerId);
+  const { gameState, gameFinished, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock, leftPlayers } = useGameSocket(gameId, playerId);
 
   // ── Refs for lock emissions (avoid stale closures) ──────────────────────────
   /** Tracks the cell currently held by this player so unlock can be emitted on navigation. */
@@ -131,7 +121,6 @@ export default function WordBuildingGame() {
       hasLeftForLobbyRef.current = true;
       const stored = getPlayerSession();
       if (stored && !isSessionExpired(stored.expiresAt)) {
-        markIntentionalExit();
         await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
         if (!cancelled) router.replace('/select_game');
         return;
@@ -192,7 +181,7 @@ export default function WordBuildingGame() {
     return () => {
       cancelled = true;
     };
-  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt, markIntentionalExit]);
+  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
     if (!gameState) return;
@@ -210,11 +199,10 @@ export default function WordBuildingGame() {
     const t = setTimeout(() => {
       if (hasLeftForLobbyRef.current) return;
       hasLeftForLobbyRef.current = true;
-      markIntentionalExit();
       router.push('/select_game');
     }, delay);
     return () => clearTimeout(t);
-  }, [gameFinished, router, solved, markIntentionalExit]);
+  }, [gameFinished, router, solved]);
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -411,26 +399,13 @@ export default function WordBuildingGame() {
     return () => el.removeEventListener('keydown', handleKeyDown);
   }, [selectedRow, selectedCol, solved, gameId, playerId, emitPlaceLetter, advanceSelection]);
 
-  /**
-   * Ends the game from the parent controls and lets the backend broadcast completion.
-   */
-  const handleGameOverClick = () => {
-    if (solved || gameFinished || isFinishingGame) return;
-    setShowGameOverModal(true);
-  };
-
-  const confirmGameOver = async () => {
-    if (solved || gameFinished || isFinishingGame) return;
-    setIsFinishingGame(true);
-    try {
-      await gamesApi.finish({ gameId });
-      setShowGameOverModal(false);
-    } catch (error) {
-      console.error('finish failed:', error);
-    } finally {
-      setIsFinishingGame(false);
-    }
-  };
+  const isLastRemaining = useMemo(() => {
+    if (playerNames.size === 0) return false;
+    const remaining = [...playerNames.keys()].filter(
+      (id) => id === playerId || !leftPlayers[id],
+    );
+    return remaining.length <= 1;
+  }, [leftPlayers, playerId, playerNames]);
 
   /**
    * Handles a letter tile drop from the tile rack onto a crossword cell.
@@ -445,21 +420,30 @@ export default function WordBuildingGame() {
   }, [solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
 
   /**
-   * Ends the active play session, clears the local session token, and redirects out.
-   * This is the escape path when the child leaves the game intentionally.
+   * Leaves this match and returns to the lobby. The play session stays active
+   * so the child can join or start another game; remaining players keep playing.
    */
-  const abandonPlay = async () => {
-    markIntentionalExit();
+  const leaveToLobby = async () => {
     setIsAbandoning(true);
     try {
-      await gamesApi.abandonPlay({ gameId, playerId });
+      if (isLastRemaining) {
+        await gamesApi.finish({ gameId });
+        setShowAbandonModal(false);
+        return;
+      }
+      await gamesApi.leave({ gameId, playerId });
+      hasLeftForLobbyRef.current = true;
+      const stored = getPlayerSession();
+      if (stored && !isSessionExpired(stored.expiresAt)) {
+        await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
+      }
+      setShowAbandonModal(false);
+      router.push('/select_game');
     } catch {
       // best-effort
-    } finally {
-      clearPlayerSession();
-      logoutPlayer();
       setShowAbandonModal(false);
-      router.push('/session_over');
+    } finally {
+      setIsAbandoning(false);
     }
   };
 
@@ -523,7 +507,6 @@ export default function WordBuildingGame() {
             {/* Controls always visible at bottom — separated from the active gameplay area */}
             <GameControls
               onLeave={() => setShowAbandonModal(true)}
-              onGameOver={handleGameOverClick}
             />
           </div>
         </div>
@@ -533,18 +516,9 @@ export default function WordBuildingGame() {
       {showAbandonModal && (
         <AbandonPlayModal
           onStay={() => setShowAbandonModal(false)}
-          onLeave={abandonPlay}
+          onLeave={leaveToLobby}
           isLeaving={isAbandoning}
-        />
-      )}
-
-      {showGameOverModal && (
-        <EndGameConfirmModal
-          onCancel={() => {
-            if (!isFinishingGame) setShowGameOverModal(false);
-          }}
-          onConfirm={confirmGameOver}
-          isConfirming={isFinishingGame}
+          endsGame={isLastRemaining}
         />
       )}
 

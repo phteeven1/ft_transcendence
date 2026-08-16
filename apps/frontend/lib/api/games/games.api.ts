@@ -25,10 +25,6 @@ export const gamesApi = {
     return apiRequest<GameRosterPlayerDto[]>(`/games/${gameId}/players`);
   },
 
-  findByGroup(groupId: number): Promise<GameDto[]> {
-    return apiRequest<GameDto[]>(`/games/group/${groupId}`);
-  },
-
   join(input: GameIdPlayerIdInput): Promise<GameDto | null> {
     return apiRequest<GameDto | null>('/games/join', {
       method: 'POST',
@@ -45,13 +41,6 @@ export const gamesApi = {
 
   leave(input: GameIdPlayerIdInput): Promise<GameDto | null> {
     return apiRequest<GameDto | null>('/games/leave', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
-  },
-
-  abandonPlay(input: GameIdPlayerIdInput): Promise<void> {
-    return apiRequest<void>('/games/abandonPlay', {
       method: 'POST',
       body: JSON.stringify(input),
     });

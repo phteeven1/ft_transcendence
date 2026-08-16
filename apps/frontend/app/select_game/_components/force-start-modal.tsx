@@ -11,6 +11,7 @@ import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
   game: Game;
+  error?: string;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -25,7 +26,7 @@ function getLocalizedGameName(
   return name;
 }
 
-export default function ForceStartModal({ game, onCancel, onConfirm }: Props) {
+export default function ForceStartModal({ game, error, onCancel, onConfirm }: Props) {
   const t = useTranslations('games.forceStart');
   const tLobby = useTranslations('games.lobby');
   const tCommon = useTranslations('common');
@@ -43,6 +44,7 @@ export default function ForceStartModal({ game, onCancel, onConfirm }: Props) {
       confirmVariant="accent"
     >
       <p>{t('message', { gameName: localizedGameName, count: playerCount })}</p>
+      {error ? <p className="text-sm text-destructive mt-3">{error}</p> : null}
     </Dialog>
   );
 }

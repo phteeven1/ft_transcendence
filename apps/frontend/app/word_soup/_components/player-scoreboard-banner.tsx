@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import type { GameRosterPlayerDto } from '@/lib/api/games';
-import SoupHostCharacter from './soup-host-character';
+import HostCharacter from '@/app/components/game/host-character';
 import { Icon } from '@/app/components/ui';
 
 type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
@@ -156,7 +156,7 @@ export default function PlayerScoreboardBanner({
               />
             )}
 
-            <SoupHostCharacter
+            <HostCharacter
               theme="animals"
               clothesColor={colour}
               tier={player.avatarTier ?? 0}

@@ -1,23 +1,8 @@
 'use client';
 
 /*
-Game lobby where players can initiate new games and join pending games initiated by others
-uses WebSockets to sync game status between players in real time
-REST is used only for mutations (create, join, start) — the backend
-then emits WebSocket events to all group members, which drives UI updates.
-error handling logs errors for failed API calls
-Workflow example:
-player A clicks 'New Word Building', which opens InitiateGameModal
-player A confirms, handleCreateGame creates a new pending game via REST
-backend emits lobby:update to all players in the group
-player B sees the pending game appear and clicks it, opening JoinGameModal
-player B confirms, handleJoinGame adds them to the game via REST
-player A sees this and clicks 'Start Word Building', which opens ForceStartModal
-player A confirms, handleForceStart starts the game via REST
-backend emits game:started to all players in the group once game goes active
-both players are redirected to the matching game page
-Also, they are removed from all other pending games that they have joined.
-If all players leave a game before it starts, it is destroyed
+Lobby: REST for create / join / start; Socket.IO lobby:update and game:started
+drive shared UI. Failures stay in the modal.
 */
 
 import { useAuth } from '../context/auth-context';
@@ -81,6 +66,7 @@ export default function SelectGame() {
   useSessionGuard();
 
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
+  const [modalError, setModalError] = useState('');
   const [sessionReady, setSessionReady] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [unlockToastTier, setUnlockToastTier] = useState<number | null>(null);
@@ -191,43 +177,41 @@ export default function SelectGame() {
   // the backend emits lobby:update which triggers the WebSocket state update
   const handleCreateGame = async (gameName: string) => {
     if (!player) return;
+    setModalError('');
     try {
-        await gamesApi.create({  // backend will handle returning updated game - no need for assignment (i.e. "const newGame =")
+        await gamesApi.create({
         name: gameName,
         inGroup: player.inGroup,
         initiatedBy: player.id,
       });
-    } catch (error) {
-      console.error('handleCreateGame failed:', error);
+      setModal({ kind: 'none' });
+    } catch {
+      setModalError(t('actionFailed'));
     }
-    setModal({ kind: 'none' });
   };
 
-  // calls postJoinGame to add current player to selected game
-  // if the game then becomes active, it redirects to the matching game page
-  // otherwise, updates pendingGames list
   const handleJoinGame = async (game: Game) => {
     if (!player) return;
+    setModalError('');
     try {
-        await gamesApi.join({ // backend will handle returning updated game - no need for assignment (i.e. "const updatedGame =")
+        await gamesApi.join({
         gameId: game.id,
         playerId: player.id,
       });
-    } catch (error) {
-      console.error('handleJoinGame failed:', error);
+      setModal({ kind: 'none' });
+    } catch {
+      setModalError(t('actionFailed'));
     }
-    setModal({ kind: 'none' });
   };
 
-  // POSTs /games/start with whichever players have currently joined
-  // this bypasses waiting until 5 mins has passed or until enough players have joined
   const handleForceStart = async (game: Game) => {
+    setModalError('');
     try {
       await gamesApi.start({ gameId: game.id });
-    } catch (error) {
-      console.error('handleForceStart failed:', error);
+      setModal({ kind: 'none' });
+    } catch {
+      setModalError(t('actionFailed'));
     }
-    setModal({ kind: 'none' });
   };
 
   if (!player || !sessionReady) {
@@ -283,9 +267,10 @@ export default function SelectGame() {
             size="lg"
             fullWidth
             className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
-            onClick={() =>
-              setModal({ kind: 'initiate', gameName: 'Word Building' })
-            }
+            onClick={() => {
+              setModalError('');
+              setModal({ kind: 'initiate', gameName: 'Word Building' });
+            }}
             disabled={hasInitiated('Word Building')}
           >
             <Icon name="puzzle" size={28} />
@@ -300,9 +285,10 @@ export default function SelectGame() {
             size="lg"
             fullWidth
             className="clay-tile min-h-[5rem] flex flex-col items-center justify-center gap-1"
-            onClick={() =>
-              setModal({ kind: 'initiate', gameName: 'Word Soup' })
-            }
+            onClick={() => {
+              setModalError('');
+              setModal({ kind: 'initiate', gameName: 'Word Soup' });
+            }}
             disabled={hasInitiated('Word Soup')}
           >
             <Icon name="game" size={28} />
@@ -319,10 +305,14 @@ export default function SelectGame() {
               currentPlayerId={player.id}
               onClick={() => {
                 if (!game.players.includes(player.id)) {
+                  setModalError('');
                   setModal({ kind: 'join', game });
                 }
               }}
-              onForceStart={() => setModal({ kind: 'forceStart', game })}
+              onForceStart={() => {
+                setModalError('');
+                setModal({ kind: 'forceStart', game });
+              }}
             />
           ))}
         </div>
@@ -351,7 +341,11 @@ export default function SelectGame() {
       {modal.kind === 'initiate' && (
         <InitiateGameModal
           gameName={modal.gameName}
-          onCancel={() => setModal({ kind: 'none' })}
+          error={modalError}
+          onCancel={() => {
+            setModalError('');
+            setModal({ kind: 'none' });
+          }}
           onCreate={() => handleCreateGame(modal.gameName)}
         />
       )}
@@ -359,7 +353,11 @@ export default function SelectGame() {
       {modal.kind === 'join' && (
         <JoinGameModal
           game={modal.game}
-          onCancel={() => setModal({ kind: 'none' })}
+          error={modalError}
+          onCancel={() => {
+            setModalError('');
+            setModal({ kind: 'none' });
+          }}
           onJoin={() => handleJoinGame(modal.game)}
         />
       )}
@@ -367,7 +365,11 @@ export default function SelectGame() {
       {modal.kind === 'forceStart' && (
         <ForceStartModal
           game={modal.game}
-          onCancel={() => setModal({ kind: 'none' })}
+          error={modalError}
+          onCancel={() => {
+            setModalError('');
+            setModal({ kind: 'none' });
+          }}
           onConfirm={() => handleForceStart(modal.game)}
         />
       )}

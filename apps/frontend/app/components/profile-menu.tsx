@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
 import { playersApi } from '@/lib/api';
-import { usePlayerSessionExitGuard } from '../hooks/use-player-session-exit-guard';
 import { Button, Dropdown, DropdownItem, Icon } from './ui';
+import AbandonPlayModal from './abandon-play-modal';
 import UserSettings from '../dashboard/_components/user-settings';
 
 export default function ProfileMenu() {
@@ -16,12 +16,9 @@ export default function ProfileMenu() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showLeaveSessionModal, setShowLeaveSessionModal] = useState(false);
+  const [isLeavingSession, setIsLeavingSession] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const { markIntentionalExit } = usePlayerSessionExitGuard({
-    enabled: player !== null,
-    playerId: player?.id ?? 0,
-  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -47,16 +44,21 @@ export default function ProfileMenu() {
     router.push('/');
   };
 
+  const openLeaveSessionModal = () => {
+    setIsOpen(false);
+    setShowLeaveSessionModal(true);
+  };
+
   const handleLeaveSession = async () => {
     if (!player) return;
-    setIsOpen(false);
-    markIntentionalExit();
+    setIsLeavingSession(true);
     try {
       await playersApi.clearSession(player.id);
-    } catch (error) {
-      console.error('leaveSession clearSession failed:', error);
+    } catch {
+      /* session still ends locally */
     }
     logoutPlayer();
+    setShowLeaveSessionModal(false);
     router.push('/register');
   };
 
@@ -101,12 +103,23 @@ export default function ProfileMenu() {
               </DropdownItem>
             </>
           ) : (
-            <DropdownItem role="menuitem" onClick={() => void handleLeaveSession()}>
+            <DropdownItem role="menuitem" onClick={openLeaveSessionModal}>
               <Icon name="sign-out" size={16} />
               {t('leaveSession')}
             </DropdownItem>
           )}
         </Dropdown>
+      )}
+
+      {showLeaveSessionModal && (
+        <AbandonPlayModal
+          kind="session"
+          onStay={() => {
+            if (!isLeavingSession) setShowLeaveSessionModal(false);
+          }}
+          onLeave={() => void handleLeaveSession()}
+          isLeaving={isLeavingSession}
+        />
       )}
 
       <UserSettings

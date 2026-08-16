@@ -5,7 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
 import { Member, Player, Vocabulary } from '../../types';
-import { TEST_VOCABULARY } from '../_components/test-vocabulary';
+import {
+  isStarterVocabulary,
+  TEST_VOCABULARY,
+} from '../_components/test-vocabulary';
 import type { MemberAction } from '../_components/member-dialog';
 import type { VocabularyAction } from '../_components/vocabulary-list';
 import { DASHBOARD_POLL_INTERVAL_MS } from './poll-interval';
@@ -92,8 +95,8 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     try {
       const data = await groupsApi.getMembers(selectedGroupId);
       setMembers(data);
-    } catch (error) {
-      console.error('fetchMembers failed:', error);
+    } catch {
+      /* keep last members */
     }
   }, [selectedGroupId]);
 
@@ -102,8 +105,8 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     try {
       const data = await playersApi.findByGroup(selectedGroupId);
       setPlayers(data);
-    } catch (error) {
-      console.error('fetchPlayers failed:', error);
+    } catch {
+      /* keep last players */
     } finally {
       setIsPlayersLoading(false);
     }
@@ -114,25 +117,44 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     try {
       let data = await vocabulariesApi.findByGroup(selectedGroupId);
 
-      const hasTestList = data.some((v) => v.name === TEST_VOCABULARY.name);
-      if (!hasTestList) {
-        const created = await vocabulariesApi.create({
+      let starter = data.find((vocabulary) =>
+        isStarterVocabulary(vocabulary.name),
+      );
+      if (!starter) {
+        starter = await vocabulariesApi.create({
           vocabularyInGroup: selectedGroupId,
           byUser: userId,
           vocabularyName: TEST_VOCABULARY.name,
           vocabularyWords: TEST_VOCABULARY.words,
           vocabularyMeanings: TEST_VOCABULARY.meanings,
         });
-        data = [...data, created];
+        data = [...data, starter];
       }
 
-      setVocabularies(data);
-    } catch (error) {
-      console.error('fetchVocabularies failed:', error);
+      const custom = data.filter(
+        (vocabulary) => !isStarterVocabulary(vocabulary.name),
+      );
+      setVocabularies(custom);
+
+      const preferred = custom[0] ?? starter;
+      const currentId = group?.currentVocabulary;
+      const currentIsPreferred =
+        currentId !== undefined &&
+        (custom.some((vocabulary) => vocabulary.id === currentId) ||
+          (custom.length === 0 && currentId === starter.id));
+      if (!currentIsPreferred) {
+        await vocabulariesApi.setActive({
+          vocabularyId: preferred.id,
+          vocabularyInGroup: selectedGroupId,
+        });
+        await syncGroup(selectedGroupId);
+      }
+    } catch {
+      /* keep last vocabularies */
     } finally {
       setIsVocabLoading(false);
     }
-  }, [selectedGroupId, userId]);
+  }, [selectedGroupId, userId, group?.currentVocabulary, syncGroup]);
 
   const syncAndRefresh = useCallback(async (): Promise<void> => {
     if (!selectedGroupId || !userId) return;
@@ -150,8 +172,8 @@ export function usePeoplePanel(): UsePeoplePanelResult {
       }
 
       await Promise.all([fetchMembers(), fetchPlayers()]);
-    } catch (error) {
-      console.error('syncAndRefresh failed:', error);
+    } catch {
+      /* keep last group snapshot */
     }
   }, [selectedGroupId, userId, syncGroup, leaveGroup, fetchMembers, fetchPlayers]);
 
@@ -246,14 +268,25 @@ export function usePeoplePanel(): UsePeoplePanelResult {
           vocabularyId: vocabulary.id,
           vocabularyInGroup: group.id,
         });
-        if (!updated) throw new Error('Failed to activate vocabulary');
+        if (!updated) return;
         await syncGroup(group.id);
-      } catch (error) {
-        console.error('setActive vocabulary failed:', error);
+      } catch {
+        /* selection stays on the previous list */
       }
     },
     [group, syncGroup],
   );
+
+  useEffect(() => {
+    if (vocabularies.length === 0 || !group) return;
+    const currentIsCustom = vocabularies.some(
+      (vocabulary) => vocabulary.id === group.currentVocabulary,
+    );
+    if (currentIsCustom) return;
+    const preferred = vocabularies[0];
+    if (!preferred) return;
+    void activateVocabulary(preferred);
+  }, [vocabularies, group, activateVocabulary]);
 
   const closeVocabDialog = (): void => {
     setVocabDialog(null);
@@ -281,9 +314,10 @@ export function usePeoplePanel(): UsePeoplePanelResult {
 
   const handleVocabularyDeleted = (vocabularyId: number): void => {
     setVocabularies((prev) => prev.filter((v) => v.id !== vocabularyId));
-    if (group && vocabularyId === group.currentVocabulary) {
-      void syncGroup(group.id);
-    }
+    void (async () => {
+      if (group) await syncGroup(group.id);
+      await fetchVocabularies();
+    })();
   };
 
   return {

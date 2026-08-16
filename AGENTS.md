@@ -65,6 +65,7 @@ CI (`.github/workflows/ci.yml`) runs migrate, backend tests, frontend lint/build
 - Keep logic out of JSX. Shared UI lives in `app/components/ui/`.
 - Tailwind utilities only. No ad-hoc inline CSS. No emoji as UI icons — use `Icon`.
 - After a lobby/game mutation, wait for the Socket.IO event to update shared UI. See [DEV.md](./DEV.md).
+- User-facing failures belong in the UI (`text-destructive`, dialog error, existing banners). Do not `throw`, `console.error`, or `alert` for those. `@/lib/api` may throw so callers can `catch` and render; callers must not rethrow. Keep React provider invariants (`useAuth` / `useLanguage` throw if used outside their provider). Backend Nest `console.error` stays for server logs.
 
 ---
 
@@ -72,4 +73,4 @@ CI (`.github/workflows/ci.yml`) runs migrate, backend tests, frontend lint/build
 
 - Prefer the smallest change that matches existing patterns.
 - Do not invent JWT, Redis usage, friends, or extra markdown unless asked.
-- Parent auth is client context; child Play Now uses `PlayerSession`. Do not “fix” that by rewriting auth in passing.
+- Parent ids live in `localStorage` (`parent-session.ts`); child Play Now is dashboard start → `PlayerSession` in `sessionStorage`. Do not “fix” that by rewriting auth in passing.

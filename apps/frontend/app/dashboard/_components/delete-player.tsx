@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { playersApi } from '@/lib/api';
 import { Player } from '../../types';
@@ -20,15 +21,17 @@ export default function DeletePlayer({
 }: Props) {
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
+  const [error, setError] = useState('');
 
   const handleDelete = async () => {
     if (!player) return;
+    setError('');
     try {
       await playersApi.remove(player.id);
       onDeleted(player.id);
       onClose();
-    } catch (error) {
-      console.error('deletePlayer failed:', error);
+    } catch {
+      setError(tCommon('somethingWentWrong'));
     }
   };
 
@@ -44,6 +47,7 @@ export default function DeletePlayer({
       onConfirm={handleDelete}
     >
       <p>{t('delete.confirmMessage')}</p>
+      {error && <p className="text-sm text-destructive mt-3">{error}</p>}
     </Dialog>
   );
 }

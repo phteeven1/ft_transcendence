@@ -6,10 +6,6 @@ import {
 } from '@nestjs/common';
 import { PlayersService } from '../players/players.service';
 
-export type PlayerSessionRequest = {
-  playerId: number;
-};
-
 @Injectable()
 export class PlayerSessionGuard implements CanActivate {
   constructor(private readonly playersService: PlayersService) {}

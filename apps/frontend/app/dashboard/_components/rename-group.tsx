@@ -73,8 +73,7 @@ function RenameGroupForm({
       }
       await onDone();
       handleClose();
-    } catch (renameError) {
-      console.error('Rename failed:', renameError);
+    } catch {
       setError(t('rename.failed'));
     }
   };

@@ -8,7 +8,6 @@ import { useWordSoupGame } from '../../hooks/word-soup/use-word-soup-game';
 
 import GameCourt from './game-court';
 import AbandonPlayModal from '../../components/abandon-play-modal';
-import EndGameConfirmModal from '../../components/end-game-confirm-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
 import WordSoupIntroOverlay from './word-soup-intro-overlay';
 import WordSoupGameOverOverlay from './word-soup-game-over-overlay';
@@ -86,6 +85,14 @@ export default function WordSoupGame() {
           {t('reconnecting')}
         </div>
       )}
+      {ws.actionError ? (
+        <div
+          className="sticky top-0 z-40 border-b border-rose-200 bg-rose-50 px-4 py-2 text-center text-sm font-medium text-rose-800"
+          role="alert"
+        >
+          {ws.actionError}
+        </div>
+      ) : null}
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
         <div
           className="w-full min-w-0"
@@ -95,7 +102,7 @@ export default function WordSoupGame() {
             Desktop:
               row1: [title] [message banner + S/M/L/info]  (controls right edge = court)
               row2: [players + word stats] [court]         (stats bottom = court bottom)
-              row3: [leave / game over] [submit]           (button tops/bottoms align)
+              row3: [back to lobby] [submit]           (button tops/bottoms align)
           */}
           <div className="grid w-full grid-cols-1 items-stretch gap-x-4 gap-y-2 sm:gap-y-2.5 lg:grid-cols-[11.5rem_minmax(0,1fr)]">
             {/* Title — top left, above scorecards */}
@@ -223,13 +230,11 @@ export default function WordSoupGame() {
               </div>
             </div>
 
-            {/* Leave / Game Over — height-matched to Submit */}
+            {/* Back to lobby — height-matched to Submit */}
             <div className="hidden h-full lg:col-start-1 lg:row-start-3 lg:block">
               <SessionActions
                 fillHeight
                 onLeave={ws.handleLeaveClick}
-                onGameOver={ws.handleGameOverClick}
-                gameOverDisabled={ws.isGameOver || ws.isFinishingGame}
               />
             </div>
 
@@ -257,8 +262,6 @@ export default function WordSoupGame() {
               />
               <SessionActions
                 onLeave={ws.handleLeaveClick}
-                onGameOver={ws.handleGameOverClick}
-                gameOverDisabled={ws.isGameOver || ws.isFinishingGame}
               />
             </div>
           </div>
@@ -267,16 +270,9 @@ export default function WordSoupGame() {
         {ws.showAbandonModal && (
           <AbandonPlayModal
             onStay={ws.closeAbandonModal}
-            onLeave={ws.abandonPlay}
+            onLeave={ws.leaveToLobby}
             isLeaving={ws.isAbandoning}
-          />
-        )}
-
-        {ws.showGameOverModal && (
-          <EndGameConfirmModal
-            onCancel={ws.closeGameOverModal}
-            onConfirm={ws.confirmGameOver}
-            isConfirming={ws.isFinishingGame}
+            endsGame={ws.isLastRemaining}
           />
         )}
       </div>

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { toApiVocabulary } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeVocabularyEntries } from './vocabulary-entry-rules';
 
 export type Vocabulary = {
   id: number;
@@ -23,17 +24,19 @@ export class VocabulariesService {
     words: string[] = [],
     meanings: string[] = [],
   ): Promise<Vocabulary> {
+    const entries = normalizeVocabularyEntries(words, meanings);
     const vocabulary = await this.prisma.vocabulary.create({
       data: {
         inGroupId: inGroup,
         byUserId: byUser,
         name,
-        words,
-        meanings,
-        wordCount: words.length,
+        words: entries.words,
+        meanings: entries.meanings,
+        wordCount: entries.words.length,
       },
     });
 
+    await this.ensureSoleVocabularyActive(inGroup);
     return toApiVocabulary(vocabulary);
   }
 
@@ -81,10 +84,15 @@ export class VocabulariesService {
     words: string[],
     meanings: string[],
   ): Promise<Vocabulary | undefined> {
+    const entries = normalizeVocabularyEntries(words, meanings);
     try {
       const vocabulary = await this.prisma.vocabulary.update({
         where: { id: vocabularyId },
-        data: { words, meanings, wordCount: words.length },
+        data: {
+          words: entries.words,
+          meanings: entries.meanings,
+          wordCount: entries.words.length,
+        },
       });
       return toApiVocabulary(vocabulary);
     } catch {
@@ -98,15 +106,11 @@ export class VocabulariesService {
   ): Promise<boolean> {
     try {
       await this.prisma.vocabulary.delete({ where: { id: vocabularyId } });
-      void inGroup;
+      await this.ensureSoleVocabularyActive(inGroup);
       return true;
     } catch {
       return false;
     }
-  }
-
-  async removeByGroup(inGroup: number): Promise<void> {
-    await this.prisma.vocabulary.deleteMany({ where: { inGroupId: inGroup } });
   }
 
   async findById(vocabularyId: number): Promise<Vocabulary | undefined> {
@@ -121,5 +125,20 @@ export class VocabulariesService {
       where: { inGroupId: inGroup },
     });
     return vocabularies.map(toApiVocabulary);
+  }
+
+  private async ensureSoleVocabularyActive(inGroup: number): Promise<void> {
+    const remaining = await this.prisma.vocabulary.findMany({
+      where: { inGroupId: inGroup },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    });
+    if (remaining.length !== 1) return;
+    const sole = remaining[0];
+    if (!sole) return;
+    await this.prisma.group.update({
+      where: { id: inGroup },
+      data: { currentVocabularyId: sole.id },
+    });
   }
 }

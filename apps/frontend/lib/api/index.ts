@@ -1,6 +1,4 @@
-export { getApiBaseUrl } from './config';
 export { ApiError } from './errors';
-export { apiRequest } from './http';
 
 export { usersApi } from './users';
 export { groupsApi } from './groups';
@@ -68,4 +66,3 @@ export type {
   PlayerProgressionResponseDto,
   RecentGameEntryDto,
 } from './progression';
-export { AVATAR_TIERS } from './progression';

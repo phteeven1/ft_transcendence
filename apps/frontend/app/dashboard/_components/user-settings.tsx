@@ -32,38 +32,26 @@ function UserSettingsDialog({
   const { refreshUser } = useAuth();
 
   const [userName, setUserName] = useState(user.name);
-  const [realName, setRealName] = useState(user.realName ?? '');
   const [email, setEmail] = useState(user.email ?? '');
-  const [relationshipComment, setRelationshipComment] = useState(
-    user.relationshipComment ?? '',
-  );
-  const [showRealName, setShowRealName] = useState(user.showRealName ?? false);
-  const [showEmail, setShowEmail] = useState(user.showEmail ?? false);
-  const [showRelationshipComment, setShowRelationshipComment] = useState(
-    user.showRelationshipComment ?? false,
-  );
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   const handleConfirm = async () => {
+    setSaveError('');
     try {
       await usersApi.update({
         userId: user.id,
         userName,
-        realName,
-        relationshipComment,
-        showEmail,
-        showRealName,
-        showRelationshipComment,
       });
       await refreshUser();
       onClose();
-    } catch (error) {
-      console.error('Failed to save user settings:', error);
+    } catch {
+      setSaveError(tCommon('somethingWentWrong'));
     }
   };
 
@@ -91,9 +79,8 @@ function UserSettingsDialog({
         newPassword,
       });
       setShowPasswordModal(false);
-    } catch (error) {
+    } catch {
       setPasswordError(t('oldPasswordIncorrect'));
-      console.error('changePassword failed:', error);
     }
   };
 
@@ -105,7 +92,6 @@ function UserSettingsDialog({
         title={t('title')}
         onConfirm={handleConfirm}
         confirmLabel={tCommon('confirm')}
-        scrollable
       >
         <div className="flex flex-col gap-5">
           <Input
@@ -115,77 +101,26 @@ function UserSettingsDialog({
             onChange={(e) => setUserName(e.target.value)}
           />
 
-          <div>
-            <Input
-              label={t('realNameLabel')}
-              type="text"
-              value={realName}
-              onChange={(e) => setRealName(e.target.value)}
-            />
-            <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showRealName}
-                onChange={(e) => setShowRealName(e.target.checked)}
-                className="w-4 h-4 accent-[var(--color-accent)]"
-              />
-              {t('showToGroup')}
-            </label>
-          </div>
-
-          <div>
-            <Input
-              label={t('emailLabel')}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showEmail}
-                onChange={(e) => setShowEmail(e.target.checked)}
-                className="w-4 h-4 accent-[var(--color-accent)]"
-              />
-              {t('showToGroup')}
-            </label>
-          </div>
-
-          <div>
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="block text-sm font-semibold text-foreground">
-                {t('relationshipCommentLabel')}
-              </span>
-              <p className="text-xs text-muted-foreground italic">
-                {t('relationshipCommentHint')}
-              </p>
-            </div>
-            <Input
-              type="text"
-              value={relationshipComment}
-              onChange={(e) => setRelationshipComment(e.target.value)}
-            />
-            <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showRelationshipComment}
-                onChange={(e) =>
-                  setShowRelationshipComment(e.target.checked)
-                }
-                className="w-4 h-4 accent-[var(--color-accent)]"
-              />
-              {t('showToGroup')}
-            </label>
-          </div>
+          <Input
+            label={t('emailLabel')}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
           <div>
             <span className="block text-sm font-semibold text-foreground mb-1">
               {t('passwordLabel')}
             </span>
-            <Button variant="secondary" onClick={handleOpenPasswordModal}>
-              {t('changePassword')}
-            </Button>
+            <div className="overflow-visible pb-1">
+              <Button variant="secondary" onClick={handleOpenPasswordModal}>
+                {t('changePassword')}
+              </Button>
+            </div>
           </div>
+          {saveError && (
+            <p className="text-sm text-destructive">{saveError}</p>
+          )}
         </div>
       </Dialog>
 

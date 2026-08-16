@@ -35,11 +35,13 @@ export default function CreateGroup({ open, onClose, onCreated }: Props) {
         creatorId: user.id,
       });
       const result = await syncGroup(data.id);
-      if (!result) throw new Error('syncGroup failed');
+      if (!result) {
+        setError(t('failed'));
+        return;
+      }
       onCreated();
       handleClose();
-    } catch (error) {
-      console.error('Failed to create group:', error);
+    } catch {
       setError(t('failed'));
     }
   };

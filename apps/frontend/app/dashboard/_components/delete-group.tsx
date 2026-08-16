@@ -36,8 +36,7 @@ export default function DeleteGroup({ group, open, onClose, onDone }: Props) {
       if (currentGroup?.id === group.id) leaveGroup();
       handleClose();
       await onDone();
-    } catch (deleteError) {
-      console.error('deleteGroup failed:', deleteError);
+    } catch {
       setError(t('delete.failed'));
     }
   };

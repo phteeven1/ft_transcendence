@@ -8,8 +8,6 @@
     "loading": "Loading…",
     "back": "Back",
     "close": "Close",
-    "yes": "Yes",
-    "no": "No",
     "error": "Error",
     "success": "Success",
     "submit": "Submit",
@@ -27,7 +25,6 @@
     "next": "Next",
     "sending": "Sending…",
     "sendingEllipsis": "Sending...",
-    "checking": "Checking…",
     "starting": "Starting…",
     "leaving": "Leaving…",
     "ending": "Ending…",
@@ -39,7 +36,6 @@
     "active": "Active",
     "unknownError": "Unknown error",
     "somethingWentWrong": "Something went wrong. Please try again.",
-    "emDash": "—",
     "playerNumber": "Player #{id}",
     "and": "and",
     "word": "Word",
@@ -53,6 +49,12 @@
     "signOut": "Sign Out",
     "profileMenu": "Account menu",
     "leaveSession": "Leave session",
+    "leaveSessionConfirm": {
+      "title": "Leave this session?",
+      "stay": "Stay",
+      "confirm": "Leave session",
+      "message": "If you leave now, your play session will end immediately. You will not be able to join again — a parent must start a new session for you."
+    },
     "selectLanguage": "Select language",
     "footerTagline": "© {year} Dicteé — vocabulary games for kids",
     "privacyPolicy": "Privacy Policy",
@@ -60,8 +62,6 @@
     "legalNav": "Legal"
   },
   "home": {
-    "metaTitle": "Dicteé",
-    "metaDescription": "Turn vocabulary lists into fun learning games for kids",
     "tagline": "Learn words through play",
     "title": "Dicteé",
     "description": "Welcome to Dicteé — the fun app for turning vocabulary lists into learning games. Upload word lists, invite other parents from the class, then set up a direct link for your child to play with friends.",
@@ -149,11 +149,7 @@
     "settings": {
       "title": "User Settings",
       "usernameLabel": "Username",
-      "realNameLabel": "Real Name",
       "emailLabel": "Email",
-      "relationshipCommentLabel": "Relationship Comment",
-      "relationshipCommentHint": "For example: Dana's Mum",
-      "showToGroup": "Show to other users in same group",
       "passwordLabel": "Password",
       "changePassword": "Change Password",
       "changePasswordTitle": "Change Password",
@@ -218,7 +214,6 @@
     "leave": {
       "confirmTitle": "Leave Group?",
       "confirmMessage": "Are you sure you want to permanently leave {groupName}?",
-      "onlyAdminBlock": "You are the only admin of this group. Before leaving, you need to make another member admin.",
       "lastMemberTitle": "Group will be deleted",
       "lastMemberMessage": "You are the last member of {groupName}. If you leave, the group will be permanently removed.",
       "failed": "Something went wrong. Please try again."
@@ -227,6 +222,7 @@
   "players": {
     "newPlayer": "New Player",
     "play": "Play",
+    "noVocabulary": "No vocabulary",
     "create": {
       "title": "Create Player Profile",
       "playerNameLabel": "Player Name",
@@ -253,10 +249,15 @@
   },
   "vocabulary": {
     "newVocabulary": "New Vocabulary",
+    "listNameLabel": "List name",
+    "listNamePlaceholder": "e.g. Week 3 vocabulary",
+    "listNameRequired": "Please enter a list name.",
+    "createFailed": "Failed to create vocabulary. Please try again.",
     "importTitle": "AI Vocabulary Import",
+    "aiUpload": "AI upload",
     "fromLanguage": "From Language",
     "toLanguage": "To Language",
-    "extractAndSave": "Extract and Save with AI",
+    "extractWithAi": "Extract with AI",
     "aiReading": "AI is reading your file...",
     "wordColumn": "Word",
     "meaningColumn": "Meaning",
@@ -265,11 +266,8 @@
     "deleteWordTitle": "Delete word",
     "minimumWordsTitle": "Minimum 5 words required",
     "minimumWordsAlert": "A vocabulary list must have at least 5 words.",
+    "duplicatePairAlert": "Each word and each meaning must be unique.",
     "extractionFailed": "AI extraction failed. Please ensure the file has at least 5 words and try again.",
-    "rename": {
-      "title": "Rename {name}",
-      "placeholder": "New name"
-    },
     "edit": {
       "title": "Edit: {name}"
     },
@@ -290,6 +288,7 @@
       "wordBuilding": "Word Building",
       "wordSoup": "Word Soup",
       "createNewGame": "Create new game",
+      "actionFailed": "Something went wrong. Please try again.",
       "progression": {
         "tabsLabel": "Group progress",
         "myStatsTabsLabel": "My stats sections",
@@ -396,20 +395,15 @@
       "meansWhatPrompt": "What best translates…"
     },
     "controls": {
-      "leaveGame": "Leave Game",
-      "gameOver": "Game Over"
+      "backToLobby": "Back to lobby",
+      "actionFailed": "Something went wrong. Please try again."
     },
     "abandon": {
-      "title": "Leave this game?",
+      "title": "Go back to the lobby?",
       "stayInGame": "Stay in game",
-      "leaveGame": "Leave game",
-      "message": "If you leave now, your play session will end immediately. You will not be able to join again — a parent must start a new session for you."
-    },
-    "endGame": {
-      "title": "End this game?",
-      "message": "The game will end immediately for all players. If the puzzle is not finished yet, no XP will be awarded.",
-      "cancel": "Keep playing",
-      "confirm": "End game"
+      "backToLobby": "Back to lobby",
+      "message": "You will leave this game. The others will keep playing, and your play session will stay active.",
+      "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active."
     },
     "wordBuilding": {
       "generating": "Generating crossword…",
@@ -518,8 +512,6 @@
     "seeAlso": "See also:",
     "privacy": {
       "title": "Privacy Policy",
-      "metaTitle": "Privacy Policy — Dicteé",
-      "metaDescription": "How Dicteé collects, uses, and protects personal information.",
       "lastUpdated": "June 30, 2026",
       "sections": {
         "introduction": {
@@ -648,10 +640,7 @@
     },
     "terms": {
       "title": "Terms of Service",
-      "metaTitle": "Terms of Service — Dicteé",
-      "metaDescription": "Terms and conditions for using the Dicteé vocabulary learning platform.",
       "lastUpdated": "June 30, 2026",
-      "privacyPolicyLink": "Privacy Policy",
       "sections": {
         "agreement": {
           "title": "1. Agreement",

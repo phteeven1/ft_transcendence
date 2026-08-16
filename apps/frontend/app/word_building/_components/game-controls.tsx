@@ -5,26 +5,21 @@ import { Button } from '../../components/ui/button';
 
 interface Props {
   onLeave: () => void;
-  onGameOver: () => void;
 }
 
 /**
- * Renders the secondary game actions for leaving or ending the match.
+ * Renders the control for returning to the lobby.
  *
- * @param onLeave Callback for opening the abandon-play flow.
- * @param onGameOver Callback for finishing the game from the parent view.
+ * @param onLeave Callback for opening the back-to-lobby confirm.
  */
-export default function GameControls({ onLeave, onGameOver }: Props) {
+export default function GameControls({ onLeave }: Props) {
   const t = useTranslations('games.controls');
 
   return (
     <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-300">
       <Button variant="primary" fullWidth onClick={onLeave}>
-        {t('leaveGame')}
+        {t('backToLobby')}
       </Button>
-      <Button variant="destructive" fullWidth onClick={onGameOver}>
-        {t('gameOver')}
-			</Button>
     </div>
   );
 }

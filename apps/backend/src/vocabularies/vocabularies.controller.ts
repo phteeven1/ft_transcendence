@@ -121,15 +121,6 @@ export class VocabulariesController {
     }
     const fromLang = body.fromLanguage || 'French';
     const toLang = body.toLanguage || 'English';
-    console.log(
-      'Received file for extraction:',
-      file.originalname,
-      file.mimetype,
-      'from:',
-      fromLang,
-      'to:',
-      toLang,
-    );
     return this.extractionService.extractVocab(file, fromLang, toLang);
   }
 

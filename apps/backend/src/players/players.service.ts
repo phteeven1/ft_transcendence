@@ -135,27 +135,12 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async removeByGroup(inGroup: number): Promise<void> {
-    await this.prisma.player.deleteMany({ where: { inGroupId: inGroup } });
-  }
-
   async findById(playerId: number): Promise<Player | undefined> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
       ...playerWithSession,
     });
     return player ? toSafePlayer(player) : undefined;
-  }
-
-  async findByParentInGroup(
-    ofUser: number,
-    inGroup: number,
-  ): Promise<Player[]> {
-    const players = await this.prisma.player.findMany({
-      where: { ofUserId: ofUser, inGroupId: inGroup },
-      ...playerWithSession,
-    });
-    return players.map((p) => toSafePlayer(p));
   }
 
   async findByGroup(inGroup: number): Promise<Player[]> {
@@ -178,14 +163,6 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
       where: { id: playerId },
       data: { currentGameId: null },
     });
-  }
-
-  async hasActiveSession(playerId: number): Promise<boolean> {
-    await this.cleanupExpiredSessions();
-    const session = await this.prisma.playerSession.findUnique({
-      where: { playerId },
-    });
-    return session !== null && session.expiresAt > new Date();
   }
 
   async getActiveSession(playerId: number): Promise<PlayerSessionDto | null> {

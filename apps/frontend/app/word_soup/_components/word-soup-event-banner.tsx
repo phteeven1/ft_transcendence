@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import SoupHostCharacter from './soup-host-character';
+import HostCharacter from '@/app/components/game/host-character';
 import {
   getEventBannerDurations,
   type EventBannerPhase,
@@ -122,7 +122,7 @@ export default function WordSoupEventBannerView({
       aria-label={bubbleVisible ? liveMessage : t('messageBanner')}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-0">
-        <SoupHostCharacter
+        <HostCharacter
           theme="animals"
           clothesColor={hostClothesColor}
           tier={hostTier}

@@ -79,9 +79,8 @@ export default function AcceptInvitationClient() {
         } else {
           setPageState('auth');
         }
-      } catch (error) {
+      } catch {
         if (cancelled) return;
-        console.error('Token validation failed:', error);
         setPageState('invalid');
       }
     };
@@ -130,8 +129,7 @@ export default function AcceptInvitationClient() {
       login(data);
       setCurrentUser(data);
       setPageState('confirm');
-    } catch (error) {
-      console.error('Auth failed:', error);
+    } catch {
       setErrorMessage(
         authMode === 'signin'
           ? t('auth.signInFailed')
@@ -168,11 +166,12 @@ export default function AcceptInvitationClient() {
       await refreshUser();
       const synced = await syncGroup(groupId);
       if (!synced) {
-        throw new Error('Could not load group after joining');
+        setErrorMessage(t('error.joinFailed'));
+        setPageState('error');
+        return;
       }
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Failed to join group:', error);
+    } catch {
       setErrorMessage(t('error.joinFailed'));
       setPageState('error');
     }

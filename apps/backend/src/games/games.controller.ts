@@ -59,20 +59,6 @@ export class GamesController {
   }
 
   /**
-   * Ends the player's play session without deleting the game record immediately.
-   * This is used when the child exits the active play flow.
-   *
-   * @param body Game id and player id.
-   */
-  @Post('abandonPlay')
-  abandonPlay(@Body() body: { gameId: number; playerId: number }) {
-    return this.gamesService.abandonPlay(
-      Number(body.gameId),
-      Number(body.playerId),
-    );
-  }
-
-  /**
    * Finishes the game and triggers the end-of-game broadcast.
    *
    * @param body The game id to finish.

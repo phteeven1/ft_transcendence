@@ -8,9 +8,19 @@ import { PageShell, Panel } from '../components/ui';
 import GroupsPanel from './_components/groups-panel';
 import PeoplePanel from './_components/people-panel';
 
+function DashboardLoading() {
+  const tCommon = useTranslations('common');
+
+  return (
+    <PageShell wide>
+      <p className="text-center text-sm text-muted-foreground">{tCommon('loadingEllipsis')}</p>
+    </PageShell>
+  );
+}
+
 export default function DashboardPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<DashboardLoading />}>
       <Dashboard />
     </Suspense>
   );
@@ -18,17 +28,18 @@ export default function DashboardPage() {
 
 function Dashboard() {
   const t = useTranslations('dashboard');
-  const { user, group, player } = useAuth();
+  const { user, group, player, authReady } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (!authReady) return;
     if (player) return;
     if (!user) {
       router.push('/');
     }
-  }, [user, player, router]);
+  }, [authReady, user, player, router]);
 
-  if (!user || player) return null;
+  if (!authReady || !user || player) return <DashboardLoading />;
 
   return (
     <PageShell wide>

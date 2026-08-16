@@ -42,6 +42,10 @@ export default function PeoplePanel() {
     handlePlayerCreated,
     handleVocabularyImported,
     handleVocabAction,
+    closeVocabDialog,
+    handleVocabularyUpdated,
+    vocabDialog,
+    actionVocabulary,
   } = panel;
 
   const sortedPlayers = useMemo(() => {
@@ -87,7 +91,8 @@ export default function PeoplePanel() {
   }
 
   function playerMenuItems(player: Player): RowMenuItem[] {
-    if (player.ofUser !== currentUserId) return [];
+    const isOwn = player.ofUser === currentUserId;
+    if (!isOwn && !isAdmin) return [];
 
     return [
       {
@@ -209,10 +214,17 @@ export default function PeoplePanel() {
                     onSelect={canPlay ? () => handlePlay(player) : undefined}
                     hoverContent={
                       isOwn ? (
-                        <>
-                          <Icon name="play" size={16} />
-                          {tPlayers('play')}
-                        </>
+                        hasActiveVocabulary ? (
+                          <>
+                            <Icon name="play" size={16} />
+                            {tPlayers('play')}
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="info" size={16} />
+                            {tPlayers('noVocabulary')}
+                          </>
+                        )
                       ) : undefined
                     }
                     menu={
@@ -259,9 +271,14 @@ export default function PeoplePanel() {
         onCreated={handlePlayerCreated}
       />
       <AddVocabulary
-        open={addVocabularyOpen}
-        onClose={() => setAddVocabularyOpen(false)}
+        open={addVocabularyOpen || vocabDialog === 'edit'}
+        vocabulary={vocabDialog === 'edit' ? actionVocabulary : null}
+        onClose={() => {
+          setAddVocabularyOpen(false);
+          closeVocabDialog();
+        }}
         onImported={handleVocabularyImported}
+        onEdited={handleVocabularyUpdated}
       />
       </Panel>
       <PeopleDialogs panel={panel} />

@@ -366,14 +366,4 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
       state: state ?? undefined,
     });
   }
-
-  /**
-   * Broadcasts an arbitrary game-state payload to every client in the game room.
-   *
-   * @param gameId The target game room.
-   * @param state The payload to emit.
-   */
-  emitGameState(gameId: number, state: unknown) {
-    this.server.to(`game:${gameId}`).emit('game:state', state);
-  }
 }

@@ -99,8 +99,8 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Groups                 | Create, join, leave, admin roles                | `app/dashboard`                                   |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
 | Players                | Child CRUD, Play Now                            | `app/dashboard` (Players tab), `players.service.ts` |
-| Vocabulary             | CRUD, set active list for games                 | `app/dashboard` (Vocabulary tab)                  |
-| AI import              | GPT-4o vision + PDF extract                     | `extraction.service.ts`, `add-vocabulary.tsx`     |
+| Vocabulary             | Add/edit in one dialog; hidden starter fallback | `app/dashboard` (Vocabulary tab)                  |
+| AI import              | GPT-4o on photos (`image_url`) and PDFs (file parts, not pdf-parse) | `extraction.service.ts`, `add-vocabulary.tsx` |
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
 | Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
 | Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
@@ -127,7 +127,7 @@ XP, avatars, and a lobby leaderboard live under `progression/` and are claimed a
 | i18n (3 languages)            | Minor (Accessibility) | 1   | next-intl, en / de / fr, flag switcher | `messages/{en,de,fr}.json`, `flag-menu.tsx`                  |
 | Organization system           | Major (User)          | 2   | Groups, ADMIN/MEMBER, invitations      | `groups.service.ts`, `invitations.service.ts`                |
 | Game statistics               | Minor (User)          | 1   | Wins, streaks, last 5 games, per type  | `progression-stats.service.ts`, `progression-my-stats.tsx`   |
-| Image recognition             | Minor (AI)            | 1   | GPT-4o vision on uploaded photos       | `extraction.service.ts`                                      |
+| Image recognition             | Minor (AI)            | 1   | GPT-4o on photos and PDFs (file parts) | `extraction.service.ts`                                      |
 | Complete web-based game       | Major (Gaming)        | 2   | Word Building crossword                | `word-building.service.ts`, `word-building-puzzle-engine.ts` |
 | Remote players                | Major (Gaming)        | 2   | Live board sync over WebSockets        | `game.gateway.ts`, `use-game-socket.ts`                      |
 | Multiplayer 3+                | Major (Gaming)        | 2   | Several `GamePlayer` rows per game     | `games.service.ts`, `select_game/page.tsx`                   |
@@ -179,12 +179,12 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 | Backend     | NestJS 11, TypeScript                            | REST API, WebSocket gateway           |
 | Database    | PostgreSQL 16, Prisma 7                          | Persistence, migrations, typed client |
 | Real-time   | Socket.IO                                        | Lobby, grid, scores, cell locks       |
-| AI / import | OpenAI GPT-4o, pdf-parse                         | Vocabulary extraction                 |
+| AI / import | OpenAI GPT-4o                                    | Vocabulary extraction                 |
 | Mail        | Nodemailer + Gmail SMTP                          | Group invitations                     |
 | Infra       | Docker Compose, GitHub Actions                   | Local stack and CI                    |
 
 
-Parent auth is React context, not JWT.
+Parent auth is React context with parent ids in `localStorage` (`parent-session.ts`), not JWT.
 
 ---
 
@@ -278,7 +278,7 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 | Task                                   | Tool                    | Where                                   |
 | -------------------------------------- | ----------------------- | --------------------------------------- |
-| Vocabulary extraction from photos/PDFs | OpenAI GPT-4o           | `extraction.service.ts`                 |
+| Vocabulary extraction from photos/PDFs | OpenAI GPT-4o           | `extraction.service.ts` (images as `image_url`, PDFs as file parts) |
 | Development assistance                 | Cursor / Copilot        | Review, debugging, documentation drafts |
 | Puzzle / game logic design             | Team + AI brainstorming | Word Building engine                    |
 
@@ -289,7 +289,7 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ## Known limitations
 
-1. **No JWT on parent API routes** — sign-in returns a user object; `AuthContext` holds it in memory. Refresh logs the parent out. Most REST handlers trust a client-sent `userId`.
+1. **No JWT on parent API routes** — sign-in returns a user object; parent ids persist in `localStorage` (`parent-session.ts`) and `AuthContext` rehydrates on load via `GET /users/:id`. Most REST handlers still trust a client-sent `userId`.
 2. **Friends system** — not implemented; groups are the social unit.
 3. Chrome **console errors** during the demo fail the eval — check before staff arrive.
 

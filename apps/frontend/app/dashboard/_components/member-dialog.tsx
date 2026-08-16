@@ -45,8 +45,7 @@ export default function MemberDialog({
       });
       await syncAndRefresh();
       handleClose();
-    } catch (promoteError) {
-      console.error('Promotion failed:', promoteError);
+    } catch {
       setError(t('promote.failed'));
     }
   };
@@ -61,8 +60,7 @@ export default function MemberDialog({
       });
       await syncAndRefresh();
       handleClose();
-    } catch (expelError) {
-      console.error('Expel failed:', expelError);
+    } catch {
       setError(t('expel.failed'));
     }
   };
@@ -80,8 +78,7 @@ export default function MemberDialog({
       });
       await syncAndRefresh();
       handleClose();
-    } catch (resignError) {
-      console.error('Resign failed:', resignError);
+    } catch {
       setError(t('resign.failed'));
     }
   };

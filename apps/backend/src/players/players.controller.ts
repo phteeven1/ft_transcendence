@@ -46,17 +46,6 @@ export class PlayersController {
     return this.playersService.clearSession(Number(body.playerId));
   }
 
-  @Get('parent/:userId/group/:groupId')
-  findByParentInGroup(
-    @Param('userId') userId: string,
-    @Param('groupId') groupId: string,
-  ) {
-    return this.playersService.findByParentInGroup(
-      Number(userId),
-      Number(groupId),
-    );
-  }
-
   @Get('group/:groupId')
   findByGroup(@Param('groupId') groupId: string) {
     return this.playersService.findByGroup(Number(groupId));

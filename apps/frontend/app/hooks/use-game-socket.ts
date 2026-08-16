@@ -8,7 +8,7 @@
 */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto } from '@/lib/api/games/word-building.types';
 import type { 
   WordSoupWordGuessedDto,
@@ -18,6 +18,7 @@ import type {
 } from '@/lib/api/games/word-soup/types';
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
+import { acquireSocket, releaseSocket } from '@/lib/socket';
 
 interface GameSocketState {
   gameFinished: boolean;
@@ -64,29 +65,25 @@ export function useGameSocket(gameId: number, playerId: number) {
   });
 
   useEffect(() => {
-    if (!gameId || !playerId) return;
+    if (gameId <= 0 || playerId <= 0) return;
 
     let active = true;
-
-    const socket = io(
-      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
-      { transports: ['websocket'] },
-    );
+    const key = `game:${gameId}:${playerId}`;
+    const socket = acquireSocket(key);
     socketRef.current = socket;
 
-    socket.on('connect', () => {
+    const join = () => {
       if (!active) return;
       setState((s) => ({ ...s, isConnected: true }));
       socket.emit('joinGame', { gameId, playerId });
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const onDisconnect = () => {
       if (!active) return;
       setState((s) => ({ ...s, isConnected: false }));
-    });
+    };
 
-    // word_building: flat payload. word_soup: { state } wrapper.
-    socket.on('game:state', (payload: IGameStatePayload | { state: WordSoupDto }) => {
+    const onGameState = (payload: IGameStatePayload | { state: WordSoupDto }) => {
       if (!active) return;
       if ('state' in payload) {
         setState((s) => ({
@@ -99,16 +96,14 @@ export function useGameSocket(gameId: number, playerId: number) {
       } else {
         setState((s) => ({ ...s, gameState: payload }));
       }
-    });
+    };
 
-    // word_building: Backend broadcasts updated cell lock map after any reservation change.
-    socket.on('cell:locks', (payload: ICellLocksPayload) => {
+    const onCellLocks = (payload: ICellLocksPayload) => {
       if (!active) return;
       setState((s) => ({ ...s, cellLocks: payload }));
-    });
+    };
 
-    // word_soup: Backend broadcasts this when a player guesses a word.
-    socket.on('game:wordGuessed', (payload: WordSoupWordGuessedDto) => {
+    const onWordGuessed = (payload: WordSoupWordGuessedDto) => {
       if (!active) return;
       setState((s) => ({
         ...s,
@@ -119,24 +114,22 @@ export function useGameSocket(gameId: number, playerId: number) {
         leftPlayers: payload.state?.leftPlayers ?? s.leftPlayers,
         playerStreaks: payload.state?.playerStreaks ?? s.playerStreaks,
       }));
-    });
+    };
 
-    // word_soup: Backend responds to the guessing player with success/failure.
-    socket.on('game:guessResult', (payload: WordSoupGuessResultDto) => {
+    const onGuessResult = (payload: WordSoupGuessResultDto) => {
       if (!active) return;
       setState((s) => {
         const frozenPlayers = { ...s.frozenPlayers };
         const playerStreaks = { ...s.playerStreaks };
         if (payload.frozen && payload.frozenUntil) {
           frozenPlayers[playerId] = payload.frozenUntil;
-          // Wrong guess ends the streak immediately for the local player.
           playerStreaks[playerId] = 0;
         }
         return { ...s, guessResult: payload, frozenPlayers, playerStreaks };
       });
-    });
+    };
 
-    socket.on('game:playerFrozen', (payload: {
+    const onPlayerFrozen = (payload: {
       playerId: number;
       playerName: string;
       frozenUntil: number;
@@ -150,7 +143,6 @@ export function useGameSocket(gameId: number, playerId: number) {
         frozenPlayers: { ...s.frozenPlayers, [payload.playerId]: payload.frozenUntil },
         playerStreaks: {
           ...(payload.playerStreaks ?? s.playerStreaks),
-          // Always clear the frozen player's streak even if meta is partial.
           [payload.playerId]: 0,
         },
         freezeNotice: {
@@ -160,9 +152,9 @@ export function useGameSocket(gameId: number, playerId: number) {
           kind: 'freeze',
         },
       }));
-    });
+    };
 
-    socket.on('game:playerUnfrozen', (payload: {
+    const onPlayerUnfrozen = (payload: {
       playerId: number;
       playerName: string;
       message: string;
@@ -178,7 +170,6 @@ export function useGameSocket(gameId: number, playerId: number) {
           frozenPlayers,
           playerStreaks: {
             ...(payload.playerStreaks ?? s.playerStreaks),
-            // Streak was broken by the freeze — keep it cleared after thaw.
             [payload.playerId]: 0,
           },
           freezeNotice: {
@@ -189,9 +180,9 @@ export function useGameSocket(gameId: number, playerId: number) {
           },
         };
       });
-    });
+    };
 
-    socket.on('game:playerLeft', (payload: {
+    const onPlayerLeft = (payload: {
       playerId: number;
       playerName: string;
       leftPlayers?: Record<number, string>;
@@ -212,10 +203,9 @@ export function useGameSocket(gameId: number, playerId: number) {
           playerName: payload.playerName,
         },
       }));
-    });
+    };
 
-    // Backend broadcasts this when the game is marked finished.
-    socket.on('game:finished', (payload?: { outcome?: GameFinishOutcomeDto | null }) => {
+    const onGameFinished = (payload?: { outcome?: GameFinishOutcomeDto | null }) => {
       if (!active) return;
       const outcome = payload?.outcome ?? null;
       const unlock = outcome?.players.find(
@@ -231,11 +221,35 @@ export function useGameSocket(gameId: number, playerId: number) {
         gameFinished: true,
         finishOutcome: outcome ?? s.finishOutcome,
       }));
-    });
+    };
+
+    socket.on('connect', join);
+    socket.on('disconnect', onDisconnect);
+    socket.on('game:state', onGameState);
+    socket.on('cell:locks', onCellLocks);
+    socket.on('game:wordGuessed', onWordGuessed);
+    socket.on('game:guessResult', onGuessResult);
+    socket.on('game:playerFrozen', onPlayerFrozen);
+    socket.on('game:playerUnfrozen', onPlayerUnfrozen);
+    socket.on('game:playerLeft', onPlayerLeft);
+    socket.on('game:finished', onGameFinished);
+
+    if (socket.connected) join();
 
     return () => {
       active = false;
-      socket.disconnect();
+      socket.off('connect', join);
+      socket.off('disconnect', onDisconnect);
+      socket.off('game:state', onGameState);
+      socket.off('cell:locks', onCellLocks);
+      socket.off('game:wordGuessed', onWordGuessed);
+      socket.off('game:guessResult', onGuessResult);
+      socket.off('game:playerFrozen', onPlayerFrozen);
+      socket.off('game:playerUnfrozen', onPlayerUnfrozen);
+      socket.off('game:playerLeft', onPlayerLeft);
+      socket.off('game:finished', onGameFinished);
+      if (socketRef.current === socket) socketRef.current = null;
+      releaseSocket(key);
     };
   }, [gameId, playerId]);
 
