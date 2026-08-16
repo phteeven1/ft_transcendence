@@ -17,6 +17,7 @@ import {
   SignOut,
   Snowflake,
   Trash,
+  UploadSimple,
   User,
   Users,
   X,
@@ -40,7 +41,8 @@ export type IconName =
   | 'play'
   | 'crown'
   | 'puzzle'
-  | 'gear';
+  | 'gear'
+  | 'upload';
 
 const ICONS: Record<IconName, PhosphorIcon> = {
   close: X,
@@ -61,6 +63,7 @@ const ICONS: Record<IconName, PhosphorIcon> = {
   crown: Crown,
   puzzle: PuzzlePiece,
   gear: Gear,
+  upload: UploadSimple,
 };
 
 export type IconProps = {

@@ -83,7 +83,6 @@ export const vocabulariesApi = {
       } catch {
         if (errorText) message = errorText;
       }
-      console.error('Backend extraction error:', message);
       throw new Error(message);
     }
     return response.json();

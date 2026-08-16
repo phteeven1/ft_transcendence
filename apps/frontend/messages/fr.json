@@ -8,8 +8,6 @@
     "loading": "Chargement…",
     "back": "Retour",
     "close": "Fermer",
-    "yes": "Oui",
-    "no": "Non",
     "error": "Erreur",
     "success": "Succès",
     "submit": "Envoyer",
@@ -27,7 +25,6 @@
     "next": "Suivant",
     "sending": "Envoi…",
     "sendingEllipsis": "Envoi...",
-    "checking": "Vérification…",
     "starting": "Démarrage…",
     "leaving": "Départ…",
     "ending": "Fin…",
@@ -39,7 +36,6 @@
     "active": "Actif",
     "unknownError": "Erreur inconnue",
     "somethingWentWrong": "Une erreur s'est produite. Veuillez réessayer.",
-    "emDash": "—",
     "playerNumber": "Joueur #{id}",
     "and": "et",
     "word": "Mot",
@@ -53,6 +49,12 @@
     "signOut": "Se déconnecter",
     "profileMenu": "Menu du compte",
     "leaveSession": "Quitter la session",
+    "leaveSessionConfirm": {
+      "title": "Quitter cette session ?",
+      "stay": "Rester",
+      "confirm": "Quitter la session",
+      "message": "Si tu pars maintenant, ta session de jeu se terminera immédiatement. Tu ne pourras pas rejoindre à nouveau — un parent devra démarrer une nouvelle session pour toi."
+    },
     "selectLanguage": "Choisir la langue",
     "footerTagline": "© {year} Dicteé — jeux de vocabulaire pour les enfants",
     "privacyPolicy": "Politique de confidentialité",
@@ -60,8 +62,6 @@
     "legalNav": "Mentions légales"
   },
   "home": {
-    "metaTitle": "Dicteé",
-    "metaDescription": "Transformez les listes de vocabulaire en jeux d'apprentissage amusants pour les enfants",
     "tagline": "Apprendre des mots en jouant",
     "title": "Dicteé",
     "description": "Bienvenue sur Dicteé — l'application ludique qui transforme les listes de vocabulaire en jeux d'apprentissage. Téléchargez des listes de mots, invitez d'autres parents de la classe, puis configurez un lien direct pour que votre enfant joue avec ses amis.",
@@ -149,11 +149,7 @@
     "settings": {
       "title": "Paramètres utilisateur",
       "usernameLabel": "Nom d'utilisateur",
-      "realNameLabel": "Nom réel",
       "emailLabel": "E-mail",
-      "relationshipCommentLabel": "Commentaire de relation",
-      "relationshipCommentHint": "Par exemple : Maman de Dana",
-      "showToGroup": "Afficher aux autres utilisateurs du même groupe",
       "passwordLabel": "Mot de passe",
       "changePassword": "Changer le mot de passe",
       "changePasswordTitle": "Changer le mot de passe",
@@ -218,7 +214,6 @@
     "leave": {
       "confirmTitle": "Quitter le groupe ?",
       "confirmMessage": "Êtes-vous sûr de vouloir quitter définitivement {groupName} ?",
-      "onlyAdminBlock": "Vous êtes le seul admin de ce groupe. Avant de partir, vous devez nommer un autre membre admin.",
       "lastMemberTitle": "Le groupe sera supprimé",
       "lastMemberMessage": "Vous êtes le dernier membre de {groupName}. Si vous partez, le groupe sera définitivement supprimé.",
       "failed": "Une erreur s'est produite. Veuillez réessayer."
@@ -227,6 +222,7 @@
   "players": {
     "newPlayer": "Nouveau joueur",
     "play": "Jouer",
+    "noVocabulary": "Aucun vocabulaire",
     "create": {
       "title": "Créer un profil de joueur",
       "playerNameLabel": "Nom du joueur",
@@ -253,10 +249,15 @@
   },
   "vocabulary": {
     "newVocabulary": "Nouveau vocabulaire",
+    "listNameLabel": "Nom de la liste",
+    "listNamePlaceholder": "p. ex. Vocabulaire semaine 3",
+    "listNameRequired": "Veuillez entrer un nom de liste.",
+    "createFailed": "Échec de la création du vocabulaire. Veuillez réessayer.",
     "importTitle": "Import de vocabulaire par IA",
+    "aiUpload": "Import IA",
     "fromLanguage": "Langue source",
     "toLanguage": "Langue cible",
-    "extractAndSave": "Extraire et enregistrer avec l'IA",
+    "extractWithAi": "Extraire avec l'IA",
     "aiReading": "L'IA lit votre fichier...",
     "wordColumn": "Mot",
     "meaningColumn": "Signification",
@@ -265,11 +266,8 @@
     "deleteWordTitle": "Supprimer le mot",
     "minimumWordsTitle": "Minimum 5 mots requis",
     "minimumWordsAlert": "Une liste de vocabulaire doit contenir au moins 5 mots.",
+    "duplicatePairAlert": "Chaque mot et chaque signification doivent être uniques.",
     "extractionFailed": "L'extraction par IA a échoué. Veuillez vous assurer que le fichier contient au moins 5 mots et réessayer.",
-    "rename": {
-      "title": "Renommer {name}",
-      "placeholder": "Nouveau nom"
-    },
     "edit": {
       "title": "Modifier : {name}"
     },
@@ -290,6 +288,7 @@
       "wordBuilding": "Construction de mots",
       "wordSoup": "Soupe de mots",
       "createNewGame": "Créer un nouveau jeu",
+      "actionFailed": "Une erreur s'est produite. Veuillez réessayer.",
       "progression": {
         "tabsLabel": "Progression du groupe",
         "myStatsTabsLabel": "Sections de mes statistiques",
@@ -396,20 +395,15 @@
       "meansWhatPrompt": "Quelle traduction correspond le mieux…"
     },
     "controls": {
-      "leaveGame": "Quitter le jeu",
-      "gameOver": "Partie terminée"
+      "backToLobby": "Retour au lobby",
+      "actionFailed": "Une erreur s'est produite. Veuillez réessayer."
     },
     "abandon": {
-      "title": "Quitter ce jeu ?",
+      "title": "Retourner au lobby ?",
       "stayInGame": "Rester dans le jeu",
-      "leaveGame": "Quitter le jeu",
-      "message": "Si tu pars maintenant, ta session de jeu se terminera immédiatement. Tu ne pourras pas rejoindre à nouveau — un parent devra démarrer une nouvelle session pour toi."
-    },
-    "endGame": {
-      "title": "Terminer cette partie ?",
-      "message": "La partie se terminera immédiatement pour tous les joueurs. Si le puzzle n'est pas encore terminé, aucun XP ne sera attribué.",
-      "cancel": "Continuer à jouer",
-      "confirm": "Terminer la partie"
+      "backToLobby": "Retour au lobby",
+      "message": "Tu quittes cette partie. Les autres continuent de jouer, et ta session de jeu reste active.",
+      "lastPlayerMessage": "Tu es le dernier joueur. Retourner au lobby terminera cette partie. Ta session de jeu reste active."
     },
     "wordBuilding": {
       "generating": "Génération de la grille…",
@@ -518,8 +512,6 @@
     "seeAlso": "Voir aussi :",
     "privacy": {
       "title": "Politique de confidentialité",
-      "metaTitle": "Politique de confidentialité — Dicteé",
-      "metaDescription": "Comment Dicteé collecte, utilise et protège les informations personnelles.",
       "lastUpdated": "30 juin 2026",
       "sections": {
         "introduction": {
@@ -648,10 +640,7 @@
     },
     "terms": {
       "title": "Conditions d'utilisation",
-      "metaTitle": "Conditions d'utilisation — Dicteé",
-      "metaDescription": "Conditions générales d'utilisation de la plateforme d'apprentissage du vocabulaire Dicteé.",
       "lastUpdated": "30 juin 2026",
-      "privacyPolicyLink": "Politique de confidentialité",
       "sections": {
         "agreement": {
           "title": "1. Accord",

@@ -41,8 +41,7 @@ export default function CreatePlayer({ open, onClose, onCreated }: Props) {
       });
       onCreated(created);
       handleClose();
-    } catch (error) {
-      console.error('createPlayer failed:', error);
+    } catch {
       setError(t('create.failed'));
     }
   };

@@ -3,7 +3,6 @@ import {
   Group as DbGroup,
   GroupMembership,
   GroupRole,
-  Invitation as DbInvitation,
   Player as DbPlayer,
   PlayerSession as DbPlayerSession,
   User as DbUser,
@@ -11,7 +10,6 @@ import {
 } from '@ft-transcendence/database';
 import type { Game } from '../games/games.service';
 import type { Group } from '../groups/groups.service';
-import type { Invitation } from '../invitations/invitations.service';
 import type { Player } from '../players/players.service';
 import type { User } from '../users/users.service';
 import type { Vocabulary } from '../vocabularies/vocabularies.service';
@@ -34,11 +32,7 @@ export function toApiUser(user: UserWithMemberships): User {
     email: user.email,
     isMemberOf,
     isAdminOf,
-    realName: user.realName ?? undefined,
-    relationshipComment: user.relationshipComment ?? undefined,
-    showRealName: user.showRealName,
     showEmail: user.showEmail,
-    showRelationshipComment: user.showRelationshipComment,
   };
 }
 
@@ -94,16 +88,6 @@ export function toApiGame(game: GameWithPlayers): Game {
     players: game.gamePlayers.map((gp) => gp.playerId),
     isActive: game.isActive,
     isFinished: game.isFinished,
-  };
-}
-
-export function toApiInvitation(invitation: DbInvitation): Invitation {
-  return {
-    token: invitation.token,
-    groupId: invitation.groupId,
-    createdAt: invitation.createdAt,
-    expiresAt: invitation.expiresAt,
-    used: invitation.used,
   };
 }
 

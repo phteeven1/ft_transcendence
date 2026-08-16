@@ -21,12 +21,6 @@ export const playersApi = {
     return apiRequest<PlayerDto>(`/players/${playerId}`);
   },
 
-  findByParentInGroup(userId: number, groupId: number): Promise<PlayerDto[]> {
-    return apiRequest<PlayerDto[]>(
-      `/players/parent/${userId}/group/${groupId}`,
-    );
-  },
-
   findByGroup(groupId: number): Promise<PlayerDto[]> {
     return apiRequest<PlayerDto[]>(`/players/group/${groupId}`);
   },

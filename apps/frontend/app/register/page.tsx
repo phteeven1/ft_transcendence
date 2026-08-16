@@ -3,7 +3,7 @@ import { useState, ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { usersApi, ApiError } from '@/lib/api';
+import { usersApi } from '@/lib/api';
 import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -43,12 +43,8 @@ export default function Register() {
       });
       login(user);
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Registration failed:', error);
+    } catch {
       setShowError(true);
-      if (error instanceof ApiError) {
-        console.error('API status:', error.status);
-      }
     }
   };
 

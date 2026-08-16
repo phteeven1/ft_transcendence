@@ -12,6 +12,7 @@ import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
   game: Game;
+  error?: string;
   onCancel: () => void;
   onJoin: () => void;
 };
@@ -47,7 +48,7 @@ function getJoinDescription(
   return t('timingMorePlayers', { count: playersStillNeeded });
 }
 
-export default function JoinGameModal({ game, onCancel, onJoin }: Props) {
+export default function JoinGameModal({ game, error, onCancel, onJoin }: Props) {
   const t = useTranslations('games.join');
   const tLobby = useTranslations('games.lobby');
   const tCommon = useTranslations('common');
@@ -64,6 +65,7 @@ export default function JoinGameModal({ game, onCancel, onJoin }: Props) {
       confirmVariant="primary"
     >
       <p>{t('message', { timing: description })}</p>
+      {error ? <p className="text-sm text-destructive mt-3">{error}</p> : null}
     </Dialog>
   );
 }

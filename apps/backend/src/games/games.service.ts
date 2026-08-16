@@ -119,15 +119,39 @@ export class GamesService {
     const game = await this.findById(gameId);
     if (!game) return undefined;
 
+    if (
+      game.isActive &&
+      game.players.length === 1 &&
+      game.players[0] === playerId
+    ) {
+      const result = await this.finish(gameId);
+      return result?.game ?? null;
+    }
+
+    const wasActive = game.isActive;
+    let playerName = `Player #${playerId}`;
+    if (wasActive) {
+      const roster = await this.findPlayersForGame(gameId);
+      playerName =
+        roster.find((player) => player.id === playerId)?.name ?? playerName;
+    }
+
     await this.prisma.gamePlayer.deleteMany({
       where: { gameId, playerId },
     });
     await this.playersService.clearCurrentGame(playerId);
 
+    const emitLeftIfActive = (): void => {
+      if (wasActive) {
+        this.gateway.emitPlayerLeft(gameId, playerId, playerName);
+      }
+    };
+
     const updated = await this.findById(gameId);
     if (!updated || updated.players.length === 0) {
       await this.prisma.game.delete({ where: { id: gameId } }).catch(() => {});
       await this.emitLobbyUpdate(game.inGroup);
+      emitLeftIfActive();
       return null;
     }
 
@@ -140,24 +164,8 @@ export class GamesService {
     }
 
     await this.emitLobbyUpdate(game.inGroup);
+    emitLeftIfActive();
     return this.findById(gameId);
-  }
-
-  /**
-   * Ends a play session for the given player without requiring the game to be deleted.
-   *
-   * @param gameId Game to abandon.
-   * @param playerId Player ending the session.
-   */
-  async abandonPlay(gameId: number, playerId: number): Promise<void> {
-    const roster = await this.findPlayersForGame(gameId);
-    const playerName =
-      roster.find((player) => player.id === playerId)?.name ??
-      `Player #${playerId}`;
-
-    await this.leave(gameId, playerId);
-    await this.playersService.clearSession(playerId);
-    this.gateway.emitPlayerLeft(gameId, playerId, playerName);
   }
 
   /**

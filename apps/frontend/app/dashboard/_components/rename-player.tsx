@@ -23,9 +23,11 @@ export default function RenamePlayer({
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
   const [renameName, setRenameName] = useState('');
+  const [error, setError] = useState('');
 
   const handleClose = () => {
     setRenameName('');
+    setError('');
     onClose();
   };
 
@@ -38,8 +40,8 @@ export default function RenamePlayer({
       });
       onRenamed(updated);
       handleClose();
-    } catch (error) {
-      console.error('renamePlayer failed:', error);
+    } catch {
+      setError(tCommon('somethingWentWrong'));
     }
   };
 
@@ -61,6 +63,7 @@ export default function RenamePlayer({
         placeholder={t('rename.placeholder')}
         autoComplete="new-password"
       />
+      {error && <p className="text-sm text-destructive mt-3">{error}</p>}
     </Dialog>
   );
 }

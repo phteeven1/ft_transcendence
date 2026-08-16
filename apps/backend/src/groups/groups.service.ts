@@ -89,18 +89,33 @@ export class GroupsService {
   }
 
   async leave(groupId: number, userId: number): Promise<Group | undefined> {
-    const deleted = await this.prisma.groupMembership.deleteMany({
-      where: { userId, groupId },
-    });
-    if (deleted.count === 0) return this.findById(groupId);
-
-    const remaining = await this.prisma.groupMembership.count({
+    const memberships = await this.prisma.groupMembership.findMany({
       where: { groupId },
+      orderBy: { id: 'asc' },
     });
-    if (remaining === 0) {
+    const leaving = memberships.find((m) => m.userId === userId);
+    if (!leaving) return this.findById(groupId);
+
+    const others = memberships.filter((m) => m.userId !== userId);
+    if (others.length === 0) {
       await this.delete(groupId);
       return undefined;
     }
+
+    const remainingAdmins = others.filter((m) => m.role === GroupRole.ADMIN);
+    if (leaving.role === GroupRole.ADMIN && remainingAdmins.length === 0) {
+      const nextAdmin = others[0];
+      if (nextAdmin) {
+        await this.prisma.groupMembership.update({
+          where: { id: nextAdmin.id },
+          data: { role: GroupRole.ADMIN },
+        });
+      }
+    }
+
+    await this.prisma.groupMembership.delete({
+      where: { id: leaving.id },
+    });
     return this.findById(groupId);
   }
 

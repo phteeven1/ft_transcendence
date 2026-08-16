@@ -6,7 +6,7 @@ import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import { clearPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 import type { GameOverPhase } from '@/app/hooks/word-soup/use-word-soup-game-over';
-import SoupHostCharacter from './soup-host-character';
+import HostCharacter from '@/app/components/game/host-character';
 import type { CourtSize } from './court-size';
 import { getOverlayScale, type OverlayScale } from './overlay-scale';
 
@@ -141,7 +141,7 @@ function ScorePanel({
                   scale.scoreRowClass,
                 ].join(' ')}
               >
-                <SoupHostCharacter
+                <HostCharacter
                   theme="animals"
                   clothesColor={colour}
                   tier={tier}
@@ -244,7 +244,7 @@ export default function WordSoupGameOverOverlay({
           role="status"
           aria-live="polite"
         >
-          <SoupHostCharacter
+          <HostCharacter
             theme="animals"
             tier={unlockTier}
             animal={hostAnimal}
@@ -293,7 +293,7 @@ export default function WordSoupGameOverOverlay({
           </div>
 
           <div className="relative z-0 shrink-0">
-            <SoupHostCharacter
+            <HostCharacter
               animated
               theme="animals"
               clothesColor={hostClothesColor}

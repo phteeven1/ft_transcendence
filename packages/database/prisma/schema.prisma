@@ -20,11 +20,7 @@ model User {
   email          String   @unique
   password       String
   createdAt      DateTime @default(now())
-  realName                 String?
-  relationshipComment      String?
-  showRealName             Boolean  @default(false)
   showEmail                Boolean  @default(false)
-  showRelationshipComment  Boolean  @default(false)
 
   memberships  GroupMembership[]
   players      Player[]

@@ -8,12 +8,11 @@ import { ConfigService } from '@nestjs/config';
 import { readFileSync } from 'fs';
 import OpenAI from 'openai';
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions';
-import { PDFParse } from 'pdf-parse';
 import { basename, extname } from 'path';
+import { MAX_VOCAB_ENTRY_CHARS } from './vocabulary-entry-rules';
 
 type ExtractionResult = { title: string; words: string[]; meanings: string[] };
 
-const MAX_DOCUMENT_CHARS = 15000;
 const MAX_TITLE_CHARS = 80;
 const MIN_VOCAB_PAIRS = 5;
 
@@ -86,24 +85,11 @@ Prefer ${fromLanguage} words in "words" and ${toLanguage} meanings in "meanings"
 If the document uses another language or mixed columns, still extract every clear word/translation pair you see.
 Accept formats like "word - meaning", two-column tables, numbered lists, or bullet lists.
 Keep words and meanings aligned by row/order.
+Each word and each meaning must be at most ${MAX_VOCAB_ENTRY_CHARS} characters. Skip any pair that cannot fit in that limit; do not truncate translations.
+Do not use spaces or other whitespace inside a word or a meaning. Skip any pair that contains whitespace; do not join the letters together.
+Each word may appear only once and each meaning may appear only once (ignore case). Skip duplicates.
 Also include a short descriptive "title" for the vocabulary list (max 80 characters), based on the document heading, topic, or subject. If none is obvious, invent a concise title such as "French Unit 3 Vocabulary".
 Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } with the same number of entries in both arrays.`;
-  }
-
-  private buildTextPrompt(
-    fromLanguage: string,
-    toLanguage: string,
-    documentText: string,
-  ): string {
-    const text =
-      documentText.length > MAX_DOCUMENT_CHARS
-        ? documentText.substring(0, MAX_DOCUMENT_CHARS) + '... [truncated]'
-        : documentText;
-
-    return `${this.buildExtractionInstructions(fromLanguage, toLanguage)}
-
-Document Text:
-${text}`;
   }
 
   private resolveTitle(
@@ -126,38 +112,59 @@ ${text}`;
     words: string[],
     meanings: string[],
   ): Pick<ExtractionResult, 'words' | 'meanings'> {
-    const cleanedWords = words.map((w) => w.trim()).filter(Boolean);
-    const cleanedMeanings = meanings.map((m) => m.trim()).filter(Boolean);
-    const count = Math.min(cleanedWords.length, cleanedMeanings.length);
+    const count = Math.min(words.length, meanings.length);
+    const cleanedWords: string[] = [];
+    const cleanedMeanings: string[] = [];
+    const seenWords = new Set<string>();
+    const seenMeanings = new Set<string>();
 
-    if (count < MIN_VOCAB_PAIRS) {
+    for (let i = 0; i < count; i++) {
+      const word = words[i]?.trim() ?? '';
+      const meaning = meanings[i]?.trim() ?? '';
+      if (!word || !meaning) continue;
+      if (/\s/.test(word) || /\s/.test(meaning)) continue;
+      if (
+        word.length > MAX_VOCAB_ENTRY_CHARS ||
+        meaning.length > MAX_VOCAB_ENTRY_CHARS
+      ) {
+        continue;
+      }
+      const wordKey = word.toLowerCase();
+      const meaningKey = meaning.toLowerCase();
+      if (seenWords.has(wordKey) || seenMeanings.has(meaningKey)) continue;
+      seenWords.add(wordKey);
+      seenMeanings.add(meaningKey);
+      cleanedWords.push(word);
+      cleanedMeanings.push(meaning);
+    }
+
+    if (cleanedWords.length < MIN_VOCAB_PAIRS) {
       throw new UnprocessableEntityException(
-        `AI only extracted ${count} word(s), but at least ${MIN_VOCAB_PAIRS} are required. Try a clearer photo or a file with more vocabulary.`,
+        `AI only extracted ${cleanedWords.length} word(s), but at least ${MIN_VOCAB_PAIRS} are required. Try a clearer photo or a file with more vocabulary.`,
       );
     }
 
     return {
-      words: cleanedWords.slice(0, count),
-      meanings: cleanedMeanings.slice(0, count),
+      words: cleanedWords,
+      meanings: cleanedMeanings,
     };
   }
 
-  private async extractPdfText(buffer: Buffer): Promise<string> {
-    const instance = new PDFParse({ data: buffer });
-    try {
-      const pdfData = await instance.getText();
-      return pdfData.text.trim();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown PDF error';
-      throw new BadRequestException(`Could not read PDF: ${message}`);
-    } finally {
-      await instance.destroy();
-    }
+  private pdfContentPart(
+    file: Express.Multer.File,
+    buffer: Buffer,
+  ): ChatCompletionContentPart {
+    return {
+      type: 'file',
+      file: {
+        filename: file.originalname || 'vocabulary.pdf',
+        file_data: `data:application/pdf;base64,${buffer.toString('base64')}`,
+      },
+    } as ChatCompletionContentPart;
   }
 
   private async callOpenAi(
-    userContent: string | ChatCompletionContentPart[],
+    userContent: ChatCompletionContentPart[],
     fromLanguage: string,
     toLanguage: string,
     fallbackFilename?: string,
@@ -169,8 +176,7 @@ ${text}`;
         messages: [
           {
             role: 'system',
-            content:
-              'You extract vocabulary word/translation pairs and a list title from an image or document text. Always return valid JSON.',
+            content: `You extract vocabulary word/translation pairs and a list title from an image or PDF. Each word and meaning is at most ${MAX_VOCAB_ENTRY_CHARS} characters, contains no whitespace, and must be unique (each word once, each meaning once). Always return valid JSON.`,
           },
           { role: 'user', content: userContent },
         ],
@@ -189,14 +195,19 @@ ${text}`;
                 },
                 words: {
                   type: 'array',
-                  items: { type: 'string' },
-                  description: 'List of source language words',
+                  items: {
+                    type: 'string',
+                    maxLength: MAX_VOCAB_ENTRY_CHARS,
+                  },
+                  description: `List of source language words (max ${MAX_VOCAB_ENTRY_CHARS} characters each)`,
                 },
                 meanings: {
                   type: 'array',
-                  items: { type: 'string' },
-                  description:
-                    'List of target language meanings/translations aligned index-by-index with words',
+                  items: {
+                    type: 'string',
+                    maxLength: MAX_VOCAB_ENTRY_CHARS,
+                  },
+                  description: `List of target language meanings/translations aligned index-by-index with words (max ${MAX_VOCAB_ENTRY_CHARS} characters each)`,
                 },
               },
               required: ['title', 'words', 'meanings'],
@@ -252,16 +263,13 @@ ${text}`;
     }
 
     const buffer = this.getFileBuffer(file);
+    const instructions = this.buildExtractionInstructions(
+      fromLanguage,
+      toLanguage,
+    );
 
     if (this.isImage(file)) {
       const mime = this.resolveVisionMime(file);
-      console.log(
-        `Sending image to GPT-4o vision (${mime}, ${buffer.length} bytes)`,
-      );
-      const instructions = this.buildExtractionInstructions(
-        fromLanguage,
-        toLanguage,
-      );
       return this.callOpenAi(
         [
           { type: 'text', text: instructions },
@@ -279,17 +287,11 @@ ${text}`;
     }
 
     if (this.isPdf(file)) {
-      const documentText = await this.extractPdfText(buffer);
-      if (!documentText) {
-        throw new BadRequestException(
-          'No readable text found in the file. Try a PDF with visible vocabulary.',
-        );
-      }
-      console.log(
-        `Extracted ${documentText.length} characters via PDF parsing`,
-      );
       return this.callOpenAi(
-        this.buildTextPrompt(fromLanguage, toLanguage, documentText),
+        [
+          { type: 'text', text: instructions },
+          this.pdfContentPart(file, buffer),
+        ],
         fromLanguage,
         toLanguage,
         file.originalname,

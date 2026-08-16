@@ -5,7 +5,7 @@ import RowMenu, { RowMenuItem } from './row-menu';
 import ListRow from './list-row';
 import NewListRow from './new-list-row';
 
-export type VocabularyAction = 'rename' | 'edit' | 'delete';
+export type VocabularyAction = 'edit' | 'delete';
 
 type Props = {
   vocabularies: Vocabulary[];
@@ -29,12 +29,6 @@ export default function VocabularyList({
 
   function menuItems(vocabulary: Vocabulary): RowMenuItem[] {
     return [
-      {
-        id: 'rename',
-        label: tCommon('rename'),
-        icon: 'pencil',
-        onSelect: () => onAction('rename', vocabulary),
-      },
       {
         id: 'edit',
         label: tCommon('edit'),

@@ -47,18 +47,9 @@ function hasActivePlayerSession(): boolean {
   return Boolean(stored && !isSessionExpired(stored.expiresAt));
 }
 
-type UseWordSoupInitOptions = {
-  beforeLobbyNavigation?: () => void;
-};
-
-export function useWordSoupInit(
-  gameId: number,
-  playerId: number,
-  options: UseWordSoupInitOptions = {},
-) {
+export function useWordSoupInit(gameId: number, playerId: number) {
   const router = useRouter();
   const { loginAsPlayer, setSessionExpiresAt } = useAuth();
-  const beforeLobbyNavigation = options.beforeLobbyNavigation;
 
   const [loading, setLoading] = useState(true);
   const [courtReady, setCourtReady] = useState(false);
@@ -94,13 +85,12 @@ export function useWordSoupInit(
     if (hasLeftForLobbyRef.current) return;
     hasLeftForLobbyRef.current = true;
     if (hasActivePlayerSession()) {
-      beforeLobbyNavigation?.();
       await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
       router.replace('/select_game');
       return;
     }
     router.replace('/session_over');
-  }, [beforeLobbyNavigation, loginAsPlayer, router, setSessionExpiresAt]);
+  }, [loginAsPlayer, router, setSessionExpiresAt]);
 
   useEffect(() => {
     if (!gameId || !playerId) {

@@ -6,7 +6,7 @@ import type {
   IntroCountdownValue,
   IntroPhase,
 } from '@/app/hooks/word-soup/use-word-soup-intro';
-import SoupHostCharacter from './soup-host-character';
+import HostCharacter from '@/app/components/game/host-character';
 import type { CourtSize } from './court-size';
 import { longestSolutionWord } from './intro-bubble-width';
 import { getOverlayScale } from './overlay-scale';
@@ -279,7 +279,7 @@ export default function WordSoupIntroOverlay({
           </div>
 
           <div className="relative z-0 shrink-0">
-            <SoupHostCharacter
+            <HostCharacter
               animated
               theme="animals"
               clothesColor={hostClothesColor}

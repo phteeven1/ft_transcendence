@@ -4,8 +4,6 @@ import MemberDialog from './member-dialog';
 import RenamePlayer from './rename-player';
 import DeletePlayer from './delete-player';
 import InviteToPlay from './invite-to-play';
-import RenameVocabulary from './rename-vocabulary';
-import EditVocabulary from './edit-vocabulary';
 import DeleteVocabulary from './delete-vocabulary';
 import type { UsePeoplePanelResult } from '../_hooks/use-people-panel';
 
@@ -39,18 +37,6 @@ export default function PeopleDialogs({ panel }: Props) {
         player={panel.activePlayer}
         open={panel.isPlayOpen}
         onClose={panel.closePlay}
-      />
-      <RenameVocabulary
-        vocabulary={panel.actionVocabulary}
-        open={panel.vocabDialog === 'rename'}
-        onClose={panel.closeVocabDialog}
-        onRenamed={panel.handleVocabularyUpdated}
-      />
-      <EditVocabulary
-        vocabulary={panel.actionVocabulary}
-        open={panel.vocabDialog === 'edit'}
-        onClose={panel.closeVocabDialog}
-        onEdited={panel.handleVocabularyUpdated}
       />
       <DeleteVocabulary
         vocabulary={panel.actionVocabulary}

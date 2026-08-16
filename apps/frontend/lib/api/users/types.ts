@@ -5,11 +5,7 @@ export type UserDto = {
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
-  realName?: string;
-  relationshipComment?: string;
   showEmail: boolean;
-  showRealName: boolean;
-  showRelationshipComment: boolean;
 };
 
 export type RegisterUserInput = {
@@ -26,11 +22,6 @@ export type SignInUserInput = {
 export type UpdateUserInput = {
   userId: number;
   userName?: string;
-  realName?: string;
-  relationshipComment?: string;
-  showEmail: boolean;
-  showRealName: boolean;
-  showRelationshipComment: boolean;
 };
 
 export type ChangePasswordInput = {

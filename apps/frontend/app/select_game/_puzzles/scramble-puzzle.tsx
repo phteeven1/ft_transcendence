@@ -2,7 +2,6 @@
 /*
 Scramble puzzle: player drags letter tiles to reconstruct a word from its meaning.
 - Picks a random entry with word length >= 3 from the vocabulary on mount.
-  If none exists, calls onSkip immediately.
 - Space characters in multi-word entries (e.g. "DIE KATZE") are blank tiles,
   treated as draggable letters, not as gaps.
 - All letters are uppercased to avoid giving away word start.
@@ -110,12 +109,9 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
   const meaning = basePuzzle?.meaning ?? '';
 
   useEffect(() => {
-    if (!basePuzzle) {
-      onSkip();
-      return;
-    }
+    if (!basePuzzle) return;
     wordRef.current = basePuzzle.word;
-  }, [basePuzzle, onSkip]);
+  }, [basePuzzle]);
 
   const updateTiles = useCallback(
     (updater: (prev: Tile[]) => Tile[]) => {

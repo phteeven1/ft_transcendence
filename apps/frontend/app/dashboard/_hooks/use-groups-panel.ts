@@ -41,8 +41,8 @@ export function useGroupsPanel(): UseGroupsPanelResult {
       );
       results.sort((a, b) => a.name.localeCompare(b.name));
       setGroups(results);
-    } catch (error) {
-      console.error('loadGroups failed:', error);
+    } catch {
+      /* keep last groups */
     }
   }, [userId, refreshUser]);
 

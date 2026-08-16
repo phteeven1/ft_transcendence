@@ -10,6 +10,7 @@ import { Dialog } from '../../components/ui/dialog';
 
 type Props = {
   gameName: string;
+  error?: string;
   onCancel: () => void;
   onCreate: () => void;
 };
@@ -24,7 +25,7 @@ function getLocalizedGameName(
   return name;
 }
 
-export default function InitiateGameModal({ gameName, onCancel, onCreate }: Props) {
+export default function InitiateGameModal({ gameName, error, onCancel, onCreate }: Props) {
   const t = useTranslations('games.initiate');
   const tLobby = useTranslations('games.lobby');
   const tCommon = useTranslations('common');
@@ -40,6 +41,7 @@ export default function InitiateGameModal({ gameName, onCancel, onCreate }: Prop
       confirmVariant="accent"
     >
       <p>{t('message')}</p>
+      {error ? <p className="text-sm text-destructive mt-3">{error}</p> : null}
     </Dialog>
   );
 }

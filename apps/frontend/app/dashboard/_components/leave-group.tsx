@@ -7,11 +7,7 @@ import { groupsApi } from '@/lib/api';
 import { Group } from '../../types';
 import { Dialog } from '../../components/ui';
 
-type ModalState =
-  | 'confirmLeave'
-  | 'onlyAdmin'
-  | 'confirmLastMember'
-  | 'error';
+type ModalState = 'confirmLeave' | 'confirmLastMember' | 'error';
 
 type Props = {
   group: Group | null;
@@ -49,8 +45,6 @@ function LeaveGroupFlow({
   if (!user) return null;
 
   const totalMembers = group.members.length + group.admins.length;
-  const isOnlyAdmin =
-    group.admins.includes(user.id) && group.admins.length === 1;
   const isLastMember = totalMembers === 1;
 
   const handleClose = () => {
@@ -58,10 +52,6 @@ function LeaveGroupFlow({
   };
 
   const handleConfirmLeave = () => {
-    if (isOnlyAdmin && !isLastMember) {
-      setModal('onlyAdmin');
-      return;
-    }
     if (isLastMember) {
       setModal('confirmLastMember');
       return;
@@ -79,8 +69,7 @@ function LeaveGroupFlow({
       if (currentGroup?.id === group.id) leaveGroup();
       handleClose();
       await onDone();
-    } catch (error) {
-      console.error('Failed to leave group:', error);
+    } catch {
       setModal('error');
     }
   };
@@ -98,15 +87,6 @@ function LeaveGroupFlow({
         cancelVariant="ghost"
       >
         {t('leave.confirmMessage', { groupName: group.name })}
-      </Dialog>
-
-      <Dialog
-        open={modal === 'onlyAdmin'}
-        onClose={handleClose}
-        onConfirm={handleClose}
-        showCancel={false}
-      >
-        {t('leave.onlyAdminBlock')}
       </Dialog>
 
       <Dialog

@@ -62,7 +62,6 @@ function SendInviteForm({
       });
       handleClose();
     } catch (error) {
-      console.error('Failed to send invitation:', error);
       setInviteError(
         error instanceof ApiError
           ? error.message

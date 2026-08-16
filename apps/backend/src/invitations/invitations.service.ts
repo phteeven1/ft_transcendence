@@ -2,14 +2,6 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-export type Invitation = {
-  token: string;
-  groupId: number;
-  createdAt: Date;
-  expiresAt: Date;
-  used: boolean;
-};
-
 @Injectable()
 export class InvitationsService {
   constructor(

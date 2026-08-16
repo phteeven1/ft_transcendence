@@ -2,7 +2,6 @@
 /*
 Means-What puzzle: player sees a meaning and picks the matching word from three options.
 - Picks a random entry from the vocabulary on mount.
-  If vocabulary has fewer than 3 words, calls onSkip immediately.
 - Two distractor words are picked randomly from the remaining entries.
 - The three answer buttons are shuffled so the correct answer is not always in the same position.
 - One attempt only: clicking any button locks in the answer.
@@ -11,7 +10,7 @@ Means-What puzzle: player sees a meaning and picks the matching word from three 
   FALSE appears, Skip → Next.
 - Layout: buttons side by side on desktop/landscape, stacked on portrait mobile.
 */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { Button } from '../../components/ui/button';
@@ -87,10 +86,6 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
   const [guessed, setGuessed] = useState(false);
   const [result, setResult] = useState<'success' | 'false' | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (puzzleData.kind === 'skip') onSkip();
-  }, [puzzleData, onSkip]);
 
   const handleGuess = (index: number) => {
     if (guessed || puzzleData.kind !== 'ready') return;
