@@ -7,6 +7,10 @@ import { useAuth } from '../context/auth-context';
 import { PageShell, Panel } from '../components/ui';
 import GroupsPanel from './_components/groups-panel';
 import PeoplePanel from './_components/people-panel';
+import {
+  getPlayerSession,
+  isLobbyRedirectSuppressed,
+} from '@/lib/player-session';
 
 function DashboardLoading() {
   const tCommon = useTranslations('common');
@@ -28,21 +32,37 @@ export default function DashboardPage() {
 
 function Dashboard() {
   const t = useTranslations('dashboard');
-  const { user, group, player, authReady } = useAuth();
+  const { user, group, player, authReady, logoutPlayer } = useAuth();
   const router = useRouter();
+  const suppressLobbyRedirect = isLobbyRedirectSuppressed();
 
   useEffect(() => {
     if (!authReady) return;
-    if (player) {
+    const storedSession = getPlayerSession();
+    if (isLobbyRedirectSuppressed()) {
+      if (player) {
+        logoutPlayer();
+      }
+      if (!user) {
+        router.push('/');
+      }
+      return;
+    }
+    if (player && storedSession) {
       router.replace('/select_game');
       return;
     }
     if (!user) {
       router.push('/');
     }
-  }, [authReady, user, player, router]);
+  }, [authReady, user, player, router, logoutPlayer]);
 
-  if (!authReady || !user || player) return <DashboardLoading />;
+  if (
+    !authReady ||
+    !user ||
+    (player && getPlayerSession() && !suppressLobbyRedirect)
+  )
+    return <DashboardLoading />;
 
   return (
     <PageShell wide>

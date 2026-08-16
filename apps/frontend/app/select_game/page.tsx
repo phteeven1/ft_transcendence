@@ -7,7 +7,7 @@ drive shared UI. Failures stay in the modal.
 
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { gamesApi, playersApi } from '@/lib/api';
 import { translateAvatarTier } from '@/lib/i18n/progression-labels';
@@ -70,6 +70,7 @@ export default function SelectGame() {
   const [sessionReady, setSessionReady] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [unlockToastTier, setUnlockToastTier] = useState<number | null>(null);
+  const mountedPlayerIdRef = useRef<number | null | undefined>(undefined);
 
   useEffect(() => {
     if (!authReady) return;
@@ -77,8 +78,18 @@ export default function SelectGame() {
 
     const bootstrap = async () => {
       const stored = getPlayerSession();
+      const hadPlayerOnThisPage =
+        mountedPlayerIdRef.current !== undefined &&
+        mountedPlayerIdRef.current !== null;
+      mountedPlayerIdRef.current = player?.id ?? null;
 
       if (!player) {
+        if (hadPlayerOnThisPage) {
+          setBootstrapping(false);
+          setSessionReady(false);
+          router.replace(user ? '/dashboard' : '/');
+          return;
+        }
         const restored = await restorePlayerFromSession({
           loginAsPlayer,
           setSessionExpiresAt,

@@ -252,6 +252,12 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       );
     }
 
+    if (!Array.isArray(parsed.words) || !Array.isArray(parsed.meanings)) {
+      throw new UnprocessableEntityException(
+        'AI returned an invalid response. Please try again with a clearer file.',
+      );
+    }
+
     const validated = this.validatePairs(parsed.words, parsed.meanings);
 
     return {

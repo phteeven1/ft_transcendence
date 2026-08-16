@@ -118,7 +118,7 @@ export class VocabulariesService {
           'A vocabulary with this name already exists in the group.',
         );
       }
-      return undefined;
+      throw error;
     }
   }
 

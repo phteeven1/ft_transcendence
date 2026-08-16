@@ -105,7 +105,7 @@ Every schema change needs a migration (`npm run db:migrate` from repo root). Do 
 
 ## Vocabulary
 
-Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden starter list (`TEST_VOCABULARY`) if none exists; custom lists always become the active list. Names are unique per group. Entries: max 18 characters, whitespace stripped, unique words and unique meanings, at least 5 pairs (frontend + backend `vocabulary-entry-rules.ts`). AI import sends photos as `image_url` and PDFs as GPT-4o file parts (no pdf-parse). Extract requires group membership (`userId` + `groupId`); HEIC is rejected.
+Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden starter list (`TEST_VOCABULARY`) if none exists. Games use the group’s `currentVocabulary` (whatever the user last chose, or the starter if they have no custom list). Opening the dashboard does not change the active list. Names are unique per group. Entries: max 18 characters, whitespace stripped, unique words and unique meanings, at least 5 pairs (frontend + backend `vocabulary-entry-rules.ts`). AI import sends photos as `image_url` and PDFs as GPT-4o file parts (no pdf-parse). Extract requires group membership (`userId` + `groupId`); HEIC is rejected.
 
 ---
 

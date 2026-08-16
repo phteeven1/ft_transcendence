@@ -5,7 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useSyncExternalStore,
   ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -42,6 +42,9 @@ const languagesByCode = Object.fromEntries(
   LANGUAGES.map((lang) => [lang.code, lang]),
 ) as Record<string, Language>;
 
+const languageListeners = new Set<() => void>();
+const languageSnapshots = new Map<string, Language>();
+
 function identityStorageKey(
   userId: number | null,
   playerId: number | null,
@@ -67,6 +70,36 @@ function readLanguage(key: string): Language {
   return parseStoredLanguage(localStorage.getItem(LEGACY_KEY));
 }
 
+function getCachedLanguage(key: string): Language {
+  const language = readLanguage(key);
+  const cached = languageSnapshots.get(key);
+  if (cached && cached.code === language.code) return cached;
+  languageSnapshots.set(key, language);
+  return language;
+}
+
+function subscribeLanguage(onStoreChange: () => void): () => void {
+  languageListeners.add(onStoreChange);
+  const onStorage = (event: StorageEvent) => {
+    if (
+      event.key === null ||
+      event.key === LEGACY_KEY ||
+      event.key.startsWith('selectedLanguage')
+    ) {
+      onStoreChange();
+    }
+  };
+  window.addEventListener('storage', onStorage);
+  return () => {
+    languageListeners.delete(onStoreChange);
+    window.removeEventListener('storage', onStorage);
+  };
+}
+
+function notifyLanguageListeners(): void {
+  languageListeners.forEach((listener) => listener());
+}
+
 function writeCookie(code: LocaleCode): void {
   document.cookie = `${LOCALE_COOKIE}=${code};path=/;max-age=31536000;SameSite=Lax`;
 }
@@ -74,31 +107,22 @@ function writeCookie(code: LocaleCode): void {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user, player } = useAuth();
   const storageKey = identityStorageKey(user?.id ?? null, player?.id ?? null);
-  const [selected, setSelectedState] = useState<Language>(DEFAULT_LANGUAGE);
-
-  useEffect(() => {
-    setSelectedState(readLanguage(storageKey));
-  }, [storageKey]);
+  const selected = useSyncExternalStore(
+    subscribeLanguage,
+    () => getCachedLanguage(storageKey),
+    () => DEFAULT_LANGUAGE,
+  );
 
   useEffect(() => {
     writeCookie(selected.code);
   }, [selected.code]);
 
-  useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === storageKey) {
-        setSelectedState(readLanguage(storageKey));
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [storageKey]);
-
   const setSelected = (lang: Language) => {
     const normalized = languagesByCode[lang.code] ?? DEFAULT_LANGUAGE;
     localStorage.setItem(storageKey, JSON.stringify(normalized));
     writeCookie(normalized.code);
-    setSelectedState(normalized);
+    languageSnapshots.set(storageKey, normalized);
+    notifyLanguageListeners();
   };
 
   return (
