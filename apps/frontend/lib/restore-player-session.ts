@@ -32,6 +32,11 @@ export async function restorePlayerFromSession(
       playersApi.getById(stored.playerId),
     ]);
 
+    const storedAfter = getPlayerSession();
+    if (!storedAfter || storedAfter.token !== stored.token) {
+      return null;
+    }
+
     callbacks.loginAsPlayer(playerData);
     callbacks.setSessionExpiresAt(new Date(validated.expiresAt).getTime());
     return playerData;

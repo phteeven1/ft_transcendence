@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
 import { playersApi } from '@/lib/api';
+import { clearPlayerSession } from '@/lib/player-session';
 import { Button, Dropdown, DropdownItem, Icon } from './ui';
 import AbandonPlayModal from './abandon-play-modal';
 import UserSettings from '../dashboard/_components/user-settings';
@@ -50,16 +51,20 @@ export default function ProfileMenu() {
   };
 
   const handleLeaveSession = async () => {
-    if (!player) return;
-    setIsLeavingSession(true);
-    try {
-      await playersApi.clearSession(player.id);
-    } catch {
-      /* session still ends locally */
-    }
-    logoutPlayer();
+    const playerId = player?.id;
     setShowLeaveSessionModal(false);
-    router.push('/dashboard');
+    setIsLeavingSession(true);
+    clearPlayerSession();
+    logoutPlayer();
+    if (playerId) {
+      try {
+        await playersApi.clearSession(playerId);
+      } catch {
+        /* parent dashboard is still reachable */
+      }
+    }
+    setIsLeavingSession(false);
+    router.replace('/dashboard');
   };
 
   return (
@@ -115,7 +120,8 @@ export default function ProfileMenu() {
         <AbandonPlayModal
           kind="session"
           onStay={() => {
-            if (!isLeavingSession) setShowLeaveSessionModal(false);
+            setShowLeaveSessionModal(false);
+            setIsLeavingSession(false);
           }}
           onLeave={() => void handleLeaveSession()}
           isLeaving={isLeavingSession}

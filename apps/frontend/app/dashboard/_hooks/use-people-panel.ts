@@ -146,26 +146,12 @@ export function usePeoplePanel(): UsePeoplePanelResult {
         (vocabulary) => !isStarterVocabulary(vocabulary.name),
       );
       setVocabularies(custom);
-
-      const preferred = custom[0] ?? starter;
-      const currentId = group?.currentVocabulary;
-      const currentIsPreferred =
-        currentId !== undefined &&
-        (custom.some((vocabulary) => vocabulary.id === currentId) ||
-          (custom.length === 0 && currentId === starter.id));
-      if (!currentIsPreferred) {
-        await vocabulariesApi.setActive({
-          vocabularyId: preferred.id,
-          vocabularyInGroup: selectedGroupId,
-        });
-        await syncGroup(selectedGroupId);
-      }
     } catch {
       /* keep last vocabularies */
     } finally {
       setIsVocabLoading(false);
     }
-  }, [selectedGroupId, userId, group?.currentVocabulary, syncGroup]);
+  }, [selectedGroupId, userId]);
 
   const syncAndRefresh = useCallback(async (): Promise<void> => {
     if (!selectedGroupId || !userId) return;
@@ -287,17 +273,6 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     },
     [group, syncGroup],
   );
-
-  useEffect(() => {
-    if (vocabularies.length === 0 || !group) return;
-    const currentIsCustom = vocabularies.some(
-      (vocabulary) => vocabulary.id === group.currentVocabulary,
-    );
-    if (currentIsCustom) return;
-    const preferred = vocabularies[0];
-    if (!preferred) return;
-    void activateVocabulary(preferred);
-  }, [vocabularies, group, activateVocabulary]);
 
   const closeVocabDialog = (): void => {
     setVocabDialog(null);
