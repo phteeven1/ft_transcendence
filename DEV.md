@@ -122,7 +122,7 @@ Rules:
 - `select_game` validates on mount. Missing or expired → `/dashboard` if a parent is still in context, else `/`. Games in progress are not interrupted.
 - Requests that need a child session send headers `x-player-id` and `x-player-session-token`. Progression routes use `PlayerSessionGuard`.
 - `POST /players/clearSession` deletes the token immediately (leave session, or **End session** in the Play Now dialog).
-- Closing the tab clears `sessionStorage` but leaves the server token until `expiresAt` or parent force-clear. Do not `sendBeacon` on `pagehide` — that event also fires on refresh and would delete the server token while `sessionStorage` still has it.
+- Closing the Play Now tab writes a pending end in `localStorage`. After `SESSION_CLOSE_GRACE_MS` (2s), another load or an already-open parent tab calls `clearSession`. Refresh cancels the pending end because `sessionStorage` still has the token. Do not `sendBeacon` `clearSession` on `pagehide` — that event also fires on refresh.
 
 This exists so two tabs cannot play as the same child, and so `currentGameId` is not the only notion of “is this child online”.
 
@@ -154,5 +154,5 @@ Claymorphism UI. Tokens: `apps/frontend/app/design-tokens.json` and `globals.css
 ## Pitfalls (true today)
 
 - Parent restore is `localStorage` ids + unauthenticated `GET /users/:id`. Most REST routes have no auth guard; many POSTs trust a body `userId`. Fine for a demo, not production auth.
-- Closing a Play Now tab orphans the `PlayerSession` row until `expiresAt` or the parent uses **End session**. Do not restore a `pagehide` beacon.
+- Closing a Play Now tab ends the server token after a 2s grace window (`localStorage` pending end; refresh cancels it). Do not `sendBeacon` `clearSession` on `pagehide`.
 - Word Soup is a real game, not a stub. Progression (XP, avatars, leaderboard) is claimed as gamification plus game statistics.

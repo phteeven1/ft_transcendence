@@ -11,6 +11,8 @@ import {
 import { groupsApi, usersApi, type UserDto } from '@/lib/api';
 import type { GroupDto } from '@/lib/api/groups/types';
 import { clearPlayerSession } from '@/lib/player-session';
+import { clearPendingSessionEnd } from '@/lib/pending-session-end';
+import { useSessionCloseGuard } from '../hooks/use-session-close-guard';
 import {
   clearStoredGroupId,
   clearStoredParentAuth,
@@ -49,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const userRef = useRef<User | null>(null);
+  useSessionCloseGuard();
   useEffect(() => {
     userRef.current = user;
   }, [user]);
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutPlayer = useCallback(() => {
     clearPlayerSession();
+    clearPendingSessionEnd();
     setPlayer(null);
     setSessionExpiresAt(null);
   }, []);
