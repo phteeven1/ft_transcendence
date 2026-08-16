@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { toApiVocabulary } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeVocabularyEntries } from './vocabulary-entry-rules';
@@ -13,9 +18,35 @@ export type Vocabulary = {
   wordCount: number;
 };
 
+function isPrismaUniqueConstraint(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code: unknown }).code === 'P2002'
+  );
+}
+
 @Injectable()
 export class VocabulariesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async assertGroupMembership(userId: number, groupId: number): Promise<void> {
+    if (
+      !Number.isInteger(userId) ||
+      userId <= 0 ||
+      !Number.isInteger(groupId) ||
+      groupId <= 0
+    ) {
+      throw new BadRequestException('userId and groupId are required.');
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this group.');
+    }
+  }
 
   async create(
     inGroup: number,
@@ -25,40 +56,46 @@ export class VocabulariesService {
     meanings: string[] = [],
   ): Promise<Vocabulary> {
     const entries = normalizeVocabularyEntries(words, meanings);
-    const vocabulary = await this.prisma.vocabulary.create({
-      data: {
-        inGroupId: inGroup,
-        byUserId: byUser,
-        name,
-        words: entries.words,
-        meanings: entries.meanings,
-        wordCount: entries.words.length,
-      },
-    });
+    try {
+      const vocabulary = await this.prisma.vocabulary.create({
+        data: {
+          inGroupId: inGroup,
+          byUserId: byUser,
+          name,
+          words: entries.words,
+          meanings: entries.meanings,
+          wordCount: entries.words.length,
+        },
+      });
 
-    await this.ensureSoleVocabularyActive(inGroup);
-    return toApiVocabulary(vocabulary);
+      await this.ensureSoleVocabularyActive(inGroup);
+      return toApiVocabulary(vocabulary);
+    } catch (error) {
+      if (isPrismaUniqueConstraint(error)) {
+        throw new ConflictException(
+          'A vocabulary with this name already exists in the group.',
+        );
+      }
+      throw error;
+    }
   }
 
   async setActive(
     vocabularyId: number,
     inGroup: number,
   ): Promise<Vocabulary | undefined> {
-    try {
-      const vocabulary = await this.prisma.vocabulary.findUnique({
-        where: { id: vocabularyId },
-      });
-      if (!vocabulary) return undefined;
+    const vocabulary = await this.requireVocabularyInGroup(
+      vocabularyId,
+      inGroup,
+    );
+    if (!vocabulary) return undefined;
 
-      await this.prisma.group.update({
-        where: { id: inGroup },
-        data: { currentVocabularyId: vocabularyId },
-      });
+    await this.prisma.group.update({
+      where: { id: inGroup },
+      data: { currentVocabularyId: vocabularyId },
+    });
 
-      return toApiVocabulary(vocabulary);
-    } catch {
-      return undefined;
-    }
+    return toApiVocabulary(vocabulary);
   }
 
   async rename(
@@ -66,51 +103,53 @@ export class VocabulariesService {
     name: string,
     inGroup: number,
   ): Promise<Vocabulary | undefined> {
+    const existing = await this.requireVocabularyInGroup(vocabularyId, inGroup);
+    if (!existing) return undefined;
+
     try {
       const vocabulary = await this.prisma.vocabulary.update({
         where: { id: vocabularyId },
         data: { name },
       });
-      void inGroup;
-
       return toApiVocabulary(vocabulary);
-    } catch {
+    } catch (error) {
+      if (isPrismaUniqueConstraint(error)) {
+        throw new ConflictException(
+          'A vocabulary with this name already exists in the group.',
+        );
+      }
       return undefined;
     }
   }
 
   async updateEntries(
     vocabularyId: number,
+    inGroup: number,
     words: string[],
     meanings: string[],
   ): Promise<Vocabulary | undefined> {
+    const existing = await this.requireVocabularyInGroup(vocabularyId, inGroup);
+    if (!existing) return undefined;
+
     const entries = normalizeVocabularyEntries(words, meanings);
-    try {
-      const vocabulary = await this.prisma.vocabulary.update({
-        where: { id: vocabularyId },
-        data: {
-          words: entries.words,
-          meanings: entries.meanings,
-          wordCount: entries.words.length,
-        },
-      });
-      return toApiVocabulary(vocabulary);
-    } catch {
-      return undefined;
-    }
+    const vocabulary = await this.prisma.vocabulary.update({
+      where: { id: vocabularyId },
+      data: {
+        words: entries.words,
+        meanings: entries.meanings,
+        wordCount: entries.words.length,
+      },
+    });
+    return toApiVocabulary(vocabulary);
   }
 
-  async remove(
-    vocabularyId: number,
-    inGroup: number,
-  ): Promise<boolean> {
-    try {
-      await this.prisma.vocabulary.delete({ where: { id: vocabularyId } });
-      await this.ensureSoleVocabularyActive(inGroup);
-      return true;
-    } catch {
-      return false;
-    }
+  async remove(vocabularyId: number, inGroup: number): Promise<boolean> {
+    const existing = await this.requireVocabularyInGroup(vocabularyId, inGroup);
+    if (!existing) return false;
+
+    await this.prisma.vocabulary.delete({ where: { id: vocabularyId } });
+    await this.ensureSoleVocabularyActive(inGroup);
+    return true;
   }
 
   async findById(vocabularyId: number): Promise<Vocabulary | undefined> {
@@ -125,6 +164,20 @@ export class VocabulariesService {
       where: { inGroupId: inGroup },
     });
     return vocabularies.map(toApiVocabulary);
+  }
+
+  private async requireVocabularyInGroup(
+    vocabularyId: number,
+    inGroup: number,
+  ) {
+    const vocabulary = await this.prisma.vocabulary.findUnique({
+      where: { id: vocabularyId },
+    });
+    if (!vocabulary) return undefined;
+    if (vocabulary.inGroupId !== inGroup) {
+      throw new ForbiddenException('Vocabulary does not belong to this group.');
+    }
+    return vocabulary;
   }
 
   private async ensureSoleVocabularyActive(inGroup: number): Promise<void> {

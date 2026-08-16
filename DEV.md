@@ -105,7 +105,7 @@ Every schema change needs a migration (`npm run db:migrate` from repo root). Do 
 
 ## Vocabulary
 
-Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden starter list (`TEST_VOCABULARY`) if none exists; custom lists always become the active list. Entries: max 18 characters, no whitespace, unique words and unique meanings (frontend + backend `vocabulary-entry-rules.ts`). AI import sends photos as `image_url` and PDFs as GPT-4o file parts (no pdf-parse).
+Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden starter list (`TEST_VOCABULARY`) if none exists; custom lists always become the active list. Names are unique per group. Entries: max 18 characters, whitespace stripped, unique words and unique meanings, at least 5 pairs (frontend + backend `vocabulary-entry-rules.ts`). AI import sends photos as `image_url` and PDFs as GPT-4o file parts (no pdf-parse). Extract requires group membership (`userId` + `groupId`); HEIC is rejected.
 
 ---
 
@@ -113,15 +113,16 @@ Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden s
 
 A parent session and a child session are different things.
 
-- **Parent:** `POST /users/signin` returns the user object. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`). There is no JWT.
-- **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie.
+- **Parent:** `POST /users/signin` returns the user object. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`) with unauthenticated `GET /users/:id`. Demo-only ID restore — not a real session. There is no JWT.
+- **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie. Parent `User` / `Group` stay in `AuthContext` while the child plays.
 
 Rules:
 
-- One unexpired token per player. A second Play Now while one is live is rejected.
-- `select_game` validates on mount. Missing or expired → redirect home. Games in progress are not interrupted.
+- One unexpired token per player. A second Play Now while one is live is rejected unless the parent ends it first.
+- `select_game` validates on mount. Missing or expired → `/dashboard` if a parent is still in context, else `/`. Games in progress are not interrupted.
 - Requests that need a child session send headers `x-player-id` and `x-player-session-token`. Progression routes use `PlayerSessionGuard`.
-- `POST /players/clearSession` deletes the token immediately (parent stop / leave). Orphaned tokens die at `expiresAt`.
+- `POST /players/clearSession` deletes the token immediately (leave session, or **End session** in the Play Now dialog).
+- Closing the tab clears `sessionStorage` but leaves the server token until `expiresAt` or parent force-clear. Do not `sendBeacon` on `pagehide` — that event also fires on refresh and would delete the server token while `sessionStorage` still has it.
 
 This exists so two tabs cannot play as the same child, and so `currentGameId` is not the only notion of “is this child online”.
 
@@ -152,5 +153,6 @@ Claymorphism UI. Tokens: `apps/frontend/app/design-tokens.json` and `globals.css
 
 ## Pitfalls (true today)
 
-- Most REST routes have no auth guard; many POSTs trust a body `userId`.
+- Parent restore is `localStorage` ids + unauthenticated `GET /users/:id`. Most REST routes have no auth guard; many POSTs trust a body `userId`. Fine for a demo, not production auth.
+- Closing a Play Now tab orphans the `PlayerSession` row until `expiresAt` or the parent uses **End session**. Do not restore a `pagehide` beacon.
 - Word Soup is a real game, not a stub. Progression (XP, avatars, leaderboard) is claimed as gamification plus game statistics.

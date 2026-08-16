@@ -1,8 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 
 export const MAX_VOCAB_ENTRY_CHARS = 18;
+export const MIN_VOCAB_PAIRS = 5;
 
-const WHITESPACE = /\s/;
+export function stripEntryWhitespace(value: string): string {
+  return value.replace(/\s/g, '');
+}
 
 export function normalizeVocabularyEntries(
   words: string[],
@@ -20,15 +23,10 @@ export function normalizeVocabularyEntries(
   const seenMeanings = new Set<string>();
 
   for (let i = 0; i < words.length; i++) {
-    const word = words[i]?.trim() ?? '';
-    const meaning = meanings[i]?.trim() ?? '';
+    const word = stripEntryWhitespace(words[i] ?? '');
+    const meaning = stripEntryWhitespace(meanings[i] ?? '');
     if (!word || !meaning) {
       throw new BadRequestException('Each entry needs a word and a meaning.');
-    }
-    if (WHITESPACE.test(word) || WHITESPACE.test(meaning)) {
-      throw new BadRequestException(
-        'Words and meanings cannot contain spaces or other whitespace.',
-      );
     }
     if (
       word.length > MAX_VOCAB_ENTRY_CHARS ||
@@ -49,6 +47,12 @@ export function normalizeVocabularyEntries(
     seenMeanings.add(meaningKey);
     normalizedWords.push(word);
     normalizedMeanings.push(meaning);
+  }
+
+  if (normalizedWords.length < MIN_VOCAB_PAIRS) {
+    throw new BadRequestException(
+      `A vocabulary needs at least ${MIN_VOCAB_PAIRS} word pairs.`,
+    );
   }
 
   return { words: normalizedWords, meanings: normalizedMeanings };

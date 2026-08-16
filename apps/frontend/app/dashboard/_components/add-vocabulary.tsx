@@ -121,6 +121,7 @@ export default function AddVocabulary({
         }
         const withEntries = await vocabulariesApi.updateEntries({
           vocabularyId: updated.id,
+          vocabularyInGroup: group.id,
           vocabularyWords: words,
           vocabularyMeanings: meanings,
         });
@@ -148,7 +149,7 @@ export default function AddVocabulary({
   };
 
   const handleAiExtract = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !user || !group) return;
     setIsExtracting(true);
     setAiError('');
     try {
@@ -158,6 +159,8 @@ export default function AddVocabulary({
         selectedFile,
         fromLangName,
         toLangName,
+        user.id,
+        group.id,
       );
       setName((current) => current.trim() || data.title);
       setEntries(

@@ -106,6 +106,7 @@ model Vocabulary {
   user  User  @relation(fields: [byUserId], references: [id], onDelete: Cascade)
   currentForGroup Group? @relation("GroupCurrentVocabulary")
 
+  @@unique([inGroupId, name])
   @@index([inGroupId])
 }
 

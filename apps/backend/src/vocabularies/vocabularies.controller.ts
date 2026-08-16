@@ -75,12 +75,14 @@ export class VocabulariesController {
     @Body()
     body: {
       vocabularyId: number;
+      vocabularyInGroup: number;
       vocabularyWords: string[];
       vocabularyMeanings: string[];
     },
   ) {
     return this.vocabulariesService.updateEntries(
       body.vocabularyId,
+      body.vocabularyInGroup,
       body.vocabularyWords,
       body.vocabularyMeanings,
     );
@@ -114,11 +116,21 @@ export class VocabulariesController {
   )
   async extract(
     @UploadedFile() file: Express.Multer.File | undefined,
-    @Body() body: { fromLanguage?: string; toLanguage?: string },
+    @Body()
+    body: {
+      fromLanguage?: string;
+      toLanguage?: string;
+      userId?: string;
+      groupId?: string;
+    },
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
     }
+    await this.vocabulariesService.assertGroupMembership(
+      Number(body.userId),
+      Number(body.groupId),
+    );
     const fromLang = body.fromLanguage || 'French';
     const toLang = body.toLanguage || 'English';
     return this.extractionService.extractVocab(file, fromLang, toLang);

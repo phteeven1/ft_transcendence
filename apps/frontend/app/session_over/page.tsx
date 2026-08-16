@@ -1,8 +1,8 @@
 'use client';
 
 /*
-this is where a player is redirected, when leaving a game, or when the game ends,
-if session has run out. It is a dead end that requires new log in by parent
+Shown when a child session ends. OK returns to the dashboard if a parent is
+still in context, otherwise to register.
 */
 
 import { useEffect } from 'react';
@@ -16,7 +16,7 @@ import { Button } from '../components/ui/button';
 export default function SessionOver() {
   const t = useTranslations('session.over');
   const tCommon = useTranslations('common');
-  const { player, logoutPlayer } = useAuth();
+  const { player, user, logoutPlayer } = useAuth();
   const router = useRouter();
 
   // Sign out the player as soon as we land here
@@ -38,7 +38,7 @@ export default function SessionOver() {
         <Button
           variant="accent"
           fullWidth
-          onClick={() => router.push('/register')}
+          onClick={() => router.push(user ? '/dashboard' : '/register')}
         >
           {tCommon('ok')}
         </Button>

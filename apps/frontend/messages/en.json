@@ -239,12 +239,14 @@
       "confirmMessage": "Deleting the player will also result in the player's data (game statistics, XP, leaderboard status) being deleted (for this group only)."
     },
     "invite": {
-      "activeSessionWarning": "{name} already has an active play session. It will end when the timer expires or they leave the game.",
+      "activeSessionWarning": "{name} already has an active play session. End it here, or wait until it expires or they leave.",
       "sessionDurationTitle": "How long can {name} play?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Enter minutes",
-      "activeSessionExists": "{name} already has an active session. It will end when the timer expires or they leave the game.",
-      "startFailed": "Could not start session. Please try again."
+      "activeSessionExists": "{name} already has an active session. End it here, or wait until it expires or they leave.",
+      "startFailed": "Could not start session. Please try again.",
+      "endSession": "End session",
+      "endSessionFailed": "Could not end the session. Please try again."
     }
   },
   "vocabulary": {

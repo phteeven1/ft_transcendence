@@ -9,12 +9,15 @@ import { readFileSync } from 'fs';
 import OpenAI from 'openai';
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions';
 import { basename, extname } from 'path';
-import { MAX_VOCAB_ENTRY_CHARS } from './vocabulary-entry-rules';
+import {
+  MAX_VOCAB_ENTRY_CHARS,
+  MIN_VOCAB_PAIRS,
+  stripEntryWhitespace,
+} from './vocabulary-entry-rules';
 
 type ExtractionResult = { title: string; words: string[]; meanings: string[] };
 
 const MAX_TITLE_CHARS = 80;
-const MIN_VOCAB_PAIRS = 5;
 
 const VISION_MIME_BY_EXT: Record<string, string> = {
   '.png': 'image/png',
@@ -54,14 +57,27 @@ export class ExtractionService {
     );
   }
 
+  private isHeic(file: Express.Multer.File): boolean {
+    const mime = file.mimetype.toLowerCase();
+    const ext = extname(file.originalname).toLowerCase();
+    return (
+      mime === 'image/heic' ||
+      mime === 'image/heif' ||
+      ext === '.heic' ||
+      ext === '.heif'
+    );
+  }
+
   private isImage(file: Express.Multer.File): boolean {
+    if (this.isHeic(file)) return false;
     if (file.mimetype.startsWith('image/')) return true;
-    return /\.(png|jpe?g|gif|webp|bmp|heic)$/i.test(file.originalname);
+    return /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.originalname);
   }
 
   private resolveVisionMime(file: Express.Multer.File): string {
     if (VISION_MIMES.has(file.mimetype)) return file.mimetype;
-    const fromExt = VISION_MIME_BY_EXT[extname(file.originalname).toLowerCase()];
+    const fromExt =
+      VISION_MIME_BY_EXT[extname(file.originalname).toLowerCase()];
     if (fromExt) return fromExt;
     throw new BadRequestException(
       'Unsupported image type. Upload a PNG, JPEG, GIF, WebP, or PDF.',
@@ -119,10 +135,9 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     const seenMeanings = new Set<string>();
 
     for (let i = 0; i < count; i++) {
-      const word = words[i]?.trim() ?? '';
-      const meaning = meanings[i]?.trim() ?? '';
+      const word = stripEntryWhitespace(words[i] ?? '');
+      const meaning = stripEntryWhitespace(meanings[i] ?? '');
       if (!word || !meaning) continue;
-      if (/\s/.test(word) || /\s/.test(meaning)) continue;
       if (
         word.length > MAX_VOCAB_ENTRY_CHARS ||
         meaning.length > MAX_VOCAB_ENTRY_CHARS
@@ -255,6 +270,11 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     fromLanguage = 'French',
     toLanguage = 'English',
   ): Promise<ExtractionResult> {
+    if (this.isHeic(file)) {
+      throw new BadRequestException(
+        'HEIC images are not supported. Upload a PNG, JPEG, GIF, WebP, or PDF.',
+      );
+    }
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey?.trim() || apiKey.trim() === 'null') {
       throw new InternalServerErrorException(

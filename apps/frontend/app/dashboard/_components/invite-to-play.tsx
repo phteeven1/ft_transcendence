@@ -26,6 +26,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [startError, setStartError] = useState('');
   const [sessionMinutes, setSessionMinutes] = useState('');
@@ -36,6 +37,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     setHasActiveSession(false);
     setStartError('');
     setSessionMinutes('');
+    setIsEnding(false);
     setIsChecking(true);
 
     void (async () => {
@@ -59,6 +61,20 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     setStartError('');
     setSessionMinutes('');
     onClose();
+  };
+
+  const handleEndSession = async () => {
+    if (!player) return;
+    setIsEnding(true);
+    setStartError('');
+    try {
+      await playersApi.clearSession(player.id);
+      setHasActiveSession(false);
+    } catch {
+      setStartError(t('invite.endSessionFailed'));
+    } finally {
+      setIsEnding(false);
+    }
   };
 
   const handleSessionStart = async () => {
@@ -92,6 +108,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
 
   const canStart =
     !isStarting &&
+    !isEnding &&
     !isChecking &&
     !hasActiveSession &&
     sessionMinutes !== '' &&
@@ -110,7 +127,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
             variant="ghost"
             fullWidth
             onClick={handleClose}
-            disabled={isStarting}
+            disabled={isStarting || isEnding}
           >
             {tCommon('cancel')}
           </Button>
@@ -127,9 +144,19 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     >
       <div className="space-y-2">
         {hasActiveSession && (
-          <p className="text-destructive text-sm">
-            {t('invite.activeSessionWarning', { name: player.name })}
-          </p>
+          <div className="space-y-2">
+            <p className="text-destructive text-sm">
+              {t('invite.activeSessionWarning', { name: player.name })}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void handleEndSession()}
+              disabled={isEnding || isStarting}
+            >
+              {isEnding ? tCommon('ending') : t('invite.endSession')}
+            </Button>
+          </div>
         )}
         <Input
           label={t('invite.minutesLabel')}

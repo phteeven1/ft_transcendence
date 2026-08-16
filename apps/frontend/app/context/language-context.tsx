@@ -75,12 +75,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user, player } = useAuth();
   const storageKey = identityStorageKey(user?.id ?? null, player?.id ?? null);
   const [selected, setSelectedState] = useState<Language>(DEFAULT_LANGUAGE);
-  const [appliedKey, setAppliedKey] = useState<string | null>(null);
 
-  if (typeof window !== 'undefined' && appliedKey !== storageKey) {
-    setAppliedKey(storageKey);
+  useEffect(() => {
     setSelectedState(readLanguage(storageKey));
-  }
+  }, [storageKey]);
 
   useEffect(() => {
     writeCookie(selected.code);
