@@ -14,7 +14,6 @@ export default function ProfileMenu() {
   const tDashboard = useTranslations('dashboard');
   const { user, player, logout, logoutPlayer } = useAuth();
   const router = useRouter();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showLeaveSessionModal, setShowLeaveSessionModal] = useState(false);
