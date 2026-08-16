@@ -51,10 +51,7 @@ export default function AcceptInvitationClient() {
   const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      setPageState('invalid');
-      return;
-    }
+    if (!token) return;
 
     let cancelled = false;
 
@@ -90,18 +87,6 @@ export default function AcceptInvitationClient() {
       cancelled = true;
     };
   }, [token, authUser]);
-
-  // Confirm screen requires a signed-in user (local state can be lost on refresh/retry)
-  useEffect(() => {
-    if (pageState !== 'confirm') return;
-    const effectiveUser = currentUser ?? authUser;
-    if (!effectiveUser) {
-      setErrorMessage(t('auth.authRequired'));
-      setPageState('auth');
-    } else if (!currentUser && authUser) {
-      setCurrentUser(authUser);
-    }
-  }, [pageState, currentUser, authUser, t]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -200,15 +185,23 @@ export default function AcceptInvitationClient() {
     setErrorMessage('');
   };
 
+  const joinUser = currentUser ?? authUser;
+  const needsAuth =
+    pageState === 'auth' || (pageState === 'confirm' && !joinUser);
+
+  if (!token || pageState === 'invalid') return <InvitationInvalid />;
   if (pageState === 'validating') return <InvitationValidating />;
-  if (pageState === 'invalid') return <InvitationInvalid />;
-  if (pageState === 'auth')
+  if (needsAuth)
     return (
       <InvitationAuth
         groupName={groupName}
         authMode={authMode}
         formData={formData}
-        errorMessage={errorMessage}
+        errorMessage={
+          pageState === 'confirm' && !joinUser
+            ? errorMessage || t('auth.authRequired')
+            : errorMessage
+        }
         onAuthModeChange={handleAuthModeChange}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
