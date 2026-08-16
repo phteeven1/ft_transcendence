@@ -14,6 +14,7 @@ export default function ProfileMenu() {
   const tDashboard = useTranslations('dashboard');
   const { user, player, logout, logoutPlayer } = useAuth();
   const router = useRouter();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showLeaveSessionModal, setShowLeaveSessionModal] = useState(false);
@@ -36,7 +37,7 @@ export default function ProfileMenu() {
 
   if (!user && !player) return null;
 
-  const displayName = user?.name ?? player?.name ?? '';
+  const displayName = player?.name ?? user?.name ?? '';
 
   const handleSignOut = () => {
     setIsOpen(false);
@@ -59,7 +60,7 @@ export default function ProfileMenu() {
     }
     logoutPlayer();
     setShowLeaveSessionModal(false);
-    router.push('/register');
+    router.push('/dashboard');
   };
 
   return (
@@ -85,7 +86,12 @@ export default function ProfileMenu() {
             {displayName}
           </div>
 
-          {user ? (
+          {player ? (
+            <DropdownItem role="menuitem" onClick={openLeaveSessionModal}>
+              <Icon name="sign-out" size={16} />
+              {t('leaveSession')}
+            </DropdownItem>
+          ) : (
             <>
               <DropdownItem
                 role="menuitem"
@@ -102,11 +108,6 @@ export default function ProfileMenu() {
                 {t('signOut')}
               </DropdownItem>
             </>
-          ) : (
-            <DropdownItem role="menuitem" onClick={openLeaveSessionModal}>
-              <Icon name="sign-out" size={16} />
-              {t('leaveSession')}
-            </DropdownItem>
           )}
         </Dropdown>
       )}

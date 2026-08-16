@@ -34,6 +34,7 @@ export type RemoveVocabularyInput = {
 
 export type UpdateVocabularyEntriesInput = {
   vocabularyId: number;
+  vocabularyInGroup: number;
   vocabularyWords: string[];
   vocabularyMeanings: string[];
 };

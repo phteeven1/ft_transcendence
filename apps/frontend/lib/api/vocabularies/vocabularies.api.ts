@@ -58,11 +58,15 @@ export const vocabulariesApi = {
     file: File,
     fromLanguage: string,
     toLanguage: string,
+    userId: number,
+    groupId: number,
   ): Promise<ExtractVocabularyResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('fromLanguage', fromLanguage);
     formData.append('toLanguage', toLanguage);
+    formData.append('userId', String(userId));
+    formData.append('groupId', String(groupId));
 
     const response = await fetch(`${getApiBaseUrl()}/vocabularies/extract`, {
       method: 'POST',

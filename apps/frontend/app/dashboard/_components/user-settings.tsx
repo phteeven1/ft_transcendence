@@ -32,7 +32,6 @@ function UserSettingsDialog({
   const { refreshUser } = useAuth();
 
   const [userName, setUserName] = useState(user.name);
-  const [email, setEmail] = useState(user.email ?? '');
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -101,12 +100,14 @@ function UserSettingsDialog({
             onChange={(e) => setUserName(e.target.value)}
           />
 
-          <Input
-            label={t('emailLabel')}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div>
+            <span className="block text-sm font-semibold text-foreground mb-1">
+              {t('emailLabel')}
+            </span>
+            <p className="text-sm text-muted-foreground break-all">
+              {user.email}
+            </p>
+          </div>
 
           <div>
             <span className="block text-sm font-semibold text-foreground mb-1">

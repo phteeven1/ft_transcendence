@@ -33,7 +33,10 @@ function Dashboard() {
 
   useEffect(() => {
     if (!authReady) return;
-    if (player) return;
+    if (player) {
+      router.replace('/select_game');
+      return;
+    }
     if (!user) {
       router.push('/');
     }

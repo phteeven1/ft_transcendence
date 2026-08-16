@@ -239,12 +239,14 @@
       "confirmMessage": "La suppression du joueur entraînera également la suppression de ses données (statistiques de jeu, XP, classement) pour ce groupe uniquement."
     },
     "invite": {
-      "activeSessionWarning": "{name} a déjà une session de jeu active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
+      "activeSessionWarning": "{name} a déjà une session de jeu active. Terminez-la ici, ou attendez la fin du minuteur ou que la personne quitte le jeu.",
       "sessionDurationTitle": "Combien de temps {name} peut-il/elle jouer ?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Entrez les minutes",
-      "activeSessionExists": "{name} a déjà une session active. Elle se terminera lorsque le minuteur expirera ou que la personne quittera le jeu.",
-      "startFailed": "Impossible de démarrer la session. Veuillez réessayer."
+      "activeSessionExists": "{name} a déjà une session active. Terminez-la ici, ou attendez la fin du minuteur ou que la personne quitte le jeu.",
+      "startFailed": "Impossible de démarrer la session. Veuillez réessayer.",
+      "endSession": "Terminer la session",
+      "endSessionFailed": "Impossible de terminer la session. Veuillez réessayer."
     }
   },
   "vocabulary": {

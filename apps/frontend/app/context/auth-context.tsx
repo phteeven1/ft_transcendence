@@ -58,8 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginAsPlayer = useCallback((playerData: Player) => {
-    setUser(null);
-    setGroup(null);
     setPlayer(playerData);
   }, []);
 

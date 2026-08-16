@@ -61,7 +61,7 @@ type ModalState =
 export default function SelectGame() {
   const t = useTranslations('games.lobby');
   const tProgression = useTranslations('games.lobby.progression');
-  const { player, logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
+  const { player, user, authReady, logoutPlayer, loginAsPlayer, setSessionExpiresAt } = useAuth();
   const router = useRouter();
   useSessionGuard();
 
@@ -72,6 +72,7 @@ export default function SelectGame() {
   const [unlockToastTier, setUnlockToastTier] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!authReady) return;
     let cancelled = false;
 
     const bootstrap = async () => {
@@ -87,7 +88,7 @@ export default function SelectGame() {
 
         if (!restored) {
           setBootstrapping(false);
-          router.push('/');
+          router.push(user ? '/dashboard' : '/');
           return;
         }
 
@@ -104,7 +105,7 @@ export default function SelectGame() {
         clearPlayerSession();
         logoutPlayer();
         setBootstrapping(false);
-        router.push('/');
+        router.push(user ? '/dashboard' : '/');
         return;
       }
 
@@ -122,7 +123,7 @@ export default function SelectGame() {
         clearPlayerSession();
         logoutPlayer();
         setBootstrapping(false);
-        router.push('/');
+        router.push(user ? '/dashboard' : '/');
       }
     };
 
@@ -131,7 +132,7 @@ export default function SelectGame() {
     return () => {
       cancelled = true;
     };
-  }, [player, loginAsPlayer, logoutPlayer, router, setSessionExpiresAt]);
+  }, [authReady, player, user, loginAsPlayer, logoutPlayer, router, setSessionExpiresAt]);
 
   // connect to the group's WebSocket room
   // pendingGames is updated automatically when the backend emits lobby:update

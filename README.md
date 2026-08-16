@@ -289,9 +289,10 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ## Known limitations
 
-1. **No JWT on parent API routes** — sign-in returns a user object; parent ids persist in `localStorage` (`parent-session.ts`) and `AuthContext` rehydrates on load via `GET /users/:id`. Most REST handlers still trust a client-sent `userId`.
-2. **Friends system** — not implemented; groups are the social unit.
-3. Chrome **console errors** during the demo fail the eval — check before staff arrive.
+1. **Parent “login” is ID-only** — sign-in returns a user object. Parent ids persist in `localStorage` (`dicteeUserId` / `dicteeGroupId` via `parent-session.ts`). `AuthContext` rehydrates with unauthenticated `GET /users/:id`. Fine for a local/school demo; not a real session. No JWT. Most REST handlers still trust a client-sent `userId`.
+2. **Tab-close orphans Play Now tokens** — child tokens live in `sessionStorage` (cleared on tab close) and as a `PlayerSession` row until `expiresAt`. Closing the tab does **not** delete the server token. A parent can force-clear it from the Play Now dialog (`POST /players/clearSession`). Do not sendBeacon on `pagehide`: that event also fires on refresh and would delete the server token while `sessionStorage` still has it.
+3. **Friends system** — not implemented; groups are the social unit.
+4. Chrome **console errors** during the demo fail the eval — check before staff arrive.
 
 ---
 
