@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
 import { useLanguage } from '../context/language-context';
 import type { LocaleCode } from '@/i18n/config';
+import { getIntlMessageFallback, onIntlError } from '@/i18n/intl-errors';
 
 type Messages = Record<string, unknown>;
 
@@ -41,7 +42,13 @@ export function I18nProvider({ children, initialLocale, initialMessages }: I18nP
   const messages = serverSynced ? initialMessages : (clientMessages ?? initialMessages);
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages} timeZone="Europe/Berlin">
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages}
+      timeZone="Europe/Berlin"
+      onError={onIntlError}
+      getMessageFallback={getIntlMessageFallback}
+    >
       {children}
     </NextIntlClientProvider>
   );

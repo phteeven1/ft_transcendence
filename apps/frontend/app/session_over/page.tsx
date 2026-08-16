@@ -2,7 +2,7 @@
 
 /*
 Shown when a child session ends. OK returns to the dashboard if a parent is
-still in context, otherwise to register.
+still in context, otherwise to home.
 */
 
 import { useEffect } from 'react';
@@ -16,10 +16,9 @@ import { Button } from '../components/ui/button';
 export default function SessionOver() {
   const t = useTranslations('session.over');
   const tCommon = useTranslations('common');
-  const { player, user, logoutPlayer } = useAuth();
+  const { player, user, authReady, logoutPlayer } = useAuth();
   const router = useRouter();
 
-  // Sign out the player as soon as we land here
   useEffect(() => {
     logoutPlayer();
   }, [logoutPlayer]);
@@ -34,11 +33,11 @@ export default function SessionOver() {
         <p className="text-muted-foreground text-xs opacity-75">
           {t('askParent')}
         </p>
-        {/* Space for game statistics in a future update */}
         <Button
           variant="accent"
           fullWidth
-          onClick={() => router.push(user ? '/dashboard' : '/register')}
+          disabled={!authReady}
+          onClick={() => router.push(user ? '/dashboard' : '/')}
         >
           {tCommon('ok')}
         </Button>

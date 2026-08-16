@@ -1,6 +1,7 @@
 import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
 import { defaultLocale, locales, LOCALE_COOKIE, type LocaleCode } from './config';
+import { getIntlMessageFallback, onIntlError } from './intl-errors';
 
 function resolveLocale(raw: string | undefined): LocaleCode {
   if (raw && (locales as readonly string[]).includes(raw)) {
@@ -16,5 +17,7 @@ export default getRequestConfig(async () => {
   return {
     locale,
     messages: (await import(`../messages/${locale}.json`)).default,
+    onError: onIntlError,
+    getMessageFallback: getIntlMessageFallback,
   };
 });
