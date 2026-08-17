@@ -34,10 +34,7 @@ export class GroupsService {
     return toApiGroup(group);
   }
 
-  async addMember(
-    groupId: number,
-    userId: number,
-  ): Promise<Group | undefined> {
+  async addMember(groupId: number, userId: number): Promise<Group | undefined> {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
       ...groupWithMemberships,
@@ -52,10 +49,7 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async promote(
-    groupId: number,
-    userId: number,
-  ): Promise<Group | undefined> {
+  async promote(groupId: number, userId: number): Promise<Group | undefined> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
     });
@@ -70,10 +64,7 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async demote(
-    groupId: number,
-    userId: number,
-  ): Promise<Group | undefined> {
+  async demote(groupId: number, userId: number): Promise<Group | undefined> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
     });
@@ -119,10 +110,7 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async rename(
-    groupId: number,
-    groupName: string,
-  ): Promise<Group | undefined> {
+  async rename(groupId: number, groupName: string): Promise<Group | undefined> {
     try {
       const group = await this.prisma.group.update({
         where: { id: groupId },
@@ -136,10 +124,7 @@ export class GroupsService {
     }
   }
 
-  async expel(
-    groupId: number,
-    userId: number,
-  ): Promise<Group | undefined> {
+  async expel(groupId: number, userId: number): Promise<Group | undefined> {
     const deleted = await this.prisma.groupMembership.deleteMany({
       where: { userId, groupId, role: GroupRole.MEMBER },
     });

@@ -7,9 +7,8 @@ import type {
   IntroPhase,
 } from '@/app/hooks/word-soup/use-word-soup-intro';
 import HostCharacter from '@/app/components/game/host-character';
-import type { CourtSize } from './court-size';
 import { longestSolutionWord } from './intro-bubble-width';
-import { getOverlayScale } from './overlay-scale';
+import { OVERLAY_SCALE, type OverlayScale } from './overlay-scale';
 
 type WordSoupIntroOverlayProps = {
   phase: IntroPhase;
@@ -22,7 +21,6 @@ type WordSoupIntroOverlayProps = {
   hostTier?: number;
   hostAnimal?: number;
   hostClothesColor?: string;
-  courtSize?: CourtSize;
 };
 
 function SpeechBubble({
@@ -35,7 +33,7 @@ function SpeechBubble({
   text: string;
   visible: boolean;
   emphasize?: boolean;
-  scale: ReturnType<typeof getOverlayScale>;
+  scale: OverlayScale;
   wordScale: number;
 }) {
   return (
@@ -92,7 +90,7 @@ function CountdownBubble({
   goLabel,
 }: {
   value: IntroCountdownValue;
-  scale: ReturnType<typeof getOverlayScale>;
+  scale: OverlayScale;
   startingInLabel: string;
   goLabel: string;
 }) {
@@ -141,7 +139,7 @@ function CountdownBubble({
 
 /**
  * Scale word-announcement text so the longest vocabulary word fits inside the
- * available bubble width (no horizontal scrollbar on S).
+ * available bubble width (no horizontal scrollbar on a narrow court).
  */
 function useWordFitScale(
   longestWord: string,
@@ -202,13 +200,12 @@ export default function WordSoupIntroOverlay({
   hostTier = 0,
   hostAnimal = 0,
   hostClothesColor,
-  courtSize = 'L',
 }: WordSoupIntroOverlayProps) {
   const t = useTranslations('games.wordSoup.intro');
   const isWordPhase = phase === 'word' || phase === 'word-gap';
   const isCountdown = phase === 'countdown';
 
-  const scale = getOverlayScale(courtSize);
+  const scale = OVERLAY_SCALE;
   const longestWord = longestSolutionWord(solutionWords);
 
   const {
@@ -238,8 +235,7 @@ export default function WordSoupIntroOverlay({
       ) : null}
 
       {/*
-        Same stacked order on S/M/L:
-        (bubble + host) → footer.
+        Stacked order: (bubble + host) → footer.
 
         Bubble and host share one column with no flex-gap so the
         speech-bubble tail remains aligned with the character.

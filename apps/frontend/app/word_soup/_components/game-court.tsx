@@ -1,29 +1,21 @@
 'use client';
 
 /*
-  Renders the fixed-pixel game court grid.
-  Size is controlled by the parent (S/M/L controls). Each player has their own
-  size — not shared via WebSocket.
+  Renders the game court as a fluid square grid.
+  The board fills its column width (capped by the parent). Cells use
+  aspect-square so the court stays square — same model as Word Building.
 
-  Grid dimensions live in court-size.ts and must stay in sync with the backend.
+  Grid dimensions live in word-soup-constants.ts and must stay in sync
+  with the backend.
 */
 
 import type { PointerEvent as ReactPointerEvent, ReactNode, TouchEvent as ReactTouchEvent } from 'react';
 import CourtTile from './court-tile';
 import type { WordSoupCourtCell } from '@/lib/api/games/word-soup/types';
 import type { WordCelebration } from '@/app/hooks/word-soup/use-word-soup-celebration';
-import {
-  COURT_COLS,
-  COURT_ROWS,
-  COURT_TILE_GAP,
-  SIZE_CONFIG,
-  computeGridHeight,
-  computeGridWidth,
-  type CourtSize,
-} from './court-size';
+import { COURT_TILE_GAP } from '../_lib/word-soup-constants';
 
 interface Props {
-  courtSize: CourtSize;
   visibleCourt: WordSoupCourtCell[][];
   playerColours: Record<number, string>;
   selectedCells: Array<{ row: number; col: number }>;
@@ -54,7 +46,6 @@ function continueFromPoint(
 }
 
 export default function GameCourt({
-  courtSize,
   visibleCourt,
   playerColours,
   selectedCells,
@@ -68,10 +59,6 @@ export default function GameCourt({
   onSelectionContinue,
   onSelectionEnd,
 }: Props) {
-  const { tileSize, padding, fontSize } = SIZE_CONFIG[courtSize];
-  const gridWidth = computeGridWidth(courtSize);
-  const gridHeight = computeGridHeight(courtSize);
-
   const getCelebrationHighlight = (
     row: number,
     col: number,
@@ -111,10 +98,14 @@ export default function GameCourt({
     continueFromPoint(event.clientX, event.clientY, onSelectionContinue);
   };
 
+  if (!visibleCourt.length) return null;
+
+  const cols = visibleCourt[0].length;
+
   return (
     <div
       className={[
-        'relative rounded-2xl bg-white shadow-xl transition-[filter,transform] duration-300',
+        'relative w-full @container rounded-2xl bg-white shadow-xl transition-[filter,transform] duration-300',
         isLocalPlayerFrozen ? 'word-soup-court-frozen' : '',
       ].join(' ')}
       onMouseUp={interactionDisabled ? undefined : onSelectionEnd}
@@ -124,21 +115,14 @@ export default function GameCourt({
       onTouchMove={interactionDisabled ? undefined : handleTouchMove}
       onPointerMove={interactionDisabled ? undefined : handlePointerMove}
       style={{
-        width: `${gridWidth}px`,
-        minWidth: `${gridWidth}px`,
-        height: `${gridHeight}px`,
-        flexShrink: 0,
         touchAction: 'none',
       }}
     >
       <div
-        className={interactionDisabled ? 'pointer-events-none select-none grid' : 'grid'}
+        className={interactionDisabled ? 'pointer-events-none select-none grid p-1' : 'grid p-1'}
         style={{
-          padding: `${padding}px`,
           gap: `${COURT_TILE_GAP}px`,
-          gridTemplateColumns: `repeat(${COURT_COLS}, ${tileSize}px)`,
-          gridTemplateRows: `repeat(${COURT_ROWS}, ${tileSize}px)`,
-          gridAutoFlow: 'row',
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
         }}
       >
         {visibleCourt.map((row, rowIndex) =>
@@ -151,8 +135,6 @@ export default function GameCourt({
                 cell={cell}
                 row={rowIndex}
                 col={colIndex}
-                tileSize={tileSize}
-                fontSize={fontSize}
                 playerColours={playerColours}
                 foundWordGroups={foundWordGroups}
                 isSelected={selectedCells.some(

@@ -422,7 +422,6 @@
     },
     "wordSoup": {
       "title": "Soupe de mots",
-      "courtSizeLabel": "Taille du plateau",
       "cellTitle": "Ligne {row}, Colonne {col}",
       "cellHidden": "masquée",
       "cellEmpty": "vide",

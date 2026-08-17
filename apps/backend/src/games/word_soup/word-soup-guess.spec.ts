@@ -1,4 +1,5 @@
 import { createEmptyCourt } from './word-soup-placement-engine';
+import { COURT_COLS, COURT_ROWS } from './word-soup.constants';
 import { resolveEmbeddedWordHintKey } from './word-soup-guess-helpers';
 import type {
   PlacedWordMetadata,
@@ -144,8 +145,9 @@ describe('post-complete guard', () => {
 
   it('createEmptyCourt matches configured dimensions', () => {
     const court = createEmptyCourt();
-    expect(court).toHaveLength(10);
-    expect(court[0]).toHaveLength(18);
+    expect(COURT_ROWS).toBe(COURT_COLS);
+    expect(court).toHaveLength(COURT_ROWS);
+    expect(court[0]).toHaveLength(COURT_COLS);
   });
 });
 

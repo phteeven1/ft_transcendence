@@ -5,8 +5,11 @@
  */
 
 export const COURT_COLS = 18;
-export const COURT_ROWS = 10;
+export const COURT_ROWS = 18;
 export const COURT_TILE_GAP = 4;
+
+/** Max court width in px — matches Word Building's `lg:max-w-[600px]`. */
+export const MAX_COURT_WIDTH = 600;
 
 export const POINTS_PER_WORD = 10;
 export const FREEZE_DURATION_SECONDS = 5;
