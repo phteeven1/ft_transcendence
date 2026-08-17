@@ -11,7 +11,6 @@ export type User = {
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
-  showEmail: boolean;
 };
 
 @Injectable()
@@ -53,14 +52,12 @@ export class UsersService {
     userId: number,
     data: {
       userName?: string;
-      showEmail?: boolean;
     },
   ): Promise<User> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.userName ? { name: data.userName } : {}),
-        ...(data.showEmail !== undefined ? { showEmail: data.showEmail } : {}),
       },
       ...userWithMemberships,
     });

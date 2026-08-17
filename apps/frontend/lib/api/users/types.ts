@@ -5,7 +5,6 @@ export type UserDto = {
   email: string;
   isMemberOf: number[];
   isAdminOf: number[];
-  showEmail: boolean;
 };
 
 export type RegisterUserInput = {
