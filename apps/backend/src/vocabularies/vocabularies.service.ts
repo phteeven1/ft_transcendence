@@ -80,6 +80,31 @@ export class VocabulariesService {
     }
   }
 
+  async findOrCreate(
+    inGroup: number,
+    byUser: number,
+    name: string,
+    words: string[] = [],
+    meanings: string[] = [],
+  ): Promise<Vocabulary> {
+    const existing = await this.prisma.vocabulary.findUnique({
+      where: { inGroupId_name: { inGroupId: inGroup, name } },
+    });
+    if (existing) return toApiVocabulary(existing);
+
+    try {
+      return await this.create(inGroup, byUser, name, words, meanings);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        const raced = await this.prisma.vocabulary.findUnique({
+          where: { inGroupId_name: { inGroupId: inGroup, name } },
+        });
+        if (raced) return toApiVocabulary(raced);
+      }
+      throw error;
+    }
+  }
+
   async setActive(
     vocabularyId: number,
     inGroup: number,

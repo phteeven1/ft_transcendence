@@ -40,6 +40,26 @@ export class VocabulariesController {
     );
   }
 
+  @Post('findOrCreate')
+  findOrCreate(
+    @Body()
+    body: {
+      vocabularyInGroup: number;
+      byUser: number;
+      vocabularyName: string;
+      vocabularyWords?: string[];
+      vocabularyMeanings?: string[];
+    },
+  ) {
+    return this.vocabulariesService.findOrCreate(
+      body.vocabularyInGroup,
+      body.byUser,
+      body.vocabularyName,
+      body.vocabularyWords ?? [],
+      body.vocabularyMeanings ?? [],
+    );
+  }
+
   @Post('setActive')
   setActive(
     @Body()

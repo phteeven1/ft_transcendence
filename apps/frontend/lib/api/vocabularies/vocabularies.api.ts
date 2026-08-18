@@ -18,6 +18,13 @@ export const vocabulariesApi = {
     });
   },
 
+  findOrCreate(input: CreateVocabularyInput): Promise<VocabularyDto> {
+    return apiRequest<VocabularyDto>('/vocabularies/findOrCreate', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
   getById(vocabularyId: number): Promise<VocabularyDto> {
     return apiRequest<VocabularyDto>(`/vocabularies/${vocabularyId}`);
   },

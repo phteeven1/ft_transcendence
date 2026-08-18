@@ -172,7 +172,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   }
 
   async clearCurrentGame(playerId: number): Promise<void> {
-    await this.prisma.player.update({
+    await this.prisma.player.updateMany({
       where: { id: playerId },
       data: { currentGameId: null },
     });

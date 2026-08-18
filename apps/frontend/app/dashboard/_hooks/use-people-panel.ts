@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/auth-context';
-import { ApiError, groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
+import { groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
 import { Member, Player, Vocabulary } from '../../types';
 import {
   isStarterVocabulary,
@@ -121,24 +121,14 @@ export function usePeoplePanel(): UsePeoplePanelResult {
         isStarterVocabulary(vocabulary.name),
       );
       if (!starter) {
-        try {
-          starter = await vocabulariesApi.create({
-            vocabularyInGroup: selectedGroupId,
-            byUser: userId,
-            vocabularyName: TEST_VOCABULARY.name,
-            vocabularyWords: TEST_VOCABULARY.words,
-            vocabularyMeanings: TEST_VOCABULARY.meanings,
-          });
-          data = [...data, starter];
-        } catch (error) {
-          if (!(error instanceof ApiError) || error.status !== 409) {
-            throw error;
-          }
-          data = await vocabulariesApi.findByGroup(selectedGroupId);
-          starter = data.find((vocabulary) =>
-            isStarterVocabulary(vocabulary.name),
-          );
-        }
+        starter = await vocabulariesApi.findOrCreate({
+          vocabularyInGroup: selectedGroupId,
+          byUser: userId,
+          vocabularyName: TEST_VOCABULARY.name,
+          vocabularyWords: TEST_VOCABULARY.words,
+          vocabularyMeanings: TEST_VOCABULARY.meanings,
+        });
+        data = [...data, starter];
       }
       if (!starter) return;
 
