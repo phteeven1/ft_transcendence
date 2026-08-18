@@ -29,8 +29,18 @@ import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from '../../components/abandon-play-modal';
+import WordBuildingGameOverOverlay from './word-building-game-over-overlay';
+import WordBuildingTitle from './word-building-title';
+import WordBuildingPlayerRail from './word-building-player-rail';
 import TileRack from './tile-rack';
+import GameClock from '@/app/components/game-clock';
+import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
+
+/** Deterministic player colour palette — cycled by roster index. */
+const PLAYER_COLOUR_PALETTE = [
+  '#5EEAD4', '#A78BFA', '#FB923C', '#F472B6', '#34D399', '#60A5FA',
+];
 
 /**
  * Creates the default empty crossword board used before the REST payload arrives.
@@ -70,16 +80,21 @@ export default function WordBuildingGame() {
   const [direction, setDirection] = useState<'across' | 'down'>('across');
 
   // ── UI state ────────────────────────────────────────────────────────────────
-  const [showAbandonModal, setShowAbandonModal] = useState(false);
-  const [isAbandoning,     setIsAbandoning]     = useState(false);
-  const [playerNames,      setPlayerNames]      = useState<Map<number, string>>(new Map());
-  const [gameName,         setGameName]         = useState('');
-  const [startedTime,      setStartedTime]      = useState<string | null>(null);
-  const [loading,          setLoading]          = useState(true);
+  const [showAbandonModal,      setShowAbandonModal]      = useState(false);
+  const [isAbandoning,          setIsAbandoning]          = useState(false);
+  const [playerNames,           setPlayerNames]           = useState<Map<number, string>>(new Map());
+  const [gameName,              setGameName]              = useState('');
+  const [startedTime,          setStartedTime]           = useState<string | null>(null);
+  const [loading,              setLoading]               = useState(true);
+  const [playerColours,        setPlayerColours]         = useState<Record<number, string>>({});
+  const [playerAvatarTiers,    setPlayerAvatarTiers]     = useState<Record<number, number>>({});
+  const [playerAvatarAnimals,  setPlayerAvatarAnimals]   = useState<Record<number, number>>({});
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
+  const [dragTargetRow, setDragTargetRow] = useState<number | null>(null);
+  const [dragTargetCol, setDragTargetCol] = useState<number | null>(null);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
-  const { gameState, gameFinished, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock, leftPlayers } = useGameSocket(gameId, playerId);
+  const { gameState, gameFinished, finishOutcome: socketFinishOutcome, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock, leftPlayers } = useGameSocket(gameId, playerId);
 
   // ── Refs for lock emissions (avoid stale closures) ──────────────────────────
   /** Tracks the cell currently held by this player so unlock can be emitted on navigation. */
@@ -147,22 +162,11 @@ export default function WordBuildingGame() {
         setCluesAcross(data.clues.across);
         setCluesDown(data.clues.down);
 
-        // Extract unique letters from the puzzle vocabulary for the tile rack.
-        // Extract as-is from the solution (already normalized/uppercased by backend).
-        // This avoids issues like 'ß' → 'SS' expansion that breaks matching.
-        const lettersSet = new Set<string>();
-        for (const row of data.trueCourt) {
-          for (const cell of row) {
-            if (cell.char && cell.status !== 'none' && /\p{L}/u.test(cell.char)) {
-              lettersSet.add(cell.char);
-            }
-          }
-        }
-        // Sort using locale-aware comparison for correct ordering in any language
-        const sortedLetters = Array.from(lettersSet).sort((a, b) =>
-          a.localeCompare(b),
-        );
-        setAvailableLetters(sortedLetters);
+        // availableLetters is pre-computed by the backend from the solution grid.
+        // trueCourt.char is intentionally empty (solution hidden), so extracting
+        // letters from it would always yield nothing — use the backend value directly.
+        setAvailableLetters(data.availableLetters);
+
         setLoading(false);
       } catch {
         if (!cancelled) await redirectAfterEndedGame();
@@ -173,15 +177,27 @@ export default function WordBuildingGame() {
 
     wordBuildingApi.getPlayersForGame(gameId).then((players) => {
       if (cancelled) return;
-      const map = new Map<number, string>();
-      for (const p of players) map.set(p.id, p.name);
-      setPlayerNames(map);
+      const nameMap = new Map<number, string>();
+      const colours: Record<number, string> = {};
+      const tiers: Record<number, number> = {};
+      const animals: Record<number, number> = {};
+      players.forEach((p, index) => {
+        nameMap.set(p.id, p.name);
+        colours[p.id] = PLAYER_COLOUR_PALETTE[index % PLAYER_COLOUR_PALETTE.length];
+        tiers[p.id] = p.avatarTier ?? 0;
+        animals[p.id] = p.avatarAnimal ?? 0;
+      });
+      setPlayerNames(nameMap);
+      setPlayerColours(colours);
+      setPlayerAvatarTiers(tiers);
+      setPlayerAvatarAnimals(animals);
     });
 
     return () => {
       cancelled = true;
     };
   }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
+
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
     if (!gameState) return;
@@ -193,16 +209,19 @@ export default function WordBuildingGame() {
   // ── React to game:finished WS event ───────────────────────────────────────
   useEffect(() => {
     if (!gameFinished) return;
-    // When the puzzle was solved, let players see the completed board before leaving.
-    // When the game was force-ended by a parent (not solved), redirect immediately.
-    const delay = solved ? 3000 : 0;
-    const t = setTimeout(() => {
-      if (hasLeftForLobbyRef.current) return;
-      hasLeftForLobbyRef.current = true;
-      router.push('/select_game');
-    }, delay);
-    return () => clearTimeout(t);
-  }, [gameFinished, router, solved]);
+    if (solved) return; // Puzzle solved — overlay is shown reactively; no redirect needed.
+    // Force-ended (not solved by players) — redirect immediately.
+    if (hasLeftForLobbyRef.current) return;
+    hasLeftForLobbyRef.current = true;
+    const stored = getPlayerSession();
+    if (stored && !isSessionExpired(stored.expiresAt)) {
+      void restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt }).then(() => {
+        router.replace('/select_game');
+      });
+    } else {
+      router.replace('/session_over');
+    }
+  }, [gameFinished, solved, router, loginAsPlayer, setSessionExpiresAt]);
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -407,7 +426,7 @@ export default function WordBuildingGame() {
     return remaining.length <= 1;
   }, [leftPlayers, playerId, playerNames]);
 
-  /**
+/**
    * Handles a letter tile drop from the tile rack onto a crossword cell.
    * Sends the placement via WebSocket; the server validates and broadcasts the update.
    * No lock emission needed — drag-to-drop is instantaneous.
@@ -419,6 +438,12 @@ export default function WordBuildingGame() {
     emitPlaceLetter({ gameId, playerId, row, col, letter });
   }, [solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
 
+    /** Tracks which cell the ant is hovering over so GameCourt can highlight it. */
+  const handleDragTarget = useCallback((row: number | null, col: number | null) => {
+    setDragTargetRow(row);
+    setDragTargetCol(col);
+  }, []);
+  
   /**
    * Leaves this match and returns to the lobby. The play session stays active
    * so the child can join or start another game; remaining players keep playing.
@@ -447,6 +472,47 @@ export default function WordBuildingGame() {
     }
   };
 
+  /**
+   * Handles the "Return to Lobby" button in the game-over overlay.
+   * Navigates to the game selection lobby exactly once.
+   */
+  const handleReturnToLobby = useCallback(() => {
+    if (hasLeftForLobbyRef.current) return;
+    hasLeftForLobbyRef.current = true;
+    const stored = getPlayerSession();
+    if (stored && !isSessionExpired(stored.expiresAt)) {
+      void restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt }).then(() => {
+        router.push('/select_game');
+      });
+    } else {
+      router.push('/session_over');
+    }
+  }, [router, loginAsPlayer, setSessionExpiresAt]);
+
+  // ── Derive game-over overlay data ─────────────────────────────────────────
+  // The overlay is shown when the game is finished AND the puzzle was solved.
+  // Both values come directly from reactive state; no extra state needed.
+  const showGameOverOverlay = gameFinished && solved;
+
+  const { gameOverPlayersById, gameOverPlayerOrder } = useMemo(() => {
+    if (!socketFinishOutcome) return { gameOverPlayersById: {}, gameOverPlayerOrder: [] };
+    const byId: Record<number, GameFinishPlayerOutcomeDto> = {};
+    for (const p of socketFinishOutcome.players) byId[p.playerId] = p;
+    const order = [...socketFinishOutcome.players]
+      .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.playerId - b.playerId))
+      .map((p) => p.playerId);
+    return { gameOverPlayersById: byId, gameOverPlayerOrder: order };
+  }, [socketFinishOutcome]);
+
+  const localHostTier   = playerAvatarTiers[playerId]   ?? 0;
+  const localHostAnimal = playerAvatarAnimals[playerId] ?? 0;
+  const localHostColour = playerColours[playerId];
+
+  const newlyUnlockedTier = useMemo(() => {
+    const tier = socketFinishOutcome?.players.find((p) => p.playerId === playerId)?.newlyUnlockedTier;
+    return typeof tier === 'number' ? tier : null;
+  }, [socketFinishOutcome, playerId]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -457,57 +523,113 @@ export default function WordBuildingGame() {
     );
   }
 
+  const startedAtMs = startedTime ? new Date(startedTime).getTime() : null;
+
   return (
     <div
       ref={containerRef}
       tabIndex={0}
       className="game-shell flex-1 overflow-x-auto outline-none focus:ring-0"
     >
-      <div className="mx-auto max-w-[1600px] px-4 py-4">
-        <div className="flex items-center gap-4 mb-2">
-          <p className="text-xs text-muted-foreground">
-            {t('instructions')}
-          </p>
-          {selectedRow !== null && selectedCol !== null && (
-            <span className="text-xs font-semibold font-heading px-2 py-1 rounded clay-panel text-foreground">
-              {direction === 'across' ? t('directionAcross') : t('directionDown')}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
-          {/* Grid */}
-          <main className="flex flex-col gap-2 min-w-0 w-full lg:flex-1 lg:max-w-[600px]">
-            <GameCourt
-              court={visibleCourt}
-              selectedRow={selectedRow}
-              selectedCol={selectedCol}
-              onCellClick={handleCellClick}
-              onCellDrop={handleCellDrop}
-              locks={locksMap}
-              myPlayerId={playerId}
-            />
-            {/* Tile rack — drag language-specific tiles onto cells as an alternative to keyboard */}
-            <TileRack letters={availableLetters} disabled={solved} />
-          </main>
+      <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
+        {/* maxWidth matches Word Soup: sidebar (11.5rem) + gap (1rem) + board cap (600px) = 800px */}
+        <div className="w-full" style={{ maxWidth: 'calc(11.5rem + 1rem + 600px)' }}>
+          <div className="grid w-full grid-cols-1 items-stretch gap-x-4 gap-y-2 sm:gap-y-2.5 lg:grid-cols-[11.5rem_minmax(0,1fr)]">
 
-          {/* Info panel + controls — sticky on desktop, stacked on mobile */}
-          <div className="w-full lg:w-56 lg:shrink-0 flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
-            {/* Scrollable clues / scores section */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <GameInfoColumn
-                gameName={gameName}
-                startedTime={startedTime}
+            {/* Title — top left */}
+            <div className="lg:col-start-1 lg:row-start-1">
+              <WordBuildingTitle solved={solved} />
+            </div>
+
+            {/* Instructions — top right */}
+            <div className="lg:col-start-2 lg:row-start-1">
+              <div className="flex h-full flex-wrap items-center gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 text-xs text-teal-800/70 shadow-sm">
+                <span className="flex-1">{t('instructions')}</span>
+                {selectedRow !== null && selectedCol !== null && (
+                  <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                    {direction === 'across' ? t('directionAcross') : t('directionDown')}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile: players (horizontal compact) */}
+            <div className="lg:hidden">
+              <WordBuildingPlayerRail
                 playerNames={playerNames}
                 scores={scores}
-                cluesAcross={cluesAcross}
-                cluesDown={cluesDown}
-                solved={solved}
+                localPlayerId={playerId}
+                playerColours={playerColours}
+                playerAvatarTiers={playerAvatarTiers}
+                playerAvatarAnimals={playerAvatarAnimals}
+                leftPlayers={leftPlayers}
+                orientation="horizontal"
               />
             </div>
-            {/* Controls always visible at bottom — separated from the active gameplay area */}
-            <GameControls
-              onLeave={() => setShowAbandonModal(true)}
-            />
+
+            {/* Sidebar — players, clock, clues */}
+            <aside
+              className="hidden min-h-0 flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:flex"
+              aria-label={t('scoreboardLabel')}
+            >
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-3">
+                <WordBuildingPlayerRail
+                  playerNames={playerNames}
+                  scores={scores}
+                  localPlayerId={playerId}
+                  playerColours={playerColours}
+                  playerAvatarTiers={playerAvatarTiers}
+                  playerAvatarAnimals={playerAvatarAnimals}
+                  leftPlayers={leftPlayers}
+                  orientation="vertical"
+                />
+                <GameClock
+                  startedAtMs={startedAtMs}
+                  stopped={solved}
+                  className="w-full justify-between"
+                  label={t('timeLabel')}
+                />
+                <GameInfoColumn
+                  cluesAcross={cluesAcross}
+                  cluesDown={cluesDown}
+                />
+              </div>
+            </aside>
+
+            {/* Board — right column; wb-board-col caps size to avoid vertical overflow */}
+            <div className="wb-board-col flex min-w-0 w-full flex-col gap-2 lg:col-start-2 lg:row-start-2">
+              <GameCourt
+                court={visibleCourt}
+                selectedRow={selectedRow}
+                selectedCol={selectedCol}
+                onCellClick={handleCellClick}
+                locks={locksMap}
+                myPlayerId={playerId}
+                dragTargetRow={dragTargetRow}
+                dragTargetCol={dragTargetCol}
+              />
+              <TileRack letters={availableLetters} disabled={solved} onDrop={handleCellDrop} onDragTarget={handleDragTarget} />
+            </div>
+
+            {/* Back to lobby — left, row 3 */}
+            <div className="hidden h-full lg:col-start-1 lg:row-start-3 lg:block">
+              <GameControls onLeave={() => setShowAbandonModal(true)} />
+            </div>
+
+            {/* Mobile: clock + clues + back to lobby */}
+            <div className="flex flex-col gap-3 lg:hidden">
+              <GameClock
+                startedAtMs={startedAtMs}
+                stopped={solved}
+                label={t('timeLabel')}
+              />
+              <GameInfoColumn
+                cluesAcross={cluesAcross}
+                cluesDown={cluesDown}
+              />
+              <GameControls onLeave={() => setShowAbandonModal(true)} />
+            </div>
+
           </div>
         </div>
       </div>
@@ -522,15 +644,21 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Puzzle-complete overlay — shown as soon as the board is solved */}
-      {solved && (
-        <div className="clay-modal-overlay fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="clay-modal text-center max-w-sm mx-4">
-            <p className="text-5xl mb-3">🎉</p>
-            <p className="font-heading text-2xl font-bold text-primary mb-2">{t('puzzleComplete')}</p>
-            <p className="text-sm text-muted-foreground">{t('returningToLobby')}</p>
-          </div>
-        </div>
+      {/* Game-over overlay — shown when the puzzle is solved and game:finished fires */}
+      {showGameOverOverlay && (
+        <WordBuildingGameOverOverlay
+          playersById={gameOverPlayersById}
+          playerOrder={gameOverPlayerOrder}
+          playerColours={playerColours}
+          localPlayerId={playerId}
+          playerAvatarTiers={playerAvatarTiers}
+          playerAvatarAnimals={playerAvatarAnimals}
+          hostTier={localHostTier}
+          hostAnimal={localHostAnimal}
+          hostClothesColor={localHostColour}
+          newlyUnlockedTier={newlyUnlockedTier}
+          onReturnToLobby={handleReturnToLobby}
+        />
       )}
     </div>
   );

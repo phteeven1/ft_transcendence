@@ -1,135 +1,64 @@
 'use client';
 
-//
-// Score table, across/down clues, and a "Puzzle solved!" banner.
+// Clue list sections for the Word Building left-side sidebar.
 
 import { useTranslations } from 'next-intl';
 import type { ClueEntry } from '@/lib/api/games/word-building.types';
-import GameClock from '@/app/components/game-clock';
-
-type ScoreEntry = {
-  playerId: number;
-  score:    number;
-};
 
 type GameInfoColumnProps = {
-  gameName:    string;
-  startedTime: string | null;
-  playerNames: Map<number, string>;
-  scores:      ScoreEntry[];
   cluesAcross: Omit<ClueEntry, 'word'>[];
   cluesDown:   Omit<ClueEntry, 'word'>[];
-  solved:      boolean;
 };
 
 /**
- * Renders the right-hand sidebar for the word-building game, including the
- * scoreboard, clue lists, and solved banner.
+ * Renders the Across and Down clue lists for the Word Building sidebar.
  *
- * @param gameName Display name of the game.
- * @param startedTime Start timestamp used for display.
- * @param playerNames Lookup table for player display names.
- * @param scores Current score entries from the backend.
  * @param cluesAcross Across clues with resolved coordinates.
  * @param cluesDown Down clues with resolved coordinates.
- * @param solved Whether the puzzle has been completed.
  */
-export function GameInfoColumn({
-  gameName,
-  startedTime,
-  playerNames,
-  scores,
-  cluesAcross,
-  cluesDown,
-  solved,
-}: GameInfoColumnProps) {
+export function GameInfoColumn({ cluesAcross, cluesDown }: GameInfoColumnProps) {
   const t = useTranslations('games.wordBuilding');
-  const tCommon = useTranslations('common');
-  const tLobby = useTranslations('games.lobby');
-  const sortedScores = [...scores].sort((a, b) => b.score - a.score);
-  const normalizedGameName = gameName.trim().toLowerCase();
-  const displayGameName =
-    normalizedGameName === 'word building'
-      ? tLobby('wordBuilding')
-      : normalizedGameName === 'word soup'
-        ? tLobby('wordSoup')
-        : gameName;
 
   return (
-    <aside className="flex flex-col gap-4 w-full text-sm">
-      {/* Game header */}
-      <div>
-        <h2 className="font-heading font-bold text-lg text-foreground">{displayGameName}</h2>
-        <div className="mt-2">
-          <GameClock
-            startedAtMs={
-              startedTime ? new Date(startedTime).getTime() : null
-            }
-            stopped={solved}
-          />
-        </div>
-      </div>
-
-      {/* Solved banner */}
-      {solved && (
-        <div className="clay-panel px-3 py-2 text-primary font-semibold font-heading">
-          {t('puzzleSolved')}
-        </div>
-      )}
-
-      {/* Scoreboard */}
-      <section>
-        <h3 className="font-semibold font-heading text-foreground mb-1">{t('scores')}</h3>
-        {sortedScores.length === 0 ? (
-          <p className="text-muted-foreground italic">{t('noPointsYet')}</p>
-        ) : (
-          <ul className="space-y-0.5">
-            {sortedScores.map(({ playerId, score }) => (
-              <li key={playerId} className="flex justify-between text-foreground">
-                <span>{playerNames.get(playerId) ?? tCommon('playerNumber', { id: playerId })}</span>
-                <span className="font-mono font-bold">{score}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Clue list — across */}
+    <div className="flex flex-col gap-3 w-full text-sm">
       {cluesAcross.length > 0 && (
         <section>
-          <h3 className="font-semibold font-heading text-foreground mb-1">{t('across')}</h3>
-          <ol className="space-y-1 list-none">
+          <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700/60">
+            {t('across')}
+          </h3>
+          <ol className="list-none space-y-1">
             {cluesAcross
               .slice()
               .sort((a, b) => a.number - b.number)
               .map(c => (
-                <li key={c.number} className="flex gap-1">
-                  <span className="font-bold w-5 shrink-0 text-foreground">{c.number}.</span>
-                  <span className="text-muted-foreground">{c.clue}</span>
+                <li key={c.number} className="flex gap-1 text-xs">
+                  <span className="w-5 shrink-0 font-bold text-teal-900">{c.number}.</span>
+                  <span className="text-teal-800/70">{c.clue}</span>
                 </li>
               ))}
           </ol>
         </section>
       )}
 
-      {/* Clue list — down */}
       {cluesDown.length > 0 && (
         <section>
-          <h3 className="font-semibold font-heading text-foreground mb-1">{t('down')}</h3>
-          <ol className="space-y-1 list-none">
+          <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700/60">
+            {t('down')}
+          </h3>
+          <ol className="list-none space-y-1">
             {cluesDown
               .slice()
               .sort((a, b) => a.number - b.number)
               .map(c => (
-                <li key={c.number} className="flex gap-1">
-                  <span className="font-bold w-5 shrink-0 text-foreground">{c.number}.</span>
-                  <span className="text-muted-foreground">{c.clue}</span>
+                <li key={c.number} className="flex gap-1 text-xs">
+                  <span className="w-5 shrink-0 font-bold text-teal-900">{c.number}.</span>
+                  <span className="text-teal-800/70">{c.clue}</span>
                 </li>
               ))}
           </ol>
         </section>
       )}
-    </aside>
+    </div>
   );
 }
 

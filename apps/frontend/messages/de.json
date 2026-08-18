@@ -408,6 +408,10 @@
       "lastPlayerMessage": "Du bist der letzte Spieler. Zurück zur Lobby beendet dieses Spiel. Deine Spielsitzung bleibt aktiv."
     },
     "wordBuilding": {
+      "title": "Wortbau",
+      "timeLabel": "Zeit",
+      "scoreboardLabel": "Spieler",
+      "leftGame": "Spiel verlassen",
       "generating": "Kreuzworträtsel wird erstellt…",
       "instructions": "Klicke auf eine Zelle, um die Richtung automatisch auszuwählen · Tippe Buchstaben zum Ausfüllen · Grün = richtig · Blau = leer · Rot = falsch · Leertaste/Tab zum Umschalten der Richtung",
       "directionAcross": "→ Waagerecht",
@@ -418,7 +422,22 @@
       "down": "Senkrecht",
       "puzzleSolved": "🎉 Rätsel gelöst!",
       "puzzleComplete": "Rätsel abgeschlossen!",
-      "returningToLobby": "Zurück zur Lobby…"
+      "returningToLobby": "Zurück zur Lobby…",
+      "gameComplete": {
+        "title": "Rätsel abgeschlossen!",
+        "subtitle": "Herzlichen Glückwunsch zum Lösen des Kreuzworträtsels!",
+        "finalScores": "Endergebnis",
+        "playAgain": "Nochmal spielen",
+        "returnToLobby": "Zurück zur Lobby"
+      },
+      "outro": {
+        "gameOverTitle": "Rätselergebnis",
+        "puzzleComplete": "Rätsel abgeschlossen!",
+        "finalScores": "Endergebnis",
+        "pointsXp": "{score} Pkt. · +{xp} XP",
+        "winner": "Gewinner",
+        "returnToLobby": "Zurück zur Lobby"
+      }
     },
     "wordSoup": {
       "title": "Wortsuppe",
