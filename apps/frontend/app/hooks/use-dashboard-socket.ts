@@ -20,8 +20,11 @@ export function useDashboardSocket({
 }: Options): void {
   const onDashboardUpdateRef = useRef(onDashboardUpdate);
   const onMembershipChangedRef = useRef(onMembershipChanged);
-  onDashboardUpdateRef.current = onDashboardUpdate;
-  onMembershipChangedRef.current = onMembershipChanged;
+
+  useEffect(() => {
+    onDashboardUpdateRef.current = onDashboardUpdate;
+    onMembershipChangedRef.current = onMembershipChanged;
+  });
 
   useEffect(() => {
     if (!enabled || userId <= 0) return;
