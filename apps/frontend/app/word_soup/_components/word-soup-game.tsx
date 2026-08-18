@@ -18,10 +18,7 @@ import CourtControls from './court-controls';
 import WordStats from './word-stats';
 import SessionActions from './session-actions';
 import SubmitGuessButton from './submit-guess-button';
-import { computeGridWidth } from './court-size';
-import { useCourtSize } from './use-court-size';
-
-const MAX_COURT_FRAME_WIDTH = computeGridWidth('L');
+import { MAX_COURT_WIDTH } from '../_lib/word-soup-constants';
 
 export default function WordSoupGame() {
   const tCommon = useTranslations('common');
@@ -33,7 +30,6 @@ export default function WordSoupGame() {
   const playerId = Number(searchParams.get('playerId'));
   const socket = useGameSocket(gameId, playerId);
   const ws = useWordSoupGame({ gameId, playerId, socket });
-  const { courtSize, courtWidthPx, frameRef, onCourtSizeChange } = useCourtSize();
   const localHostClothesColor = ws.playerColours[playerId];
 
   const scoreboardProps = {
@@ -96,13 +92,13 @@ export default function WordSoupGame() {
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
         <div
           className="w-full min-w-0"
-          style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_FRAME_WIDTH}px)` }}
+          style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_WIDTH}px)` }}
         >
           {/*
             Desktop:
-              row1: [title] [message banner + S/M/L/info]  (controls right edge = court)
-              row2: [players + word stats] [court]         (stats bottom = court bottom)
-              row3: [back to lobby] [submit]           (button tops/bottoms align)
+              row1: [title] [message banner + rules]  (controls right edge = court)
+              row2: [players + word stats] [court]    (stats bottom = court bottom)
+              row3: [back to lobby] [submit]          (button tops/bottoms align)
           */}
           <div className="grid w-full grid-cols-1 items-stretch gap-x-4 gap-y-2 sm:gap-y-2.5 lg:grid-cols-[11.5rem_minmax(0,1fr)]">
             {/* Title — top left, above scorecards */}
@@ -119,8 +115,8 @@ export default function WordSoupGame() {
                 Banner may expand downward over the court when messages wrap. */}
             <div className="relative z-20 lg:col-start-2 lg:row-start-1">
               <div
-                className="flex items-start gap-2 sm:gap-3"
-                style={{ width: courtWidthPx, maxWidth: '100%' }}
+                className="flex w-full items-start gap-2 sm:gap-3"
+                style={{ maxWidth: MAX_COURT_WIDTH }}
               >
                 <div className="min-w-0 flex-1">
                   <WordSoupEventBannerView
@@ -132,10 +128,7 @@ export default function WordSoupGame() {
                   />
                 </div>
                 <div className="flex h-14 shrink-0 items-center sm:h-16">
-                  <CourtControls
-                    courtSize={courtSize}
-                    onCourtSizeChange={onCourtSizeChange}
-                  />
+                  <CourtControls />
                 </div>
               </div>
             </div>
@@ -172,62 +165,56 @@ export default function WordSoupGame() {
 
             {/* Court */}
             <div
-              ref={frameRef}
-              className="relative z-0 min-w-0 lg:col-start-2 lg:row-start-2"
-              style={{ maxWidth: MAX_COURT_FRAME_WIDTH }}
+              className="relative z-0 min-w-0 w-full lg:col-start-2 lg:row-start-2"
+              style={{ maxWidth: MAX_COURT_WIDTH }}
             >
-              <div style={{ width: courtWidthPx, maxWidth: '100%' }}>
-                <GameCourt
-                  courtSize={courtSize}
-                  visibleCourt={ws.visibleCourt}
-                  playerColours={ws.playerColours}
-                  selectedCells={ws.selection}
-                  foundWordGroups={ws.foundWords}
-                  isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
-                  freezeSecondsLeft={ws.freezeSecondsLeft}
-                  lettersVisible={ws.gameReady || !ws.showIntro}
-                  wordCelebration={ws.wordCelebration}
-                  onSelectionStart={ws.handleSelectionStart}
-                  onSelectionContinue={ws.handleSelectionContinue}
-                  onSelectionEnd={ws.handleSelectionEnd}
-                  overlay={
-                    ws.showGameOverOverlay ? (
-                      <WordSoupGameOverOverlay
-                        phase={ws.gameOverPhase}
-                        bubbleText={ws.gameOverBubbleText}
-                        bubbleVisible={ws.gameOverBubbleVisible}
-                        revealedPlayerIds={ws.gameOverRevealedPlayerIds}
-                        playersById={ws.gameOverPlayersById}
-                        playerColours={ws.playerColours}
-                        playerAvatarTiers={ws.playerAvatarTiers}
-                        playerAvatarAnimals={ws.playerAvatarAnimals}
-                        hostTier={ws.localHostTier}
-                        hostAnimal={ws.localHostAnimal}
-                        hostClothesColor={localHostClothesColor}
-                        localPlayerId={playerId}
-                        newlyUnlockedTier={ws.newlyUnlockedTier}
-                        showReturnButton={ws.showGameOverReturnButton}
-                        onReturnToLobby={ws.handleReturnToLobby}
-                        courtSize={courtSize}
-                      />
-                    ) : ws.showIntro ? (
-                      <WordSoupIntroOverlay
-                        phase={ws.introPhase}
-                        bubbleText={ws.introBubbleText}
-                        bubbleVisible={ws.introBubbleVisible}
-                        wordRevealIndex={ws.wordRevealIndex}
-                        totalWords={ws.introTotalWords}
-                        countdownValue={ws.introCountdownValue}
-                        solutionWords={ws.solutionWords}
-                        hostTier={ws.localHostTier}
-                        hostAnimal={ws.localHostAnimal}
-                        hostClothesColor={localHostClothesColor}
-                        courtSize={courtSize}
-                      />
-                    ) : null
-                  }
-                />
-              </div>
+              <GameCourt
+                visibleCourt={ws.visibleCourt}
+                playerColours={ws.playerColours}
+                selectedCells={ws.selection}
+                foundWordGroups={ws.foundWords}
+                isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
+                freezeSecondsLeft={ws.freezeSecondsLeft}
+                lettersVisible={ws.gameReady || !ws.showIntro}
+                wordCelebration={ws.wordCelebration}
+                onSelectionStart={ws.handleSelectionStart}
+                onSelectionContinue={ws.handleSelectionContinue}
+                onSelectionEnd={ws.handleSelectionEnd}
+                overlay={
+                  ws.showGameOverOverlay ? (
+                    <WordSoupGameOverOverlay
+                      phase={ws.gameOverPhase}
+                      bubbleText={ws.gameOverBubbleText}
+                      bubbleVisible={ws.gameOverBubbleVisible}
+                      revealedPlayerIds={ws.gameOverRevealedPlayerIds}
+                      playersById={ws.gameOverPlayersById}
+                      playerColours={ws.playerColours}
+                      playerAvatarTiers={ws.playerAvatarTiers}
+                      playerAvatarAnimals={ws.playerAvatarAnimals}
+                      hostTier={ws.localHostTier}
+                      hostAnimal={ws.localHostAnimal}
+                      hostClothesColor={localHostClothesColor}
+                      localPlayerId={playerId}
+                      newlyUnlockedTier={ws.newlyUnlockedTier}
+                      showReturnButton={ws.showGameOverReturnButton}
+                      onReturnToLobby={ws.handleReturnToLobby}
+                    />
+                  ) : ws.showIntro ? (
+                    <WordSoupIntroOverlay
+                      phase={ws.introPhase}
+                      bubbleText={ws.introBubbleText}
+                      bubbleVisible={ws.introBubbleVisible}
+                      wordRevealIndex={ws.wordRevealIndex}
+                      totalWords={ws.introTotalWords}
+                      countdownValue={ws.introCountdownValue}
+                      solutionWords={ws.solutionWords}
+                      hostTier={ws.localHostTier}
+                      hostAnimal={ws.localHostAnimal}
+                      hostClothesColor={localHostClothesColor}
+                    />
+                  ) : null
+                }
+              />
             </div>
 
             {/* Back to lobby — height-matched to Submit */}
@@ -240,10 +227,9 @@ export default function WordSoupGame() {
 
             {/* Submit */}
             <div className="lg:col-start-2 lg:row-start-3">
-              <div style={{ width: courtWidthPx, maxWidth: '100%' }} className="h-full">
+              <div className="h-full w-full" style={{ maxWidth: MAX_COURT_WIDTH }}>
                 <SubmitGuessButton
                   fillHeight
-                  courtSize={courtSize}
                   onSubmitGuess={ws.handleSubmitGuess}
                   selectionCount={ws.selection.length}
                   isSubmittingGuess={ws.isSubmittingGuess}

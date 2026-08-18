@@ -1,6 +1,6 @@
 /** Grid dimensions — must match COURT_COLS / COURT_ROWS on the frontend. */
 export const COURT_COLS = 18;
-export const COURT_ROWS = 10;
+export const COURT_ROWS = 18;
 
 /** Number of words drawn from the vocabulary for a Word Soup round. */
 export const WORDS_IN_GAME = 10;

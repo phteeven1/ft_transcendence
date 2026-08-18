@@ -422,7 +422,6 @@
     },
     "wordSoup": {
       "title": "Wortsuppe",
-      "courtSizeLabel": "Spielfeldgröße",
       "cellTitle": "Zeile {row}, Spalte {col}",
       "cellHidden": "verborgen",
       "cellEmpty": "leer",

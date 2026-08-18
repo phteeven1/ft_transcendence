@@ -11,8 +11,6 @@ interface Props {
   cell: CourtCell;
   row: number;
   col: number;
-  tileSize: number;
-  fontSize: number;
   playerColours: Record<number, string>;
   foundWordGroups: Array<{
     playerId: number;
@@ -33,8 +31,6 @@ export default function CourtTile({
   cell,
   row,
   col,
-  tileSize,
-  fontSize,
   playerColours,
   foundWordGroups,
   isSelected,
@@ -128,7 +124,8 @@ export default function CourtTile({
         onSelectionStart(row, col);
       }}
       className={[
-        'flex items-center justify-center rounded-lg border border-gray-200 bg-white font-bold leading-none text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
+        'aspect-square flex w-full min-w-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-0 font-bold leading-none text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.15)]',
+        'text-[clamp(0.625rem,3.6cqw,1.375rem)]',
         isLeading
           ? 'word-soup-tile-ripple'
           : 'transition-[transform,background-color] duration-150 hover:scale-[1.02]',
@@ -140,10 +137,6 @@ export default function CourtTile({
         outline: selectionOutline,
         outlineOffset: selectionOutline ? '-2px' : undefined,
         boxSizing: 'border-box',
-        width: `${tileSize}px`,
-        height: `${tileSize}px`,
-        fontSize: `${fontSize}px`,
-        flexShrink: 0,
         touchAction: 'none',
         userSelect: 'none',
       }}

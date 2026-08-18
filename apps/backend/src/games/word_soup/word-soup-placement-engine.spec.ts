@@ -70,6 +70,7 @@ describe('generateTrueCourt', () => {
   it('fails to place nothing when vocabulary is empty', () => {
     const { placedWords, trueCourt } = generateTrueCourt([]);
     expect(placedWords).toEqual([]);
+    expect(COURT_ROWS).toBe(COURT_COLS);
     expect(trueCourt).toHaveLength(COURT_ROWS);
     expect(trueCourt[0]).toHaveLength(COURT_COLS);
   });
