@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
 
 type Options = {
@@ -18,6 +18,11 @@ export function useDashboardSocket({
   onDashboardUpdate,
   onMembershipChanged,
 }: Options): void {
+  const onDashboardUpdateRef = useRef(onDashboardUpdate);
+  const onMembershipChangedRef = useRef(onMembershipChanged);
+  onDashboardUpdateRef.current = onDashboardUpdate;
+  onMembershipChangedRef.current = onMembershipChanged;
+
   useEffect(() => {
     if (!enabled || userId <= 0) return;
 
@@ -32,12 +37,12 @@ export function useDashboardSocket({
 
     const handleDashboardUpdate = (): void => {
       if (!active) return;
-      onDashboardUpdate();
+      onDashboardUpdateRef.current();
     };
 
     const handleMembershipChanged = (): void => {
       if (!active) return;
-      onMembershipChanged();
+      onMembershipChangedRef.current();
     };
 
     socket.on('connect', join);
@@ -53,5 +58,5 @@ export function useDashboardSocket({
       socket.off('membership:changed', handleMembershipChanged);
       releaseSocket(key);
     };
-  }, [userId, groupId, enabled, onDashboardUpdate, onMembershipChanged]);
+  }, [userId, groupId, enabled]);
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../../types';
-import { useDashboardSocket } from '../../hooks/use-dashboard-socket';
+import { useDashboardLive } from './dashboard-live';
 
 export type GroupAction = 'rename' | 'leave' | 'delete';
 
@@ -54,23 +54,7 @@ export function useGroupsPanel(): UseGroupsPanelResult {
     return () => window.clearTimeout(timeoutId);
   }, [userId, player, loadGroups]);
 
-  useDashboardSocket({
-    userId: userId ?? 0,
-    groupId: selectedGroupId ?? 0,
-    enabled: Boolean(userId) && !player,
-    onDashboardUpdate: loadGroups,
-    onMembershipChanged: loadGroups,
-  });
-
-  useEffect(() => {
-    if (!userId || player) return;
-    const onVisible = (): void => {
-      if (document.visibilityState !== 'visible') return;
-      void loadGroups();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [userId, player, loadGroups]);
+  useDashboardLive(loadGroups);
 
   const selectGroup = useCallback(
     async (groupId: number): Promise<void> => {

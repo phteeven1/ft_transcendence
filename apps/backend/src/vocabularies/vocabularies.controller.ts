@@ -12,16 +12,18 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { VocabulariesService } from './vocabularies.service';
 import { ExtractionService } from './extraction.service';
+import { GameGateway } from '../games/game.gateway';
 
 @Controller('vocabularies')
 export class VocabulariesController {
   constructor(
     private readonly vocabulariesService: VocabulariesService,
     private readonly extractionService: ExtractionService,
+    private readonly gateway: GameGateway,
   ) {}
 
   @Post('create')
-  create(
+  async create(
     @Body()
     body: {
       vocabularyInGroup: number;
@@ -31,17 +33,19 @@ export class VocabulariesController {
       vocabularyMeanings?: string[];
     },
   ) {
-    return this.vocabulariesService.create(
+    const created = await this.vocabulariesService.create(
       body.vocabularyInGroup,
       body.byUser,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
     );
+    this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    return created;
   }
 
   @Post('findOrCreate')
-  findOrCreate(
+  async findOrCreate(
     @Body()
     body: {
       vocabularyInGroup: number;
@@ -51,31 +55,35 @@ export class VocabulariesController {
       vocabularyMeanings?: string[];
     },
   ) {
-    return this.vocabulariesService.findOrCreate(
+    const vocabulary = await this.vocabulariesService.findOrCreate(
       body.vocabularyInGroup,
       body.byUser,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
     );
+    this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    return vocabulary;
   }
 
   @Post('setActive')
-  setActive(
+  async setActive(
     @Body()
     body: {
       vocabularyId: number;
       vocabularyInGroup: number;
     },
   ) {
-    return this.vocabulariesService.setActive(
+    const updated = await this.vocabulariesService.setActive(
       body.vocabularyId,
       body.vocabularyInGroup,
     );
+    if (updated) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    return updated;
   }
 
   @Post('rename')
-  rename(
+  async rename(
     @Body()
     body: {
       vocabularyId: number;
@@ -83,15 +91,17 @@ export class VocabulariesController {
       vocabularyInGroup: number;
     },
   ) {
-    return this.vocabulariesService.rename(
+    const renamed = await this.vocabulariesService.rename(
       body.vocabularyId,
       body.vocabularyName,
       body.vocabularyInGroup,
     );
+    if (renamed) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    return renamed;
   }
 
   @Post('update-entries')
-  updateEntries(
+  async updateEntries(
     @Body()
     body: {
       vocabularyId: number;
@@ -100,26 +110,30 @@ export class VocabulariesController {
       vocabularyMeanings: string[];
     },
   ) {
-    return this.vocabulariesService.updateEntries(
+    const updated = await this.vocabulariesService.updateEntries(
       body.vocabularyId,
       body.vocabularyInGroup,
       body.vocabularyWords,
       body.vocabularyMeanings,
     );
+    if (updated) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    return updated;
   }
 
   @Post('remove')
-  remove(
+  async remove(
     @Body()
     body: {
       vocabularyId: number;
       vocabularyInGroup: number;
     },
   ) {
-    return this.vocabulariesService.remove(
+    const removed = await this.vocabulariesService.remove(
       body.vocabularyId,
       body.vocabularyInGroup,
     );
+    if (removed) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    return removed;
   }
 
   @Get('group/:groupId')

@@ -90,7 +90,7 @@ Gateway: `apps/backend/src/games/game.gateway.ts` (`@WebSocketGateway({ cors: { 
 
 Rooms: `group:{id}` (lobby + dashboard), `user:{id}` (membership list), `game:{id}` (in play). Disconnect releases cell locks.
 
-The parent dashboard does not poll. After group/player mutations the gateway emits `dashboard:update` / `membership:changed`; the dashboard refetches. A `visibilitychange` to visible is the reconnect safety net.
+The parent dashboard does not poll. The dashboard page owns one Socket.IO subscription (`joinDashboard`) and refetches when `dashboard:update` / `membership:changed` fire, or when the tab becomes visible. Group, player, and vocabulary mutation controllers emit those events after a successful write.
 
 Mappers (`common/mappers.ts`) keep API JSON stable when Prisma field names differ (e.g. `inGroupId` → `inGroup`). The UI must not import `@ft-transcendence/database` or Prisma.
 

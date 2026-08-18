@@ -1,8 +1,7 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { GroupRole } from '@ft-transcendence/database';
 import { groupWithMemberships, toApiGroup } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
-import { GameGateway } from '../games/game.gateway';
 
 export type Group = {
   id: number;
@@ -20,11 +19,7 @@ export type Member = {
 
 @Injectable()
 export class GroupsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => GameGateway))
-    private readonly gateway: GameGateway,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(groupName: string, creatorId: number): Promise<Group> {
     const group = await this.prisma.group.create({
@@ -36,10 +31,7 @@ export class GroupsService {
       },
       ...groupWithMemberships,
     });
-    const created = toApiGroup(group);
-    this.gateway.emitDashboardUpdate(created.id);
-    this.gateway.emitMembershipChanged(creatorId);
-    return created;
+    return toApiGroup(group);
   }
 
   async addMember(groupId: number, userId: number): Promise<Group | undefined> {
@@ -54,10 +46,7 @@ export class GroupsService {
       data: { groupId, userId, role: GroupRole.MEMBER },
     });
 
-    const updated = await this.findById(groupId);
-    this.gateway.emitDashboardUpdate(groupId);
-    this.gateway.emitMembershipChanged(userId);
-    return updated;
+    return this.findById(groupId);
   }
 
   async promote(groupId: number, userId: number): Promise<Group | undefined> {
@@ -72,9 +61,7 @@ export class GroupsService {
       data: { role: GroupRole.ADMIN },
     });
 
-    const promoted = await this.findById(groupId);
-    this.gateway.emitDashboardUpdate(groupId);
-    return promoted;
+    return this.findById(groupId);
   }
 
   async demote(groupId: number, userId: number): Promise<Group | undefined> {
@@ -89,9 +76,7 @@ export class GroupsService {
       data: { role: GroupRole.MEMBER },
     });
 
-    const demoted = await this.findById(groupId);
-    this.gateway.emitDashboardUpdate(groupId);
-    return demoted;
+    return this.findById(groupId);
   }
 
   async leave(groupId: number, userId: number): Promise<Group | undefined> {
@@ -122,10 +107,7 @@ export class GroupsService {
     await this.prisma.groupMembership.delete({
       where: { id: leaving.id },
     });
-    const remaining = await this.findById(groupId);
-    this.gateway.emitDashboardUpdate(groupId);
-    this.gateway.emitMembershipChanged(userId);
-    return remaining;
+    return this.findById(groupId);
   }
 
   async rename(groupId: number, groupName: string): Promise<Group | undefined> {
@@ -136,9 +118,7 @@ export class GroupsService {
         ...groupWithMemberships,
       });
 
-      const renamed = toApiGroup(group);
-      this.gateway.emitDashboardUpdate(groupId);
-      return renamed;
+      return toApiGroup(group);
     } catch {
       return undefined;
     }
@@ -150,26 +130,22 @@ export class GroupsService {
     });
     if (deleted.count === 0) return this.findById(groupId);
 
-    const remaining = await this.findById(groupId);
-    this.gateway.emitDashboardUpdate(groupId);
-    this.gateway.emitMembershipChanged(userId);
-    return remaining;
+    return this.findById(groupId);
   }
 
-  async delete(groupId: number): Promise<boolean> {
+  async delete(
+    groupId: number,
+  ): Promise<{ deleted: boolean; memberIds: number[] }> {
     const memberships = await this.prisma.groupMembership.findMany({
       where: { groupId },
       select: { userId: true },
     });
+    const memberIds = memberships.map((membership) => membership.userId);
     try {
       await this.prisma.group.delete({ where: { id: groupId } });
-      this.gateway.emitDashboardUpdate(groupId);
-      for (const { userId } of memberships) {
-        this.gateway.emitMembershipChanged(userId);
-      }
-      return true;
+      return { deleted: true, memberIds };
     } catch {
-      return false;
+      return { deleted: false, memberIds: [] };
     }
   }
 

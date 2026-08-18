@@ -11,7 +11,7 @@ import {
 } from '../_components/test-vocabulary';
 import type { MemberAction } from '../_components/member-dialog';
 import type { VocabularyAction } from '../_components/vocabulary-list';
-import { useDashboardSocket } from '../../hooks/use-dashboard-socket';
+import { useDashboardLive } from './dashboard-live';
 
 export type PeopleTab = 'members' | 'players' | 'vocabulary';
 export type PlayerAction = 'rename' | 'delete';
@@ -59,7 +59,7 @@ function isPeopleTab(value: string | null): value is PeopleTab {
 }
 
 export function usePeoplePanel(): UsePeoplePanelResult {
-  const { user, group, player, syncGroup, leaveGroup } = useAuth();
+  const { user, group, syncGroup, leaveGroup } = useAuth();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get('tab');
 
@@ -169,23 +169,7 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     if (isAdmin) void fetchVocabularies();
   }, [syncAndRefresh, isAdmin, fetchVocabularies]);
 
-  useDashboardSocket({
-    userId: userId ?? 0,
-    groupId: selectedGroupId ?? 0,
-    enabled: Boolean(userId) && !player,
-    onDashboardUpdate: refreshDashboard,
-    onMembershipChanged: refreshDashboard,
-  });
-
-  useEffect(() => {
-    if (!userId || player) return;
-    const onVisible = (): void => {
-      if (document.visibilityState !== 'visible') return;
-      refreshDashboard();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [userId, player, refreshDashboard]);
+  useDashboardLive(refreshDashboard);
 
   useEffect(() => {
     if (!selectedGroupId) {
