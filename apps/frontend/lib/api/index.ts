@@ -8,7 +8,12 @@ export { gamesApi, wordBuildingApi, wordSoupApi } from './games';
 export { invitationsApi } from './invitations';
 export { progressionApi } from './progression';
 
-export type { UserDto, RegisterUserInput, SignInUserInput } from './users';
+export type {
+  UserDto,
+  RegisterUserInput,
+  SignInUserInput,
+  AuthResult,
+} from './users';
 export type {
   GroupDto,
   MemberDto,
@@ -24,6 +29,7 @@ export type {
   StartSessionInput,
   ValidateSessionInput,
   ValidateSessionResult,
+  StartSessionResult,
 } from './players';
 export type {
   VocabularyDto,
@@ -54,6 +60,7 @@ export type {
 export type {
   ValidateInvitationResult,
   SendInvitationInput,
+  SendInvitationResult,
   AcceptInvitationInput,
 } from './invitations';
 export type {

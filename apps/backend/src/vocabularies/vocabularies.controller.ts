@@ -40,7 +40,7 @@ export class VocabulariesController {
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
     );
-    this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
+    if (created) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
     return created;
   }
 

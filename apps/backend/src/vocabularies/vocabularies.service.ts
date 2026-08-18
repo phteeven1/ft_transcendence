@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
@@ -54,7 +53,7 @@ export class VocabulariesService {
     name: string,
     words: string[] = [],
     meanings: string[] = [],
-  ): Promise<Vocabulary> {
+  ): Promise<Vocabulary | null> {
     const entries = normalizeVocabularyEntries(words, meanings);
     try {
       const vocabulary = await this.prisma.vocabulary.create({
@@ -72,9 +71,7 @@ export class VocabulariesService {
       return toApiVocabulary(vocabulary);
     } catch (error) {
       if (isPrismaUniqueConstraint(error)) {
-        throw new ConflictException(
-          'A vocabulary with this name already exists in the group.',
-        );
+        return null;
       }
       throw error;
     }
@@ -92,17 +89,14 @@ export class VocabulariesService {
     });
     if (existing) return toApiVocabulary(existing);
 
-    try {
-      return await this.create(inGroup, byUser, name, words, meanings);
-    } catch (error) {
-      if (error instanceof ConflictException) {
-        const raced = await this.prisma.vocabulary.findUnique({
-          where: { inGroupId_name: { inGroupId: inGroup, name } },
-        });
-        if (raced) return toApiVocabulary(raced);
-      }
-      throw error;
-    }
+    const created = await this.create(inGroup, byUser, name, words, meanings);
+    if (created) return created;
+
+    const raced = await this.prisma.vocabulary.findUnique({
+      where: { inGroupId_name: { inGroupId: inGroup, name } },
+    });
+    if (raced) return toApiVocabulary(raced);
+    throw new Error('Failed to find or create vocabulary');
   }
 
   async setActive(
@@ -127,7 +121,7 @@ export class VocabulariesService {
     vocabularyId: number,
     name: string,
     inGroup: number,
-  ): Promise<Vocabulary | undefined> {
+  ): Promise<Vocabulary | null | undefined> {
     const existing = await this.requireVocabularyInGroup(vocabularyId, inGroup);
     if (!existing) return undefined;
 
@@ -139,9 +133,7 @@ export class VocabulariesService {
       return toApiVocabulary(vocabulary);
     } catch (error) {
       if (isPrismaUniqueConstraint(error)) {
-        throw new ConflictException(
-          'A vocabulary with this name already exists in the group.',
-        );
+        return null;
       }
       throw error;
     }

@@ -5,14 +5,15 @@ import type {
   UserDto,
   UpdateUserInput,
   ChangePasswordInput,
+  AuthResult,
 } from './types';
 
 /**
  * Users domain API — the only place that knows user HTTP paths and request body shapes.
  */
 export const usersApi = {
-  register(input: RegisterUserInput): Promise<UserDto> {
-    return apiRequest<UserDto>('/users/register', {
+  register(input: RegisterUserInput): Promise<AuthResult> {
+    return apiRequest<AuthResult>('/users/register', {
       method: 'POST',
       body: JSON.stringify({
         userName: input.userName,
@@ -22,8 +23,8 @@ export const usersApi = {
     });
   },
 
-  signIn(input: SignInUserInput): Promise<UserDto> {
-    return apiRequest<UserDto>('/users/signin', {
+  signIn(input: SignInUserInput): Promise<AuthResult> {
+    return apiRequest<AuthResult>('/users/signin', {
       method: 'POST',
       body: JSON.stringify({
         userName: input.userName,

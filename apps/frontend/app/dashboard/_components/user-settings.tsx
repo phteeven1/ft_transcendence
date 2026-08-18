@@ -72,11 +72,15 @@ function UserSettingsDialog({
       return;
     }
     try {
-      await usersApi.changePassword({
+      const result = await usersApi.changePassword({
         userId: user.id,
         oldPassword,
         newPassword,
       });
+      if (!result.success) {
+        setPasswordError(t('oldPasswordIncorrect'));
+        return;
+      }
       setShowPasswordModal(false);
     } catch {
       setPasswordError(t('oldPasswordIncorrect'));

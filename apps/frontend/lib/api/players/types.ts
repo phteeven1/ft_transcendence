@@ -39,3 +39,8 @@ export type ValidateSessionResult = {
   valid: true;
   expiresAt: string;
 };
+
+export type StartSessionResult = {
+  session: PlayerSessionDto | null;
+  alreadyActive: boolean;
+};

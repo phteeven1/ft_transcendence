@@ -116,12 +116,12 @@ Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden s
 
 A parent session and a child session are different things.
 
-- **Parent:** `POST /users/signin` returns the user object. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`) with unauthenticated `GET /users/:id`. Demo-only ID restore — not a real session. There is no JWT. Logged-in parents hitting `/`, `/signin`, or `/register` are sent to `/dashboard`. Another tab signing in (or signing out) syncs via the `storage` event on `dicteeUserId`.
+- **Parent:** `POST /users/signin` and `POST /users/register` return `{ user }` (user is `null` on bad credentials or duplicate name/email). `POST /users/changePassword` returns `{ success: false }` when the old password is wrong. Expected Play Now / vocabulary-name / invite-mail failures are also 200 result objects so the browser console stays clean during eval. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`) with unauthenticated `GET /users/:id`. Demo-only ID restore — not a real session. There is no JWT. Logged-in parents hitting `/`, `/signin`, or `/register` are sent to `/dashboard`. Another tab signing in (or signing out) syncs via the `storage` event on `dicteeUserId`.
 - **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie. Play Now then **clears the parent** (`logout()`): `User` / `Group` leave `AuthContext` and `localStorage`. Leave session / session-over go to `/` unless a parent is still in this tab.
 
 Rules:
 
-- One unexpired token per player. A second Play Now while one is live is rejected unless the parent ends it first.
+- One unexpired token per player. A second Play Now while one is live returns `{ session: null, alreadyActive: true }` unless the parent ends it first.
 - `select_game` validates on mount. Missing or expired → `/dashboard` if a parent is still in context, else `/`. Games in progress are not interrupted.
 - Requests that need a child session send headers `x-player-id` and `x-player-session-token`. Progression routes use `PlayerSessionGuard`.
 - `POST /players/clearSession` deletes the token immediately (leave session, or **End session** in the Play Now dialog).

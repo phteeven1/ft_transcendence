@@ -141,6 +141,10 @@ export default function AddVocabulary({
         vocabularyWords: words,
         vocabularyMeanings: meanings,
       });
+      if (!created) {
+        setError(t('createFailed'));
+        return;
+      }
       onImported(created);
       handleClose();
     } catch {

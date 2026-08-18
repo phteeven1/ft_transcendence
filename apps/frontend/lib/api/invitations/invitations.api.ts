@@ -2,6 +2,7 @@ import { apiRequest } from '../http';
 import type {
   AcceptInvitationInput,
   SendInvitationInput,
+  SendInvitationResult,
   ValidateInvitationResult,
 } from './types';
 
@@ -12,8 +13,8 @@ export const invitationsApi = {
     );
   },
 
-  send(input: SendInvitationInput): Promise<{ success: boolean }> {
-    return apiRequest<{ success: boolean }>('/invitations/send', {
+  send(input: SendInvitationInput): Promise<SendInvitationResult> {
+    return apiRequest<SendInvitationResult>('/invitations/send', {
       method: 'POST',
       body: JSON.stringify(input),
     });

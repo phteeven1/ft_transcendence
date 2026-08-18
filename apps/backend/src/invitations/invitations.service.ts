@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -14,7 +14,7 @@ export class InvitationsService {
     groupName: string,
     toEmail: string,
     invitationText: string,
-  ): Promise<{ success: boolean }> {
+  ): Promise<{ success: boolean; message?: string }> {
     const createdAt = new Date();
     const expiresAt = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
     const invitation = await this.prisma.invitation.create({
@@ -38,9 +38,10 @@ export class InvitationsService {
 
       const detail =
         error instanceof Error ? error.message : 'Unknown mail error';
-      throw new ServiceUnavailableException(
-        `Could not send invitation email. ${detail}`,
-      );
+      return {
+        success: false,
+        message: `Could not send invitation email. ${detail}`,
+      };
     }
 
     return { success: true };
