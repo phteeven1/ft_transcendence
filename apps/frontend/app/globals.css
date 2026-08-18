@@ -423,6 +423,24 @@ body {
     var(--color-background);
 }
 
+/*
+  Word Building board column: cap width at 600 px on desktop, shrinking
+  further on shorter viewports so the full game fits without page scrolling.
+  19 rem ≈ 304 px covers header + footer + all non-board chrome overhead.
+  The max(300px,...) floor ensures the board never collapses below 300 px.
+  Only applied at lg+ (1024 px) where the two-column grid is active; mobile
+  uses the natural single-column flow and can scroll as needed.
+*/
+.wb-board-col {
+  max-width: 600px; /* base — also caps board on narrow single-column mobile */
+}
+
+@media (min-width: 1024px) {
+  .wb-board-col {
+    max-width: min(600px, max(300px, calc(100dvh - 19rem)));
+  }
+}
+
 .word-soup-court-frozen {
   filter: saturate(0.75) brightness(0.98);
   box-shadow:

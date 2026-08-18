@@ -20,8 +20,9 @@ export type ClueEntry = {
 };
 
 export type IInitCourtResponse = {
-  trueCourt:    CourtCell[][];
-  visibleCourt: CourtCell[][];
+  trueCourt:       CourtCell[][];
+  visibleCourt:    CourtCell[][];
+  availableLetters: string[];
   clues: {
     across: ClueEntry[];
     down:   ClueEntry[];

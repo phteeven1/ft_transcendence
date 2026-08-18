@@ -5,7 +5,12 @@ import { useTranslations } from 'next-intl';
 import { Icon } from '../../components/ui';
 import ListRow from './list-row';
 import NewListRow from './new-list-row';
-import { MAX_VOCAB_ENTRY_CHARS, stripEntryWhitespace } from './vocabulary-entry-rules';
+import {
+  MAX_VOCAB_ENTRY_CHARS,
+  canAddVocabularyEntry,
+  duplicateFieldKeys,
+  stripEntryWhitespace,
+} from './vocabulary-entry-rules';
 
 export type VocabularyEntry = {
   word: string;
@@ -45,6 +50,7 @@ export default function VocabularyEntriesList({
   }
 
   function handleAddRow(): void {
+    if (!canAddVocabularyEntry(entries)) return;
     onEntriesChange([...entries, { word: '', meaning: '' }]);
     const nextIndex = entries.length;
     setTimeout(() => {
@@ -79,6 +85,8 @@ export default function VocabularyEntriesList({
   }
 
   const canDelete = entries.length > minEntries;
+  const canAddRow = canAddVocabularyEntry(entries);
+  const duplicates = duplicateFieldKeys(entries);
 
   return (
     <div>
@@ -88,54 +96,81 @@ export default function VocabularyEntriesList({
         <span className="w-8" />
       </div>
       <ul className="list-none m-0 flex flex-col gap-1 p-0">
-        {entries.map((entry, index) => (
-          <ListRow
-            key={index}
-            menu={
-              <button
-                type="button"
-                onClick={() => handleDeleteRow(index)}
-                disabled={!canDelete}
-                title={
-                  canDelete ? t('deleteWordTitle') : t('minimumWordsTitle')
-                }
-                className={`shrink-0 p-1 rounded-lg ${
-                  canDelete
-                    ? 'text-muted-foreground hover:text-destructive cursor-pointer'
-                    : 'text-muted-foreground/40 cursor-not-allowed'
-                }`}
-              >
-                <Icon name="trash" size={16} />
-              </button>
-            }
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                ref={(el) => {
-                  wordRefs.current[index] = el;
-                }}
-                value={entry.word}
-                maxLength={MAX_VOCAB_ENTRY_CHARS}
-                onChange={(e) => handleChange(index, 'word', e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, index, 'word')}
-                className="clay-input text-sm w-full"
-                aria-label={t('wordColumn')}
-              />
-              <input
-                ref={(el) => {
-                  meaningRefs.current[index] = el;
-                }}
-                value={entry.meaning}
-                maxLength={MAX_VOCAB_ENTRY_CHARS}
-                onChange={(e) => handleChange(index, 'meaning', e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, index, 'meaning')}
-                className="clay-input text-sm w-full"
-                aria-label={t('meaningColumn')}
-              />
-            </div>
-          </ListRow>
-        ))}
-        <NewListRow label={t('addWordPair')} onSelect={handleAddRow} />
+        {entries.map((entry, index) => {
+          const isWordDuplicate = duplicates.words.has(
+            entry.word.trim().toLowerCase(),
+          );
+          const isMeaningDuplicate = duplicates.meanings.has(
+            entry.meaning.trim().toLowerCase(),
+          );
+
+          return (
+            <ListRow
+              key={index}
+              menu={
+                <button
+                  type="button"
+                  onClick={() => handleDeleteRow(index)}
+                  disabled={!canDelete}
+                  title={
+                    canDelete ? t('deleteWordTitle') : t('minimumWordsTitle')
+                  }
+                  className={`shrink-0 p-1 rounded-lg ${
+                    canDelete
+                      ? 'text-muted-foreground hover:text-destructive cursor-pointer'
+                      : 'text-muted-foreground/40 cursor-not-allowed'
+                  }`}
+                >
+                  <Icon name="trash" size={16} />
+                </button>
+              }
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  ref={(el) => {
+                    wordRefs.current[index] = el;
+                  }}
+                  value={entry.word}
+                  maxLength={MAX_VOCAB_ENTRY_CHARS}
+                  onChange={(e) => handleChange(index, 'word', e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, index, 'word')}
+                  className={[
+                    'clay-input text-sm w-full',
+                    isWordDuplicate ? 'clay-input-error' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-invalid={isWordDuplicate}
+                  aria-label={t('wordColumn')}
+                />
+                <input
+                  ref={(el) => {
+                    meaningRefs.current[index] = el;
+                  }}
+                  value={entry.meaning}
+                  maxLength={MAX_VOCAB_ENTRY_CHARS}
+                  onChange={(e) =>
+                    handleChange(index, 'meaning', e.target.value)
+                  }
+                  onKeyDown={(e) => handleKeyDown(e, index, 'meaning')}
+                  className={[
+                    'clay-input text-sm w-full',
+                    isMeaningDuplicate ? 'clay-input-error' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-invalid={isMeaningDuplicate}
+                  aria-label={t('meaningColumn')}
+                />
+              </div>
+            </ListRow>
+          );
+        })}
+        <NewListRow
+          label={t('addWordPair')}
+          onSelect={handleAddRow}
+          disabled={!canAddRow}
+        />
       </ul>
     </div>
   );

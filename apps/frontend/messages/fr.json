@@ -408,6 +408,10 @@
       "lastPlayerMessage": "Tu es le dernier joueur. Retourner au lobby terminera cette partie. Ta session de jeu reste active."
     },
     "wordBuilding": {
+      "title": "Construction de mots",
+      "timeLabel": "Temps",
+      "scoreboardLabel": "Joueurs",
+      "leftGame": "A quitté le jeu",
       "generating": "Génération de la grille…",
       "instructions": "Clique sur une case pour sélectionner automatiquement la direction · Tape des lettres pour remplir · Vert = correct · Bleu = vide · Rouge = faux · Espace/Tab pour changer de direction",
       "directionAcross": "→ Horizontal",
@@ -418,7 +422,22 @@
       "down": "Vertical",
       "puzzleSolved": "🎉 Puzzle résolu !",
       "puzzleComplete": "Puzzle terminé !",
-      "returningToLobby": "Retour au lobby…"
+      "returningToLobby": "Retour au lobby…",
+      "gameComplete": {
+        "title": "Puzzle terminé !",
+        "subtitle": "Félicitations pour avoir résolu les mots croisés !",
+        "finalScores": "Scores finaux",
+        "playAgain": "Rejouer",
+        "returnToLobby": "Retour au lobby"
+      },
+      "outro": {
+        "gameOverTitle": "Résultats du puzzle",
+        "puzzleComplete": "Puzzle terminé !",
+        "finalScores": "Scores finaux",
+        "pointsXp": "{score} pts · +{xp} XP",
+        "winner": "Gagnant",
+        "returnToLobby": "Retour au lobby"
+      }
     },
     "wordSoup": {
       "title": "Soupe de mots",
