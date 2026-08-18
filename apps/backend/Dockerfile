@@ -13,11 +13,12 @@ RUN cd packages/database && npm ci && npm run db:generate
 COPY packages/database ./packages/database
 
 COPY apps/backend/package.json apps/backend/package-lock.json apps/backend/.npmrc ./apps/backend/
-RUN cd apps/backend && npm ci
+RUN cd apps/backend && npm ci --ignore-scripts
 
 COPY apps/backend ./apps/backend
-
-RUN cd apps/backend && npm run build
+# Host incremental cache must not be used: .dockerignore excludes dist/ but
+# a copied tsconfig.build.tsbuildinfo would skip emitting dist/main.js.
+RUN rm -f apps/backend/*.tsbuildinfo && cd apps/backend && npm run build
 
 # ---- Production ----
 FROM node:26-alpine AS runner

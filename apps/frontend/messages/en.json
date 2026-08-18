@@ -422,7 +422,6 @@
     },
     "wordSoup": {
       "title": "Word Soup",
-      "courtSizeLabel": "Court size",
       "cellTitle": "Row {row}, Column {col}",
       "cellHidden": "hidden",
       "cellEmpty": "empty",

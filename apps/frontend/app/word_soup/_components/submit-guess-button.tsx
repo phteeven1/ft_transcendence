@@ -2,7 +2,6 @@
 
 import { useTranslations } from 'next-intl';
 import { Button } from '../../components/ui/button';
-import type { CourtSize } from './court-size';
 
 type SubmitGuessButtonProps = {
   onSubmitGuess: () => void;
@@ -10,15 +9,8 @@ type SubmitGuessButtonProps = {
   isSubmittingGuess: boolean;
   isLocalPlayerFrozen: boolean;
   freezeSecondsLeft: number;
-  courtSize: CourtSize;
   /** Stretch to fill the shared actions row (aligns with Leave / Game Over). */
   fillHeight?: boolean;
-};
-
-const BUTTON_SIZE: Record<CourtSize, 'sm' | 'md' | 'lg'> = {
-  S: 'sm',
-  M: 'md',
-  L: 'lg',
 };
 
 export default function SubmitGuessButton({
@@ -27,7 +19,6 @@ export default function SubmitGuessButton({
   isSubmittingGuess,
   isLocalPlayerFrozen,
   freezeSecondsLeft,
-  courtSize,
   fillHeight = false,
 }: SubmitGuessButtonProps) {
   const t = useTranslations('games.wordSoup');
@@ -37,7 +28,7 @@ export default function SubmitGuessButton({
       <Button
         variant="secondary"
         fullWidth
-        size={BUTTON_SIZE[courtSize]}
+        size="lg"
         onClick={onSubmitGuess}
         disabled={selectionCount < 2 || isSubmittingGuess || isLocalPlayerFrozen}
         className={['shadow-md', fillHeight ? '!h-full' : ''].join(' ')}

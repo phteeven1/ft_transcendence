@@ -7,8 +7,7 @@ import { clearPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { translateAvatarTier } from '@/lib/i18n/progression-labels';
 import type { GameOverPhase } from '@/app/hooks/word-soup/use-word-soup-game-over';
 import HostCharacter from '@/app/components/game/host-character';
-import type { CourtSize } from './court-size';
-import { getOverlayScale, type OverlayScale } from './overlay-scale';
+import { OVERLAY_SCALE, type OverlayScale } from './overlay-scale';
 
 type WordSoupGameOverOverlayProps = {
   phase: GameOverPhase;
@@ -30,7 +29,6 @@ type WordSoupGameOverOverlayProps = {
 
   showReturnButton: boolean;
   onReturnToLobby: () => void;
-  courtSize?: CourtSize;
 };
 
 function SpeechBubble({
@@ -209,13 +207,12 @@ export default function WordSoupGameOverOverlay({
   newlyUnlockedTier = null,
   showReturnButton,
   onReturnToLobby,
-  courtSize = 'L',
 }: WordSoupGameOverOverlayProps) {
   const t = useTranslations('games.lobby.progression');
   const tOutro = useTranslations('games.wordSoup.outro');
 
   const isClosing = phase === 'closing' || phase === 'closing-gap';
-  const scale = getOverlayScale(courtSize);
+  const scale = OVERLAY_SCALE;
 
   const unlockTier =
     typeof newlyUnlockedTier === 'number' ? newlyUnlockedTier : null;
@@ -264,8 +261,7 @@ export default function WordSoupGameOverOverlay({
       )}
 
       {/*
-        Same relative stack on S/M/L:
-        (bubble + host) → scrollable scores → pinned return button.
+        Stack: (bubble + host) → scrollable scores → pinned return button.
 
         Bubble and host remain one group so the speech-bubble tail
         stays aligned with the character.
