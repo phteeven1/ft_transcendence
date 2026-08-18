@@ -18,9 +18,11 @@ import {
   clearStoredParentAuth,
   getStoredGroupId,
   getStoredUserId,
+  PARENT_USER_ID_KEY,
   setStoredGroupId,
   setStoredUserId,
 } from '@/lib/parent-session';
+import { getPlayerSession } from '@/lib/player-session';
 import { Player } from '../types';
 
 type User = UserDto;
@@ -51,10 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const userRef = useRef<User | null>(null);
+  const playerRef = useRef<Player | null>(null);
   useSessionCloseGuard();
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
 
   const setSessionExpiry = useCallback((expiresAt: number) => {
     setSessionExpiresAt((prev) => (prev === expiresAt ? prev : expiresAt));
@@ -155,6 +161,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent): void => {
+      if (event.key !== PARENT_USER_ID_KEY) return;
+      if (playerRef.current || getPlayerSession()) return;
+
+      if (event.newValue === null) {
+        setUser(null);
+        setGroup(null);
+        return;
+      }
+
+      const nextUserId = Number(event.newValue);
+      if (!Number.isFinite(nextUserId) || nextUserId <= 0) return;
+
+      void (async () => {
+        try {
+          const data = await usersApi.getById(nextUserId);
+          setUser(data);
+          const storedGroupId = getStoredGroupId();
+          if (!storedGroupId) {
+            setGroup(null);
+            return;
+          }
+          const isMember =
+            data.isMemberOf.includes(storedGroupId) ||
+            data.isAdminOf.includes(storedGroupId);
+          if (!isMember) {
+            clearStoredGroupId();
+            setGroup(null);
+            return;
+          }
+          try {
+            setGroup(await groupsApi.getById(storedGroupId));
+          } catch {
+            clearStoredGroupId();
+            setGroup(null);
+          }
+        } catch {
+          setUser(null);
+          setGroup(null);
+        }
+      })();
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   return (

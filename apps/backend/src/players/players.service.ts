@@ -1,6 +1,8 @@
 import {
   ConflictException,
   Injectable,
+  Inject,
+  forwardRef,
   NotFoundException,
   OnModuleDestroy,
   OnModuleInit,
@@ -8,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { toSafePlayer, playerWithSession } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
+import { GameGateway } from '../games/game.gateway';
 
 export type Player = {
   id: number;
@@ -31,7 +34,11 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 export class PlayersService implements OnModuleInit, OnModuleDestroy {
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => GameGateway))
+    private readonly gateway: GameGateway,
+  ) {}
 
   onModuleInit() {
     void this.cleanupExpiredSessions();
@@ -53,7 +60,9 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
       },
       ...playerWithSession,
     });
-    return toSafePlayer(player);
+    const created = toSafePlayer(player);
+    this.gateway.emitDashboardUpdate(inGroup);
+    return created;
   }
 
   async rename(playerId: number, name: string): Promise<Player | undefined> {
@@ -63,7 +72,9 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
         data: { name },
         ...playerWithSession,
       });
-      return toSafePlayer(player);
+      const renamed = toSafePlayer(player);
+      this.gateway.emitDashboardUpdate(renamed.inGroup);
+      return renamed;
     } catch {
       return undefined;
     }
@@ -73,9 +84,10 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     try {
       const player = await this.prisma.player.findUnique({
         where: { id: playerId },
-        select: { id: true },
+        select: { id: true, inGroupId: true },
       });
       if (!player) return false;
+      const groupId = player.inGroupId;
 
       await this.prisma.$transaction(async (tx) => {
         await tx.playerSession.deleteMany({ where: { playerId } });
@@ -128,6 +140,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
         await tx.player.delete({ where: { id: playerId } });
       });
 
+      this.gateway.emitDashboardUpdate(groupId);
       return true;
     } catch (error) {
       console.error('Failed to remove player', error);

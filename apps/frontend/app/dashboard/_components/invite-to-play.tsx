@@ -22,7 +22,7 @@ const SESSION_SHORTCUTS = [30, 45, 60];
 export default function InviteToPlay({ player, open, onClose }: Props) {
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
-  const { loginAsPlayer, setSessionExpiresAt, group } = useAuth();
+  const { loginAsPlayer, setSessionExpiresAt, logout, group } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -94,6 +94,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
 
       loginAsPlayer(player);
       setSessionExpiresAt(new Date(session.expiresAt).getTime());
+      logout();
       router.replace('/select_game');
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {

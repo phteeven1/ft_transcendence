@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../../types';
-import { DASHBOARD_POLL_INTERVAL_MS } from './poll-interval';
+import { useDashboardSocket } from '../../hooks/use-dashboard-socket';
 
 export type GroupAction = 'rename' | 'leave' | 'delete';
 
@@ -48,15 +48,28 @@ export function useGroupsPanel(): UseGroupsPanelResult {
 
   useEffect(() => {
     if (!userId || player) return;
-    const tick = (): void => {
+    const timeoutId = window.setTimeout(() => {
+      void loadGroups();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [userId, player, loadGroups]);
+
+  useDashboardSocket({
+    userId: userId ?? 0,
+    groupId: selectedGroupId ?? 0,
+    enabled: Boolean(userId) && !player,
+    onDashboardUpdate: loadGroups,
+    onMembershipChanged: loadGroups,
+  });
+
+  useEffect(() => {
+    if (!userId || player) return;
+    const onVisible = (): void => {
+      if (document.visibilityState !== 'visible') return;
       void loadGroups();
     };
-    const timeoutId = window.setTimeout(tick, 0);
-    const interval = setInterval(tick, DASHBOARD_POLL_INTERVAL_MS);
-    return () => {
-      window.clearTimeout(timeoutId);
-      clearInterval(interval);
-    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [userId, player, loadGroups]);
 
   const selectGroup = useCallback(

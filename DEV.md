@@ -82,12 +82,15 @@ Gateway: `apps/backend/src/games/game.gateway.ts` (`@WebSocketGateway({ cors: { 
 | Client → server | Server → clients |
 |-----------------|------------------|
 | `joinGroup` | `lobby:update`, `game:started` |
+| `joinDashboard` | `dashboard:update`, `membership:changed` |
 | `joinGame` | `game:state`, `game:playerLeft` |
 | `placeLetter` | `cell:locks` |
 | `cell:lock` / `cell:unlock` | `game:finished` |
 | `guess:submit` | `game:guessResult`, `game:wordGuessed`, `game:playerFrozen` / `game:playerUnfrozen`, `game:error` |
 
-Rooms: `group:{id}` (lobby), `game:{id}` (in play). Disconnect releases cell locks.
+Rooms: `group:{id}` (lobby + dashboard), `user:{id}` (membership list), `game:{id}` (in play). Disconnect releases cell locks.
+
+The parent dashboard does not poll. After group/player mutations the gateway emits `dashboard:update` / `membership:changed`; the dashboard refetches. A `visibilitychange` to visible is the reconnect safety net.
 
 Mappers (`common/mappers.ts`) keep API JSON stable when Prisma field names differ (e.g. `inGroupId` → `inGroup`). The UI must not import `@ft-transcendence/database` or Prisma.
 
@@ -113,8 +116,8 @@ Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden s
 
 A parent session and a child session are different things.
 
-- **Parent:** `POST /users/signin` returns the user object. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`) with unauthenticated `GET /users/:id`. Demo-only ID restore — not a real session. There is no JWT.
-- **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie. Parent `User` / `Group` stay in `AuthContext` while the child plays.
+- **Parent:** `POST /users/signin` returns the user object. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`) with unauthenticated `GET /users/:id`. Demo-only ID restore — not a real session. There is no JWT. Logged-in parents hitting `/`, `/signin`, or `/register` are sent to `/dashboard`. Another tab signing in (or signing out) syncs via the `storage` event on `dicteeUserId`.
+- **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie. Play Now then **clears the parent** (`logout()`): `User` / `Group` leave `AuthContext` and `localStorage`. Leave session / session-over go to `/` unless a parent is still in this tab.
 
 Rules:
 

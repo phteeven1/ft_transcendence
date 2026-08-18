@@ -9,9 +9,12 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Dialog } from '../components/ui/dialog';
+import { useRedirectIfParent } from '../hooks/use-redirect-if-parent';
 
 export default function Register() {
   const t = useTranslations('auth.register');
+  const tCommon = useTranslations('common');
+  const isRedirecting = useRedirectIfParent();
   const [formData, setFormData] = useState({
     userName: '',
     userPassword: '',
@@ -47,6 +50,16 @@ export default function Register() {
       setShowError(true);
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <PageShell narrow centered>
+        <p className="text-center text-sm text-muted-foreground">
+          {tCommon('loadingEllipsis')}
+        </p>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell narrow centered>

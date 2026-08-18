@@ -11,7 +11,7 @@ import {
 } from '../_components/test-vocabulary';
 import type { MemberAction } from '../_components/member-dialog';
 import type { VocabularyAction } from '../_components/vocabulary-list';
-import { DASHBOARD_POLL_INTERVAL_MS } from './poll-interval';
+import { useDashboardSocket } from '../../hooks/use-dashboard-socket';
 
 export type PeopleTab = 'members' | 'players' | 'vocabulary';
 export type PlayerAction = 'rename' | 'delete';
@@ -174,6 +174,29 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     }
   }, [selectedGroupId, userId, syncGroup, leaveGroup, fetchMembers, fetchPlayers]);
 
+  const refreshDashboard = useCallback((): void => {
+    void syncAndRefresh();
+    if (isAdmin) void fetchVocabularies();
+  }, [syncAndRefresh, isAdmin, fetchVocabularies]);
+
+  useDashboardSocket({
+    userId: userId ?? 0,
+    groupId: selectedGroupId ?? 0,
+    enabled: Boolean(userId) && !player,
+    onDashboardUpdate: refreshDashboard,
+    onMembershipChanged: refreshDashboard,
+  });
+
+  useEffect(() => {
+    if (!userId || player) return;
+    const onVisible = (): void => {
+      if (document.visibilityState !== 'visible') return;
+      refreshDashboard();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [userId, player, refreshDashboard]);
+
   useEffect(() => {
     if (!selectedGroupId) {
       setMembers([]);
@@ -194,14 +217,6 @@ export function usePeoplePanel(): UsePeoplePanelResult {
       setIsVocabLoading(false);
     }
   }, [selectedGroupId, isAdmin, fetchMembers, fetchPlayers, fetchVocabularies]);
-
-  useEffect(() => {
-    if (!userId || player) return;
-    const interval = setInterval(() => {
-      void syncAndRefresh();
-    }, DASHBOARD_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [userId, player, syncAndRefresh]);
 
   useEffect(() => {
     if (activeTab === 'vocabulary' && user && group && !group.admins.includes(user.id)) {

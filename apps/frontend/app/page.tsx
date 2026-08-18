@@ -5,15 +5,28 @@ import { useTranslations } from 'next-intl';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { PageShell } from './components/ui/page-shell';
+import { useRedirectIfParent } from './hooks/use-redirect-if-parent';
 
 export default function Home() {
   const t = useTranslations('home');
+  const tCommon = useTranslations('common');
+  const isRedirecting = useRedirectIfParent();
 
   const features = [
     { titleKey: 'featureUploadTitle' as const, textKey: 'featureUploadText' as const },
     { titleKey: 'featureInviteTitle' as const, textKey: 'featureInviteText' as const },
     { titleKey: 'featurePlayTitle' as const, textKey: 'featurePlayText' as const },
   ];
+
+  if (isRedirecting) {
+    return (
+      <PageShell centered>
+        <p className="text-center text-sm text-muted-foreground">
+          {tCommon('loadingEllipsis')}
+        </p>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell centered>

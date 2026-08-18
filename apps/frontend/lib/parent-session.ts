@@ -1,4 +1,5 @@
-const USER_ID_KEY = 'dicteeUserId';
+export const PARENT_USER_ID_KEY = 'dicteeUserId';
+const USER_ID_KEY = PARENT_USER_ID_KEY;
 const GROUP_ID_KEY = 'dicteeGroupId';
 
 export function getStoredUserId(): number | null {
