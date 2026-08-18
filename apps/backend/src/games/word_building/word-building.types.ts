@@ -111,5 +111,6 @@ export type IGameStatePayload = {
 export type IInitCourtResponse = {
   trueCourt: CourtCell[][]; // correct layout — used client-side for clue numbers
   visibleCourt: CourtCell[][]; // initial state — all word cells are 'empty'
+  availableLetters: string[]; // unique letters from solution, sorted locale-aware
   clues: { across: Omit<ClueEntry, 'word'>[]; down: Omit<ClueEntry, 'word'>[] };
 };

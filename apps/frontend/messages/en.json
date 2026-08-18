@@ -408,6 +408,10 @@
       "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active."
     },
     "wordBuilding": {
+      "title": "Word Building",
+      "timeLabel": "Time",
+      "scoreboardLabel": "Players",
+      "leftGame": "Left the game",
       "generating": "Generating crossword…",
       "instructions": "Click a cell to auto-select direction · Type letters to fill · Green = correct · Blue = empty · Red = wrong · Space/Tab to toggle direction",
       "directionAcross": "→ Across",
@@ -418,7 +422,22 @@
       "down": "Down",
       "puzzleSolved": "🎉 Puzzle solved!",
       "puzzleComplete": "Puzzle Complete!",
-      "returningToLobby": "Returning to lobby…"
+      "returningToLobby": "Returning to lobby…",
+      "gameComplete": {
+        "title": "Puzzle Complete!",
+        "subtitle": "Congratulations on solving the crossword!",
+        "finalScores": "Final Scores",
+        "playAgain": "Play Again",
+        "returnToLobby": "Return to Lobby"
+      },
+      "outro": {
+        "gameOverTitle": "Puzzle results",
+        "puzzleComplete": "Puzzle complete!",
+        "finalScores": "Final scores",
+        "pointsXp": "{score} pts · +{xp} XP",
+        "winner": "Winner",
+        "returnToLobby": "Return to lobby"
+      }
     },
     "wordSoup": {
       "title": "Word Soup",

@@ -48,13 +48,9 @@ type PlacementContext = {
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-/** Linear Congruential Generator constants for deterministic randomness */
-const LCG_MULTIPLIER = 1664525;
-const LCG_INCREMENT = 1013904223;
-const LCG_MODULUS = 4294967296;
 
 /** Ratio of top-scoring candidates to consider for random selection */
-const TOP_CANDIDATE_RATIO = 0.3;
+const TOP_CANDIDATE_RATIO = 0.7;
 /** Weight given to future intersection potential in scoring */
 const FUTURE_INTERSECTION_WEIGHT = 10;
 /** Maximum bonus points for center-proximity in scoring */
@@ -69,7 +65,9 @@ const MIN_WORD_LENGTH = 2;
  *
  * Features:
  * - Greedy algorithm with strategic word ordering (longest + most interconnectable first)
- * - Seeded randomness for reproducible puzzles
+ * - Random anchor direction (50 % across / 50 % down) so every vocabulary has two structural families
+ * - Random processing order for non-anchor words so intersection chains differ each run
+ * - Random candidate selection from the top 70 % of valid placements for further variety
  * - Incremental letter indexing for O(word.length) updates instead of O(grid²)
  * - Optimized scoring that checks letter existence without grid copies
  * - Strict crossword validation rules (no diagonal touching, mandatory intersections)
@@ -83,41 +81,21 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
   private readonly GRID_SIZE: number;
   private readonly MAX_ATTEMPTS: number;
   private readonly TARGET_WORDS: number;
-  private seed: number;
 
-  /**
-   * Configures the crossword puzzle generator with placement limits and an optional seed.
-   *
-   * The seed enables deterministic puzzle generation - providing the same seed with the
-   * same vocabulary will always produce the same puzzle layout. If no seed is provided,
-   * Date.now() is used, ensuring each instance gets a unique random sequence.
+    /**
+   * Configures the crossword puzzle generator with placement limits.
+   * Every call to generate() uses fresh randomness, so the same vocabulary
+   * produces a different layout each time.
    *
    * @param gridSize Maximum side length of the working grid (default 20).
    * @param maxAttempts Number of placement passes before stopping (default 80).
    * @param targetWords Soft cap on word count - generation stops when reached (default 8).
-   * @param seed Optional deterministic seed for reproducible puzzles (default Date.now()).
    */
-  constructor(gridSize = 20, maxAttempts = 80, targetWords = 8, seed?: number) {
+
+  constructor(gridSize = 20, maxAttempts = 80, targetWords = 8) {
     this.GRID_SIZE = gridSize;
     this.MAX_ATTEMPTS = maxAttempts;
     this.TARGET_WORDS = targetWords;
-    this.seed = seed ?? Date.now();
-  }
-
-  /**
-   * Advances the internal Linear Congruential Generator (LCG) and returns a pseudo-random value.
-   *
-   * This provides deterministic randomness - given the same initial seed, the sequence of
-   * returned values will always be identical. This is critical for reproducible puzzle
-   * generation in tests or when debugging specific layouts.
-   *
-   * The LCG formula: seed = (seed × multiplier + increment) mod modulus
-   *
-   * @returns A floating-point number between 0 (inclusive) and 1 (exclusive).
-   */
-  private seededRandom(): number {
-    this.seed = (this.seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
-    return this.seed / LCG_MODULUS;
   }
 
   /**
@@ -274,11 +252,10 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
   }
 
   /**
-   * Places the first word horizontally near the grid center to establish the puzzle anchor.
+   * Places the first word at the grid centre to establish the puzzle anchor.
    *
-   * All subsequent words must intersect with existing letters, so the anchor provides
-   * the initial scaffold. Horizontal placement at the center allows equal expansion
-   * in all directions, maximizing the available space for future placements.
+   * The direction (across / down) is chosen randomly so that otherwise identical
+   * vocabularies produce structurally distinct puzzles.
    *
    * OPTIMIZATION: Uses incremental letter index update (O(word.length)) instead of
    * rebuilding the full grid index (O(grid²)).
@@ -292,12 +269,15 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
     entries: VocabularyEntry[],
   ): CandidatePlacement[] {
     const first = entries[0];
+    const isAcross = Math.random() < 0.5;
+    const center = Math.floor(context.gridSize / 2);
+
     const candidate: CandidatePlacement = {
       word: first.word,
       clue: first.clue,
-      row: Math.floor(context.gridSize / 2),
-      col: Math.floor((context.gridSize - first.word.length) / 2),
-      direction: 'across',
+      row: isAcross ? center : Math.floor((context.gridSize - first.word.length) / 2),
+      col: isAcross ? Math.floor((context.gridSize - first.word.length) / 2) : center,
+      direction: isAcross ? 'across' : 'down',
     };
 
     context.grid = this.placeWordOnGrid(context.grid, candidate);
@@ -311,17 +291,13 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
    * Core greedy placement loop: iteratively finds and commits the best word placements.
    *
    * Algorithm:
+   * - Shuffle non-anchor entries once before the loop so different words form the
+   *   initial intersection chains on different runs.
    * - Outer loop: Runs up to MAX_ATTEMPTS times, enabling words to be reconsidered
    *   after the board state changes from other placements
    * - Inner loop: For each unplaced word, find all valid positions, score them,
-   *   and commit the best candidate
+   *   and randomly select from the top 70% (TOP_CANDIDATE_RATIO)
    * - Early exit: Stops when no word can be placed in a full pass (no progress)
-   *
-   * Selection strategy:
-   * - Find all valid candidates for a word
-   * - Sort candidates by score (descending)
-   * - Randomly select from the top 30% (TOP_CANDIDATE_RATIO)
-   * - This balances quality (high scores) with variety (randomness)
    *
    * OPTIMIZATION: Uses incremental letter index update after each placement
    * instead of rebuilding the entire grid index.
@@ -335,6 +311,14 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
     entries: VocabularyEntry[],
     placed: CandidatePlacement[],
   ): void {
+    // Shuffle non-anchor words so word-processing order varies between runs.
+    // entries[0] is the anchor (already placed) and must stay at index 0.
+    const shuffledEntries = [...entries];
+    for (let i = shuffledEntries.length - 1; i >= 2; i--) {
+      const j = 1 + Math.floor(Math.random() * i); // j ∈ [1, i]
+      [shuffledEntries[i], shuffledEntries[j]] = [shuffledEntries[j], shuffledEntries[i]];
+    }
+
     for (
       let attempt = 0;
       attempt < this.MAX_ATTEMPTS && placed.length < this.TARGET_WORDS;
@@ -344,20 +328,20 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
 
       for (
         let i = 1;
-        i < entries.length && placed.length < this.TARGET_WORDS;
+        i < shuffledEntries.length && placed.length < this.TARGET_WORDS;
         i++
       ) {
-        const entry = entries[i];
+        const entry = shuffledEntries[i];
         if (context.placedWordsSet.has(entry.word)) continue;
 
-        const candidates = this.findAllPlacements(context, entry, entries);
+        const candidates = this.findAllPlacements(context, entry, shuffledEntries);
         if (candidates.length === 0) continue;
 
         const topN = Math.max(
           1,
           Math.ceil(candidates.length * TOP_CANDIDATE_RATIO),
         );
-        const chosen = candidates[Math.floor(this.seededRandom() * topN)];
+        const chosen = candidates[Math.floor(Math.random() * topN)];
 
         context.grid = this.placeWordOnGrid(context.grid, chosen);
         placed.push(chosen);
