@@ -14,6 +14,10 @@ function fieldKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
+export function isEntryComplete(entry: VocabularyEntry): boolean {
+  return entry.word.trim() !== '' && entry.meaning.trim() !== '';
+}
+
 export function completeEntries(
   entries: VocabularyEntry[],
 ): VocabularyEntry[] {
@@ -25,37 +29,56 @@ export function completeEntries(
     .filter((entry) => entry.word !== '' && entry.meaning !== '');
 }
 
-export function hasDuplicateWordOrMeaning(
-  entries: VocabularyEntry[],
-): boolean {
-  const words = new Set<string>();
-  const meanings = new Set<string>();
+export function canAddVocabularyEntry(entries: VocabularyEntry[]): boolean {
+  const last = entries[entries.length - 1];
+  if (!last) return true;
+  return isEntryComplete(last);
+}
+
+export function duplicateFieldKeys(entries: VocabularyEntry[]): {
+  words: Set<string>;
+  meanings: Set<string>;
+} {
+  const wordCounts = new Map<string, number>();
+  const meaningCounts = new Map<string, number>();
   for (const entry of entries) {
     const word = fieldKey(entry.word);
     const meaning = fieldKey(entry.meaning);
-    if (word) {
-      if (words.has(word)) return true;
-      words.add(word);
-    }
+    if (word) wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
     if (meaning) {
-      if (meanings.has(meaning)) return true;
-      meanings.add(meaning);
+      meaningCounts.set(meaning, (meaningCounts.get(meaning) ?? 0) + 1);
     }
   }
-  return false;
+
+  const words = new Set<string>();
+  const meanings = new Set<string>();
+  for (const [key, count] of wordCounts) {
+    if (count > 1) words.add(key);
+  }
+  for (const [key, count] of meaningCounts) {
+    if (count > 1) meanings.add(key);
+  }
+  return { words, meanings };
+}
+
+export function hasDuplicateWordOrMeaning(
+  entries: VocabularyEntry[],
+): boolean {
+  const keys = duplicateFieldKeys(entries);
+  return keys.words.size > 0 || keys.meanings.size > 0;
 }
 
 export function areVocabularyEntriesValid(
   entries: VocabularyEntry[],
 ): boolean {
-  const complete = completeEntries(entries);
-  if (complete.length < MIN_VOCAB_PAIRS) return false;
+  if (entries.length < MIN_VOCAB_PAIRS) return false;
+  if (!entries.every(isEntryComplete)) return false;
   if (hasDuplicateWordOrMeaning(entries)) return false;
-  return complete.every(
+  return entries.every(
     (entry) =>
-      entry.word.length <= MAX_VOCAB_ENTRY_CHARS &&
-      entry.meaning.length <= MAX_VOCAB_ENTRY_CHARS &&
-      !/\s/.test(entry.word) &&
-      !/\s/.test(entry.meaning),
+      entry.word.trim().length <= MAX_VOCAB_ENTRY_CHARS &&
+      entry.meaning.trim().length <= MAX_VOCAB_ENTRY_CHARS &&
+      !/\s/.test(entry.word.trim()) &&
+      !/\s/.test(entry.meaning.trim()),
   );
 }
