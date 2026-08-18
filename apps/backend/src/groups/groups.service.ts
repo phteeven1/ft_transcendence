@@ -133,12 +133,19 @@ export class GroupsService {
     return this.findById(groupId);
   }
 
-  async delete(groupId: number): Promise<boolean> {
+  async delete(
+    groupId: number,
+  ): Promise<{ deleted: boolean; memberIds: number[] }> {
+    const memberships = await this.prisma.groupMembership.findMany({
+      where: { groupId },
+      select: { userId: true },
+    });
+    const memberIds = memberships.map((membership) => membership.userId);
     try {
       await this.prisma.group.delete({ where: { id: groupId } });
-      return true;
+      return { deleted: true, memberIds };
     } catch {
-      return false;
+      return { deleted: false, memberIds: [] };
     }
   }
 

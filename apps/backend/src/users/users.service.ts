@@ -13,17 +13,41 @@ export type User = {
   isAdminOf: number[];
 };
 
+export type AuthResult = {
+  user: User | null;
+};
+
+function isPrismaUniqueConstraint(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code: unknown }).code === 'P2002'
+  );
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(name: string, password: string, email: string): Promise<User> {
+  async register(
+    name: string,
+    password: string,
+    email: string,
+  ): Promise<AuthResult> {
     const hashedPassword = await hash(password, SALT_ROUNDS);
-    const user = await this.prisma.user.create({
-      data: { name, password: hashedPassword, email },
-      ...userWithMemberships,
-    });
-    return toApiUser(user);
+    try {
+      const user = await this.prisma.user.create({
+        data: { name, password: hashedPassword, email },
+        ...userWithMemberships,
+      });
+      return { user: toApiUser(user) };
+    } catch (error) {
+      if (isPrismaUniqueConstraint(error)) {
+        return { user: null };
+      }
+      throw error;
+    }
   }
 
   async findById(userId: number): Promise<User | undefined> {
@@ -46,6 +70,11 @@ export class UsersService {
 
     const passwordMatches = await compare(password, user.password);
     return passwordMatches ? toApiUser(user) : undefined;
+  }
+
+  async signIn(name: string, password: string): Promise<AuthResult> {
+    const user = await this.findByCredentials(name, password);
+    return { user: user ?? null };
   }
 
   async updateProfile(
@@ -74,22 +103,16 @@ export class UsersService {
       ...userWithMemberships,
     });
 
-    if (!user) {
-      throw new Error('User not found');
-    } else {
-      const passwordMatches: boolean = await compare(
-        oldPassword,
-        user.password,
-      );
-      if (!passwordMatches) {
-        throw new Error('Old password is incorrect');
-      }
-      const newHashedPassword = await hash(newPassword, SALT_ROUNDS);
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { password: newHashedPassword },
-      });
-      return { success: true };
-    }
+    if (!user) return { success: false };
+
+    const passwordMatches = await compare(oldPassword, user.password);
+    if (!passwordMatches) return { success: false };
+
+    const newHashedPassword = await hash(newPassword, SALT_ROUNDS);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: newHashedPassword },
+    });
+    return { success: true };
   }
 }

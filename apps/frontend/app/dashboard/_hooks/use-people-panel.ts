@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/auth-context';
-import { ApiError, groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
+import { groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
 import { Member, Player, Vocabulary } from '../../types';
 import {
   isStarterVocabulary,
@@ -11,7 +11,7 @@ import {
 } from '../_components/test-vocabulary';
 import type { MemberAction } from '../_components/member-dialog';
 import type { VocabularyAction } from '../_components/vocabulary-list';
-import { DASHBOARD_POLL_INTERVAL_MS } from './poll-interval';
+import { useDashboardLive } from './dashboard-live';
 
 export type PeopleTab = 'members' | 'players' | 'vocabulary';
 export type PlayerAction = 'rename' | 'delete';
@@ -59,7 +59,7 @@ function isPeopleTab(value: string | null): value is PeopleTab {
 }
 
 export function usePeoplePanel(): UsePeoplePanelResult {
-  const { user, group, player, syncGroup, leaveGroup } = useAuth();
+  const { user, group, syncGroup, leaveGroup } = useAuth();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get('tab');
 
@@ -121,24 +121,14 @@ export function usePeoplePanel(): UsePeoplePanelResult {
         isStarterVocabulary(vocabulary.name),
       );
       if (!starter) {
-        try {
-          starter = await vocabulariesApi.create({
-            vocabularyInGroup: selectedGroupId,
-            byUser: userId,
-            vocabularyName: TEST_VOCABULARY.name,
-            vocabularyWords: TEST_VOCABULARY.words,
-            vocabularyMeanings: TEST_VOCABULARY.meanings,
-          });
-          data = [...data, starter];
-        } catch (error) {
-          if (!(error instanceof ApiError) || error.status !== 409) {
-            throw error;
-          }
-          data = await vocabulariesApi.findByGroup(selectedGroupId);
-          starter = data.find((vocabulary) =>
-            isStarterVocabulary(vocabulary.name),
-          );
-        }
+        starter = await vocabulariesApi.findOrCreate({
+          vocabularyInGroup: selectedGroupId,
+          byUser: userId,
+          vocabularyName: TEST_VOCABULARY.name,
+          vocabularyWords: TEST_VOCABULARY.words,
+          vocabularyMeanings: TEST_VOCABULARY.meanings,
+        });
+        data = [...data, starter];
       }
       if (!starter) return;
 
@@ -174,6 +164,13 @@ export function usePeoplePanel(): UsePeoplePanelResult {
     }
   }, [selectedGroupId, userId, syncGroup, leaveGroup, fetchMembers, fetchPlayers]);
 
+  const refreshDashboard = useCallback((): void => {
+    void syncAndRefresh();
+    if (isAdmin) void fetchVocabularies();
+  }, [syncAndRefresh, isAdmin, fetchVocabularies]);
+
+  useDashboardLive(refreshDashboard);
+
   useEffect(() => {
     if (!selectedGroupId) {
       setMembers([]);
@@ -194,14 +191,6 @@ export function usePeoplePanel(): UsePeoplePanelResult {
       setIsVocabLoading(false);
     }
   }, [selectedGroupId, isAdmin, fetchMembers, fetchPlayers, fetchVocabularies]);
-
-  useEffect(() => {
-    if (!userId || player) return;
-    const interval = setInterval(() => {
-      void syncAndRefresh();
-    }, DASHBOARD_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [userId, player, syncAndRefresh]);
 
   useEffect(() => {
     if (activeTab === 'vocabulary' && user && group && !group.admins.includes(user.id)) {

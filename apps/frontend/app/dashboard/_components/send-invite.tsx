@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
-import { invitationsApi, ApiError } from '@/lib/api';
+import { invitationsApi } from '@/lib/api';
 import { Button, Dialog, Input } from '../../components/ui';
 import { Group } from '../../types';
 
@@ -54,21 +54,20 @@ function SendInviteForm({
     setInviteStatus('sending');
     setInviteError('');
     try {
-      await invitationsApi.send({
+      const result = await invitationsApi.send({
         groupId: group.id,
         groupName: group.name,
         toEmail: inviteEmail,
         invitationText: inviteText,
       });
+      if (!result.success) {
+        setInviteError(result.message || tCommon('unknownError'));
+        setInviteStatus('error');
+        return;
+      }
       handleClose();
-    } catch (error) {
-      setInviteError(
-        error instanceof ApiError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : tCommon('unknownError'),
-      );
+    } catch {
+      setInviteError(tCommon('unknownError'));
       setInviteStatus('error');
     }
   };

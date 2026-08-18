@@ -7,6 +7,7 @@ import { useAuth } from '../context/auth-context';
 import { PageShell, Panel } from '../components/ui';
 import GroupsPanel from './_components/groups-panel';
 import PeoplePanel from './_components/people-panel';
+import { DashboardLiveProvider } from './_hooks/dashboard-live';
 import {
   getPlayerSession,
   isLobbyRedirectSuppressed,
@@ -66,23 +67,29 @@ function Dashboard() {
 
   return (
     <PageShell wide>
-      <div className="flex flex-col md:grid md:grid-cols-5 gap-4 lg:gap-6">
-        <div className="md:col-span-2 flex flex-col">
-          <GroupsPanel />
-        </div>
+      <DashboardLiveProvider
+        userId={user.id}
+        groupId={group?.id ?? 0}
+        enabled={!player}
+      >
+        <div className="flex flex-col md:grid md:grid-cols-5 gap-4 lg:gap-6">
+          <div className="md:col-span-2 flex flex-col">
+            <GroupsPanel />
+          </div>
 
-        <div className="md:col-span-3 flex flex-col gap-3">
-          {group ? (
-            <PeoplePanel />
-          ) : (
-            <Panel className="p-4 sm:p-5">
-              <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground italic">
-                {t('selectGroup')}
-              </p>
-            </Panel>
-          )}
+          <div className="md:col-span-3 flex flex-col gap-3">
+            {group ? (
+              <PeoplePanel />
+            ) : (
+              <Panel className="p-4 sm:p-5">
+                <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground italic">
+                  {t('selectGroup')}
+                </p>
+              </Panel>
+            )}
+          </div>
         </div>
-      </div>
+      </DashboardLiveProvider>
     </PageShell>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { ApiError, playersApi } from '@/lib/api';
+import { playersApi } from '@/lib/api';
 import { savePlayerSession } from '@/lib/player-session';
 import { Player } from '../../types';
 import { Button } from '../../components/ui/button';
@@ -22,7 +22,7 @@ const SESSION_SHORTCUTS = [30, 45, 60];
 export default function InviteToPlay({ player, open, onClose }: Props) {
   const t = useTranslations('players');
   const tCommon = useTranslations('common');
-  const { loginAsPlayer, setSessionExpiresAt, group } = useAuth();
+  const { loginAsPlayer, setSessionExpiresAt, logout, group } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -85,22 +85,23 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     setIsStarting(true);
     setStartError('');
     try {
-      const session = await playersApi.startSession({
+      const { session, alreadyActive } = await playersApi.startSession({
         playerId: player.id,
         minutes,
       });
+      if (alreadyActive || !session) {
+        setStartError(t('invite.activeSessionExists', { name: player.name }));
+        return;
+      }
 
       savePlayerSession(player.id, session.token, session.expiresAt);
 
       loginAsPlayer(player);
       setSessionExpiresAt(new Date(session.expiresAt).getTime());
+      logout();
       router.replace('/select_game');
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
-        setStartError(t('invite.activeSessionExists', { name: player.name }));
-      } else {
-        setStartError(t('invite.startFailed'));
-      }
+    } catch {
+      setStartError(t('invite.startFailed'));
     } finally {
       setIsStarting(false);
     }

@@ -5,6 +5,7 @@ import type {
   PlayerSessionDto,
   RenamePlayerInput,
   StartSessionInput,
+  StartSessionResult,
   ValidateSessionInput,
   ValidateSessionResult,
 } from './types';
@@ -46,8 +47,8 @@ export const playersApi = {
     });
   },
 
-  startSession(input: StartSessionInput): Promise<PlayerSessionDto> {
-    return apiRequest<PlayerSessionDto>('/players/startSession', {
+  startSession(input: StartSessionInput): Promise<StartSessionResult> {
+    return apiRequest<StartSessionResult>('/players/startSession', {
       method: 'POST',
       body: JSON.stringify(input),
     });

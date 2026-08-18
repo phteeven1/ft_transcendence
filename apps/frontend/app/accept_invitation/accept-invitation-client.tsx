@@ -100,7 +100,7 @@ export default function AcceptInvitationClient() {
   const handleAuth = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const data =
+      const result =
         authMode === 'signin'
           ? await usersApi.signIn({
               userName: formData.userName,
@@ -111,8 +111,16 @@ export default function AcceptInvitationClient() {
               userPassword: formData.userPassword,
               userEmail: formData.userEmail,
             });
-      login(data);
-      setCurrentUser(data);
+      if (!result.user) {
+        setErrorMessage(
+          authMode === 'signin'
+            ? t('auth.signInFailed')
+            : t('auth.registerFailed'),
+        );
+        return;
+      }
+      login(result.user);
+      setCurrentUser(result.user);
       setPageState('confirm');
     } catch {
       setErrorMessage(

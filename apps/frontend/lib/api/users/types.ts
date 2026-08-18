@@ -28,3 +28,7 @@ export type ChangePasswordInput = {
   oldPassword: string;
   newPassword: string;
 };
+
+export type AuthResult = {
+  user: UserDto | null;
+};

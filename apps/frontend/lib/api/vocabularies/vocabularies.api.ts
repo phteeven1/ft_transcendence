@@ -11,8 +11,15 @@ import type {
 import { getApiBaseUrl } from '../config';
 
 export const vocabulariesApi = {
-  create(input: CreateVocabularyInput): Promise<VocabularyDto> {
-    return apiRequest<VocabularyDto>('/vocabularies/create', {
+  create(input: CreateVocabularyInput): Promise<VocabularyDto | null> {
+    return apiRequest<VocabularyDto | null>('/vocabularies/create', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  findOrCreate(input: CreateVocabularyInput): Promise<VocabularyDto> {
+    return apiRequest<VocabularyDto>('/vocabularies/findOrCreate', {
       method: 'POST',
       body: JSON.stringify(input),
     });
@@ -33,8 +40,8 @@ export const vocabulariesApi = {
     });
   },
 
-  rename(input: RenameVocabularyInput): Promise<VocabularyDto> {
-    return apiRequest<VocabularyDto>('/vocabularies/rename', {
+  rename(input: RenameVocabularyInput): Promise<VocabularyDto | null> {
+    return apiRequest<VocabularyDto | null>('/vocabularies/rename', {
       method: 'POST',
       body: JSON.stringify(input),
     });

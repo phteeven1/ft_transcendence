@@ -159,7 +159,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   }
 
   async clearCurrentGame(playerId: number): Promise<void> {
-    await this.prisma.player.update({
+    await this.prisma.player.updateMany({
       where: { id: playerId },
       data: { currentGameId: null },
     });
@@ -177,7 +177,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
   async startSession(
     playerId: number,
     minutes: number,
-  ): Promise<PlayerSessionDto> {
+  ): Promise<{ session: PlayerSessionDto | null; alreadyActive: boolean }> {
     if (!Number.isFinite(minutes) || minutes <= 0) {
       throw new ConflictException(
         'Session length must be a positive number of minutes',
@@ -197,7 +197,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
       where: { playerId },
     });
     if (existing && existing.expiresAt > new Date()) {
-      throw new ConflictException('Player already has an active session');
+      return { session: null, alreadyActive: true };
     }
 
     if (existing) {
@@ -209,7 +209,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
       data: { playerId, expiresAt },
     });
 
-    return this.toSessionDto(session);
+    return { session: this.toSessionDto(session), alreadyActive: false };
   }
 
   async validateSession(
