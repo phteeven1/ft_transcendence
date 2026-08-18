@@ -32,7 +32,6 @@ export function toApiUser(user: UserWithMemberships): User {
     email: user.email,
     isMemberOf,
     isAdminOf,
-    showEmail: user.showEmail,
   };
 }
 

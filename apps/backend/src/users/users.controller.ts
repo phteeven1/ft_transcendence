@@ -40,12 +40,10 @@ export class UsersController {
     body: {
       userId: number;
       userName?: string;
-      showEmail?: boolean;
     },
   ) {
     return this.usersService.updateProfile(body.userId, {
       userName: body.userName,
-      showEmail: body.showEmail,
     });
   }
 
