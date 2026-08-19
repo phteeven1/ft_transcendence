@@ -243,7 +243,6 @@
       "sessionDurationTitle": "How long can {name} play?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Enter minutes",
-      "activeSessionExists": "{name} already has an active session. End it here, or wait until it expires or they leave.",
       "startFailed": "Could not start session. Please try again.",
       "endSession": "End session",
       "endSessionFailed": "Could not end the session. Please try again."

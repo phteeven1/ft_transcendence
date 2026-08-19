@@ -67,6 +67,20 @@ describe('PlayersService sessions', () => {
     expect(gateway.emitPlayerSessionReplaced).toHaveBeenCalledWith(7);
   });
 
+  it('returns expiresAt without the live token', async () => {
+    prisma.playerSession.findUnique.mockResolvedValue({
+      token: 'secret-token',
+      playerId: 7,
+      expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const result = await service.getActiveSession(7);
+
+    expect(result).toEqual({ expiresAt: '2030-01-01T00:00:00.000Z' });
+    expect(result).not.toHaveProperty('token');
+  });
+
   it('rejects a mismatched validateSession token', async () => {
     prisma.playerSession.findUnique.mockResolvedValue({
       token: 'live',

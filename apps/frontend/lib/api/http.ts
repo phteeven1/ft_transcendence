@@ -39,13 +39,20 @@ export function applySessionHeaders(headers: Headers, path?: string): void {
   }
 }
 
+export function notifySessionUnauthorized(
+  kind: 'player' | 'parent',
+): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent(SESSION_UNAUTHORIZED_EVENT, { detail: { kind } }),
+  );
+}
+
 function notifyUnauthorized(path: string): void {
   if (typeof window === 'undefined') return;
   if (SKIP_UNAUTHORIZED_EVENT_PATHS.has(path)) return;
   const kind = getPlayerSession() ? 'player' : 'parent';
-  window.dispatchEvent(
-    new CustomEvent(SESSION_UNAUTHORIZED_EVENT, { detail: { kind } }),
-  );
+  notifySessionUnauthorized(kind);
 }
 
 /**

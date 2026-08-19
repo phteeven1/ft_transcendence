@@ -1,7 +1,5 @@
 import {
-  Body,
   Controller,
-  ForbiddenException,
   Param,
   ParseIntPipe,
   Post,
@@ -10,7 +8,6 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { WordSoupService } from './word-soup.service';
-import { WordSoupPlayerBodyDto } from './word-soup.dto';
 import { PlayerSessionGuard } from '../../players/player-session.guard';
 import { AuthenticatedPlayerId } from '../../players/authenticated-player.decorator';
 import { PlayersService } from '../../players/players.service';
@@ -28,11 +25,7 @@ export class WordSoupController {
   async initCourt(
     @AuthenticatedPlayerId() playerId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: WordSoupPlayerBodyDto,
   ) {
-    if (body.playerId !== playerId) {
-      throw new ForbiddenException();
-    }
     await this.playersService.assertPlayerInGame(playerId, id);
     return this.wordSoupService.initCourt(id, playerId);
   }
@@ -42,11 +35,7 @@ export class WordSoupController {
   async markIntroShown(
     @AuthenticatedPlayerId() playerId: number,
     @Param('gameId', ParseIntPipe) gameId: number,
-    @Body() body: WordSoupPlayerBodyDto,
   ) {
-    if (body.playerId !== playerId) {
-      throw new ForbiddenException();
-    }
     await this.playersService.assertPlayerInGame(playerId, gameId);
     return this.wordSoupService.markIntroShown(gameId, playerId);
   }

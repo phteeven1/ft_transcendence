@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Game } from '../types';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
 import { getPlayerSession } from '@/lib/player-session';
+import { notifySessionUnauthorized } from '@/lib/api/http';
 
 interface GroupSocketState {
   pendingGames: Game[];
@@ -63,10 +64,16 @@ export function useGroupSocket(groupId: number, playerId: number) {
       }
     };
 
+    const onSessionReplaced = (): void => {
+      if (!active) return;
+      notifySessionUnauthorized('player');
+    };
+
     socket.on('connect', join);
     socket.on('disconnect', onDisconnect);
     socket.on('lobby:update', onLobbyUpdate);
     socket.on('game:started', onGameStarted);
+    socket.on('session:replaced', onSessionReplaced);
 
     if (socket.connected) join();
 
@@ -76,6 +83,7 @@ export function useGroupSocket(groupId: number, playerId: number) {
       socket.off('disconnect', onDisconnect);
       socket.off('lobby:update', onLobbyUpdate);
       socket.off('game:started', onGameStarted);
+      socket.off('session:replaced', onSessionReplaced);
       releaseSocket(key);
     };
   }, [groupId, playerId]);

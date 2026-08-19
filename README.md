@@ -33,8 +33,8 @@ Turn shared vocabulary homework into live, group-based word games that parents c
 
 There are two kinds of account:
 
-- **Parent (**`User`**)** — registers, creates or joins a group, manages children and vocabulary.
-- **Child (**`Player`**)** — a profile owned by a parent. Play Now issues a time-limited session so the child can reach the lobby and games.
+- **Parent (**`User`**)** — registers, creates or joins a group, manages children and vocabulary. Sign-in issues one `UserSession` token; a second login on another browser or tab replaces it and kicks the previous parent client.
+- **Child (**`Player`**)** — a profile owned by a parent. Play Now issues a time-limited `PlayerSession` so the child can reach the lobby and games. A second Play Now for the same child replaces the token and kicks the previous device.
 
 ---
 
@@ -94,7 +94,7 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 
 | Feature                | Description                                     | Paths                                             |
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------- |
-| Registration / sign-in | Parent accounts; passwords hashed with bcrypt   | `app/register`, `app/signin`, `users.service.ts`  |
+| Registration / sign-in | Parent accounts; bcrypt passwords; exclusive `UserSession` | `app/register`, `app/signin`, `users.service.ts` |
 | Dashboard              | Group list, members, players, profile settings  | `app/dashboard`                                   |
 | Groups                 | Create, join, leave, admin roles                | `app/dashboard`                                   |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
@@ -111,6 +111,8 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 
 
 XP, avatars, and a lobby leaderboard live under `progression/` and are claimed as gamification plus game statistics (see Modules below).
+
+**Exclusive sessions.** There is at most one live parent token (`UserSession`) and one live Play Now token (`PlayerSession`) at a time. Sign-in and Play Now **replace** the stored token and emit Socket.IO `session:replaced` so the previous tab or browser is kicked. Mutating parent REST calls send `x-user-id` and `x-user-session-token`; child game/lobby calls send `x-player-id` and `x-player-session-token` (`@/lib/api` attaches them). Play Now wipes parent credentials in **this browser** (`logout({ localOnly: true })`) so a child cannot open dashboard settings; the server `UserSession` stays, so a parent on another device is not kicked. Other same-browser parent tabs lose `localStorage` and are signed out. Leave session goes to `/session_over`. Changing the password rotates the parent token and returns the new one to that tab. `GET /players/:id/activeSession` is parent-guarded and returns `{ expiresAt }` only. Apply migration `20260819140000_add_user_session` (`npm run db:migrate` / `db:migrate:deploy`). Details: [DEV.md](./DEV.md#player-sessions-play-now).
 
 ---
 
@@ -194,14 +196,14 @@ Parent auth is a server `UserSession` token stored in `localStorage` (`parent-se
 PostgreSQL via Prisma. Core models:
 
 ```
-User ──┬── GroupMembership ── Group ──┬── Player
-       │                              ├── Vocabulary
-       ├── Player                     ├── Game ── GamePlayer
-       └── Vocabulary                 ├── Invitation
+User ──┬── UserSession (one parent token; replaced on new sign-in)
+       ├── GroupMembership ── Group ──┬── Player
+       ├── Player                     ├── Vocabulary
+       └── Vocabulary                 ├── Game ── GamePlayer
+                                      ├── Invitation
                                       └── Crossword (Word Building)
 
-Player ── PlayerSession (Play Now token)
-User ── UserSession (parent token)
+Player ── PlayerSession (one Play Now token; replaced on a second start)
 ```
 
 Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prisma/schema.prisma)`.

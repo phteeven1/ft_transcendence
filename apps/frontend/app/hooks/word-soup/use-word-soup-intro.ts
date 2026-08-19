@@ -260,7 +260,7 @@ export function useWordSoupIntro({
         setTimelineReady(true);
         if (!markedIntroRef.current && !skipMarkIntroShown) {
           markedIntroRef.current = true;
-          void wordSoupApi.markIntroShown({ gameId, playerId }).catch(() => {
+          void wordSoupApi.markIntroShown({ gameId }).catch(() => {
             /* intro already finished locally */
           });
         }

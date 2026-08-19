@@ -36,7 +36,6 @@ export default function CreatePlayer({ open, onClose, onCreated }: Props) {
     try {
       const created = await playersApi.create({
         playerInGroup: group.id,
-        playerParent: user.id,
         playerName: playerName.trim(),
       });
       onCreated(created);

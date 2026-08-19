@@ -50,6 +50,7 @@ type AuthContextType = {
   refreshUser: () => Promise<User | null>;
   loginAsPlayer: (playerData: Player) => void;
   logoutPlayer: () => void;
+  setParentSessionToken: (token: string) => void;
   sessionExpiresAt: number | null;
   setSessionExpiresAt: (expiresAt: number) => void;
 };
@@ -96,6 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   }, []);
 
+  const setParentSessionToken = useCallback((token: string) => {
+    parentTokenRef.current = token;
+    setStoredSessionToken(token);
+  }, []);
+
   const leaveGroup = useCallback(() => {
     clearStoredGroupId();
     setGroup(null);
@@ -113,22 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!options?.localOnly && token) {
         void usersApi.clearSession({ token }).catch(() => undefined);
       }
-      if (
-        !getStoredSessionToken() ||
-        getStoredSessionToken() === parentTokenRef.current
-      ) {
-        clearStoredParentAuth();
-      }
+      clearStoredParentAuth();
       dropParentLocally();
     },
     [dropParentLocally],
   );
 
   const handleParentReplaced = useCallback(() => {
-    const storedToken = getStoredSessionToken();
-    if (storedToken && storedToken === parentTokenRef.current) {
-      clearStoredParentAuth();
-    }
+    clearStoredParentAuth();
     dropParentLocally();
     if (typeof window !== 'undefined' && window.location.pathname !== '/') {
       router.replace('/');
@@ -379,6 +377,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         loginAsPlayer,
         logoutPlayer,
+        setParentSessionToken,
         sessionExpiresAt,
         setSessionExpiresAt: setSessionExpiry,
       }}
