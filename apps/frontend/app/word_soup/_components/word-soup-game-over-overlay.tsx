@@ -226,7 +226,7 @@ export default function WordSoupGameOverOverlay({
 
   return (
     <div
-      className="word-soup-intro-overlay absolute inset-0 z-30 overflow-hidden rounded-2xl bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 backdrop-blur-md"
+      className="word-soup-intro-overlay absolute inset-0 z-50 overflow-hidden bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="word-soup-game-over-title"
