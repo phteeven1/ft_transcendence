@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "docker compose up",
+    "dev": "bash scripts/docker-up.sh",
     "dev:local": "bash scripts/dev-local.sh",
     "dev:stop": "bash scripts/dev-stop.sh",
-    "build": "docker compose up --build",
+    "build": "bash scripts/docker-up.sh --build",
     "down": "docker compose down",
     "db:generate": "npm run db:generate --prefix packages/database",
     "db:migrate": "npm run db:migrate --prefix packages/database",

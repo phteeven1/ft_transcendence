@@ -1,63 +1,54 @@
 services:
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CERT_SAN: ${CERT_SAN:-localhost,127.0.0.1}
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
 
   frontend:
-
-    build: ./apps/frontend
-
-    ports:
-      - "3000:3000"
-
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
     depends_on:
       - backend
-
+    restart: unless-stopped
 
   backend:
-
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-
-    ports:
-      - "4000:4000"
-
     env_file:
       - apps/backend/.env
-
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/transcendence
+      APP_URL: https://${PUBLIC_HOST:-localhost}
     depends_on:
       postgres:
         condition: service_healthy
-
-    environment:
-
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/transcendence
-
+    restart: unless-stopped
 
   postgres:
-
     image: postgres:16
-
     restart: always
-
     environment:
-
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: transcendence
-
     ports:
       - "5432:5432"
-
     volumes:
-
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d transcendence"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-
 volumes:
-
   postgres_data:

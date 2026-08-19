@@ -66,13 +66,15 @@ Stop the Node apps with `Ctrl+C` (Postgres keeps running). Stop everything:
 npm run dev:stop
 ```
 
-### Full Docker stack
+### Full Docker stack (HTTPS)
 
 ```bash
-docker compose up --build
+npm run build
 ```
 
-Runs frontend, backend, and PostgreSQL. Backend applies migrations on container start.
+Starts Nginx (TLS), frontend, backend, and PostgreSQL. The command prints this computer's addresses, for example `https://localhost` and `https://192.168.0.152`. Any phone or laptop on the **same Wi-Fi** can open that LAN URL — you do not add devices to a list. Whichever machine runs Docker is the server.
+
+The first visit uses a self-signed certificate — accept the browser warning. HTTP on port 80 redirects to HTTPS. Backend applies migrations on container start.
 
 ### Database commands (repo root)
 
@@ -181,7 +183,7 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 | Real-time   | Socket.IO                                        | Lobby, grid, scores, cell locks       |
 | AI / import | OpenAI GPT-4o                                    | Vocabulary extraction                 |
 | Mail        | Nodemailer + Gmail SMTP                          | Group invitations                     |
-| Infra       | Docker Compose, GitHub Actions                   | Local stack and CI                    |
+| Infra       | Docker Compose, Nginx, GitHub Actions            | HTTPS stack, local stack, and CI      |
 
 
 Parent auth is React context with parent ids in `localStorage` (`parent-session.ts`), not JWT.
@@ -314,8 +316,10 @@ ft_transcendence/
 ├── packages/
 │   └── database/          # Prisma schema and migrations
 ├── scripts/
+│   ├── docker-up.sh       # HTTPS stack + LAN URLs
 │   ├── dev-local.sh
 │   └── dev-stop.sh
+├── nginx/                 # Reverse proxy + self-signed TLS
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```

@@ -23,7 +23,7 @@ export async function apiRequest<T>(
   } catch {
     throw new ApiError(
       0,
-      `Cannot reach the API at ${url}. Is the backend running on port 4000?`,
+      `Cannot reach the API at ${url}. Is the backend running?`,
     );
   }
 

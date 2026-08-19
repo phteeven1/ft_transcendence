@@ -12,7 +12,7 @@ npm run dev:local    # Postgres in Docker; Nest :4000; Next :3000
 npm run dev:stop     # stop Node apps and the Postgres container
 ```
 
-Full stack: `docker compose up --build`.
+Full stack (HTTPS via Nginx): `npm run build`. The script prints https://localhost and this machine's LAN IPs — any device on the same network can open those URLs.
 
 ```bash
 npm run db:generate

@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import { getApiBaseUrl } from '@/lib/api/config';
+import { getSocketUrl } from '@/lib/api/config';
 
 type SocketEntry = {
   socket: Socket;
@@ -15,7 +15,7 @@ export function acquireSocket(key: string): Socket {
     return existing.socket;
   }
 
-  const socket = io(getApiBaseUrl(), { transports: ['websocket'] });
+  const socket = io(getSocketUrl(), { transports: ['websocket'] });
   sockets.set(key, { socket, refs: 1 });
   return socket;
 }
