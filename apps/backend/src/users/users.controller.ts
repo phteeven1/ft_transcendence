@@ -1,5 +1,7 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { UserSessionGuard } from './user-session.guard';
+import { AuthenticatedUserId } from './authenticated-user.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -21,25 +23,42 @@ export class UsersController {
     return this.usersService.signIn(body.userName, body.userPassword);
   }
 
+  @Post('validateSession')
+  validateSession(@Body() body: { userId: number; token: string }) {
+    return this.usersService.validateSession(body.userId, body.token);
+  }
+
+  @Post('clearSession')
+  @UseGuards(UserSessionGuard)
+  clearSession(
+    @AuthenticatedUserId() userId: number,
+    @Body() body: { token: string },
+  ) {
+    return this.usersService.clearSession(userId, body.token);
+  }
+
   @Post('update')
+  @UseGuards(UserSessionGuard)
   updateProfile(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
-      userId: number;
       userName?: string;
     },
   ) {
-    return this.usersService.updateProfile(body.userId, {
+    return this.usersService.updateProfile(userId, {
       userName: body.userName,
     });
   }
 
   @Post('changePassword')
+  @UseGuards(UserSessionGuard)
   changePassword(
-    @Body() body: { userId: number; oldPassword: string; newPassword: string },
+    @AuthenticatedUserId() userId: number,
+    @Body() body: { oldPassword: string; newPassword: string },
   ) {
     return this.usersService.changePassword(
-      body.userId,
+      userId,
       body.oldPassword,
       body.newPassword,
     );

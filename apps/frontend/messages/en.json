@@ -239,7 +239,7 @@
       "confirmMessage": "Deleting the player will also result in the player's data (game statistics, XP, leaderboard status) being deleted (for this group only)."
     },
     "invite": {
-      "activeSessionWarning": "{name} already has an active play session. End it here, or wait until it expires or they leave.",
+      "activeSessionWarning": "{name} already has an active play session on another device. Starting here will kick them out. You can also end that session without starting a new one.",
       "sessionDurationTitle": "How long can {name} play?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Enter minutes",

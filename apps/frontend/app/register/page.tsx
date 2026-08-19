@@ -39,16 +39,16 @@ export default function Register() {
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const { user } = await usersApi.register({
+      const { user, session } = await usersApi.register({
         userName: formData.userName,
         userPassword: formData.userPassword,
         userEmail: formData.userEmail,
       });
-      if (!user) {
+      if (!user || !session) {
         setShowError(true);
         return;
       }
-      login(user);
+      login(user, session);
       router.push('/dashboard');
     } catch {
       setShowError(true);

@@ -4,4 +4,5 @@ export type {
   RegisterUserInput,
   SignInUserInput,
   AuthResult,
+  UserSessionDto,
 } from './types';

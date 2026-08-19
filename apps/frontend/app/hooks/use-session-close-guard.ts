@@ -43,7 +43,7 @@ export function useSessionCloseGuard(): void {
           return;
         }
         try {
-          await playersApi.clearSession(pending.playerId);
+          await playersApi.clearSession(pending.playerId, pending.token);
         } catch {
           /* parent can still End session */
         }
@@ -65,7 +65,7 @@ export function useSessionCloseGuard(): void {
       if (event.persisted) return;
       const stored = getPlayerSession();
       if (!stored) return;
-      writePendingSessionEnd(stored.playerId);
+      writePendingSessionEnd(stored.playerId, stored.token);
     };
 
     const onPageShow = (): void => {

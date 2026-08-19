@@ -41,6 +41,5 @@ export type ValidateSessionResult = {
 };
 
 export type StartSessionResult = {
-  session: PlayerSessionDto | null;
-  alreadyActive: boolean;
+  session: PlayerSessionDto;
 };

@@ -1,13 +1,18 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   OnModuleDestroy,
   OnModuleInit,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
+import { GroupRole } from '@ft-transcendence/database';
 import { toSafePlayer, playerWithSession } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
+import { GameGateway } from '../games/game.gateway';
 
 export type Player = {
   id: number;
@@ -31,7 +36,11 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 export class PlayersService implements OnModuleInit, OnModuleDestroy {
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => GameGateway))
+    private readonly gateway: GameGateway,
+  ) {}
 
   onModuleInit() {
     void this.cleanupExpiredSessions();
@@ -174,10 +183,51 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     return this.toSessionDto(session);
   }
 
+  async assertCanManagePlayer(userId: number, playerId: number): Promise<void> {
+    const player = await this.prisma.player.findUnique({
+      where: { id: playerId },
+      select: { ofUserId: true, inGroupId: true },
+    });
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
+    if (player.ofUserId === userId) return;
+
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: {
+        userId_groupId: { userId, groupId: player.inGroupId },
+      },
+    });
+    if (membership?.role === GroupRole.ADMIN) return;
+
+    throw new ForbiddenException('You cannot manage this player');
+  }
+
+  async assertParentOfNewPlayer(
+    userId: number,
+    inGroup: number,
+  ): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId: inGroup } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this group');
+    }
+  }
+
+  async assertPlayerInGame(playerId: number, gameId: number): Promise<void> {
+    const row = await this.prisma.gamePlayer.findUnique({
+      where: { gameId_playerId: { gameId, playerId } },
+    });
+    if (!row) {
+      throw new ForbiddenException('You are not a player in this game');
+    }
+  }
+
   async startSession(
     playerId: number,
     minutes: number,
-  ): Promise<{ session: PlayerSessionDto | null; alreadyActive: boolean }> {
+  ): Promise<{ session: PlayerSessionDto }> {
     if (!Number.isFinite(minutes) || minutes <= 0) {
       throw new ConflictException(
         'Session length must be a positive number of minutes',
@@ -192,24 +242,15 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     }
 
     await this.cleanupExpiredSessions();
-
-    const existing = await this.prisma.playerSession.findUnique({
-      where: { playerId },
-    });
-    if (existing && existing.expiresAt > new Date()) {
-      return { session: null, alreadyActive: true };
-    }
-
-    if (existing) {
-      await this.prisma.playerSession.delete({ where: { playerId } });
-    }
+    await this.prisma.playerSession.deleteMany({ where: { playerId } });
 
     const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
     const session = await this.prisma.playerSession.create({
       data: { playerId, expiresAt },
     });
 
-    return { session: this.toSessionDto(session), alreadyActive: false };
+    this.gateway.emitPlayerSessionReplaced(playerId);
+    return { session: this.toSessionDto(session) };
   }
 
   async validateSession(
@@ -234,9 +275,26 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     return { valid: true, expiresAt: session.expiresAt.toISOString() };
   }
 
-  async clearSession(playerId: number): Promise<void> {
-    await this.prisma.playerSession.deleteMany({ where: { playerId } });
+  async clearSession(
+    playerId: number,
+    options: { token?: string; force?: boolean } = {},
+  ): Promise<void> {
+    if (options.force) {
+      await this.prisma.playerSession.deleteMany({ where: { playerId } });
+      await this.clearCurrentGame(playerId);
+      this.gateway.emitPlayerSessionReplaced(playerId);
+      return;
+    }
+
+    if (!options.token) return;
+
+    const deleted = await this.prisma.playerSession.deleteMany({
+      where: { playerId, token: options.token },
+    });
+    if (deleted.count === 0) return;
+
     await this.clearCurrentGame(playerId);
+    this.gateway.emitPlayerSessionReplaced(playerId);
   }
 
   async cleanupExpiredSessions(): Promise<number> {

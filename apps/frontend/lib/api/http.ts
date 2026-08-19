@@ -1,5 +1,52 @@
 import { getApiBaseUrl } from './config';
 import { ApiError } from './errors';
+import { getPlayerSession } from '../player-session';
+import {
+  getStoredSessionToken,
+  getStoredUserId,
+} from '../parent-session';
+
+export const SESSION_UNAUTHORIZED_EVENT = 'dictee:unauthorized';
+
+const SKIP_SESSION_HEADER_PATHS = new Set([
+  '/users/signin',
+  '/users/register',
+  '/users/validateSession',
+  '/players/validateSession',
+]);
+
+const SKIP_UNAUTHORIZED_EVENT_PATHS = new Set([
+  ...SKIP_SESSION_HEADER_PATHS,
+  '/users/clearSession',
+  '/players/clearSession',
+]);
+
+export function applySessionHeaders(headers: Headers, path?: string): void {
+  if (path && SKIP_SESSION_HEADER_PATHS.has(path)) return;
+
+  const player = getPlayerSession();
+  if (player) {
+    headers.set('X-Player-Id', String(player.playerId));
+    headers.set('X-Player-Session-Token', player.token);
+    return;
+  }
+
+  const userId = getStoredUserId();
+  const token = getStoredSessionToken();
+  if (userId && token) {
+    headers.set('X-User-Id', String(userId));
+    headers.set('X-User-Session-Token', token);
+  }
+}
+
+function notifyUnauthorized(path: string): void {
+  if (typeof window === 'undefined') return;
+  if (SKIP_UNAUTHORIZED_EVENT_PATHS.has(path)) return;
+  const kind = getPlayerSession() ? 'player' : 'parent';
+  window.dispatchEvent(
+    new CustomEvent(SESSION_UNAUTHORIZED_EVENT, { detail: { kind } }),
+  );
+}
 
 /**
  * Low-level HTTP helper. UI and pages should not call this directly —
@@ -16,6 +63,7 @@ export async function apiRequest<T>(
   if (options.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
+  applySessionHeaders(headers, normalizedPath);
 
   let res: Response;
   try {
@@ -30,6 +78,9 @@ export async function apiRequest<T>(
   const text = await res.text();
 
   if (!res.ok) {
+    if (res.status === 401) {
+      notifyUnauthorized(normalizedPath);
+    }
     let message: string | undefined;
     if (text) {
       try {

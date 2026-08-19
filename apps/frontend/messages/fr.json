@@ -239,7 +239,7 @@
       "confirmMessage": "La suppression du joueur entraînera également la suppression de ses données (statistiques de jeu, XP, classement) pour ce groupe uniquement."
     },
     "invite": {
-      "activeSessionWarning": "{name} a déjà une session de jeu active. Terminez-la ici, ou attendez la fin du minuteur ou que la personne quitte le jeu.",
+      "activeSessionWarning": "{name} a déjà une session de jeu active sur un autre appareil. Démarrer ici les déconnectera. Vous pouvez aussi terminer cette session sans en démarrer une nouvelle.",
       "sessionDurationTitle": "Combien de temps {name} peut-il/elle jouer ?",
       "minutesLabel": "Minutes",
       "minutesPlaceholder": "Entrez les minutes",

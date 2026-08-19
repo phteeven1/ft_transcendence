@@ -29,6 +29,12 @@ export type ChangePasswordInput = {
   newPassword: string;
 };
 
+export type UserSessionDto = {
+  token: string;
+  userId: number;
+};
+
 export type AuthResult = {
   user: UserDto | null;
+  session: UserSessionDto | null;
 };

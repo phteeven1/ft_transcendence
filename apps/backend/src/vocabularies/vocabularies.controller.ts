@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -13,6 +14,8 @@ import { memoryStorage } from 'multer';
 import { VocabulariesService } from './vocabularies.service';
 import { ExtractionService } from './extraction.service';
 import { GameGateway } from '../games/game.gateway';
+import { UserSessionGuard } from '../users/user-session.guard';
+import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
 
 @Controller('vocabularies')
 export class VocabulariesController {
@@ -23,19 +26,24 @@ export class VocabulariesController {
   ) {}
 
   @Post('create')
+  @UseGuards(UserSessionGuard)
   async create(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       vocabularyInGroup: number;
-      byUser: number;
       vocabularyName: string;
       vocabularyWords?: string[];
       vocabularyMeanings?: string[];
     },
   ) {
+    await this.vocabulariesService.assertGroupMembership(
+      userId,
+      body.vocabularyInGroup,
+    );
     const created = await this.vocabulariesService.create(
       body.vocabularyInGroup,
-      body.byUser,
+      userId,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
@@ -45,19 +53,24 @@ export class VocabulariesController {
   }
 
   @Post('findOrCreate')
+  @UseGuards(UserSessionGuard)
   async findOrCreate(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       vocabularyInGroup: number;
-      byUser: number;
       vocabularyName: string;
       vocabularyWords?: string[];
       vocabularyMeanings?: string[];
     },
   ) {
+    await this.vocabulariesService.assertGroupMembership(
+      userId,
+      body.vocabularyInGroup,
+    );
     const vocabulary = await this.vocabulariesService.findOrCreate(
       body.vocabularyInGroup,
-      body.byUser,
+      userId,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
@@ -67,13 +80,19 @@ export class VocabulariesController {
   }
 
   @Post('setActive')
+  @UseGuards(UserSessionGuard)
   async setActive(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       vocabularyId: number;
       vocabularyInGroup: number;
     },
   ) {
+    await this.vocabulariesService.assertGroupMembership(
+      userId,
+      body.vocabularyInGroup,
+    );
     const updated = await this.vocabulariesService.setActive(
       body.vocabularyId,
       body.vocabularyInGroup,
@@ -83,7 +102,9 @@ export class VocabulariesController {
   }
 
   @Post('rename')
+  @UseGuards(UserSessionGuard)
   async rename(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       vocabularyId: number;
@@ -91,6 +112,10 @@ export class VocabulariesController {
       vocabularyInGroup: number;
     },
   ) {
+    await this.vocabulariesService.assertGroupMembership(
+      userId,
+      body.vocabularyInGroup,
+    );
     const renamed = await this.vocabulariesService.rename(
       body.vocabularyId,
       body.vocabularyName,
@@ -101,7 +126,9 @@ export class VocabulariesController {
   }
 
   @Post('update-entries')
+  @UseGuards(UserSessionGuard)
   async updateEntries(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       vocabularyId: number;
@@ -110,6 +137,10 @@ export class VocabulariesController {
       vocabularyMeanings: string[];
     },
   ) {
+    await this.vocabulariesService.assertGroupMembership(
+      userId,
+      body.vocabularyInGroup,
+    );
     const updated = await this.vocabulariesService.updateEntries(
       body.vocabularyId,
       body.vocabularyInGroup,
@@ -121,13 +152,19 @@ export class VocabulariesController {
   }
 
   @Post('remove')
+  @UseGuards(UserSessionGuard)
   async remove(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       vocabularyId: number;
       vocabularyInGroup: number;
     },
   ) {
+    await this.vocabulariesService.assertGroupMembership(
+      userId,
+      body.vocabularyInGroup,
+    );
     const removed = await this.vocabulariesService.remove(
       body.vocabularyId,
       body.vocabularyInGroup,
@@ -142,6 +179,7 @@ export class VocabulariesController {
   }
 
   @Post('extract')
+  @UseGuards(UserSessionGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -149,12 +187,12 @@ export class VocabulariesController {
     }),
   )
   async extract(
+    @AuthenticatedUserId() userId: number,
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body()
     body: {
       fromLanguage?: string;
       toLanguage?: string;
-      userId?: string;
       groupId?: string;
     },
   ) {
@@ -162,7 +200,7 @@ export class VocabulariesController {
       throw new BadRequestException('No file uploaded.');
     }
     await this.vocabulariesService.assertGroupMembership(
-      Number(body.userId),
+      userId,
       Number(body.groupId),
     );
     const fromLang = body.fromLanguage || 'French';
