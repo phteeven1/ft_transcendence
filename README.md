@@ -46,6 +46,7 @@ There are two kinds of account:
 - Node.js 26 (matches CI; use `nvm use 26` if needed)
 - npm
 - Copy environment files from `[.env.example](./.env.example)`:
+  - `.env` — `POSTGRES_*` for Docker Compose (repo root, gitignored)
   - `packages/database/.env` — `DATABASE_URL`
   - `apps/backend/.env` — database, `OPENAI_API_KEY`, `MAIL_*`, `APP_URL`
   - `apps/frontend/.env` — `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`
