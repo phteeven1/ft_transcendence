@@ -5,8 +5,8 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { AuthenticatedPlayerId } from './authenticated-player.decorator';
-import { PlayerSessionGuard } from './player-session.guard';
+import { AuthenticatedPlayerId } from '../players/authenticated-player.decorator';
+import { PlayerSessionGuard } from '../players/player-session.guard';
 import { ProgressionService } from './progression.service';
 
 @Controller('groups')

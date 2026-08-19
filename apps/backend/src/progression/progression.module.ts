@@ -3,7 +3,7 @@ import { PlayersModule } from '../players/players.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { GroupProgressionController } from './group-progression.controller';
 import { PlayerProgressionController } from './player-progression.controller';
-import { PlayerSessionGuard } from './player-session.guard';
+import { PlayerSessionGuard } from '../players/player-session.guard';
 import { ProgressionOutcomeService } from './progression-outcome.service';
 import { ProgressionStatsService } from './progression-stats.service';
 import { ProgressionService } from './progression.service';

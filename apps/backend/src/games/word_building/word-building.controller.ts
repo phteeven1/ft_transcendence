@@ -1,18 +1,23 @@
-import { Controller, Param, Post } from '@nestjs/common';
+import { Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { WordBuildingService } from './word-building.service';
+import { PlayerSessionGuard } from '../../players/player-session.guard';
+import { AuthenticatedPlayerId } from '../../players/authenticated-player.decorator';
+import { PlayersService } from '../../players/players.service';
 
 @Controller('games')
 export class WordBuildingController {
-  constructor(private readonly wordBuildingService: WordBuildingService) {}
+  constructor(
+    private readonly wordBuildingService: WordBuildingService,
+    private readonly playersService: PlayersService,
+  ) {}
 
-  /**
-   * Builds the initial crossword for this game (or restores persisted state).
-   *
-   * @param id Game id from the route.
-   * @returns trueCourt, visibleCourt, and clues.
-   */
   @Post(':id/initWordBuildingCourt')
-  initCourt(@Param('id') id: string) {
+  @UseGuards(PlayerSessionGuard)
+  async initCourt(
+    @AuthenticatedPlayerId() playerId: number,
+    @Param('id') id: string,
+  ) {
+    await this.playersService.assertPlayerInGame(playerId, Number(id));
     return this.wordBuildingService.initCourt(Number(id));
   }
 }

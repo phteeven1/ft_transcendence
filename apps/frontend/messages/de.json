@@ -239,11 +239,10 @@
       "confirmMessage": "Beim Löschen des Spielers werden auch dessen Daten (Spielstatistiken, XP, Ranglistenstatus) gelöscht (nur für diese Gruppe)."
     },
     "invite": {
-      "activeSessionWarning": "{name} hat bereits eine aktive Spielsitzung. Beenden Sie sie hier, oder warten Sie, bis der Timer abläuft oder die Person das Spiel verlässt.",
+      "activeSessionWarning": "{name} hat bereits eine aktive Spielsitzung auf einem anderen Gerät. Ein Start hier beendet die andere Sitzung. Sie können die andere Sitzung auch beenden, ohne eine neue zu starten.",
       "sessionDurationTitle": "Wie lange darf {name} spielen?",
       "minutesLabel": "Minuten",
       "minutesPlaceholder": "Minuten eingeben",
-      "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Beenden Sie sie hier, oder warten Sie, bis der Timer abläuft oder die Person das Spiel verlässt.",
       "startFailed": "Sitzung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
       "endSession": "Sitzung beenden",
       "endSessionFailed": "Sitzung konnte nicht beendet werden. Bitte versuchen Sie es erneut."

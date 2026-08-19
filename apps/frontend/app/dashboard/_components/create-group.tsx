@@ -32,7 +32,6 @@ export default function CreateGroup({ open, onClose, onCreated }: Props) {
     try {
       const data = await groupsApi.create({
         groupName: groupName.trim(),
-        creatorId: user.id,
       });
       const result = await syncGroup(data.id);
       if (!result) {

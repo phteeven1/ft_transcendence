@@ -24,6 +24,7 @@ export type {
 export type {
   PlayerDto,
   PlayerSessionDto,
+  ActivePlayerSessionDto,
   CreatePlayerInput,
   RenamePlayerInput,
   StartSessionInput,

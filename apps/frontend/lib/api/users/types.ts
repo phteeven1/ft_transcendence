@@ -19,16 +19,25 @@ export type SignInUserInput = {
 };
 
 export type UpdateUserInput = {
-  userId: number;
   userName?: string;
 };
 
 export type ChangePasswordInput = {
-  userId: number;
   oldPassword: string;
   newPassword: string;
 };
 
+export type UserSessionDto = {
+  token: string;
+  userId: number;
+};
+
+export type ChangePasswordResult = {
+  success: boolean;
+  session: UserSessionDto | null;
+};
+
 export type AuthResult = {
   user: UserDto | null;
+  session: UserSessionDto | null;
 };

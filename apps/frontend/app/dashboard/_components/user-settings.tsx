@@ -29,7 +29,7 @@ function UserSettingsDialog({
 }) {
   const t = useTranslations('dashboard.settings');
   const tCommon = useTranslations('common');
-  const { refreshUser } = useAuth();
+  const { refreshUser, setParentSessionToken } = useAuth();
 
   const [userName, setUserName] = useState(user.name);
 
@@ -44,7 +44,6 @@ function UserSettingsDialog({
     setSaveError('');
     try {
       await usersApi.update({
-        userId: user.id,
         userName,
       });
       await refreshUser();
@@ -73,14 +72,14 @@ function UserSettingsDialog({
     }
     try {
       const result = await usersApi.changePassword({
-        userId: user.id,
         oldPassword,
         newPassword,
       });
-      if (!result.success) {
+      if (!result.success || !result.session) {
         setPasswordError(t('oldPasswordIncorrect'));
         return;
       }
+      setParentSessionToken(result.session.token);
       setShowPasswordModal(false);
     } catch {
       setPasswordError(t('oldPasswordIncorrect'));

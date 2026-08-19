@@ -1,32 +1,43 @@
 'use client';
 
-// useSessionGuard — call this at the top of any player-facing page.
-// Checks on mount and every 30 seconds whether the session has expired.
-// If it has, navigates to /session_over.
-
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/auth-context';
 import { getPlayerSession } from '@/lib/player-session';
+import { playersApi } from '@/lib/api';
 
 export function useSessionGuard() {
-  const { sessionExpiresAt } = useAuth();
+  const { sessionExpiresAt, logoutPlayer } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    const check = () => {
+    const check = async () => {
       const stored = getPlayerSession();
-      const expiresAtMs = sessionExpiresAt ?? (
-        stored ? new Date(stored.expiresAt).getTime() : null
-      );
+      const expiresAtMs =
+        sessionExpiresAt ??
+        (stored ? new Date(stored.expiresAt).getTime() : null);
 
       if (expiresAtMs !== null && Date.now() > expiresAtMs) {
+        router.push('/session_over');
+        return;
+      }
+
+      if (!stored) return;
+      try {
+        await playersApi.validateSession({
+          playerId: stored.playerId,
+          token: stored.token,
+        });
+      } catch {
+        logoutPlayer();
         router.push('/session_over');
       }
     };
 
-    check();
-    const interval = setInterval(check, 30000);
+    void check();
+    const interval = setInterval(() => {
+      void check();
+    }, 30000);
     return () => clearInterval(interval);
-  }, [sessionExpiresAt, router]);
+  }, [sessionExpiresAt, router, logoutPlayer]);
 }

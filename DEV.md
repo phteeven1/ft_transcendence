@@ -35,11 +35,14 @@ apps/frontend/
     components/ui/     # clay component library
     context/           # auth-context, language-context
     hooks/             # session guard, sockets, game hooks
-  lib/api/             # only place that should call fetch()
+  lib/api/             # only place that should call fetch(); attaches session headers
   lib/parent-session.ts
+  lib/player-session.ts
 apps/backend/src/
   app.module.ts
-  users/ groups/ players/ vocabularies/ invitations/ mail/
+  users/               # sign-in, UserSession, UserSessionGuard
+  players/             # Play Now, PlayerSession, PlayerSessionGuard
+  groups/ vocabularies/ invitations/ mail/
   games/               # lobby + shared gateway
     game.gateway.ts    # Socket.IO
     games.service.ts   # create / join / start / leave / finish
@@ -81,14 +84,15 @@ Gateway: `apps/backend/src/games/game.gateway.ts` (`@WebSocketGateway({ cors: { 
 
 | Client → server | Server → clients |
 |-----------------|------------------|
-| `joinGroup` | `lobby:update`, `game:started` |
-| `joinDashboard` | `dashboard:update`, `membership:changed` |
-| `joinGame` | `game:state`, `game:playerLeft` |
+| `joinSession` `{ kind, id, token }` | `session:replaced` (kicked client) |
+| `joinGroup` `{ groupId, playerId, token }` | `lobby:update`, `game:started` |
+| `joinDashboard` `{ groupId, userId, token }` | `dashboard:update`, `membership:changed` |
+| `joinGame` `{ gameId, playerId, token }` | `game:state`, `game:playerLeft` |
 | `placeLetter` | `cell:locks` |
 | `cell:lock` / `cell:unlock` | `game:finished` |
 | `guess:submit` | `game:guessResult`, `game:wordGuessed`, `game:playerFrozen` / `game:playerUnfrozen`, `game:error` |
 
-Rooms: `group:{id}` (lobby + dashboard), `user:{id}` (membership list), `game:{id}` (in play). Disconnect releases cell locks.
+Rooms: `group:{id}` (lobby + dashboard), `user:{id}` (membership + parent session kick), `player:{id}` (Play Now kick), `game:{id}` (in play). `joinGroup`, `joinGame`, and `joinDashboard` validate the session token before joining. Disconnect releases cell locks.
 
 The parent dashboard does not poll. The dashboard page owns one Socket.IO subscription (`joinDashboard`) and refetches when `dashboard:update` / `membership:changed` fire, or when the tab becomes visible. Group, player, and vocabulary mutation controllers emit those events after a successful write.
 
@@ -108,7 +112,7 @@ Every schema change needs a migration (`npm run db:migrate` from repo root). Do 
 
 ## Vocabulary
 
-Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden starter list (`TEST_VOCABULARY`) if none exists. Games use the group’s `currentVocabulary` (whatever the user last chose, or the starter if they have no custom list). Opening the dashboard does not change the active list. Names are unique per group. Entries: max 18 characters, whitespace stripped, unique words and unique meanings, at least 5 pairs (frontend + backend `vocabulary-entry-rules.ts`). AI import sends photos as `image_url` and PDFs as GPT-4o file parts (no pdf-parse). Extract requires group membership (`userId` + `groupId`); HEIC is rejected.
+Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden starter list (`TEST_VOCABULARY`) if none exists. Games use the group’s `currentVocabulary` (whatever the user last chose, or the starter if they have no custom list). Opening the dashboard does not change the active list. Names are unique per group. Entries: max 18 characters, whitespace stripped, unique words and unique meanings, at least 5 pairs (frontend + backend `vocabulary-entry-rules.ts`). AI import sends photos as `image_url` and PDFs as GPT-4o file parts (no pdf-parse). Extract requires a valid parent session (`x-user-id` / `x-user-session-token`) and group membership for the authenticated user plus `groupId`; HEIC is rejected.
 
 ---
 
@@ -116,16 +120,17 @@ Add and edit share one dialog (`add-vocabulary.tsx`). Each group gets a hidden s
 
 A parent session and a child session are different things.
 
-- **Parent:** `POST /users/signin` and `POST /users/register` return `{ user }` (user is `null` on bad credentials or duplicate name/email). `POST /users/changePassword` returns `{ success: false }` when the old password is wrong. Expected Play Now / vocabulary-name / invite-mail failures are also 200 result objects so the browser console stays clean during eval. `AuthContext` hydrates from `localStorage` via `parent-session.ts` (`dicteeUserId` / `dicteeGroupId`) with unauthenticated `GET /users/:id`. Demo-only ID restore — not a real session. There is no JWT. Logged-in parents hitting `/`, `/signin`, or `/register` are sent to `/dashboard`. Another tab signing in (or signing out) syncs via the `storage` event on `dicteeUserId`.
-- **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie. Play Now then **clears the parent** (`logout()`): `User` / `Group` leave `AuthContext` and `localStorage`. Leave session / session-over go to `/` unless a parent is still in this tab.
+- **Parent:** `POST /users/signin` and `POST /users/register` return `{ user, session }` (`user` and `session` are `null` on bad credentials or duplicate name/email). A `UserSession` row (one token per user) is replaced on each successful sign-in. The frontend stores `dicteeUserId`, `dicteeGroupId`, and `dicteeUserSessionToken` in `localStorage` (`parent-session.ts`). Hydrate calls `POST /users/validateSession` before `GET /users/:id`. Mutating parent routes require headers `x-user-id` and `x-user-session-token` (`UserSessionGuard`). `POST /users/changePassword` still returns `{ success: false }` when the old password is wrong; on success it replaces `UserSession` and returns the new token to that tab without emitting `session:replaced` (stolen tokens die immediately; other tabs die on the next 401). Expected Play Now / vocabulary-name / invite-mail failures are also 200 result objects so the browser console stays clean during eval. Logged-in parents hitting `/`, `/signin`, or `/register` are sent to `/dashboard`. A new sign-in kicks the previous client (`session:replaced` on Socket.IO room `user:{id}`). Play Now wipes parent credentials in **this browser** (`logout({ localOnly: true })`) so a child cannot open dashboard settings; the server `UserSession` stays, so a parent on another device is not kicked. Other same-browser parent tabs lose `localStorage` and are signed out.
+- **Child:** dashboard Play Now → `POST /players/startSession` `{ playerId, minutes }` → one `PlayerSession` row (token, `expiresAt`). A second Play Now **replaces** the token and kicks the previous child (`session:replaced` on `player:{id}`). Frontend stores the token in **`sessionStorage`** (per tab, cleared on close) and sends the child to `/select_game`. Not a cookie. Leave session goes to `/session_over`; OK there goes to `/dashboard` if a parent is still in this tab, otherwise `/`.
 
 Rules:
 
-- One unexpired token per player. A second Play Now while one is live returns `{ session: null, alreadyActive: true }` unless the parent ends it first.
+- One unexpired token per player. A second Play Now replaces it and kicks the other device. The Play Now dialog still offers **End session** to stop play without starting a new session.
+- `GET /players/:id/activeSession` requires the parent session (`UserSessionGuard` + `assertCanManagePlayer`) and returns `{ expiresAt }` or `null`. The live child token is only on `startSession`.
 - `select_game` validates on mount. Missing or expired → `/dashboard` if a parent is still in context, else `/`. Games in progress are not interrupted.
-- Requests that need a child session send headers `x-player-id` and `x-player-session-token`. Progression routes use `PlayerSessionGuard`.
-- `POST /players/clearSession` deletes the token immediately (leave session, or **End session** in the Play Now dialog).
-- Closing the Play Now tab writes a pending end in `localStorage`. After `SESSION_CLOSE_GRACE_MS` (2s), another load or an already-open parent tab calls `clearSession`. Refresh cancels the pending end because `sessionStorage` still has the token. Do not `sendBeacon` `clearSession` on `pagehide` — that event also fires on refresh.
+- Child mutations send `x-player-id` and `x-player-session-token`. Parent mutations send `x-user-id` and `x-user-session-token`. `@/lib/api` attaches whichever session is present (player wins if both exist).
+- `POST /players/clearSession` is token-scoped for the child (and for the tab-close pending end). A parent **End session** force-clears. Stale pending ends cannot delete a newer token.
+- Closing the Play Now tab writes a pending end in `localStorage` (player id **and** token). After `SESSION_CLOSE_GRACE_MS` (2s), another load or an already-open parent tab calls `clearSession` with that token. Refresh cancels the pending end because `sessionStorage` still has the token. Do not `sendBeacon` `clearSession` on `pagehide` — that event also fires on refresh.
 
 This exists so two tabs cannot play as the same child, and so `currentGameId` is not the only notion of “is this child online”.
 
@@ -156,6 +161,6 @@ Claymorphism UI. Tokens: `apps/frontend/app/design-tokens.json` and `globals.css
 
 ## Pitfalls (true today)
 
-- Parent restore is `localStorage` ids + unauthenticated `GET /users/:id`. Most REST routes have no auth guard; many POSTs trust a body `userId`. Fine for a demo, not production auth.
+- Parent restore is `localStorage` ids + unauthenticated `GET /users/:id`. Public GETs stay unauthenticated for the demo. Mutating parent/child routes use session headers. `GET /players/:id/activeSession` is parent-guarded and returns `expiresAt` only.
 - Closing a Play Now tab ends the server token after a 2s grace window (`localStorage` pending end; refresh cancels it). Do not `sendBeacon` `clearSession` on `pagehide`.
 - Word Soup is a real game, not a stub. Progression (XP, avatars, leaderboard) is claimed as gamification plus game statistics.

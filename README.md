@@ -33,8 +33,8 @@ Turn shared vocabulary homework into live, group-based word games that parents c
 
 There are two kinds of account:
 
-- **Parent (**`User`**)** — registers, creates or joins a group, manages children and vocabulary.
-- **Child (**`Player`**)** — a profile owned by a parent. Play Now issues a time-limited session so the child can reach the lobby and games.
+- **Parent (**`User`**)** — registers, creates or joins a group, manages children and vocabulary. Sign-in issues one `UserSession` token; a second login on another browser or tab replaces it and kicks the previous parent client.
+- **Child (**`Player`**)** — a profile owned by a parent. Play Now issues a time-limited `PlayerSession` so the child can reach the lobby and games. A second Play Now for the same child replaces the token and kicks the previous device.
 
 ---
 
@@ -97,7 +97,7 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 
 | Feature                | Description                                     | Paths                                             |
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------- |
-| Registration / sign-in | Parent accounts; passwords hashed with bcrypt   | `app/register`, `app/signin`, `users.service.ts`  |
+| Registration / sign-in | Parent accounts; bcrypt passwords; exclusive `UserSession` | `app/register`, `app/signin`, `users.service.ts` |
 | Dashboard              | Group list, members, players, profile settings  | `app/dashboard`                                   |
 | Groups                 | Create, join, leave, admin roles                | `app/dashboard`                                   |
 | Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
@@ -107,12 +107,15 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
 | Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
 | Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
-| Player sessions        | One active Play Now token per child             | `PlayerSession` model, `players.service.ts`       |
+| Player sessions        | One active Play Now token per child; replace kicks the previous client | `PlayerSession` model, `players.service.ts` |
+| Parent sessions        | One active token per parent; replace kicks the previous client         | `UserSession` model, `users.service.ts`     |
 | Language picker        | en / de / fr via next-intl                      | `language-context.tsx`, `flag-menu.tsx`           |
 | Legal                  | Privacy Policy and Terms of Service             | `app/privacy`, `app/terms`                        |
 
 
 XP, avatars, and a lobby leaderboard live under `progression/` and are claimed as gamification plus game statistics (see Modules below).
+
+**Exclusive sessions.** There is at most one live parent token (`UserSession`) and one live Play Now token (`PlayerSession`) at a time. Sign-in and Play Now **replace** the stored token and emit Socket.IO `session:replaced` so the previous tab or browser is kicked. Mutating parent REST calls send `x-user-id` and `x-user-session-token`; child game/lobby calls send `x-player-id` and `x-player-session-token` (`@/lib/api` attaches them). Play Now wipes parent credentials in **this browser** (`logout({ localOnly: true })`) so a child cannot open dashboard settings; the server `UserSession` stays, so a parent on another device is not kicked. Other same-browser parent tabs lose `localStorage` and are signed out. Leave session goes to `/session_over`. Changing the password rotates the parent token and returns the new one to that tab. `GET /players/:id/activeSession` is parent-guarded and returns `{ expiresAt }` only. Apply migration `20260819140000_add_user_session` (`npm run db:migrate` / `db:migrate:deploy`). Details: [DEV.md](./DEV.md#player-sessions-play-now).
 
 ---
 
@@ -187,7 +190,7 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 | Infra       | Docker Compose, Nginx, GitHub Actions            | HTTPS stack, local stack, and CI      |
 
 
-Parent auth is React context with parent ids in `localStorage` (`parent-session.ts`), not JWT.
+Parent auth is a server `UserSession` token stored in `localStorage` (`parent-session.ts`), not JWT. Child Play Now uses `PlayerSession` in `sessionStorage`.
 
 ---
 
@@ -196,13 +199,14 @@ Parent auth is React context with parent ids in `localStorage` (`parent-session.
 PostgreSQL via Prisma. Core models:
 
 ```
-User ──┬── GroupMembership ── Group ──┬── Player
-       │                              ├── Vocabulary
-       ├── Player                     ├── Game ── GamePlayer
-       └── Vocabulary                 ├── Invitation
+User ──┬── UserSession (one parent token; replaced on new sign-in)
+       ├── GroupMembership ── Group ──┬── Player
+       ├── Player                     ├── Vocabulary
+       └── Vocabulary                 ├── Game ── GamePlayer
+                                      ├── Invitation
                                       └── Crossword (Word Building)
 
-Player ── PlayerSession (Play Now token)
+Player ── PlayerSession (one Play Now token; replaced on a second start)
 ```
 
 Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prisma/schema.prisma)`.
@@ -292,8 +296,8 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ## Known limitations
 
-1. **Parent “login” is ID-only** — sign-in returns a user object. Parent ids persist in `localStorage` (`dicteeUserId` / `dicteeGroupId` via `parent-session.ts`). `AuthContext` rehydrates with unauthenticated `GET /users/:id`. Fine for a local/school demo; not a real session. No JWT. Most REST handlers still trust a client-sent `userId`.
-2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. Do not sendBeacon on `pagehide`: that event also fires on refresh.
+1. **Parent session is token-based, not JWT** — sign-in returns `{ user, session }`. The token is stored in `localStorage` (`dicteeUserSessionToken`) and sent on mutating parent requests. A second sign-in replaces the token and kicks the previous client. Fine for a local/school demo.
+2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` with that token after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. A stale pending end cannot delete a newer Play Now token. Do not sendBeacon on `pagehide`: that event also fires on refresh.
 3. **Friends system** — not implemented; groups are the social unit.
 4. Chrome **console errors** during the demo fail the eval — check before staff arrive.
 

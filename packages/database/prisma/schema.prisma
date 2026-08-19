@@ -24,6 +24,7 @@ model User {
   memberships  GroupMembership[]
   players      Player[]
   vocabularies Vocabulary[]
+  session      UserSession?
 }
 
 model Group {
@@ -77,6 +78,15 @@ model Player {
   gamePlayers    GamePlayer[]
   initiatedGames Game[]         @relation("GameInitiator")
   session        PlayerSession?
+}
+
+/// One active parent session per user. Replaced on a new sign-in.
+model UserSession {
+  token     String   @id @default(uuid())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// One active browser session per player (Play Now). Orphaned tokens expire via expiresAt.

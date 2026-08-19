@@ -73,4 +73,4 @@ CI (`.github/workflows/ci.yml`) runs migrate, backend tests, frontend lint/build
 
 - Prefer the smallest change that matches existing patterns.
 - Do not invent JWT, Redis usage, friends, or extra markdown unless asked.
-- Parent ids live in `localStorage` (`parent-session.ts`); child Play Now is dashboard start → `PlayerSession` in `sessionStorage`. Do not “fix” that by rewriting auth in passing.
+- Parent identity is `UserSession` (`dicteeUserId` + `dicteeUserSessionToken` in `localStorage` via `parent-session.ts`). Child Play Now is dashboard start → `PlayerSession` in `sessionStorage`. One live token per user and per player; a new sign-in or Play Now replaces the row and kicks the previous client. Do not rewrite that auth in passing (no JWT unless asked).

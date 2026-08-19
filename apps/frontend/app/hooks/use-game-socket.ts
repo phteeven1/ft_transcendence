@@ -19,6 +19,8 @@ import type {
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
+import { getPlayerSession } from '@/lib/player-session';
+import { notifySessionUnauthorized } from '@/lib/api/http';
 
 interface GameSocketState {
   gameFinished: boolean;
@@ -75,7 +77,9 @@ export function useGameSocket(gameId: number, playerId: number) {
     const join = () => {
       if (!active) return;
       setState((s) => ({ ...s, isConnected: true }));
-      socket.emit('joinGame', { gameId, playerId });
+      const stored = getPlayerSession();
+      if (!stored) return;
+      socket.emit('joinGame', { gameId, playerId, token: stored.token });
     };
 
     const onDisconnect = () => {
@@ -223,6 +227,11 @@ export function useGameSocket(gameId: number, playerId: number) {
       }));
     };
 
+    const onSessionReplaced = (): void => {
+      if (!active) return;
+      notifySessionUnauthorized('player');
+    };
+
     socket.on('connect', join);
     socket.on('disconnect', onDisconnect);
     socket.on('game:state', onGameState);
@@ -233,6 +242,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     socket.on('game:playerUnfrozen', onPlayerUnfrozen);
     socket.on('game:playerLeft', onPlayerLeft);
     socket.on('game:finished', onGameFinished);
+    socket.on('session:replaced', onSessionReplaced);
 
     if (socket.connected) join();
 
@@ -248,6 +258,7 @@ export function useGameSocket(gameId: number, playerId: number) {
       socket.off('game:playerUnfrozen', onPlayerUnfrozen);
       socket.off('game:playerLeft', onPlayerLeft);
       socket.off('game:finished', onGameFinished);
+      socket.off('session:replaced', onSessionReplaced);
       if (socketRef.current === socket) socketRef.current = null;
       releaseSocket(key);
     };

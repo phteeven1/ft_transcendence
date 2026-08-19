@@ -1,4 +1,4 @@
-import { apiRequest } from '../http';
+import { apiRequest, applySessionHeaders } from '../http';
 import type {
   CreateVocabularyInput,
   ExtractVocabularyResult,
@@ -75,8 +75,11 @@ export const vocabulariesApi = {
     formData.append('userId', String(userId));
     formData.append('groupId', String(groupId));
 
+    const headers = new Headers();
+    applySessionHeaders(headers, '/vocabularies/extract');
     const response = await fetch(`${getApiBaseUrl()}/vocabularies/extract`, {
       method: 'POST',
+      headers,
       body: formData,
     });
 

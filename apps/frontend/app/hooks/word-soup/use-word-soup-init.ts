@@ -140,7 +140,7 @@ export function useWordSoupInit(gameId: number, playerId: number) {
 
     const init = async () => {
       try {
-        const result = await wordSoupApi.initCourt({ gameId, playerId });
+        const result = await wordSoupApi.initCourt({ gameId });
 
         if (!isMounted) return;
 

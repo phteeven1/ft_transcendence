@@ -9,7 +9,6 @@ export type PlayerDto = {
 
 export type CreatePlayerInput = {
   playerInGroup: number;
-  playerParent: number;
   playerName: string;
 };
 
@@ -23,6 +22,10 @@ export type PlayerSessionDto = {
   playerId: number;
   expiresAt: string;
   createdAt: string;
+};
+
+export type ActivePlayerSessionDto = {
+  expiresAt: string;
 };
 
 export type StartSessionInput = {
@@ -41,6 +44,5 @@ export type ValidateSessionResult = {
 };
 
 export type StartSessionResult = {
-  session: PlayerSessionDto | null;
-  alreadyActive: boolean;
+  session: PlayerSessionDto;
 };

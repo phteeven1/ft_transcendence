@@ -1,8 +1,8 @@
 import { apiRequest } from '../http';
 import type {
+  ActivePlayerSessionDto,
   CreatePlayerInput,
   PlayerDto,
-  PlayerSessionDto,
   RenamePlayerInput,
   StartSessionInput,
   StartSessionResult,
@@ -40,10 +40,10 @@ export const playersApi = {
     });
   },
 
-  clearSession(playerId: number): Promise<void> {
+  clearSession(playerId: number, token?: string): Promise<void> {
     return apiRequest<void>('/players/clearSession', {
       method: 'POST',
-      body: JSON.stringify({ playerId }),
+      body: JSON.stringify({ playerId, token }),
     });
   },
 
@@ -61,8 +61,8 @@ export const playersApi = {
     });
   },
 
-  getActiveSession(playerId: number): Promise<PlayerSessionDto | null> {
-    return apiRequest<PlayerSessionDto | null>(
+  getActiveSession(playerId: number): Promise<ActivePlayerSessionDto | null> {
+    return apiRequest<ActivePlayerSessionDto | null>(
       `/players/${playerId}/activeSession`,
     );
   },

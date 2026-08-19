@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
 import { playersApi } from '@/lib/api';
-import { clearPlayerSession } from '@/lib/player-session';
+import { getPlayerSession } from '@/lib/player-session';
 import { Button, Dropdown, DropdownItem, Icon } from './ui';
 import AbandonPlayModal from './abandon-play-modal';
 import UserSettings from '../dashboard/_components/user-settings';
@@ -52,19 +52,19 @@ export default function ProfileMenu() {
 
   const handleLeaveSession = async () => {
     const playerId = player?.id;
+    const stored = getPlayerSession();
     setShowLeaveSessionModal(false);
     setIsLeavingSession(true);
-    clearPlayerSession();
-    logoutPlayer();
     if (playerId) {
       try {
-        await playersApi.clearSession(playerId);
+        await playersApi.clearSession(playerId, stored?.token);
       } catch {
         /* parent dashboard is still reachable */
       }
     }
+    logoutPlayer();
     setIsLeavingSession(false);
-    router.replace('/dashboard');
+    router.replace('/session_over');
   };
 
   return (
