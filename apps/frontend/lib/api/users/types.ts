@@ -28,3 +28,5 @@ export type ChangePasswordInput = {
   oldPassword: string;
   newPassword: string;
 };
+
+export type AuthResult = UserDto & { sessionToken: string };

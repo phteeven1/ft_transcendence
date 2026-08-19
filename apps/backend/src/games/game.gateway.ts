@@ -67,6 +67,9 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     @MessageBody() data: { groupId: number; playerId: number },
   ): Promise<void> {
     await client.join(`group:${data.groupId}`);
+    if (Number.isInteger(data.playerId) && data.playerId > 0) {
+      await client.join(`player:${data.playerId}`);
+    }
 
     client.data.groupId = data.groupId;
     client.data.playerId = data.playerId;
@@ -107,6 +110,18 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     this.server.to(`user:${userId}`).emit('membership:changed');
   }
 
+  emitParentSessionReplaced(userId: number, sessionToken: string): void {
+    this.server.to(`user:${userId}`).emit('parent:sessionReplaced', {
+      sessionToken,
+    });
+  }
+
+  emitPlayerSessionReplaced(playerId: number, token: string): void {
+    this.server.to(`player:${playerId}`).emit('player:sessionReplaced', {
+      token,
+    });
+  }
+
   /**
    * Joins a client to the in-game room used for live game updates.
    *
@@ -119,6 +134,9 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     @MessageBody() data: { gameId: number; playerId: number },
   ): Promise<void> {
     await client.join(`game:${data.gameId}`);
+    if (Number.isInteger(data.playerId) && data.playerId > 0) {
+      await client.join(`player:${data.playerId}`);
+    }
     client.data.gameId = data.gameId;
     client.data.playerId = data.playerId;
   }

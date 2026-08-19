@@ -1,7 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Inject, forwardRef } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { hash, compare } from 'bcryptjs';
 import { toApiUser, userWithMemberships } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
+import { GameGateway } from '../games/game.gateway';
 
 const SALT_ROUNDS = 10;
 const USERNAME_OR_EMAIL_TAKEN =
@@ -24,18 +26,35 @@ export type User = {
   isAdminOf: number[];
 };
 
+export type ParentAuthResult = User & { sessionToken: string };
+
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => GameGateway))
+    private readonly gateway: GameGateway,
+  ) {}
 
-  async register(name: string, password: string, email: string): Promise<User> {
+  async register(
+    name: string,
+    password: string,
+    email: string,
+  ): Promise<ParentAuthResult> {
     const hashedPassword = await hash(password, SALT_ROUNDS);
+    const sessionToken = randomUUID();
     try {
       const user = await this.prisma.user.create({
-        data: { name, password: hashedPassword, email },
+        data: {
+          name,
+          password: hashedPassword,
+          email,
+          parentSessionToken: sessionToken,
+        },
         ...userWithMemberships,
       });
-      return toApiUser(user);
+      this.gateway.emitParentSessionReplaced(user.id, sessionToken);
+      return { ...toApiUser(user), sessionToken };
     } catch (error) {
       if (isPrismaUniqueConstraint(error)) {
         throw new ConflictException(USERNAME_OR_EMAIL_TAKEN);
@@ -55,7 +74,7 @@ export class UsersService {
   async findByCredentials(
     name: string,
     password: string,
-  ): Promise<User | undefined> {
+  ): Promise<ParentAuthResult | undefined> {
     const user = await this.prisma.user.findUnique({
       where: { name },
       ...userWithMemberships,
@@ -63,7 +82,15 @@ export class UsersService {
     if (!user) return undefined;
 
     const passwordMatches = await compare(password, user.password);
-    return passwordMatches ? toApiUser(user) : undefined;
+    if (!passwordMatches) return undefined;
+
+    const sessionToken = randomUUID();
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { parentSessionToken: sessionToken },
+    });
+    this.gateway.emitParentSessionReplaced(user.id, sessionToken);
+    return { ...toApiUser(user), sessionToken };
   }
 
   async updateProfile(

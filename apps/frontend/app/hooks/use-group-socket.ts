@@ -3,8 +3,11 @@
 // A custom React hook that manages a WebSocket connection for a single player in a group lobby.
 // It connects, listens for server events, and returns reactive state that the component can render.
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Game } from '../types';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
+import { useAuth } from '../context/auth-context';
+import { shouldLeaveForReplacedPlayerToken } from '@/lib/apply-player-session-replaced';
 
 interface GroupSocketState {
   pendingGames: Game[];
@@ -15,6 +18,8 @@ interface GroupSocketState {
 }
 
 export function useGroupSocket(groupId: number, playerId: number) {
+  const { logoutPlayer } = useAuth();
+  const router = useRouter();
   const [state, setState] = useState<GroupSocketState>({
     pendingGames: [],
     startedGame: null,
@@ -56,10 +61,18 @@ export function useGroupSocket(groupId: number, playerId: number) {
       }
     };
 
+    const onSessionReplaced = (payload: { token: string }) => {
+      if (!active) return;
+      if (!shouldLeaveForReplacedPlayerToken(payload.token)) return;
+      logoutPlayer();
+      router.replace('/session_over');
+    };
+
     socket.on('connect', join);
     socket.on('disconnect', onDisconnect);
     socket.on('lobby:update', onLobbyUpdate);
     socket.on('game:started', onGameStarted);
+    socket.on('player:sessionReplaced', onSessionReplaced);
 
     if (socket.connected) join();
 
@@ -69,9 +82,10 @@ export function useGroupSocket(groupId: number, playerId: number) {
       socket.off('disconnect', onDisconnect);
       socket.off('lobby:update', onLobbyUpdate);
       socket.off('game:started', onGameStarted);
+      socket.off('player:sessionReplaced', onSessionReplaced);
       releaseSocket(key);
     };
-  }, [groupId, playerId]);
+  }, [groupId, playerId, logoutPlayer, router]);
 
   return state;
 }

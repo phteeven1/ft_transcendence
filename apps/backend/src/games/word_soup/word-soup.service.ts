@@ -203,8 +203,8 @@ export class WordSoupService {
       const completed = this.isCourtComplete(court);
       for (const playerId of playerIds) {
         const peak = court.playerBestWordStreaks[playerId] ?? 0;
-        await tx.gamePlayer.update({
-          where: { gameId_playerId: { gameId, playerId } },
+        await tx.gamePlayer.updateMany({
+          where: { gameId, playerId },
           data: {
             score: court.playerScores[playerId] ?? 0,
             bestWordStreak: peak,

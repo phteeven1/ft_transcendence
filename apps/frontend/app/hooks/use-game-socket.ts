@@ -8,6 +8,7 @@
 */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Socket } from 'socket.io-client';
 import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto } from '@/lib/api/games/word-building.types';
 import type { 
@@ -19,6 +20,8 @@ import type {
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
+import { useAuth } from '../context/auth-context';
+import { shouldLeaveForReplacedPlayerToken } from '@/lib/apply-player-session-replaced';
 
 interface GameSocketState {
   gameFinished: boolean;
@@ -46,6 +49,8 @@ interface GameSocketState {
  * @returns Connection state, the latest game payload, and emit helpers for tile clicks and letters.
  */
 export function useGameSocket(gameId: number, playerId: number) {
+  const { logoutPlayer } = useAuth();
+  const router = useRouter();
   const socketRef = useRef<Socket | null>(null);
   const [state, setState] = useState<GameSocketState>({
     gameFinished: false,
@@ -223,6 +228,13 @@ export function useGameSocket(gameId: number, playerId: number) {
       }));
     };
 
+    const onSessionReplaced = (payload: { token: string }) => {
+      if (!active) return;
+      if (!shouldLeaveForReplacedPlayerToken(payload.token)) return;
+      logoutPlayer();
+      router.replace('/session_over');
+    };
+
     socket.on('connect', join);
     socket.on('disconnect', onDisconnect);
     socket.on('game:state', onGameState);
@@ -233,6 +245,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     socket.on('game:playerUnfrozen', onPlayerUnfrozen);
     socket.on('game:playerLeft', onPlayerLeft);
     socket.on('game:finished', onGameFinished);
+    socket.on('player:sessionReplaced', onSessionReplaced);
 
     if (socket.connected) join();
 
@@ -248,10 +261,11 @@ export function useGameSocket(gameId: number, playerId: number) {
       socket.off('game:playerUnfrozen', onPlayerUnfrozen);
       socket.off('game:playerLeft', onPlayerLeft);
       socket.off('game:finished', onGameFinished);
+      socket.off('player:sessionReplaced', onSessionReplaced);
       if (socketRef.current === socket) socketRef.current = null;
       releaseSocket(key);
     };
-  }, [gameId, playerId]);
+  }, [gameId, playerId, logoutPlayer, router]);
 
   /**
    * Sends a letter placement to the server and lets the backend broadcast the authoritative state.

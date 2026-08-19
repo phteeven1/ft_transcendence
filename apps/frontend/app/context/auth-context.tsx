@@ -8,18 +8,24 @@ import {
   useRef,
   ReactNode,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { groupsApi, usersApi, type UserDto } from '@/lib/api';
+import type { AuthResult } from '@/lib/api/users/types';
 import type { GroupDto } from '@/lib/api/groups/types';
 import { clearPlayerSession } from '@/lib/player-session';
 import { clearPendingSessionEnd } from '@/lib/pending-session-end';
 import { useSessionCloseGuard } from '../hooks/use-session-close-guard';
+import { acquireSocket, releaseSocket } from '@/lib/socket';
 import {
   clearStoredGroupId,
   clearStoredParentAuth,
   getStoredGroupId,
+  getStoredParentSessionToken,
   getStoredUserId,
+  PARENT_SESSION_TOKEN_KEY,
   PARENT_USER_ID_KEY,
   setStoredGroupId,
+  setStoredParentSessionToken,
   setStoredUserId,
 } from '@/lib/parent-session';
 import { getPlayerSession } from '@/lib/player-session';
@@ -33,7 +39,7 @@ type AuthContextType = {
   group: Group | null;
   player: Player | null;
   authReady: boolean;
-  login: (userData: User) => void;
+  login: (userData: AuthResult) => void;
   logout: () => void;
   leaveGroup: () => void;
   syncGroup: (groupId: number) => Promise<Group | null>;
@@ -47,6 +53,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
@@ -77,9 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionExpiresAt(null);
   }, []);
 
-  const login = useCallback((userData: User) => {
-    setStoredUserId(userData.id);
-    setUser(userData);
+  const login = useCallback((userData: AuthResult) => {
+    const { sessionToken, ...profile } = userData;
+    setStoredUserId(profile.id);
+    setStoredParentSessionToken(sessionToken);
+    setUser(profile);
   }, []);
 
   const leaveGroup = useCallback(() => {
@@ -124,7 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const hydrate = async () => {
       const storedUserId = getStoredUserId();
-      if (!storedUserId) {
+      const storedToken = getStoredParentSessionToken();
+      if (!storedUserId || !storedToken) {
+        if (storedUserId || storedToken) clearStoredParentAuth();
         if (!cancelled) setAuthReady(true);
         return;
       }
@@ -165,51 +176,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onStorage = (event: StorageEvent): void => {
-      if (event.key !== PARENT_USER_ID_KEY) return;
+      if (
+        event.key !== PARENT_USER_ID_KEY &&
+        event.key !== PARENT_SESSION_TOKEN_KEY
+      ) {
+        return;
+      }
       if (playerRef.current || getPlayerSession()) return;
 
       if (event.newValue === null) {
         setUser(null);
         setGroup(null);
-        return;
       }
-
-      const nextUserId = Number(event.newValue);
-      if (!Number.isFinite(nextUserId) || nextUserId <= 0) return;
-
-      void (async () => {
-        try {
-          const data = await usersApi.getById(nextUserId);
-          setUser(data);
-          const storedGroupId = getStoredGroupId();
-          if (!storedGroupId) {
-            setGroup(null);
-            return;
-          }
-          const isMember =
-            data.isMemberOf.includes(storedGroupId) ||
-            data.isAdminOf.includes(storedGroupId);
-          if (!isMember) {
-            clearStoredGroupId();
-            setGroup(null);
-            return;
-          }
-          try {
-            setGroup(await groupsApi.getById(storedGroupId));
-          } catch {
-            clearStoredGroupId();
-            setGroup(null);
-          }
-        } catch {
-          setUser(null);
-          setGroup(null);
-        }
-      })();
     };
 
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  useEffect(() => {
+    if (!user || player || getPlayerSession()) return;
+
+    let active = true;
+    const key = `parent-session:${user.id}`;
+    const socket = acquireSocket(key);
+    const groupId = group?.id ?? 0;
+
+    const join = (): void => {
+      if (!active) return;
+      socket.emit('joinDashboard', { groupId, userId: user.id });
+    };
+
+    const onParentSessionReplaced = (payload: {
+      sessionToken: string;
+    }): void => {
+      if (!active) return;
+      const stored = getStoredParentSessionToken();
+      if (!stored || stored === payload.sessionToken) return;
+      logout();
+      router.replace('/');
+    };
+
+    socket.on('connect', join);
+    socket.on('parent:sessionReplaced', onParentSessionReplaced);
+    if (socket.connected) join();
+
+    return () => {
+      active = false;
+      socket.off('connect', join);
+      socket.off('parent:sessionReplaced', onParentSessionReplaced);
+      releaseSocket(key);
+    };
+  }, [user, player, group?.id, logout, router]);
 
   return (
     <AuthContext.Provider

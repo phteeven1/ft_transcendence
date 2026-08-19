@@ -206,22 +206,14 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
 
     await this.cleanupExpiredSessions();
 
-    const existing = await this.prisma.playerSession.findUnique({
-      where: { playerId },
-    });
-    if (existing && existing.expiresAt > new Date()) {
-      throw new ConflictException('Player already has an active session');
-    }
-
-    if (existing) {
-      await this.prisma.playerSession.delete({ where: { playerId } });
-    }
+    await this.prisma.playerSession.deleteMany({ where: { playerId } });
 
     const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
     const session = await this.prisma.playerSession.create({
       data: { playerId, expiresAt },
     });
 
+    this.gateway.emitPlayerSessionReplaced(playerId, session.token);
     return this.toSessionDto(session);
   }
 

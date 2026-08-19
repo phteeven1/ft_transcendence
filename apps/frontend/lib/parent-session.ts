@@ -1,4 +1,5 @@
 export const PARENT_USER_ID_KEY = 'dicteeUserId';
+export const PARENT_SESSION_TOKEN_KEY = 'dicteeParentSession';
 const USER_ID_KEY = PARENT_USER_ID_KEY;
 const GROUP_ID_KEY = 'dicteeGroupId';
 
@@ -13,6 +14,17 @@ export function getStoredUserId(): number | null {
 export function setStoredUserId(userId: number): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(USER_ID_KEY, String(userId));
+}
+
+export function getStoredParentSessionToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem(PARENT_SESSION_TOKEN_KEY);
+  return token && token.length > 0 ? token : null;
+}
+
+export function setStoredParentSessionToken(sessionToken: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PARENT_SESSION_TOKEN_KEY, sessionToken);
 }
 
 export function getStoredGroupId(): number | null {
@@ -32,6 +44,7 @@ export function clearStoredParentAuth(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(USER_ID_KEY);
   localStorage.removeItem(GROUP_ID_KEY);
+  localStorage.removeItem(PARENT_SESSION_TOKEN_KEY);
 }
 
 export function clearStoredGroupId(): void {
