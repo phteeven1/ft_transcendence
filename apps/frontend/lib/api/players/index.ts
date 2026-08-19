@@ -7,5 +7,4 @@ export type {
   StartSessionInput,
   ValidateSessionInput,
   ValidateSessionResult,
-  StartSessionResult,
 } from './types';

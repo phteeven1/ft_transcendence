@@ -39,14 +39,10 @@ export default function SignIn() {
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     try {
-      const { user } = await usersApi.signIn({
+      const user = await usersApi.signIn({
         userName: formData.userName,
         userPassword: formData.userPassword,
       });
-      if (!user) {
-        setShowError(true);
-        return;
-      }
       login(user);
       router.push('/dashboard');
     } catch {

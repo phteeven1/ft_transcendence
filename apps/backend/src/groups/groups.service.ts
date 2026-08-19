@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { GroupRole } from '@ft-transcendence/database';
 import { groupWithMemberships, toApiGroup } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
+import { GameGateway } from '../games/game.gateway';
 
 export type Group = {
   id: number;
@@ -19,7 +20,11 @@ export type Member = {
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => GameGateway))
+    private readonly gateway: GameGateway,
+  ) {}
 
   async create(groupName: string, creatorId: number): Promise<Group> {
     const group = await this.prisma.group.create({
@@ -31,7 +36,10 @@ export class GroupsService {
       },
       ...groupWithMemberships,
     });
-    return toApiGroup(group);
+    const created = toApiGroup(group);
+    this.gateway.emitDashboardUpdate(created.id);
+    this.gateway.emitMembershipChanged(creatorId);
+    return created;
   }
 
   async addMember(groupId: number, userId: number): Promise<Group | undefined> {
@@ -46,7 +54,10 @@ export class GroupsService {
       data: { groupId, userId, role: GroupRole.MEMBER },
     });
 
-    return this.findById(groupId);
+    const updated = await this.findById(groupId);
+    this.gateway.emitDashboardUpdate(groupId);
+    this.gateway.emitMembershipChanged(userId);
+    return updated;
   }
 
   async promote(groupId: number, userId: number): Promise<Group | undefined> {
@@ -61,7 +72,9 @@ export class GroupsService {
       data: { role: GroupRole.ADMIN },
     });
 
-    return this.findById(groupId);
+    const promoted = await this.findById(groupId);
+    this.gateway.emitDashboardUpdate(groupId);
+    return promoted;
   }
 
   async demote(groupId: number, userId: number): Promise<Group | undefined> {
@@ -76,7 +89,9 @@ export class GroupsService {
       data: { role: GroupRole.MEMBER },
     });
 
-    return this.findById(groupId);
+    const demoted = await this.findById(groupId);
+    this.gateway.emitDashboardUpdate(groupId);
+    return demoted;
   }
 
   async leave(groupId: number, userId: number): Promise<Group | undefined> {
@@ -107,7 +122,10 @@ export class GroupsService {
     await this.prisma.groupMembership.delete({
       where: { id: leaving.id },
     });
-    return this.findById(groupId);
+    const remaining = await this.findById(groupId);
+    this.gateway.emitDashboardUpdate(groupId);
+    this.gateway.emitMembershipChanged(userId);
+    return remaining;
   }
 
   async rename(groupId: number, groupName: string): Promise<Group | undefined> {
@@ -118,7 +136,9 @@ export class GroupsService {
         ...groupWithMemberships,
       });
 
-      return toApiGroup(group);
+      const renamed = toApiGroup(group);
+      this.gateway.emitDashboardUpdate(groupId);
+      return renamed;
     } catch {
       return undefined;
     }
@@ -130,22 +150,26 @@ export class GroupsService {
     });
     if (deleted.count === 0) return this.findById(groupId);
 
-    return this.findById(groupId);
+    const remaining = await this.findById(groupId);
+    this.gateway.emitDashboardUpdate(groupId);
+    this.gateway.emitMembershipChanged(userId);
+    return remaining;
   }
 
-  async delete(
-    groupId: number,
-  ): Promise<{ deleted: boolean; memberIds: number[] }> {
+  async delete(groupId: number): Promise<boolean> {
     const memberships = await this.prisma.groupMembership.findMany({
       where: { groupId },
       select: { userId: true },
     });
-    const memberIds = memberships.map((membership) => membership.userId);
     try {
       await this.prisma.group.delete({ where: { id: groupId } });
-      return { deleted: true, memberIds };
+      this.gateway.emitDashboardUpdate(groupId);
+      for (const { userId } of memberships) {
+        this.gateway.emitMembershipChanged(userId);
+      }
+      return true;
     } catch {
-      return { deleted: false, memberIds: [] };
+      return false;
     }
   }
 

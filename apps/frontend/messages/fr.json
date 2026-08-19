@@ -97,7 +97,7 @@
       "emailLabel": "Votre e-mail",
       "emailPlaceholder": "Entrez votre e-mail",
       "submit": "Créer un compte",
-      "failed": "Inscription échouée. Veuillez réessayer."
+      "failed": "Inscription échouée. Le nom d'utilisateur ou l'e-mail est peut-être déjà pris."
     }
   },
   "invitation": {

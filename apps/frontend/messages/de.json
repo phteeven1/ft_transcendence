@@ -97,7 +97,7 @@
       "emailLabel": "Ihre E-Mail",
       "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
       "submit": "Konto erstellen",
-      "failed": "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      "failed": "Registrierung fehlgeschlagen. Benutzername oder E-Mail sind möglicherweise bereits vergeben."
     }
   },
   "invitation": {

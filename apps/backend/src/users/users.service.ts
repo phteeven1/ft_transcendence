@@ -1,21 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { hash, compare } from 'bcryptjs';
 import { toApiUser, userWithMemberships } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 
 const SALT_ROUNDS = 10;
-
-export type User = {
-  id: number;
-  name: string;
-  email: string;
-  isMemberOf: number[];
-  isAdminOf: number[];
-};
-
-export type AuthResult = {
-  user: User | null;
-};
+const USERNAME_OR_EMAIL_TAKEN =
+  'A user with this username or email already exists.';
 
 function isPrismaUniqueConstraint(error: unknown): boolean {
   return (
@@ -26,25 +16,29 @@ function isPrismaUniqueConstraint(error: unknown): boolean {
   );
 }
 
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+  isMemberOf: number[];
+  isAdminOf: number[];
+};
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(
-    name: string,
-    password: string,
-    email: string,
-  ): Promise<AuthResult> {
+  async register(name: string, password: string, email: string): Promise<User> {
     const hashedPassword = await hash(password, SALT_ROUNDS);
     try {
       const user = await this.prisma.user.create({
         data: { name, password: hashedPassword, email },
         ...userWithMemberships,
       });
-      return { user: toApiUser(user) };
+      return toApiUser(user);
     } catch (error) {
       if (isPrismaUniqueConstraint(error)) {
-        return { user: null };
+        throw new ConflictException(USERNAME_OR_EMAIL_TAKEN);
       }
       throw error;
     }
@@ -72,25 +66,27 @@ export class UsersService {
     return passwordMatches ? toApiUser(user) : undefined;
   }
 
-  async signIn(name: string, password: string): Promise<AuthResult> {
-    const user = await this.findByCredentials(name, password);
-    return { user: user ?? null };
-  }
-
   async updateProfile(
     userId: number,
     data: {
       userName?: string;
     },
   ): Promise<User> {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(data.userName ? { name: data.userName } : {}),
-      },
-      ...userWithMemberships,
-    });
-    return toApiUser(user);
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(data.userName ? { name: data.userName } : {}),
+        },
+        ...userWithMemberships,
+      });
+      return toApiUser(user);
+    } catch (error) {
+      if (isPrismaUniqueConstraint(error)) {
+        throw new ConflictException(USERNAME_OR_EMAIL_TAKEN);
+      }
+      throw error;
+    }
   }
 
   async changePassword(
@@ -103,16 +99,22 @@ export class UsersService {
       ...userWithMemberships,
     });
 
-    if (!user) return { success: false };
-
-    const passwordMatches = await compare(oldPassword, user.password);
-    if (!passwordMatches) return { success: false };
-
-    const newHashedPassword = await hash(newPassword, SALT_ROUNDS);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: newHashedPassword },
-    });
-    return { success: true };
+    if (!user) {
+      throw new Error('User not found');
+    } else {
+      const passwordMatches: boolean = await compare(
+        oldPassword,
+        user.password,
+      );
+      if (!passwordMatches) {
+        throw new Error('Old password is incorrect');
+      }
+      const newHashedPassword = await hash(newPassword, SALT_ROUNDS);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: newHashedPassword },
+      });
+      return { success: true };
+    }
   }
 }

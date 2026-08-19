@@ -1,16 +1,12 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { PlayersService } from './players.service';
-import { GameGateway } from '../games/game.gateway';
 
 @Controller('players')
 export class PlayersController {
-  constructor(
-    private readonly playersService: PlayersService,
-    private readonly gateway: GameGateway,
-  ) {}
+  constructor(private readonly playersService: PlayersService) {}
 
   @Post('create')
-  async create(
+  create(
     @Body()
     body: {
       playerInGroup: number;
@@ -18,31 +14,21 @@ export class PlayersController {
       playerName: string;
     },
   ) {
-    const created = await this.playersService.create(
+    return this.playersService.create(
       body.playerInGroup,
       body.playerParent,
       body.playerName,
     );
-    this.gateway.emitDashboardUpdate(created.inGroup);
-    return created;
   }
 
   @Post('rename')
-  async rename(@Body() body: { playerId: number; playerName: string }) {
-    const renamed = await this.playersService.rename(
-      body.playerId,
-      body.playerName,
-    );
-    if (renamed) this.gateway.emitDashboardUpdate(renamed.inGroup);
-    return renamed;
+  rename(@Body() body: { playerId: number; playerName: string }) {
+    return this.playersService.rename(body.playerId, body.playerName);
   }
 
   @Post('remove')
-  async remove(@Body() body: { playerId: number }) {
-    const player = await this.playersService.findById(body.playerId);
-    const removed = await this.playersService.remove(body.playerId);
-    if (removed && player) this.gateway.emitDashboardUpdate(player.inGroup);
-    return removed;
+  remove(@Body() body: { playerId: number }) {
+    return this.playersService.remove(body.playerId);
   }
 
   @Post('startSession')

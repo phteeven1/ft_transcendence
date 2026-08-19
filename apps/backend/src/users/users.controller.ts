@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  HttpException,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -17,10 +26,14 @@ export class UsersController {
   }
 
   @Post('signin')
-  signin(@Body() body: { userName: string; userPassword: string }) {
-    return this.usersService.signIn(body.userName, body.userPassword);
+  async signin(@Body() body: { userName: string; userPassword: string }) {
+    const user = await this.usersService.findByCredentials(
+      body.userName,
+      body.userPassword,
+    );
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+    return user;
   }
-
   @Post('update')
   updateProfile(
     @Body()
@@ -35,14 +48,18 @@ export class UsersController {
   }
 
   @Post('changePassword')
-  changePassword(
+  async changePassword(
     @Body() body: { userId: number; oldPassword: string; newPassword: string },
   ) {
-    return this.usersService.changePassword(
-      body.userId,
-      body.oldPassword,
-      body.newPassword,
-    );
+    try {
+      return await this.usersService.changePassword(
+        body.userId,
+        body.oldPassword,
+        body.newPassword,
+      );
+    } catch {
+      throw new HttpException('Incorrect password', HttpStatus.UNAUTHORIZED);
+    }
   }
 
   @Get(':id')

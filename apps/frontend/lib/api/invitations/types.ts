@@ -10,11 +10,6 @@ export type SendInvitationInput = {
   invitationText: string;
 };
 
-export type SendInvitationResult = {
-  success: boolean;
-  message?: string;
-};
-
 export type AcceptInvitationInput = {
   token: string;
 };

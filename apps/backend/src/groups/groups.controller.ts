@@ -1,87 +1,48 @@
 import { Controller, Post, Get, Param, Body } from '@nestjs/common';
 import { GroupsService } from './groups.service';
-import { GameGateway } from '../games/game.gateway';
 
 @Controller('groups')
 export class GroupsController {
-  constructor(
-    private readonly groupsService: GroupsService,
-    private readonly gateway: GameGateway,
-  ) {}
+  constructor(private readonly groupsService: GroupsService) {}
 
   @Post('create')
-  async create(@Body() body: { groupName: string; creatorId: number }) {
-    const created = await this.groupsService.create(
-      body.groupName,
-      body.creatorId,
-    );
-    this.gateway.emitDashboardUpdate(created.id);
-    this.gateway.emitMembershipChanged(body.creatorId);
-    return created;
+  create(@Body() body: { groupName: string; creatorId: number }) {
+    return this.groupsService.create(body.groupName, body.creatorId);
   }
 
   @Post('addMember')
-  async addMember(@Body() body: { groupId: number; userId: number }) {
-    const group = await this.groupsService.addMember(body.groupId, body.userId);
-    if (group) {
-      this.gateway.emitDashboardUpdate(body.groupId);
-      this.gateway.emitMembershipChanged(body.userId);
-    }
-    return group;
+  addMember(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.addMember(body.groupId, body.userId);
   }
 
   @Post('promote')
-  async promote(@Body() body: { groupId: number; userId: number }) {
-    const group = await this.groupsService.promote(body.groupId, body.userId);
-    if (group) this.gateway.emitDashboardUpdate(body.groupId);
-    return group;
+  promote(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.promote(body.groupId, body.userId);
   }
 
   @Post('demote')
-  async demote(@Body() body: { groupId: number; userId: number }) {
-    const group = await this.groupsService.demote(body.groupId, body.userId);
-    if (group) this.gateway.emitDashboardUpdate(body.groupId);
-    return group;
+  demote(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.demote(body.groupId, body.userId);
   }
 
   @Post('leave')
-  async leave(@Body() body: { groupId: number; userId: number }) {
-    const remaining = await this.groupsService.leave(body.groupId, body.userId);
-    this.gateway.emitDashboardUpdate(body.groupId);
-    this.gateway.emitMembershipChanged(body.userId);
-    return remaining;
+  leave(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.leave(body.groupId, body.userId);
   }
 
   @Post('rename')
-  async rename(@Body() body: { groupId: number; groupName: string }) {
-    const renamed = await this.groupsService.rename(
-      body.groupId,
-      body.groupName,
-    );
-    if (renamed) this.gateway.emitDashboardUpdate(body.groupId);
-    return renamed;
+  rename(@Body() body: { groupId: number; groupName: string }) {
+    return this.groupsService.rename(body.groupId, body.groupName);
   }
 
   @Post('expel')
-  async expel(@Body() body: { groupId: number; userId: number }) {
-    const remaining = await this.groupsService.expel(body.groupId, body.userId);
-    if (remaining) {
-      this.gateway.emitDashboardUpdate(body.groupId);
-      this.gateway.emitMembershipChanged(body.userId);
-    }
-    return remaining;
+  expel(@Body() body: { groupId: number; userId: number }) {
+    return this.groupsService.expel(body.groupId, body.userId);
   }
 
   @Post('delete')
-  async delete(@Body() body: { groupId: number }) {
-    const result = await this.groupsService.delete(body.groupId);
-    if (result.deleted) {
-      this.gateway.emitDashboardUpdate(body.groupId);
-      for (const userId of result.memberIds) {
-        this.gateway.emitMembershipChanged(userId);
-      }
-    }
-    return result.deleted;
+  delete(@Body() body: { groupId: number }) {
+    return this.groupsService.delete(body.groupId);
   }
 
   @Get(':id')

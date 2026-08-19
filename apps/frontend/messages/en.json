@@ -97,7 +97,7 @@
       "emailLabel": "Your Email",
       "emailPlaceholder": "Enter your email",
       "submit": "Create Account",
-      "failed": "Registration failed. Please try again."
+      "failed": "Registration failed. Username or email may already be taken."
     }
   },
   "invitation": {
