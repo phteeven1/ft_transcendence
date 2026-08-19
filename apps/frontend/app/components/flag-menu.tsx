@@ -33,7 +33,7 @@ export default function FlagMenu() {
         aria-label={t('selectLanguage')}
         aria-expanded={isOpen}
       >
-        <Image src={selected.flag} alt={selected.label} width={24} height={18} />
+        <Image src={selected.flag} alt={selected.label} width={24} height={18} priority />
       </Button>
 
       {isOpen && (

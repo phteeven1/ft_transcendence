@@ -203,9 +203,15 @@ export function useWordSoupGameOver({
     rafId = window.requestAnimationFrame(applyElapsed);
     document.addEventListener('visibilitychange', onVisibility);
 
+    // Fallback for hidden tabs where rAF is paused: ensure at least one
+    // frame is computed so the outro reaches its final state even if the
+    // user never switches back during the animation window.
+    const fallbackId = window.setTimeout(applyElapsed, 500);
+
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(rafId);
+      window.clearTimeout(fallbackId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [sequenceActive, outcome, outroT, skipInitialHold]);

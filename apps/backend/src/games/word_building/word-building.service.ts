@@ -40,7 +40,10 @@ import {
   ILiveGameState,
   IPlaceLetterDto,
 } from './word-building.types';
-import { WORD_BUILDING_CONFIG, WORD_BUILDING_GRID_SIZE } from './word-building.config';
+import {
+  WORD_BUILDING_CONFIG,
+  WORD_BUILDING_GRID_SIZE,
+} from './word-building.config';
 
 const COURT_COLS = WORD_BUILDING_CONFIG.boardCols;
 const COURT_ROWS = WORD_BUILDING_CONFIG.boardRows;
@@ -155,7 +158,9 @@ export class WordBuildingService {
     const result = bestResult!;
 
     // Determine board dimensions: dynamic (fit puzzle + buffer) or fixed default.
-    const [targetRows, targetCols] = this.computeBoardDimensions(result.solution);
+    const [targetRows, targetCols] = this.computeBoardDimensions(
+      result.solution,
+    );
 
     // Pad trimmed puzzle to board size (centered)
     const solution = this.padGrid(result.solution, targetRows, targetCols);
@@ -655,8 +660,14 @@ export class WordBuildingService {
     gameId: number,
     state: InternalLiveGameState,
   ): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.crossword.update({
+    await this.prisma.$transaction(async (tx) => {
+      const liveRows = await tx.gamePlayer.findMany({
+        where: { gameId },
+        select: { playerId: true },
+      });
+      const liveIds = new Set(liveRows.map((r) => r.playerId));
+
+      await tx.crossword.update({
         where: { gameId },
         data: {
           playerGrid: state.playerGrid as unknown as object,
@@ -664,18 +675,21 @@ export class WordBuildingService {
           solved: true,
           revision: state.revision,
         },
-      }),
-      ...Array.from(state.scores.entries()).map(([playerId, score]) =>
-        this.prisma.gamePlayer.update({
+      });
+
+      for (const [playerId, score] of state.scores.entries()) {
+        if (!liveIds.has(playerId)) continue;
+        await tx.gamePlayer.update({
           where: { gameId_playerId: { gameId, playerId } },
           data: { score, completed: true },
-        }),
-      ),
-      this.prisma.game.update({
+        });
+      }
+
+      await tx.game.update({
         where: { id: gameId },
         data: { isFinished: true },
-      }),
-    ]);
+      });
+    });
 
     this.liveGames.delete(gameId);
   }
@@ -686,7 +700,9 @@ export class WordBuildingService {
    * that contains the puzzle content plus the configured buffer on each side.
    * When false, returns the configured default board dimensions.
    */
-  private computeBoardDimensions(trimmed: (string | null)[][]): [number, number] {
+  private computeBoardDimensions(
+    trimmed: (string | null)[][],
+  ): [number, number] {
     if (WORD_BUILDING_CONFIG.dynamicWindowSize) {
       const contentRows = trimmed.length;
       const contentCols = trimmed[0]?.length ?? 0;

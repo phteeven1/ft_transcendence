@@ -79,7 +79,6 @@ export default function WordBuildingGame() {
   const [showAbandonModal,      setShowAbandonModal]      = useState(false);
   const [isAbandoning,          setIsAbandoning]          = useState(false);
   const [playerNames,           setPlayerNames]           = useState<Map<number, string>>(new Map());
-  const [gameName,              setGameName]              = useState('');
   const [startedTime,          setStartedTime]           = useState<string | null>(null);
   const [loading,              setLoading]               = useState(true);
   const [playerColours,        setPlayerColours]         = useState<Record<number, string>>({});
@@ -153,7 +152,6 @@ export default function WordBuildingGame() {
         return;
       }
 
-      setGameName(loadedGame.name);
       setStartedTime(loadedGame.startedTime ?? null);
 
       try {

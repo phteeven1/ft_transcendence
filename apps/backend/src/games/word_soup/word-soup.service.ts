@@ -200,8 +200,15 @@ export class WordSoupService {
     if (playerIds.length === 0) return;
 
     await this.prisma.$transaction(async (tx) => {
+      const liveRows = await tx.gamePlayer.findMany({
+        where: { gameId },
+        select: { playerId: true },
+      });
+      const liveIds = new Set(liveRows.map((r) => r.playerId));
+
       const completed = this.isCourtComplete(court);
       for (const playerId of playerIds) {
+        if (!liveIds.has(playerId)) continue;
         const peak = court.playerBestWordStreaks[playerId] ?? 0;
         await tx.gamePlayer.update({
           where: { gameId_playerId: { gameId, playerId } },
