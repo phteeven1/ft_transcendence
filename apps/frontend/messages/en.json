@@ -421,14 +421,23 @@
       "across": "Across",
       "down": "Down",
       "puzzleSolved": "🎉 Puzzle solved!",
-      "puzzleComplete": "Puzzle Complete!",
-      "returningToLobby": "Returning to lobby…",
-      "gameComplete": {
-        "title": "Puzzle Complete!",
-        "subtitle": "Congratulations on solving the crossword!",
-        "finalScores": "Final Scores",
-        "playAgain": "Play Again",
-        "returnToLobby": "Return to Lobby"
+      "intro": {
+        "welcome": "Hello {name}! Ready to build some words?",
+        "briefing": "Fill in the crossword grid — click a cell and type, or drag letter tiles from the rack below.",
+        "letsGo": "Let\u2019s go!"
+      },
+      "rules": {
+        "show": "Show instructions",
+        "hide": "Hide instructions",
+        "title": "How to play",
+        "howToPlay": "Controls",
+        "howToPlay1": "Click a cell to select it — direction is auto-detected",
+        "howToPlay2": "Type letters to fill cells, or drag tiles from the rack",
+        "howToPlay3": "Space or Tab toggles direction (across ↔ down)",
+        "colorsHeading": "Cell colours",
+        "colors1": "🟢 Green — correct!",
+        "colors2": "🔵 Blue — empty",
+        "colors3": "🔴 Red — wrong letter"
       },
       "outro": {
         "gameOverTitle": "Puzzle results",

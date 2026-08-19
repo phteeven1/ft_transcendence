@@ -421,14 +421,23 @@
       "across": "Horizontal",
       "down": "Vertical",
       "puzzleSolved": "🎉 Puzzle résolu !",
-      "puzzleComplete": "Puzzle terminé !",
-      "returningToLobby": "Retour au lobby…",
-      "gameComplete": {
-        "title": "Puzzle terminé !",
-        "subtitle": "Félicitations pour avoir résolu les mots croisés !",
-        "finalScores": "Scores finaux",
-        "playAgain": "Rejouer",
-        "returnToLobby": "Retour au lobby"
+      "intro": {
+        "welcome": "Bonjour {name} ! Prêt(e) à construire des mots ?",
+        "briefing": "Remplis la grille de mots croisés — clique sur une case et tape, ou fais glisser les tuiles depuis le rack ci-dessous.",
+        "letsGo": "C\u2019est parti !"
+      },
+      "rules": {
+        "show": "Afficher les instructions",
+        "hide": "Masquer les instructions",
+        "title": "Comment jouer",
+        "howToPlay": "Contrôles",
+        "howToPlay1": "Clique sur une case pour la sélectionner — la direction est détectée automatiquement",
+        "howToPlay2": "Tape des lettres pour remplir les cases, ou fais glisser les tuiles",
+        "howToPlay3": "Espace ou Tab change la direction (horizontal ↔ vertical)",
+        "colorsHeading": "Couleurs des cases",
+        "colors1": "🟢 Vert — correct !",
+        "colors2": "🔵 Bleu — vide",
+        "colors3": "🔴 Rouge — mauvaise lettre"
       },
       "outro": {
         "gameOverTitle": "Résultats du puzzle",

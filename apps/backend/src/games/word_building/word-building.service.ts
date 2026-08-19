@@ -11,8 +11,8 @@
  * - Database Sync: Persists final state on puzzle completion
  *
  * Grid Dimensions:
- * - Fixed 18×18 board (COURT_COLS × COURT_ROWS)
- * - Must match game-court.tsx constants on frontend
+ * - Board is WORD_BUILDING_CONFIG.boardCols × WORD_BUILDING_CONFIG.boardRows (word-building.config.ts)
+ * - Frontend game-court.tsx COURT_COLS / COURT_ROWS must be kept in sync
  * - Trimmed puzzles are centered within this fixed canvas
  *
  * Quality Guarantee:
@@ -40,17 +40,13 @@ import {
   ILiveGameState,
   IPlaceLetterDto,
 } from './word-building.types';
+import { WORD_BUILDING_CONFIG, WORD_BUILDING_GRID_SIZE } from './word-building.config';
 
-/** Fixed board width - must match game-court.tsx COURT_COLS */
-const COURT_COLS = 18;
-/** Fixed board height - must match game-court.tsx COURT_ROWS */
-const COURT_ROWS = 18;
-/** Quality guarantee: Generate up to 3 puzzles and pick the densest one */
-const CANDIDATE_COUNT = 3;
-/** Early exit threshold: Stop generating if placement ratio >= 80% */
-const EARLY_EXIT_PLACEMENT_RATIO = 0.8;
-/** Persist mid-game state every N placements to prevent data loss on server crash */
-const PERSISTENCE_INTERVAL = 5;
+const COURT_COLS = WORD_BUILDING_CONFIG.boardCols;
+const COURT_ROWS = WORD_BUILDING_CONFIG.boardRows;
+const CANDIDATE_COUNT = WORD_BUILDING_CONFIG.candidateCount;
+const EARLY_EXIT_PLACEMENT_RATIO = WORD_BUILDING_CONFIG.earlyExitPlacementRatio;
+const PERSISTENCE_INTERVAL = WORD_BUILDING_CONFIG.persistenceInterval;
 
 /**
  * Extended state interface that caches expensive computations.
@@ -128,9 +124,9 @@ export class WordBuildingService {
 
     for (let i = 0; i < CANDIDATE_COUNT; i++) {
       const engine = new WordBuildingPuzzleEngine(
-        Math.min(COURT_COLS, COURT_ROWS),
-        80,
-        12,
+        WORD_BUILDING_GRID_SIZE,
+        WORD_BUILDING_CONFIG.maxAttempts,
+        WORD_BUILDING_CONFIG.targetWords,
       );
       const result = engine.generate(entries);
 
@@ -158,8 +154,11 @@ export class WordBuildingService {
 
     const result = bestResult!;
 
-    // Pad trimmed puzzle to fixed board size (centered)
-    const solution = this.padGrid(result.solution, COURT_ROWS, COURT_COLS);
+    // Determine board dimensions: dynamic (fit puzzle + buffer) or fixed default.
+    const [targetRows, targetCols] = this.computeBoardDimensions(result.solution);
+
+    // Pad trimmed puzzle to board size (centered)
+    const solution = this.padGrid(result.solution, targetRows, targetCols);
     const playerGrid = solution.map((row) =>
       row.map(() => null as string | null),
     );
@@ -175,8 +174,8 @@ export class WordBuildingService {
       await this.prisma.crossword.create({
         data: {
           gameId,
-          rows: COURT_ROWS,
-          cols: COURT_COLS,
+          rows: targetRows,
+          cols: targetCols,
           solution: solution as unknown as object,
           playerGrid: playerGrid as unknown as object,
           creditGrid: playerGrid as unknown as object, // Same shape, all null initially
@@ -679,6 +678,24 @@ export class WordBuildingService {
     ]);
 
     this.liveGames.delete(gameId);
+  }
+
+  /**
+   * Determines the board dimensions for a generated puzzle.
+   * When dynamicWindowSize is true, shrinks the board to the tightest square
+   * that contains the puzzle content plus the configured buffer on each side.
+   * When false, returns the configured default board dimensions.
+   */
+  private computeBoardDimensions(trimmed: (string | null)[][]): [number, number] {
+    if (WORD_BUILDING_CONFIG.dynamicWindowSize) {
+      const contentRows = trimmed.length;
+      const contentCols = trimmed[0]?.length ?? 0;
+      const side =
+        Math.max(contentRows, contentCols) +
+        2 * WORD_BUILDING_CONFIG.dynamicWindowBuffer;
+      return [side, side];
+    }
+    return [COURT_ROWS, COURT_COLS];
   }
 
   /**

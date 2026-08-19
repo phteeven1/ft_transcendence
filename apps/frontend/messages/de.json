@@ -421,14 +421,23 @@
       "across": "Waagerecht",
       "down": "Senkrecht",
       "puzzleSolved": "🎉 Rätsel gelöst!",
-      "puzzleComplete": "Rätsel abgeschlossen!",
-      "returningToLobby": "Zurück zur Lobby…",
-      "gameComplete": {
-        "title": "Rätsel abgeschlossen!",
-        "subtitle": "Herzlichen Glückwunsch zum Lösen des Kreuzworträtsels!",
-        "finalScores": "Endergebnis",
-        "playAgain": "Nochmal spielen",
-        "returnToLobby": "Zurück zur Lobby"
+      "intro": {
+        "welcome": "Hallo {name}! Bereit zum Wörterbauen?",
+        "briefing": "Fülle das Kreuzworträtsel aus — klicke auf eine Zelle und tippe, oder ziehe Buchstaben aus dem Rack unten.",
+        "letsGo": "Los geht\u2019s!"
+      },
+      "rules": {
+        "show": "Anleitung anzeigen",
+        "hide": "Anleitung ausblenden",
+        "title": "Spielanleitung",
+        "howToPlay": "Steuerung",
+        "howToPlay1": "Klicke eine Zelle an — die Richtung wird automatisch bestimmt",
+        "howToPlay2": "Tippe Buchstaben oder ziehe Plättchen aus dem Rack",
+        "howToPlay3": "Leertaste oder Tab wechselt die Richtung (waagerecht ↔ senkrecht)",
+        "colorsHeading": "Zellenfarben",
+        "colors1": "🟢 Grün — richtig!",
+        "colors2": "🔵 Blau — leer",
+        "colors3": "🔴 Rot — falscher Buchstabe"
       },
       "outro": {
         "gameOverTitle": "Rätselergebnis",

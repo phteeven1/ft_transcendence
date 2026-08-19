@@ -178,7 +178,7 @@ export default function WordBuildingGameOverOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 backdrop-blur-md"
+      className="absolute inset-0 z-50 overflow-hidden bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="word-building-game-over-title"
@@ -213,7 +213,7 @@ export default function WordBuildingGameOverOverlay({
 
       <div
         className={[
-          'flex h-full w-full flex-col items-center',
+          'flex min-h-full w-full flex-col items-center justify-center',
           SCALE.overlayPadClass,
           SCALE.stackGapClass,
         ].join(' ')}
@@ -243,8 +243,8 @@ export default function WordBuildingGameOverOverlay({
         </div>
 
         {/* Scrollable score panel */}
-        <div className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto overscroll-contain">
-          <ScorePanel
+        <div className="flex w-full flex-col items-center overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-[50vh]">
+       <ScorePanel
             playerOrder={playerOrder}
             playersById={playersById}
             playerColours={playerColours}
