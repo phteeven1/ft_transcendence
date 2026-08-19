@@ -19,6 +19,7 @@ import type {
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
+import { getPlayerSession } from '@/lib/player-session';
 
 interface GameSocketState {
   gameFinished: boolean;
@@ -75,7 +76,9 @@ export function useGameSocket(gameId: number, playerId: number) {
     const join = () => {
       if (!active) return;
       setState((s) => ({ ...s, isConnected: true }));
-      socket.emit('joinGame', { gameId, playerId });
+      const stored = getPlayerSession();
+      if (!stored) return;
+      socket.emit('joinGame', { gameId, playerId, token: stored.token });
     };
 
     const onDisconnect = () => {

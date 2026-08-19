@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { GroupRole } from '@ft-transcendence/database';
 import { groupWithMemberships, toApiGroup } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +20,24 @@ export type Member = {
 @Injectable()
 export class GroupsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async assertMember(userId: number, groupId: number): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this group');
+    }
+  }
+
+  async assertAdmin(userId: number, groupId: number): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership || membership.role !== GroupRole.ADMIN) {
+      throw new ForbiddenException('You are not an admin of this group');
+    }
+  }
 
   async create(groupName: string, creatorId: number): Promise<Group> {
     const group = await this.prisma.group.create({

@@ -104,7 +104,8 @@ GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build 
 | Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
 | Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
 | Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
-| Player sessions        | One active Play Now token per child             | `PlayerSession` model, `players.service.ts`       |
+| Player sessions        | One active Play Now token per child; replace kicks the previous client | `PlayerSession` model, `players.service.ts` |
+| Parent sessions        | One active token per parent; replace kicks the previous client         | `UserSession` model, `users.service.ts`     |
 | Language picker        | en / de / fr via next-intl                      | `language-context.tsx`, `flag-menu.tsx`           |
 | Legal                  | Privacy Policy and Terms of Service             | `app/privacy`, `app/terms`                        |
 
@@ -184,7 +185,7 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 | Infra       | Docker Compose, GitHub Actions                   | Local stack and CI                    |
 
 
-Parent auth is React context with parent ids in `localStorage` (`parent-session.ts`), not JWT.
+Parent auth is a server `UserSession` token stored in `localStorage` (`parent-session.ts`), not JWT. Child Play Now uses `PlayerSession` in `sessionStorage`.
 
 ---
 
@@ -200,6 +201,7 @@ User ──┬── GroupMembership ── Group ──┬── Player
                                       └── Crossword (Word Building)
 
 Player ── PlayerSession (Play Now token)
+User ── UserSession (parent token)
 ```
 
 Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prisma/schema.prisma)`.
@@ -289,8 +291,8 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ## Known limitations
 
-1. **Parent “login” is ID-only** — sign-in returns a user object. Parent ids persist in `localStorage` (`dicteeUserId` / `dicteeGroupId` via `parent-session.ts`). `AuthContext` rehydrates with unauthenticated `GET /users/:id`. Fine for a local/school demo; not a real session. No JWT. Most REST handlers still trust a client-sent `userId`.
-2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. Do not sendBeacon on `pagehide`: that event also fires on refresh.
+1. **Parent session is token-based, not JWT** — sign-in returns `{ user, session }`. The token is stored in `localStorage` (`dicteeUserSessionToken`) and sent on mutating parent requests. A second sign-in replaces the token and kicks the previous client. Fine for a local/school demo.
+2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` with that token after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. A stale pending end cannot delete a newer Play Now token. Do not sendBeacon on `pagehide`: that event also fires on refresh.
 3. **Friends system** — not implemented; groups are the social unit.
 4. Chrome **console errors** during the demo fail the eval — check before staff arrive.
 

@@ -111,7 +111,7 @@ export default function AcceptInvitationClient() {
               userPassword: formData.userPassword,
               userEmail: formData.userEmail,
             });
-      if (!result.user) {
+      if (!result.user || !result.session) {
         setErrorMessage(
           authMode === 'signin'
             ? t('auth.signInFailed')
@@ -119,7 +119,7 @@ export default function AcceptInvitationClient() {
         );
         return;
       }
-      login(result.user);
+      login(result.user, result.session);
       setCurrentUser(result.user);
       setPageState('confirm');
     } catch {

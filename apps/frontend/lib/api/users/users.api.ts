@@ -37,6 +37,23 @@ export const usersApi = {
     return apiRequest<UserDto>(`/users/${id}`);
   },
 
+  validateSession(input: {
+    userId: number;
+    token: string;
+  }): Promise<{ valid: true }> {
+    return apiRequest<{ valid: true }>('/users/validateSession', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  clearSession(input: { token: string }): Promise<void> {
+    return apiRequest<void>('/users/clearSession', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
   update(input: UpdateUserInput): Promise<UserDto> {
     return apiRequest<UserDto>('/users/update', {
       method: 'POST',

@@ -3,6 +3,7 @@ export const PENDING_SESSION_END_KEY = 'dicteePendingSessionEnd';
 
 export type PendingSessionEnd = {
   playerId: number;
+  token: string;
   at: number;
 };
 
@@ -15,6 +16,8 @@ export function readPendingSessionEnd(): PendingSessionEnd | null {
     if (
       !Number.isInteger(parsed.playerId) ||
       parsed.playerId <= 0 ||
+      typeof parsed.token !== 'string' ||
+      parsed.token.length === 0 ||
       !Number.isFinite(parsed.at)
     ) {
       return null;
@@ -25,9 +28,9 @@ export function readPendingSessionEnd(): PendingSessionEnd | null {
   }
 }
 
-export function writePendingSessionEnd(playerId: number): void {
+export function writePendingSessionEnd(playerId: number, token: string): void {
   if (typeof window === 'undefined') return;
-  const pending: PendingSessionEnd = { playerId, at: Date.now() };
+  const pending: PendingSessionEnd = { playerId, token, at: Date.now() };
   localStorage.setItem(PENDING_SESSION_END_KEY, JSON.stringify(pending));
 }
 

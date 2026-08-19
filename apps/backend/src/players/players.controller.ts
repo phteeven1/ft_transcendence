@@ -1,6 +1,18 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { PlayersService } from './players.service';
 import { GameGateway } from '../games/game.gateway';
+import { UserSessionGuard } from '../users/user-session.guard';
+import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
+import { PlayerOrParentSessionGuard } from './player-or-parent-session.guard';
+import { readHeader } from '../common/request-headers';
 
 @Controller('players')
 export class PlayersController {
@@ -10,17 +22,22 @@ export class PlayersController {
   ) {}
 
   @Post('create')
+  @UseGuards(UserSessionGuard)
   async create(
+    @AuthenticatedUserId() userId: number,
     @Body()
     body: {
       playerInGroup: number;
-      playerParent: number;
       playerName: string;
     },
   ) {
+    await this.playersService.assertParentOfNewPlayer(
+      userId,
+      body.playerInGroup,
+    );
     const created = await this.playersService.create(
       body.playerInGroup,
-      body.playerParent,
+      userId,
       body.playerName,
     );
     this.gateway.emitDashboardUpdate(created.inGroup);
@@ -28,7 +45,12 @@ export class PlayersController {
   }
 
   @Post('rename')
-  async rename(@Body() body: { playerId: number; playerName: string }) {
+  @UseGuards(UserSessionGuard)
+  async rename(
+    @AuthenticatedUserId() userId: number,
+    @Body() body: { playerId: number; playerName: string },
+  ) {
+    await this.playersService.assertCanManagePlayer(userId, body.playerId);
     const renamed = await this.playersService.rename(
       body.playerId,
       body.playerName,
@@ -38,7 +60,12 @@ export class PlayersController {
   }
 
   @Post('remove')
-  async remove(@Body() body: { playerId: number }) {
+  @UseGuards(UserSessionGuard)
+  async remove(
+    @AuthenticatedUserId() userId: number,
+    @Body() body: { playerId: number },
+  ) {
+    await this.playersService.assertCanManagePlayer(userId, body.playerId);
     const player = await this.playersService.findById(body.playerId);
     const removed = await this.playersService.remove(body.playerId);
     if (removed && player) this.gateway.emitDashboardUpdate(player.inGroup);
@@ -46,7 +73,12 @@ export class PlayersController {
   }
 
   @Post('startSession')
-  startSession(@Body() body: { playerId: number; minutes: number }) {
+  @UseGuards(UserSessionGuard)
+  async startSession(
+    @AuthenticatedUserId() userId: number,
+    @Body() body: { playerId: number; minutes: number },
+  ) {
+    await this.playersService.assertCanManagePlayer(userId, body.playerId);
     return this.playersService.startSession(body.playerId, body.minutes);
   }
 
@@ -56,8 +88,32 @@ export class PlayersController {
   }
 
   @Post('clearSession')
-  clearSession(@Body() body: { playerId: number }) {
-    return this.playersService.clearSession(Number(body.playerId));
+  @UseGuards(PlayerOrParentSessionGuard)
+  async clearSession(
+    @Req()
+    request: {
+      playerId?: number;
+      userId?: number;
+      headers: Record<string, string | string[] | undefined>;
+    },
+    @Body() body: { playerId: number; token?: string },
+  ) {
+    if (request.playerId) {
+      const token = readHeader(request.headers, 'x-player-session-token');
+      await this.playersService.clearSession(request.playerId, { token });
+      return;
+    }
+
+    const userId = request.userId;
+    if (!userId) return;
+    await this.playersService.assertCanManagePlayer(userId, body.playerId);
+    if (body.token) {
+      await this.playersService.clearSession(body.playerId, {
+        token: body.token,
+      });
+      return;
+    }
+    await this.playersService.clearSession(body.playerId, { force: true });
   }
 
   @Get('group/:groupId')

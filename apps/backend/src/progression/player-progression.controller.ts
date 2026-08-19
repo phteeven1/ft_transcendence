@@ -8,8 +8,8 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { IsInt, Max, Min } from 'class-validator';
-import { AuthenticatedPlayerId } from './authenticated-player.decorator';
-import { PlayerSessionGuard } from './player-session.guard';
+import { AuthenticatedPlayerId } from '../players/authenticated-player.decorator';
+import { PlayerSessionGuard } from '../players/player-session.guard';
 import { ProgressionService } from './progression.service';
 
 class EquipAvatarDto {

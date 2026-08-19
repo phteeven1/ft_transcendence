@@ -1,7 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { hash, compare } from 'bcryptjs';
 import { toApiUser, userWithMemberships } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
+import { GameGateway } from '../games/game.gateway';
 
 const SALT_ROUNDS = 10;
 
@@ -13,8 +19,14 @@ export type User = {
   isAdminOf: number[];
 };
 
+export type UserSessionDto = {
+  token: string;
+  userId: number;
+};
+
 export type AuthResult = {
   user: User | null;
+  session: UserSessionDto | null;
 };
 
 function isPrismaUniqueConstraint(error: unknown): boolean {
@@ -28,7 +40,11 @@ function isPrismaUniqueConstraint(error: unknown): boolean {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => GameGateway))
+    private readonly gateway: GameGateway,
+  ) {}
 
   async register(
     name: string,
@@ -41,10 +57,11 @@ export class UsersService {
         data: { name, password: hashedPassword, email },
         ...userWithMemberships,
       });
-      return { user: toApiUser(user) };
+      const session = await this.replaceSession(user.id);
+      return { user: toApiUser(user), session };
     } catch (error) {
       if (isPrismaUniqueConstraint(error)) {
-        return { user: null };
+        return { user: null, session: null };
       }
       throw error;
     }
@@ -74,7 +91,40 @@ export class UsersService {
 
   async signIn(name: string, password: string): Promise<AuthResult> {
     const user = await this.findByCredentials(name, password);
-    return { user: user ?? null };
+    if (!user) return { user: null, session: null };
+    const session = await this.replaceSession(user.id);
+    return { user, session };
+  }
+
+  async replaceSession(userId: number): Promise<UserSessionDto> {
+    await this.prisma.userSession.deleteMany({ where: { userId } });
+    const session = await this.prisma.userSession.create({
+      data: { userId },
+    });
+    this.gateway.emitUserSessionReplaced(userId);
+    return { token: session.token, userId: session.userId };
+  }
+
+  async validateSession(
+    userId: number,
+    token: string,
+  ): Promise<{ valid: true }> {
+    const session = await this.prisma.userSession.findUnique({
+      where: { userId },
+    });
+    if (!session || session.token !== token) {
+      throw new UnauthorizedException('Invalid session token');
+    }
+    return { valid: true };
+  }
+
+  async clearSession(userId: number, token: string): Promise<void> {
+    const deleted = await this.prisma.userSession.deleteMany({
+      where: { userId, token },
+    });
+    if (deleted.count > 0) {
+      this.gateway.emitUserSessionReplaced(userId);
+    }
   }
 
   async updateProfile(

@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Game } from '../types';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
+import { getPlayerSession } from '@/lib/player-session';
 
 interface GroupSocketState {
   pendingGames: Game[];
@@ -32,7 +33,13 @@ export function useGroupSocket(groupId: number, playerId: number) {
     const join = () => {
       if (!active) return;
       setState((s) => ({ ...s, isConnected: true }));
-      socket.emit('joinGroup', { groupId, playerId });
+      const stored = getPlayerSession();
+      if (!stored) return;
+      socket.emit('joinGroup', {
+        groupId,
+        playerId,
+        token: stored.token,
+      });
     };
 
     const onDisconnect = () => {

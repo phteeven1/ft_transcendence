@@ -12,6 +12,8 @@ import { GamesService, Game } from './games.service';
 import type { GameFinishOutcome } from '../progression/progression.types';
 import { WordBuildingService } from './word_building/word-building.service';
 import { WordSoupService } from './word_soup/word-soup.service';
+import { UsersService } from '../users/users.service';
+import { PlayersService } from '../players/players.service';
 import {
   FREEZE_DURATION_SECONDS,
   POINTS_PER_WORD,
@@ -46,6 +48,10 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     private readonly gamesService: GamesService,
     private readonly wordBuildingService: WordBuildingService,
     private readonly wordSoupService: WordSoupService,
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
+    @Inject(forwardRef(() => PlayersService))
+    private readonly playersService: PlayersService,
   ) {}
 
   onModuleInit(): void {
@@ -61,12 +67,43 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
    * @param client The connected socket to register.
    * @param data Group and player identifiers supplied by the client.
    */
+  @SubscribeMessage('joinSession')
+  async handleJoinSession(
+    @ConnectedSocket() client: TypedSocket,
+    @MessageBody()
+    data: { kind: 'user' | 'player'; id: number; token: string },
+  ): Promise<void> {
+    if (!data?.token || !Number.isInteger(data.id) || data.id <= 0) return;
+    try {
+      if (data.kind === 'user') {
+        await this.usersService.validateSession(data.id, data.token);
+        await client.join(`user:${data.id}`);
+        client.data.userId = data.id;
+        return;
+      }
+      await this.playersService.validateSession(data.id, data.token);
+      await client.join(`player:${data.id}`);
+      client.data.playerId = data.id;
+    } catch {
+      client.emit('session:replaced');
+    }
+  }
+
   @SubscribeMessage('joinGroup')
   async handleJoinGroup(
     @ConnectedSocket() client: TypedSocket,
-    @MessageBody() data: { groupId: number; playerId: number },
+    @MessageBody()
+    data: { groupId: number; playerId: number; token: string },
   ): Promise<void> {
+    try {
+      await this.playersService.validateSession(data.playerId, data.token);
+    } catch {
+      client.emit('session:replaced');
+      return;
+    }
+
     await client.join(`group:${data.groupId}`);
+    await client.join(`player:${data.playerId}`);
 
     client.data.groupId = data.groupId;
     client.data.playerId = data.playerId;
@@ -79,9 +116,16 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
   @SubscribeMessage('joinDashboard')
   async handleJoinDashboard(
     @ConnectedSocket() client: TypedSocket,
-    @MessageBody() data: { groupId: number; userId: number },
+    @MessageBody() data: { groupId: number; userId: number; token: string },
   ): Promise<void> {
     if (!Number.isInteger(data.userId) || data.userId <= 0) return;
+
+    try {
+      await this.usersService.validateSession(data.userId, data.token);
+    } catch {
+      client.emit('session:replaced');
+      return;
+    }
 
     await client.join(`user:${data.userId}`);
     client.data.userId = data.userId;
@@ -116,11 +160,26 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
   @SubscribeMessage('joinGame')
   async handleJoinGame(
     @ConnectedSocket() client: TypedSocket,
-    @MessageBody() data: { gameId: number; playerId: number },
+    @MessageBody() data: { gameId: number; playerId: number; token: string },
   ): Promise<void> {
+    try {
+      await this.playersService.validateSession(data.playerId, data.token);
+    } catch {
+      client.emit('session:replaced');
+      return;
+    }
     await client.join(`game:${data.gameId}`);
+    await client.join(`player:${data.playerId}`);
     client.data.gameId = data.gameId;
     client.data.playerId = data.playerId;
+  }
+
+  emitUserSessionReplaced(userId: number): void {
+    this.server?.to(`user:${userId}`).emit('session:replaced');
+  }
+
+  emitPlayerSessionReplaced(playerId: number): void {
+    this.server?.to(`player:${playerId}`).emit('session:replaced');
   }
 
   @SubscribeMessage('guess:submit')

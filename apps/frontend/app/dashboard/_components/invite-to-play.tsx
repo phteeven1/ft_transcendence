@@ -85,12 +85,12 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     setIsStarting(true);
     setStartError('');
     try {
-      const { session, alreadyActive } = await playersApi.startSession({
+      const { session } = await playersApi.startSession({
         playerId: player.id,
         minutes,
       });
-      if (alreadyActive || !session) {
-        setStartError(t('invite.activeSessionExists', { name: player.name }));
+      if (!session) {
+        setStartError(t('invite.startFailed'));
         return;
       }
 
@@ -98,7 +98,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
 
       loginAsPlayer(player);
       setSessionExpiresAt(new Date(session.expiresAt).getTime());
-      logout();
+      logout({ localOnly: true });
       router.replace('/select_game');
     } catch {
       setStartError(t('invite.startFailed'));
@@ -111,7 +111,6 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
     !isStarting &&
     !isEnding &&
     !isChecking &&
-    !hasActiveSession &&
     sessionMinutes !== '' &&
     parseInt(sessionMinutes, 10) > 0;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
+import { getStoredSessionToken } from '@/lib/parent-session';
 
 type Options = {
   userId: number;
@@ -35,7 +36,13 @@ export function useDashboardSocket({
 
     const join = (): void => {
       if (!active) return;
-      socket.emit('joinDashboard', { groupId, userId });
+      const token = getStoredSessionToken();
+      if (!token) return;
+      socket.emit('joinDashboard', {
+        groupId,
+        userId,
+        token,
+      });
     };
 
     const handleDashboardUpdate = (): void => {
