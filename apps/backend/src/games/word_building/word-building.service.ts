@@ -40,7 +40,10 @@ import {
   ILiveGameState,
   IPlaceLetterDto,
 } from './word-building.types';
-import { WORD_BUILDING_CONFIG, WORD_BUILDING_GRID_SIZE } from './word-building.config';
+import {
+  WORD_BUILDING_CONFIG,
+  WORD_BUILDING_GRID_SIZE,
+} from './word-building.config';
 
 const COURT_COLS = WORD_BUILDING_CONFIG.boardCols;
 const COURT_ROWS = WORD_BUILDING_CONFIG.boardRows;
@@ -155,7 +158,9 @@ export class WordBuildingService {
     const result = bestResult!;
 
     // Determine board dimensions: dynamic (fit puzzle + buffer) or fixed default.
-    const [targetRows, targetCols] = this.computeBoardDimensions(result.solution);
+    const [targetRows, targetCols] = this.computeBoardDimensions(
+      result.solution,
+    );
 
     // Pad trimmed puzzle to board size (centered)
     const solution = this.padGrid(result.solution, targetRows, targetCols);
@@ -695,7 +700,9 @@ export class WordBuildingService {
    * that contains the puzzle content plus the configured buffer on each side.
    * When false, returns the configured default board dimensions.
    */
-  private computeBoardDimensions(trimmed: (string | null)[][]): [number, number] {
+  private computeBoardDimensions(
+    trimmed: (string | null)[][],
+  ): [number, number] {
     if (WORD_BUILDING_CONFIG.dynamicWindowSize) {
       const contentRows = trimmed.length;
       const contentCols = trimmed[0]?.length ?? 0;

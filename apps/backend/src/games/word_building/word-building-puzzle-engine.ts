@@ -82,7 +82,7 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
   private readonly MAX_ATTEMPTS: number;
   private readonly TARGET_WORDS: number;
 
-    /**
+  /**
    * Configures the crossword puzzle generator with placement limits.
    * Every call to generate() uses fresh randomness, so the same vocabulary
    * produces a different layout each time.
@@ -275,8 +275,12 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
     const candidate: CandidatePlacement = {
       word: first.word,
       clue: first.clue,
-      row: isAcross ? center : Math.floor((context.gridSize - first.word.length) / 2),
-      col: isAcross ? Math.floor((context.gridSize - first.word.length) / 2) : center,
+      row: isAcross
+        ? center
+        : Math.floor((context.gridSize - first.word.length) / 2),
+      col: isAcross
+        ? Math.floor((context.gridSize - first.word.length) / 2)
+        : center,
       direction: isAcross ? 'across' : 'down',
     };
 
@@ -316,7 +320,10 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
     const shuffledEntries = [...entries];
     for (let i = shuffledEntries.length - 1; i >= 2; i--) {
       const j = 1 + Math.floor(Math.random() * i); // j ∈ [1, i]
-      [shuffledEntries[i], shuffledEntries[j]] = [shuffledEntries[j], shuffledEntries[i]];
+      [shuffledEntries[i], shuffledEntries[j]] = [
+        shuffledEntries[j],
+        shuffledEntries[i],
+      ];
     }
 
     for (
@@ -334,7 +341,11 @@ export class WordBuildingPuzzleEngine implements IWordBuildingPuzzleEngine {
         const entry = shuffledEntries[i];
         if (context.placedWordsSet.has(entry.word)) continue;
 
-        const candidates = this.findAllPlacements(context, entry, shuffledEntries);
+        const candidates = this.findAllPlacements(
+          context,
+          entry,
+          shuffledEntries,
+        );
         if (candidates.length === 0) continue;
 
         const topN = Math.max(
