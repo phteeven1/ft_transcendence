@@ -154,22 +154,23 @@ export function useWordSoupGameOverOverlay(
       return;
     }
 
-    if (startImmediately) {
-      const timeoutId = window.setTimeout(() => {
-        if (!celebrationActiveRef.current) {
-          setStartGameOverSequence(true);
-        }
-      }, 0);
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    const timeoutId = window.setTimeout(() => {
+    const POLL_MS = 200;
+    let cleared = false;
+    const check = () => {
+      if (cleared) return;
       if (!celebrationActiveRef.current) {
         setStartGameOverSequence(true);
+      } else {
+        window.setTimeout(check, POLL_MS);
       }
-    }, GAME_OVER_OVERLAY_GRACE_MS);
+    };
+    const initialDelay = startImmediately ? 0 : GAME_OVER_OVERLAY_GRACE_MS;
+    const timeoutId = window.setTimeout(check, initialDelay);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      cleared = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [
     isGameOver,
     isCelebrating,
