@@ -31,19 +31,24 @@ interface IWordCellTarget {
 
 const WORD_CELL_SELECTOR = '[data-word-cell]';
 
-export function useAntDrag(onDrop: (row: number, col: number, letter: string) => void): IAntDragApi {
+/**
+ * onDrop returns true when the placement was accepted (triggers celebration),
+ * false when the cell was ineligible (drag cancelled silently).
+ */
+export function useAntDrag(onDrop: (row: number, col: number, letter: string) => boolean): IAntDragApi {
   const [drag, setDrag] = useState<IAntDragState | null>(null);
   const onDropRef = useRef(onDrop);
   const letterRef = useRef('');
   const pointerRef = useRef({ x: 0, y: 0 });
   const frameRef = useRef<number | null>(null);
+  // Synchronous flag — avoids the async gap between startDrag (sets React state)
+  // and the effect cycle (registers listeners). Rapid taps can fire pointerup
+  // before the effect runs; isCarryingRef catches them.
+  const isCarryingRef = useRef(false);
 
-  // Update ref in effect, not during render
   useEffect(() => {
     onDropRef.current = onDrop;
   }, [onDrop]);
-
-  const isCarrying = drag !== null && !drag.isDropping;
 
   const flushPointerPosition = useCallback(() => {
     frameRef.current = null;
@@ -58,22 +63,11 @@ export function useAntDrag(onDrop: (row: number, col: number, letter: string) =>
     );
   }, []);
 
-  const startDrag = useCallback((letter: string, clientX: number, clientY: number) => {
-    letterRef.current = letter;
-    pointerRef.current = { x: clientX, y: clientY };
-    const hit = findWordCell(clientX, clientY);
-    setDrag({
-      letter, x: clientX, y: clientY, isDropping: false,
-      targetRow: hit?.row ?? null, targetCol: hit?.col ?? null,
-    });
-  }, []);
-
-  const endCelebration = useCallback(() => setDrag(null), []);
-
+  // Permanently-mounted listeners eliminate the async gap.
+  // isCarryingRef gates each handler so they are no-ops between drags.
   useEffect(() => {
-    if (!isCarrying) return;
-
     const handlePointerMove = (event: PointerEvent) => {
+      if (!isCarryingRef.current) return;
       pointerRef.current = { x: event.clientX, y: event.clientY };
       if (frameRef.current === null) {
         frameRef.current = requestAnimationFrame(flushPointerPosition);
@@ -81,6 +75,12 @@ export function useAntDrag(onDrop: (row: number, col: number, letter: string) =>
     };
 
     const handlePointerUp = (event: PointerEvent) => {
+      if (!isCarryingRef.current) return;
+      isCarryingRef.current = false;
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
       const target = findWordCell(event.clientX, event.clientY);
       if (!target) {
         setDrag(null);
@@ -88,15 +88,27 @@ export function useAntDrag(onDrop: (row: number, col: number, letter: string) =>
       }
       const center = getCellCenter(target.element);
       const letter = letterRef.current;
-      setDrag(current =>
-        current
-          ? { ...current, x: center.x, y: center.y, isDropping: true, targetRow: null, targetCol: null }
-          : current,
-      );
-      onDropRef.current(target.row, target.col, letter);
+      const accepted = onDropRef.current(target.row, target.col, letter);
+      if (accepted) {
+        setDrag(current =>
+          current
+            ? { ...current, x: center.x, y: center.y, isDropping: true, targetRow: null, targetCol: null }
+            : current,
+        );
+      } else {
+        setDrag(null);
+      }
     };
 
-    const handlePointerCancel = () => setDrag(null);
+    const handlePointerCancel = () => {
+      if (!isCarryingRef.current) return;
+      isCarryingRef.current = false;
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      setDrag(null);
+    };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -106,12 +118,21 @@ export function useAntDrag(onDrop: (row: number, col: number, letter: string) =>
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerCancel);
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
     };
-  }, [isCarrying, flushPointerPosition]);
+  }, [flushPointerPosition]); // stable — mounts once, never re-registers
+
+  const startDrag = useCallback((letter: string, clientX: number, clientY: number) => {
+    letterRef.current = letter;
+    pointerRef.current = { x: clientX, y: clientY };
+    isCarryingRef.current = true; // synchronous — no async React gap
+    const hit = findWordCell(clientX, clientY);
+    setDrag({
+      letter, x: clientX, y: clientY, isDropping: false,
+      targetRow: hit?.row ?? null, targetCol: hit?.col ?? null,
+    });
+  }, []);
+
+  const endCelebration = useCallback(() => setDrag(null), []);
 
   return { drag, startDrag, endCelebration };
 }

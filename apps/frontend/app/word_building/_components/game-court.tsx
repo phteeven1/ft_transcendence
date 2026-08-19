@@ -1,12 +1,10 @@
 'use client';
 //
-// 18×18 crossword grid. Renders CourtTile; clicks report (row, col) for selection.
-// Keep COURT_COLS and COURT_ROWS in sync with word-building.service.ts.
+// Crossword grid — renders CourtTile for each cell and forwards clicks.
+// Board dimensions are determined by the court prop (derived from the backend
+// API response). See word-building.config.ts for the authoritative config.
 
 import { CourtCell, CourtTile } from './court-tile';
-
-export const COURT_COLS = 18;   // must match word-building.service.ts
-export const COURT_ROWS = 18;   // must match word-building.service.ts 
 
 type GameCourtProps = {
   court:           CourtCell[][];

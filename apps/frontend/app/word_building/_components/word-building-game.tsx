@@ -24,17 +24,19 @@ import {
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import { gamesApi } from '@/lib/api/games';
 import { wordBuildingApi } from '@/lib/api/games/word-building.api';
-import GameCourt, { COURT_COLS, COURT_ROWS } from './game-court';
+import GameCourt from './game-court';
 import { CourtCell } from './court-tile';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from '../../components/abandon-play-modal';
 import WordBuildingGameOverOverlay from './word-building-game-over-overlay';
+import WordBuildingIntroOverlay from './word-building-intro-overlay';
+import WordBuildingRulesInfo from './word-building-rules-info';
 import WordBuildingTitle from './word-building-title';
 import WordBuildingPlayerRail from './word-building-player-rail';
 import TileRack from './tile-rack';
 import GameClock from '@/app/components/game-clock';
-import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
+import type { GameFinishOutcomeDto, GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
 /** Deterministic player colour palette — cycled by roster index. */
@@ -42,15 +44,9 @@ const PLAYER_COLOUR_PALETTE = [
   '#5EEAD4', '#A78BFA', '#FB923C', '#F472B6', '#34D399', '#60A5FA',
 ];
 
-/**
- * Creates the default empty crossword board used before the REST payload arrives.
- *
- * @returns An 18x18 board filled with black cells.
- */
-const EMPTY_COURT = (): CourtCell[][] =>
-  Array.from({ length: COURT_ROWS }, () =>
-    Array.from({ length: COURT_COLS }, () => ({ char: '', status: 'none' as const })),
-  );
+// The initial state is an empty array; the real court arrives from the API
+// and replaces it before the board is rendered (loading screen covers this gap).
+const EMPTY_COURT: CourtCell[][] = [];
 
 /**
  * Orchestrates the full Word Building play experience: fetches the initial puzzle,
@@ -92,6 +88,11 @@ export default function WordBuildingGame() {
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
   const [dragTargetRow, setDragTargetRow] = useState<number | null>(null);
   const [dragTargetCol, setDragTargetCol] = useState<number | null>(null);
+  // Intro overlay: shown once on first load, dismissed by the player.
+  const [showIntro, setShowIntro] = useState(true);
+  // Manual score screen: shown when the player chooses Back to Lobby mid-game.
+  const [manuallyShowOverlay, setManuallyShowOverlay] = useState(false);
+  const [manualFinishOutcome, setManualFinishOutcome] = useState<GameFinishOutcomeDto | null>(null);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
   const { gameState, gameFinished, finishOutcome: socketFinishOutcome, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock, leftPlayers } = useGameSocket(gameId, playerId);
@@ -209,7 +210,8 @@ export default function WordBuildingGame() {
   // ── React to game:finished WS event ───────────────────────────────────────
   useEffect(() => {
     if (!gameFinished) return;
-    if (solved) return; // Puzzle solved — overlay is shown reactively; no redirect needed.
+    // Overlay handles navigation when the puzzle was solved or the player manually left.
+    if (solved || manuallyShowOverlay) return;
     // Force-ended (not solved by players) — redirect immediately.
     if (hasLeftForLobbyRef.current) return;
     hasLeftForLobbyRef.current = true;
@@ -221,7 +223,7 @@ export default function WordBuildingGame() {
     } else {
       router.replace('/session_over');
     }
-  }, [gameFinished, solved, router, loginAsPlayer, setSessionExpiresAt]);
+  }, [gameFinished, solved, manuallyShowOverlay, router, loginAsPlayer, setSessionExpiresAt]);
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -233,6 +235,8 @@ export default function WordBuildingGame() {
     acrossEmpty: number;
     downEmpty: number;
   } => {
+    const courtCols = visibleCourt[0]?.length ?? 0;
+    const courtRows = visibleCourt.length;
     let hasAcross = false;
     let hasDown = false;
     let acrossEmpty = 0;
@@ -242,7 +246,7 @@ export default function WordBuildingGame() {
     for (const clue of cluesAcross) {
       // Scan rightward from clue start to find word extent
       let wordEnd = clue.col;
-      while (wordEnd < COURT_COLS && visibleCourt[clue.row]?.[wordEnd]?.status !== 'none') {
+      while (wordEnd < courtCols && visibleCourt[clue.row]?.[wordEnd]?.status !== 'none') {
         wordEnd++;
       }
       
@@ -261,7 +265,7 @@ export default function WordBuildingGame() {
     for (const clue of cluesDown) {
       // Scan downward from clue start to find word extent
       let wordEnd = clue.row;
-      while (wordEnd < COURT_ROWS && visibleCourt[wordEnd]?.[clue.col]?.status !== 'none') {
+      while (wordEnd < courtRows && visibleCourt[wordEnd]?.[clue.col]?.status !== 'none') {
         wordEnd++;
       }
       
@@ -347,6 +351,9 @@ export default function WordBuildingGame() {
   const advanceSelection = useCallback(() => {
     if (selectedRow === null || selectedCol === null) return;
 
+    const courtCols = visibleCourt[0]?.length ?? 0;
+    const courtRows = visibleCourt.length;
+
     const emitLockForNext = (row: number, col: number) => {
       emitCellUnlock(selectedRow, selectedCol);
       const myName = playerNamesRef.current.get(playerId) ?? `Player ${playerId}`;
@@ -359,7 +366,7 @@ export default function WordBuildingGame() {
       const nextCol = selectedCol + 1;
       
       // Find next non-black cell in the same row
-      while (nextCol < COURT_COLS) {
+      while (nextCol < courtCols) {
         const nextCell = visibleCourt[selectedRow]?.[nextCol];
         if (!nextCell || nextCell.status === 'none') {
           // Hit a black square or edge, stop at current position
@@ -376,7 +383,7 @@ export default function WordBuildingGame() {
       const nextRow = selectedRow + 1;
       
       // Find next non-black cell in the same column
-      while (nextRow < COURT_ROWS) {
+      while (nextRow < courtRows) {
         const nextCell = visibleCourt[nextRow]?.[selectedCol];
         if (!nextCell || nextCell.status === 'none') {
           // Hit a black square or edge, stop at current position
@@ -430,42 +437,65 @@ export default function WordBuildingGame() {
    * Handles a letter tile drop from the tile rack onto a crossword cell.
    * Sends the placement via WebSocket; the server validates and broadcasts the update.
    * No lock emission needed — drag-to-drop is instantaneous.
+   * Returns true when the placement is sent (triggers ant celebration),
+   * false when the cell is ineligible (no false celebration).
    */
-  const handleCellDrop = useCallback((row: number, col: number, letter: string) => {
-    if (solved) return;
+  const handleCellDrop = useCallback((row: number, col: number, letter: string): boolean => {
+    if (solved) return false;
     const cell = visibleCourt[row]?.[col];
-    if (!cell || cell.status === 'none' || cell.status === 'correct') return;
+    if (!cell || cell.status === 'none' || cell.status === 'correct') return false;
     emitPlaceLetter({ gameId, playerId, row, col, letter });
+    return true;
   }, [solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
 
-    /** Tracks which cell the ant is hovering over so GameCourt can highlight it. */
+  /** Tracks which cell the ant is hovering over so GameCourt can highlight it. */
   const handleDragTarget = useCallback((row: number | null, col: number | null) => {
     setDragTargetRow(row);
     setDragTargetCol(col);
   }, []);
   
   /**
-   * Leaves this match and returns to the lobby. The play session stays active
-   * so the child can join or start another game; remaining players keep playing.
+   * Builds a score snapshot from current state when no server outcome is available
+   * (e.g. when a non-last-remaining player leaves and the game has not yet ended).
+   */
+  const buildFallbackOutcome = useCallback((): GameFinishOutcomeDto => {
+    const sorted = [...scores].sort((a, b) => b.score - a.score);
+    const maxScore = sorted[0]?.score ?? 0;
+    return {
+      players: sorted.map(({ playerId: pid, score }) => ({
+        playerId: pid,
+        playerName: playerNames.get(pid) ?? `Player ${pid}`,
+        score,
+        xpAwarded: 0,
+        isWinner: score === maxScore && maxScore > 0,
+      })),
+    };
+  }, [scores, playerNames]);
+
+  /**
+   * Leaves this match and shows the score screen before navigating to the lobby.
+   * If this player is the last one, the game is finished for all players.
+   * If others are still playing, this player leaves while they continue.
+   * Either way, the score screen is shown so the player can review results.
    */
   const leaveToLobby = async () => {
     setIsAbandoning(true);
     try {
       if (isLastRemaining) {
-        await gamesApi.finish({ gameId });
-        setShowAbandonModal(false);
-        return;
+        const result = await gamesApi.finish({ gameId });
+        if (result.outcome) setManualFinishOutcome(result.outcome);
+        else setManualFinishOutcome(buildFallbackOutcome());
+      } else {
+        await gamesApi.leave({ gameId, playerId });
+        const outcome = await gamesApi.getFinishOutcome({ gameId }).catch(() => null);
+        setManualFinishOutcome(outcome ?? buildFallbackOutcome());
       }
-      await gamesApi.leave({ gameId, playerId });
-      hasLeftForLobbyRef.current = true;
-      const stored = getPlayerSession();
-      if (stored && !isSessionExpired(stored.expiresAt)) {
-        await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
-      }
+      setManuallyShowOverlay(true);
       setShowAbandonModal(false);
-      router.push('/select_game');
     } catch {
-      // best-effort
+      // best-effort — fall back to simple overlay with current scores
+      setManualFinishOutcome(buildFallbackOutcome());
+      setManuallyShowOverlay(true);
       setShowAbandonModal(false);
     } finally {
       setIsAbandoning(false);
@@ -473,8 +503,8 @@ export default function WordBuildingGame() {
   };
 
   /**
-   * Handles the "Return to Lobby" button in the game-over overlay.
-   * Navigates to the game selection lobby exactly once.
+   * Handles "Return to Lobby" on the score screen.
+   * Called from both the natural game-over overlay and the manual leave overlay.
    */
   const handleReturnToLobby = useCallback(() => {
     if (hasLeftForLobbyRef.current) return;
@@ -490,28 +520,30 @@ export default function WordBuildingGame() {
   }, [router, loginAsPlayer, setSessionExpiresAt]);
 
   // ── Derive game-over overlay data ─────────────────────────────────────────
-  // The overlay is shown when the game is finished AND the puzzle was solved.
-  // Both values come directly from reactive state; no extra state needed.
-  const showGameOverOverlay = gameFinished && solved;
+  // Show overlay when: puzzle solved naturally, OR player chose Back to Lobby.
+  const showGameOverOverlay = (gameFinished && solved) || manuallyShowOverlay;
+
+  // Prefer socket outcome (natural finish), then manually fetched/built outcome.
+  const effectiveFinishOutcome = socketFinishOutcome ?? manualFinishOutcome;
 
   const { gameOverPlayersById, gameOverPlayerOrder } = useMemo(() => {
-    if (!socketFinishOutcome) return { gameOverPlayersById: {}, gameOverPlayerOrder: [] };
+    if (!effectiveFinishOutcome) return { gameOverPlayersById: {}, gameOverPlayerOrder: [] };
     const byId: Record<number, GameFinishPlayerOutcomeDto> = {};
-    for (const p of socketFinishOutcome.players) byId[p.playerId] = p;
-    const order = [...socketFinishOutcome.players]
+    for (const p of effectiveFinishOutcome.players) byId[p.playerId] = p;
+    const order = [...effectiveFinishOutcome.players]
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.playerId - b.playerId))
       .map((p) => p.playerId);
     return { gameOverPlayersById: byId, gameOverPlayerOrder: order };
-  }, [socketFinishOutcome]);
+  }, [effectiveFinishOutcome]);
 
   const localHostTier   = playerAvatarTiers[playerId]   ?? 0;
   const localHostAnimal = playerAvatarAnimals[playerId] ?? 0;
   const localHostColour = playerColours[playerId];
 
   const newlyUnlockedTier = useMemo(() => {
-    const tier = socketFinishOutcome?.players.find((p) => p.playerId === playerId)?.newlyUnlockedTier;
+    const tier = effectiveFinishOutcome?.players.find((p) => p.playerId === playerId)?.newlyUnlockedTier;
     return typeof tier === 'number' ? tier : null;
-  }, [socketFinishOutcome, playerId]);
+  }, [effectiveFinishOutcome, playerId]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -529,7 +561,7 @@ export default function WordBuildingGame() {
     <div
       ref={containerRef}
       tabIndex={0}
-      className="game-shell flex-1 overflow-x-auto outline-none focus:ring-0"
+      className="game-shell relative flex-1 overflow-x-auto outline-none focus:ring-0"
     >
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
         {/* maxWidth matches Word Soup: sidebar (11.5rem) + gap (1rem) + board cap (600px) = 800px */}
@@ -541,15 +573,15 @@ export default function WordBuildingGame() {
               <WordBuildingTitle solved={solved} />
             </div>
 
-            {/* Instructions — top right */}
+            {/* Top right: info icon + current direction badge */}
             <div className="lg:col-start-2 lg:row-start-1">
-              <div className="flex h-full flex-wrap items-center gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 text-xs text-teal-800/70 shadow-sm">
-                <span className="flex-1">{t('instructions')}</span>
+              <div className="flex h-full items-center justify-end gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
                 {selectedRow !== null && selectedCol !== null && (
                   <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                     {direction === 'across' ? t('directionAcross') : t('directionDown')}
                   </span>
                 )}
+                <WordBuildingRulesInfo />
               </div>
             </div>
 
@@ -644,7 +676,18 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Game-over overlay — shown when the puzzle is solved and game:finished fires */}
+      {/* Intro overlay — dismissed by the player before first interaction */}
+      {showIntro && !showGameOverOverlay && (
+        <WordBuildingIntroOverlay
+          playerName={playerNames.get(playerId) ?? ''}
+          hostTier={localHostTier}
+          hostAnimal={localHostAnimal}
+          hostClothesColor={localHostColour}
+          onDismiss={() => setShowIntro(false)}
+        />
+      )}
+
+      {/* Score screen — shown after natural game finish or after Back to Lobby */}
       {showGameOverOverlay && (
         <WordBuildingGameOverOverlay
           playersById={gameOverPlayersById}
