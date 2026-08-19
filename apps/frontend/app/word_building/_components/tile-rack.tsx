@@ -25,7 +25,8 @@ import { useAntDrag } from './use-ant-drag';
 interface Props {
   letters: string[];
   disabled?: boolean;
-  onDrop?: (row: number, col: number, letter: string) => void;
+  /** Returns true when the placement was accepted (shows celebration); false cancels silently. */
+  onDrop?: (row: number, col: number, letter: string) => boolean;
   onDragTarget?: (row: number | null, col: number | null) => void;
 }
 
@@ -44,11 +45,7 @@ export default function TileRack({ letters, disabled = false, onDrop, onDragTarg
 
   // Ant drag hook handles pointer tracking, cell detection, and drop callback
   const { drag, startDrag, endCelebration } = useAntDrag(
-    (row, col, letter) => {
-      if (onDrop) {
-        onDrop(row, col, letter);
-      }
-    },
+    (row, col, letter) => onDrop ? onDrop(row, col, letter) : false,
   );
 
   // Notify parent when the drag target cell changes so GameCourt can highlight it.
