@@ -571,9 +571,9 @@ export default function WordBuildingGame() {
               <WordBuildingTitle solved={solved} />
             </div>
 
-            {/* Top right: info icon + current direction badge */}
-            <div className="lg:col-start-2 lg:row-start-1">
-              <div className="flex h-full items-center justify-end gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
+            {/* Info & Direction — under title */}
+            <div className="lg:col-start-1 lg:row-start-2">
+              <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
                 {selectedRow !== null && selectedCol !== null && (
                   <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                     {direction === 'across' ? t('directionAcross') : t('directionDown')}
@@ -599,7 +599,7 @@ export default function WordBuildingGame() {
 
             {/* Sidebar — players, clock, clues */}
             <aside
-              className="hidden min-h-0 flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:flex"
+              className="hidden min-h-0 flex-col gap-3 lg:col-start-1 lg:row-start-3 lg:flex"
               aria-label={t('scoreboardLabel')}
             >
               <div className="min-h-0 flex-1 overflow-y-auto space-y-3">
@@ -627,7 +627,7 @@ export default function WordBuildingGame() {
             </aside>
 
             {/* Board — right column; wb-board-col caps size to avoid vertical overflow */}
-            <div className="wb-board-col flex min-w-0 w-full flex-col gap-2 lg:col-start-2 lg:row-start-2">
+            <div className="wb-board-col flex min-w-0 w-full flex-col gap-2 lg:col-start-2 lg:row-start-1 lg:row-span-4">
               <GameCourt
                 court={visibleCourt}
                 selectedRow={selectedRow}
@@ -641,12 +641,12 @@ export default function WordBuildingGame() {
               <TileRack letters={availableLetters} disabled={solved} onDrop={handleCellDrop} onDragTarget={handleDragTarget} />
             </div>
 
-            {/* Back to lobby — left, row 3 */}
-            <div className="hidden h-full lg:col-start-1 lg:row-start-3 lg:block">
+            {/* Back to lobby — left, row 4 */}
+            <div className="hidden h-full lg:col-start-1 lg:row-start-4 lg:block">
               <GameControls onLeave={() => setShowAbandonModal(true)} />
             </div>
 
-            {/* Mobile: clock + clues + back to lobby */}
+            {/* Mobile: clock + clues + info + back to lobby */}
             <div className="flex flex-col gap-3 lg:hidden">
               <GameClock
                 startedAtMs={startedAtMs}
@@ -657,6 +657,15 @@ export default function WordBuildingGame() {
                 cluesAcross={cluesAcross}
                 cluesDown={cluesDown}
               />
+              {/* Mobile: Info & Direction */}
+              <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
+                {selectedRow !== null && selectedCol !== null && (
+                  <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                    {direction === 'across' ? t('directionAcross') : t('directionDown')}
+                  </span>
+                )}
+                <WordBuildingRulesInfo />
+              </div>
               <GameControls onLeave={() => setShowAbandonModal(true)} />
             </div>
 
