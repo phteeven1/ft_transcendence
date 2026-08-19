@@ -243,7 +243,6 @@
       "sessionDurationTitle": "Wie lange darf {name} spielen?",
       "minutesLabel": "Minuten",
       "minutesPlaceholder": "Minuten eingeben",
-      "activeSessionExists": "{name} hat bereits eine aktive Sitzung. Beenden Sie sie hier, oder warten Sie, bis der Timer abläuft oder die Person das Spiel verlässt.",
       "startFailed": "Sitzung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
       "endSession": "Sitzung beenden",
       "endSessionFailed": "Sitzung konnte nicht beendet werden. Bitte versuchen Sie es erneut."

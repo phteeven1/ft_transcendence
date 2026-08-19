@@ -1,22 +1,20 @@
 import { apiRequest } from '../../http';
 import type { WordSoupDto } from './types';
-import type { GameIdPlayerIdInput } from '../types';
+import type { GameIdInput } from '../types';
 
 export const wordSoupApi = {
-  initCourt(input: GameIdPlayerIdInput): Promise<WordSoupDto> {
+  initCourt(input: GameIdInput): Promise<WordSoupDto> {
     return apiRequest<WordSoupDto>(
       `/games/${input.gameId}/initWordSoupCourt`,
       {
         method: 'POST',
-        body: JSON.stringify(input),
-      }
+      },
     );
   },
 
-  markIntroShown(input: GameIdPlayerIdInput) {
+  markIntroShown(input: GameIdInput) {
     return apiRequest(`/games/${input.gameId}/markWordSoupIntroShown`, {
       method: 'POST',
-      body: JSON.stringify(input),
     });
   },
 };

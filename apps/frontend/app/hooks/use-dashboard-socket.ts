@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
 import { getStoredSessionToken } from '@/lib/parent-session';
+import { notifySessionUnauthorized } from '@/lib/api/http';
 
 type Options = {
   userId: number;
@@ -55,9 +56,15 @@ export function useDashboardSocket({
       onMembershipChangedRef.current();
     };
 
+    const onSessionReplaced = (): void => {
+      if (!active) return;
+      notifySessionUnauthorized('parent');
+    };
+
     socket.on('connect', join);
     socket.on('dashboard:update', handleDashboardUpdate);
     socket.on('membership:changed', handleMembershipChanged);
+    socket.on('session:replaced', onSessionReplaced);
 
     if (socket.connected) join();
 
@@ -66,6 +73,7 @@ export function useDashboardSocket({
       socket.off('connect', join);
       socket.off('dashboard:update', handleDashboardUpdate);
       socket.off('membership:changed', handleMembershipChanged);
+      socket.off('session:replaced', onSessionReplaced);
       releaseSocket(key);
     };
   }, [userId, groupId, enabled]);

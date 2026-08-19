@@ -122,8 +122,14 @@ export class PlayersController {
   }
 
   @Get(':id/activeSession')
-  getActiveSession(@Param('id') id: string) {
-    return this.playersService.getActiveSession(Number(id));
+  @UseGuards(UserSessionGuard)
+  async getActiveSession(
+    @AuthenticatedUserId() userId: number,
+    @Param('id') id: string,
+  ) {
+    const playerId = Number(id);
+    await this.playersService.assertCanManagePlayer(userId, playerId);
+    return this.playersService.getActiveSession(playerId);
   }
 
   @Get(':id')

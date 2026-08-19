@@ -14,7 +14,6 @@ export type MemberDto = {
 
 export type CreateGroupInput = {
   groupName: string;
-  creatorId: number;
 };
 
 export type GroupMemberActionInput = {

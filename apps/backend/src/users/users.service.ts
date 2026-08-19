@@ -96,12 +96,17 @@ export class UsersService {
     return { user, session };
   }
 
-  async replaceSession(userId: number): Promise<UserSessionDto> {
+  async replaceSession(
+    userId: number,
+    options: { emitKick?: boolean } = {},
+  ): Promise<UserSessionDto> {
     await this.prisma.userSession.deleteMany({ where: { userId } });
     const session = await this.prisma.userSession.create({
       data: { userId },
     });
-    this.gateway.emitUserSessionReplaced(userId);
+    if (options.emitKick !== false) {
+      this.gateway.emitUserSessionReplaced(userId);
+    }
     return { token: session.token, userId: session.userId };
   }
 
@@ -147,22 +152,23 @@ export class UsersService {
     userId: number,
     oldPassword: string,
     newPassword: string,
-  ): Promise<{ success: boolean }> {
+  ): Promise<{ success: boolean; session: UserSessionDto | null }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       ...userWithMemberships,
     });
 
-    if (!user) return { success: false };
+    if (!user) return { success: false, session: null };
 
     const passwordMatches = await compare(oldPassword, user.password);
-    if (!passwordMatches) return { success: false };
+    if (!passwordMatches) return { success: false, session: null };
 
     const newHashedPassword = await hash(newPassword, SALT_ROUNDS);
     await this.prisma.user.update({
       where: { id: userId },
       data: { password: newHashedPassword },
     });
-    return { success: true };
+    const session = await this.replaceSession(userId, { emitKick: false });
+    return { success: true, session };
   }
 }

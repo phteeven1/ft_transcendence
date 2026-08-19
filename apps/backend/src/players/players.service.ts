@@ -30,6 +30,10 @@ export type PlayerSessionDto = {
   createdAt: string;
 };
 
+export type ActivePlayerSessionDto = {
+  expiresAt: string;
+};
+
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 @Injectable()
@@ -174,13 +178,15 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async getActiveSession(playerId: number): Promise<PlayerSessionDto | null> {
+  async getActiveSession(
+    playerId: number,
+  ): Promise<ActivePlayerSessionDto | null> {
     await this.cleanupExpiredSessions();
     const session = await this.prisma.playerSession.findUnique({
       where: { playerId },
     });
     if (!session || session.expiresAt <= new Date()) return null;
-    return this.toSessionDto(session);
+    return { expiresAt: session.expiresAt.toISOString() };
   }
 
   async assertCanManagePlayer(userId: number, playerId: number): Promise<void> {

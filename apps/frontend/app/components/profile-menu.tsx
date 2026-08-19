@@ -64,7 +64,7 @@ export default function ProfileMenu() {
     }
     logoutPlayer();
     setIsLeavingSession(false);
-    router.replace('/dashboard');
+    router.replace('/session_over');
   };
 
   return (
