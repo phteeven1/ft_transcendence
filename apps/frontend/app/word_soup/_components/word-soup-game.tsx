@@ -71,7 +71,7 @@ export default function WordSoupGame() {
   }
 
   return (
-    <div className="game-shell flex-1 overflow-x-auto">
+    <div className="game-shell relative flex-1 overflow-x-auto">
       {!ws.isConnected && (
         <div
           className="sticky top-0 z-40 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-900"
@@ -181,25 +181,7 @@ export default function WordSoupGame() {
                 onSelectionContinue={ws.handleSelectionContinue}
                 onSelectionEnd={ws.handleSelectionEnd}
                 overlay={
-                  ws.showGameOverOverlay ? (
-                    <WordSoupGameOverOverlay
-                      phase={ws.gameOverPhase}
-                      bubbleText={ws.gameOverBubbleText}
-                      bubbleVisible={ws.gameOverBubbleVisible}
-                      revealedPlayerIds={ws.gameOverRevealedPlayerIds}
-                      playersById={ws.gameOverPlayersById}
-                      playerColours={ws.playerColours}
-                      playerAvatarTiers={ws.playerAvatarTiers}
-                      playerAvatarAnimals={ws.playerAvatarAnimals}
-                      hostTier={ws.localHostTier}
-                      hostAnimal={ws.localHostAnimal}
-                      hostClothesColor={localHostClothesColor}
-                      localPlayerId={playerId}
-                      newlyUnlockedTier={ws.newlyUnlockedTier}
-                      showReturnButton={ws.showGameOverReturnButton}
-                      onReturnToLobby={ws.handleReturnToLobby}
-                    />
-                  ) : ws.showIntro ? (
+                  ws.showIntro ? (
                     <WordSoupIntroOverlay
                       phase={ws.introPhase}
                       bubbleText={ws.introBubbleText}
@@ -251,6 +233,7 @@ export default function WordSoupGame() {
               />
             </div>
           </div>
+
         </div>
 
         {ws.showAbandonModal && (
@@ -262,6 +245,26 @@ export default function WordSoupGame() {
           />
         )}
       </div>
+
+      {ws.showGameOverOverlay && (
+        <WordSoupGameOverOverlay
+          phase={ws.gameOverPhase}
+          bubbleText={ws.gameOverBubbleText}
+          bubbleVisible={ws.gameOverBubbleVisible}
+          revealedPlayerIds={ws.gameOverRevealedPlayerIds}
+          playersById={ws.gameOverPlayersById}
+          playerColours={ws.playerColours}
+          playerAvatarTiers={ws.playerAvatarTiers}
+          playerAvatarAnimals={ws.playerAvatarAnimals}
+          hostTier={ws.localHostTier}
+          hostAnimal={ws.localHostAnimal}
+          hostClothesColor={localHostClothesColor}
+          localPlayerId={playerId}
+          newlyUnlockedTier={ws.newlyUnlockedTier}
+          showReturnButton={ws.showGameOverReturnButton}
+          onReturnToLobby={ws.handleReturnToLobby}
+        />
+      )}
     </div>
   );
 }
