@@ -7,12 +7,12 @@ How the system is put together. Product and eval: [README.md](./README.md). Nami
 ## Run locally
 
 ```bash
-# copy .env.example → packages/database/.env, apps/backend/.env, apps/frontend/.env
+# create apps/backend/.env (Compose needs the file). Optional: packages/database/.env for Prisma CLI.
 npm run dev:local    # Postgres in Docker; Nest :4000; Next :3000
 npm run dev:stop     # stop Node apps and the Postgres container
 ```
 
-Full stack (HTTPS via Nginx): `npm run build`. The script prints https://localhost and this machine's LAN IPs — any device on the same network can open those URLs.
+HTTPS stack (Nginx on :80/:443, Nest and Next unpublished): `npm run build` (rebuild + start) or `npm run dev` (start only). Both run `scripts/docker-up.sh`, which prints `https://localhost` and this machine's LAN IPs. Use one of those URLs on every device. Stop with `npm run down`.
 
 ```bash
 npm run db:generate
@@ -21,7 +21,7 @@ npm run db:migrate:deploy   # apply committed migrations
 npm run db:studio
 ```
 
-Need `OPENAI_API_KEY` for AI vocab import. Mail is Nodemailer + Gmail SMTP (`MAIL_USER`, `MAIL_PASS` app password, `MAIL_FROM`, `APP_URL`). Never commit `.env` files.
+Need `OPENAI_API_KEY` for AI vocab import. Mail is Nodemailer + Gmail SMTP (`MAIL_USER`, `MAIL_PASS` app password, `MAIL_FROM`). Docker Compose sets `APP_URL` to `https://<PUBLIC_HOST>` for invite links (overrides `APP_URL` in `apps/backend/.env`). Never commit `.env` files. The frontend has no `NEXT_PUBLIC_API_URL` — see REST vs WebSockets below.
 
 ---
 
@@ -64,7 +64,10 @@ Frontend pages live under `app/<route>/`. Page-only components go in `_component
 
 ## REST vs WebSockets
 
-UI components must not call `fetch('http://localhost:4000/...')`. They call `@/lib/api` (`usersApi`, `groupsApi`, `gamesApi`, …). Base URL is `NEXT_PUBLIC_API_URL` in `lib/api/config.ts`.
+UI components must not call `fetch('http://localhost:4000/...')`. They call `@/lib/api` (`usersApi`, `groupsApi`, `gamesApi`, …). `getApiBaseUrl()` in `lib/api/config.ts` is `${window.location.origin}/api` (same host the page was opened on).
+
+- **`npm run dev:local`:** Next rewrites `/api/*` to Nest (`BACKEND_URL`, default `http://localhost:4000`). `getSocketUrl()` uses hostname port `4000` when the page is on port `3000`.
+- **Docker / HTTPS:** Nginx serves the UI on `/`, proxies `/api/` to Nest, and proxies `/socket.io/` to Nest. The browser never talks to ports 3000 or 4000.
 
 | Channel | Job |
 |---------|-----|
@@ -164,3 +167,4 @@ Claymorphism UI. Tokens: `apps/frontend/app/design-tokens.json` and `globals.css
 - Parent restore is `localStorage` ids + unauthenticated `GET /users/:id`. Public GETs stay unauthenticated for the demo. Mutating parent/child routes use session headers. `GET /players/:id/activeSession` is parent-guarded and returns `expiresAt` only.
 - Closing a Play Now tab ends the server token after a 2s grace window (`localStorage` pending end; refresh cancels it). Do not `sendBeacon` `clearSession` on `pagehide`.
 - Word Soup is a real game, not a stub. Progression (XP, avatars, leaderboard) is claimed as gamification plus game statistics.
+- Docker Nginx generates a new self-signed cert on every container start. `https://localhost` and a LAN IP are different origins (separate `localStorage`). A `.local` URL in the start script is only a hint — this repo does not run mDNS.

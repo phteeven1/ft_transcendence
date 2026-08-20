@@ -45,13 +45,18 @@ There are two kinds of account:
 - Docker and Docker Compose
 - Node.js 26 (matches CI; use `nvm use 26` if needed)
 - npm
-- Copy environment files from `[.env.example](./.env.example)`:
-  - `.env` — `POSTGRES_*` for Docker Compose (repo root, gitignored)
-  - `packages/database/.env` — `DATABASE_URL`
-  - `apps/backend/.env` — database, `OPENAI_API_KEY`, `MAIL_*`, `APP_URL`
-  - `apps/frontend/.env` — `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`
+- Create `apps/backend/.env` (Compose requires this file even if some values are empty):
 
-`OPENAI_API_KEY` is required for AI vocabulary import. Mail uses Gmail SMTP via `MAIL_*` (app password, not the account password).
+```
+OPENAI_API_KEY=
+MAIL_USER=your-gmail@example.com
+MAIL_PASS=your-gmail-app-password
+MAIL_FROM=your-gmail@example.com
+```
+
+Optional: repo-root `.env` for `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (Compose defaults to `postgres` / `postgres` / `transcendence`). For Prisma CLI on the host (`npm run db:migrate`, `db:studio`), also set `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/transcendence` in `packages/database/.env`. The frontend does not need a `.env` — the browser calls `/api` on the current origin.
+
+`OPENAI_API_KEY` is required for AI vocabulary import. Mail uses Gmail SMTP via `MAIL_*` (app password, not the account password). In Docker, invitation links use `https://<this-machine>` (`PUBLIC_HOST` from `scripts/docker-up.sh`); that overrides `APP_URL` in `apps/backend/.env`.
 
 ### Recommended: local dev (Postgres in Docker only)
 
@@ -59,7 +64,7 @@ There are two kinds of account:
 npm run dev:local
 ```
 
-`[scripts/dev-local.sh](./scripts/dev-local.sh)` installs dependencies if missing, starts PostgreSQL, runs Prisma migrations, then starts NestJS on [http://localhost:4000](http://localhost:4000) and Next.js on [http://localhost:3000](http://localhost:3000).
+`[scripts/dev-local.sh](./scripts/dev-local.sh)` installs dependencies if missing, starts PostgreSQL, runs Prisma migrations, then starts NestJS on [http://localhost:4000](http://localhost:4000) and Next.js on [http://localhost:3000](http://localhost:3000). The UI talks to `/api` on that origin (Next rewrites it to Nest). Sockets go to port 4000 on the same hostname. The script stops leftover `backend`, `frontend`, and `nginx` containers so they do not hold those ports.
 
 Stop the Node apps with `Ctrl+C` (Postgres keeps running). Stop everything:
 
@@ -70,12 +75,16 @@ npm run dev:stop
 ### Full Docker stack (HTTPS)
 
 ```bash
-npm run build
+npm run build          # rebuild images, then start (prints LAN URLs)
+npm run dev            # start without rebuilding
+npm run down           # stop the stack
 ```
 
-Starts Nginx (TLS), frontend, backend, and PostgreSQL. The command prints this computer's addresses, for example `https://localhost` and `https://192.168.0.152`. Any phone or laptop on the **same Wi-Fi** can open that LAN URL — you do not add devices to a list. Whichever machine runs Docker is the server.
+`npm run build` / `npm run dev` run `[scripts/docker-up.sh](./scripts/docker-up.sh)` (not a TypeScript compile). That starts Nginx on ports 80/443, plus frontend, backend, and PostgreSQL. Nest and Next are not published on the host — only Nginx is. Postgres is bound to `127.0.0.1:5432`.
 
-The first visit uses a self-signed certificate — accept the browser warning. HTTP on port 80 redirects to HTTPS. Backend applies migrations on container start.
+The script prints this computer's addresses, for example `https://localhost` and `https://192.168.0.152`. Any phone or laptop on the **same Wi-Fi** can open the LAN URL. Pick **one** address and use it on every device (`https://localhost` and `https://192.168.x.x` are different origins, so sessions do not carry over). A printed `https://<hostname>.local` address only works if that name already resolves on your network (nothing in this stack runs mDNS).
+
+The first visit uses a self-signed certificate — accept the browser warning. A new cert is generated each time the Nginx container starts, so the warning can return after a restart. HTTP on port 80 redirects to HTTPS. Backend applies migrations on container start.
 
 ### Database commands (repo root)
 
@@ -300,6 +309,7 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` with that token after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. A stale pending end cannot delete a newer Play Now token. Do not sendBeacon on `pagehide`: that event also fires on refresh.
 3. **Friends system** — not implemented; groups are the social unit.
 4. Chrome **console errors** during the demo fail the eval — check before staff arrive.
+5. **Self-signed TLS** — phones and laptops on the LAN must accept the certificate warning. Use the same printed URL on every device.
 
 ---
 
