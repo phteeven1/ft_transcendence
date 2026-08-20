@@ -497,12 +497,12 @@
         "winner": "Gagnant",
         "returnToLobby": "Retour au lobby",
         "almostDone": "Presque fini…",
-        "closingSolo": "Bravo {name}, super partie solo ! À bientôt !",
+        "closingSolo": "Bravo {name}, super partie ! À bientôt !",
         "closingMulti": "Bravo à tous, super partie ! À bientôt !",
         "placeAnnouncement": "{place}e place : {name}, avec {score} points et +{xp} XP !",
-        "firstPlaceSolo": "1re place : {name}, avec {score} points et +{xp} XP !",
-        "winnersPrefix": "Et enfin, les gagnants ! ",
-        "winnerPrefix": "Et enfin, le gagnant, ",
+        "firstPlaceSolo": "Bravo {name}, tu as marqué {score} points et gagné +{xp} XP !",
+        "winnersPrefix": "Et les gagnants ! ",
+        "winnerPrefix": "Et le gagnant, ",
         "winnerAnnouncement": "{name}, avec {score} points et +{xp} XP !"
       },
       "events": {

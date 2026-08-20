@@ -497,12 +497,12 @@
         "winner": "Winner",
         "returnToLobby": "Return to lobby",
         "almostDone": "Almost done…",
-        "closingSolo": "Well done {name}, great solo game! See you again soon!",
+        "closingSolo": "Well done {name}, great game! See you again soon!",
         "closingMulti": "Well done everyone, great game! See you again soon!",
         "placeAnnouncement": "In {place} place, {name}, with {score} points and +{xp} XP!",
-        "firstPlaceSolo": "In 1st place, {name}, with {score} points and +{xp} XP!",
-        "winnersPrefix": "And finally, the winners! ",
-        "winnerPrefix": "And finally, the winner, ",
+        "firstPlaceSolo": "Good job {name}, you scored {score} points and earned +{xp} XP!",
+        "winnersPrefix": "And the winners! ",
+        "winnerPrefix": "And the winner, ",
         "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
       },
       "events": {

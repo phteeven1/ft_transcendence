@@ -497,12 +497,12 @@
         "winner": "Gewinner",
         "returnToLobby": "Zurück zur Lobby",
         "almostDone": "Fast fertig…",
-        "closingSolo": "Gut gemacht {name}, tolles Solo-Spiel! Bis bald!",
+        "closingSolo": "Gut gemacht {name}, tolles Spiel! Bis bald!",
         "closingMulti": "Gut gemacht alle zusammen, tolles Spiel! Bis bald!",
         "placeAnnouncement": "Platz {place}: {name}, mit {score} Punkten und +{xp} XP!",
-        "firstPlaceSolo": "Platz 1: {name}, mit {score} Punkten und +{xp} XP!",
-        "winnersPrefix": "Und zum Schluss die Gewinner! ",
-        "winnerPrefix": "Und zum Schluss der Gewinner, ",
+        "firstPlaceSolo": "Gut gemacht {name}, du hast {score} Punkte erzielt und +{xp} XP verdient!",
+        "winnersPrefix": "Und die Gewinner! ",
+        "winnerPrefix": "Und der Gewinner, ",
         "winnerAnnouncement": "{name}, mit {score} Punkten und +{xp} XP!"
       },
       "events": {
