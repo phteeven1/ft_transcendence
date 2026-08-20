@@ -445,6 +445,10 @@
         "pointsXp": "{score} pts · +{xp} XP",
         "winner": "Winner",
         "returnToLobby": "Return to lobby"
+      },
+      "finalLetter": {
+        "announcement": "🎉 {name} placed the final letter! Congrats!",
+        "subtext": "Puzzle complete — final scores coming up…"
       }
     },
     "wordSoup": {

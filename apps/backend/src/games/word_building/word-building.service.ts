@@ -288,6 +288,13 @@ export class WordBuildingService {
     // Build payload with current state
     const payload = this.buildPayload(state);
 
+    // The cell we just wrote was guaranteed not-yet-correct (checked above), so
+    // if the board is now fully solved, this placement is the one that just
+    // completed it — the authoritative "final letter" for the celebration event.
+    if (payload.solved) {
+      payload.finalPlacement = { playerId, letter: normalized, row, col };
+    }
+
     // Persist mid-game state periodically to prevent data loss on server restart
     if (state.revision % PERSISTENCE_INTERVAL === 0) {
       await this.persistMidGameState(gameId, state);
@@ -640,6 +647,7 @@ export class WordBuildingService {
       clues,
       revision: crossword.revision,
       locks: new Map(), // soft cell reservations — always empty on hydration
+      leftPlayers: new Map(), // always empty on hydration — nobody has left yet
       offsetRow,
       offsetCol,
       clueNumberMap,
@@ -810,6 +818,44 @@ export class WordBuildingService {
     }
 
     return { offsetRow, offsetCol };
+  }
+
+  // ─── Player leave tracking (called by GamesService.leave) ──────────────────
+
+  /**
+   * Marks a player as having left an active match. Word Building never deletes
+   * a GamePlayer row on leave (final scores must survive to the last-known
+   * scoreboard), so DB row count can't tell the caller who is still actively
+   * playing — this in-memory set is the only source of truth for that.
+   *
+   * @param gameId Game the player left.
+   * @param playerId Player who left.
+   * @param playerName Display name captured before leave, for the broadcast.
+   * @returns Whether every participant has now left (the match should finish),
+   *   and the current left-player map (playerId → name) for the broadcast.
+   */
+  async markPlayerLeft(
+    gameId: number,
+    playerId: number,
+    playerName: string,
+  ): Promise<{ allLeft: boolean; leftPlayers: Record<number, string> }> {
+    const state = await this.loadOrHydrate(gameId);
+    state.leftPlayers.set(playerId, playerName);
+    const allLeft = [...state.scores.keys()].every((pid) =>
+      state.leftPlayers.has(pid),
+    );
+    return { allLeft, leftPlayers: Object.fromEntries(state.leftPlayers) };
+  }
+
+  /**
+   * Evicts the in-memory live state for a game once it has finished without
+   * being solved (e.g. every participant left). Mirrors WordSoupService.clearCourt;
+   * a no-op if no live state exists (already solved, or never hydrated).
+   *
+   * @param gameId Game whose live state should be dropped.
+   */
+  clearLiveGame(gameId: number): void {
+    this.liveGames.delete(gameId);
   }
 
   // ─── Cell lock management (called by GameGateway) ──────────────────────────

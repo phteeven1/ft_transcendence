@@ -9,7 +9,12 @@
 //   REST  GET  /games/:id/players               → player names for scoreboard
 //   WS    placeLetter  → client → server
 //   WS    game:state   → server → all clients → update visibleCourt + scores
-//   WS    game:finished → server → redirect all players
+//   WS    game:finalLetterPlaced → server → all clients → brief celebration banner
+//   WS    game:playerLeft → server → all clients → mark that one player as left;
+//                        the match keeps running for everyone still in it
+//   WS    game:finished → server → all clients still in the room → final scoreboard
+//                        (only once every participant has left, or the puzzle is solved;
+//                        Return to Lobby on the scoreboard is the only navigation)
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -22,6 +27,7 @@ import {
   isSessionExpired,
 } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import { playersApi } from '@/lib/api';
 import { gamesApi } from '@/lib/api/games';
 import { wordBuildingApi } from '@/lib/api/games/word-building.api';
 import GameCourt from './game-court';
@@ -30,6 +36,7 @@ import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from '../../components/abandon-play-modal';
 import WordBuildingGameOverOverlay from './word-building-game-over-overlay';
+import WordBuildingFinalLetterOverlay from './word-building-final-letter-overlay';
 import WordBuildingIntroOverlay from './word-building-intro-overlay';
 import WordBuildingRulesInfo from './word-building-rules-info';
 import WordBuildingTitle from './word-building-title';
@@ -43,6 +50,12 @@ import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word
 const PLAYER_COLOUR_PALETTE = [
   '#5EEAD4', '#A78BFA', '#FB923C', '#F472B6', '#34D399', '#60A5FA',
 ];
+
+/**
+ * How long the final-letter celebration banner stays up before the final
+ * scoreboard takes over. Long enough to read, short enough to stay snappy.
+ */
+const FINAL_LETTER_CELEBRATION_MS = 3000;
 
 // The initial state is an empty array; the real court arrives from the API
 // and replaces it before the board is rendered (loading screen covers this gap).
@@ -94,7 +107,34 @@ export default function WordBuildingGame() {
   const [manualFinishOutcome, setManualFinishOutcome] = useState<GameFinishOutcomeDto | null>(null);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
-  const { gameState, gameFinished, finishOutcome: socketFinishOutcome, emitPlaceLetter, cellLocks, emitCellLock, emitCellUnlock, leftPlayers } = useGameSocket(gameId, playerId);
+  const {
+    gameState, gameFinished, finishOutcome: socketFinishOutcome, emitPlaceLetter,
+    cellLocks, emitCellLock, emitCellUnlock, leftPlayers,
+    finalLetterPlaced, finalLetterPlacedSeq,
+  } = useGameSocket(gameId, playerId);
+
+  // ── Final-letter celebration ────────────────────────────────────────────────
+  // Holds the game-over scoreboard back for a beat after the puzzle-completing
+  // placement so everyone sees who finished it before the transition. Gated on
+  // the server-broadcast sequence number (not local timing), so it fires once,
+  // in sync, for every client — including the player who placed the letter.
+  const [dismissedCelebrationSeq, setDismissedCelebrationSeq] = useState(0);
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isCelebratingFinalLetter =
+    finalLetterPlacedSeq > 0 && finalLetterPlacedSeq > dismissedCelebrationSeq;
+
+  useEffect(() => {
+    if (finalLetterPlacedSeq === 0 || finalLetterPlacedSeq <= dismissedCelebrationSeq) return;
+    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+    // Solo games have no one else to celebrate in front of — skip the beat.
+    const delay = playerNames.size > 1 ? FINAL_LETTER_CELEBRATION_MS : 0;
+    celebrationTimerRef.current = setTimeout(() => {
+      setDismissedCelebrationSeq(finalLetterPlacedSeq);
+    }, delay);
+    return () => {
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+    };
+  }, [finalLetterPlacedSeq, dismissedCelebrationSeq, playerNames.size]);
 
   // ── Refs for lock emissions (avoid stale closures) ──────────────────────────
   /** Tracks the cell currently held by this player so unlock can be emitted on navigation. */
@@ -144,10 +184,22 @@ export default function WordBuildingGame() {
     };
 
     const load = async () => {
-      const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
+      const [loadedGame, player] = await Promise.all([
+        gamesApi.getById({ gameId }).catch(() => null),
+        playersApi.getById(playerId).catch(() => null),
+      ]);
       if (cancelled) return;
 
-      if (!loadedGame || loadedGame.isFinished) {
+      // Authoritative, server-side "did I leave this game" check — Player.currentGameId
+      // is cleared the moment this player leaves an active match (games.service.leave)
+      // and is independent of whether the match itself is still running for others.
+      // This is what stops browser Back / refresh / a stale tab from rejoining a game
+      // this player already left, even while other players are still actively playing it.
+      // `player === null` (fetch failed) fails open so a transient network error doesn't
+      // block a legitimately active player.
+      const hasLeftThisGame = player != null && player.currentGameId !== gameId;
+
+      if (!loadedGame || loadedGame.isFinished || hasLeftThisGame) {
         await redirectAfterEndedGame();
         return;
       }
@@ -205,23 +257,9 @@ export default function WordBuildingGame() {
     setSolved(gameState.solved);
   }, [gameState]);
 
-  // ── React to game:finished WS event ───────────────────────────────────────
-  useEffect(() => {
-    if (!gameFinished) return;
-    // Overlay handles navigation when the puzzle was solved or the player manually left.
-    if (solved || manuallyShowOverlay) return;
-    // Force-ended (not solved by players) — redirect immediately.
-    if (hasLeftForLobbyRef.current) return;
-    hasLeftForLobbyRef.current = true;
-    const stored = getPlayerSession();
-    if (stored && !isSessionExpired(stored.expiresAt)) {
-      void restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt }).then(() => {
-        router.replace('/select_game');
-      });
-    } else {
-      router.replace('/session_over');
-    }
-  }, [gameFinished, solved, manuallyShowOverlay, router, loginAsPlayer, setSessionExpiresAt]);
+  // `game:finished` never redirects on its own — win or lose, natural finish or a
+  // player leaving, every client renders the final scoreboard overlay below and
+  // waits for the player to press "Return to Lobby" (handleReturnToLobby).
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -423,14 +461,6 @@ export default function WordBuildingGame() {
     return () => el.removeEventListener('keydown', handleKeyDown);
   }, [selectedRow, selectedCol, solved, gameId, playerId, emitPlaceLetter, advanceSelection]);
 
-  const isLastRemaining = useMemo(() => {
-    if (playerNames.size === 0) return false;
-    const remaining = [...playerNames.keys()].filter(
-      (id) => id === playerId || !leftPlayers[id],
-    );
-    return remaining.length <= 1;
-  }, [leftPlayers, playerId, playerNames]);
-
 /**
    * Handles a letter tile drop from the tile rack onto a crossword cell.
    * Sends the placement via WebSocket; the server validates and broadcasts the update.
@@ -451,16 +481,37 @@ export default function WordBuildingGame() {
     setDragTargetRow(row);
     setDragTargetCol(col);
   }, []);
-  
+
+  /**
+   * Whether this player is the last one still active in the match, purely to
+   * pick the right confirmation copy on the Abandon modal ("you'll end the
+   * game" vs. "the others keep playing"). Leaving itself is always the same
+   * REST call — the backend decides whether the match actually ends.
+   */
+  const isLastRemaining = useMemo(() => {
+    if (playerNames.size === 0) return false;
+    const remaining = [...playerNames.keys()].filter(
+      (id) => id === playerId || !leftPlayers[id],
+    );
+    return remaining.length <= 1;
+  }, [leftPlayers, playerId, playerNames]);
+
   /**
    * Builds a score snapshot from current state when no server outcome is available
-   * (e.g. when a non-last-remaining player leaves and the game has not yet ended).
+   * (network failure on the outcome fetch below). Participants come from the player
+   * roster — not from who happens to have a score event yet — so a player with no
+   * moves still shows up with 0 instead of vanishing from the list.
    */
   const buildFallbackOutcome = useCallback((): GameFinishOutcomeDto => {
-    const sorted = [...scores].sort((a, b) => b.score - a.score);
-    const maxScore = sorted[0]?.score ?? 0;
+    const scoreByPlayer = new Map(scores.map((s) => [s.playerId, s.score]));
+    const rosterIds = playerNames.size > 0 ? [...playerNames.keys()] : [...scoreByPlayer.keys()];
+    const withScores = rosterIds.map((pid) => ({
+      playerId: pid,
+      score: scoreByPlayer.get(pid) ?? 0,
+    }));
+    const maxScore = withScores.reduce((max, p) => Math.max(max, p.score), 0);
     return {
-      players: sorted.map(({ playerId: pid, score }) => ({
+      players: withScores.map(({ playerId: pid, score }) => ({
         playerId: pid,
         playerName: playerNames.get(pid) ?? `Player ${pid}`,
         score,
@@ -471,23 +522,20 @@ export default function WordBuildingGame() {
   }, [scores, playerNames]);
 
   /**
-   * Leaves this match and shows the score screen before navigating to the lobby.
-   * If this player is the last one, the game is finished for all players.
-   * If others are still playing, this player leaves while they continue.
-   * Either way, the score screen is shown so the player can review results.
+   * Leaves this match and shows this player's own score screen before
+   * navigating to the lobby. This is a per-player action — other players are
+   * never redirected or otherwise affected by it. The backend only finishes
+   * the match once every participant has left (`games.service.leave`); while
+   * others are still playing it just marks this player as gone and the match
+   * continues for them, so `getFinishOutcome` may still be null here — the
+   * fallback below covers that case with this player's last-known scores.
    */
   const leaveToLobby = async () => {
     setIsAbandoning(true);
     try {
-      if (isLastRemaining) {
-        const result = await gamesApi.finish({ gameId });
-        if (result.outcome) setManualFinishOutcome(result.outcome);
-        else setManualFinishOutcome(buildFallbackOutcome());
-      } else {
-        await gamesApi.leave({ gameId, playerId });
-        const outcome = await gamesApi.getFinishOutcome({ gameId }).catch(() => null);
-        setManualFinishOutcome(outcome ?? buildFallbackOutcome());
-      }
+      await gamesApi.leave({ gameId, playerId });
+      const outcome = await gamesApi.getFinishOutcome({ gameId }).catch(() => null);
+      setManualFinishOutcome(outcome ?? buildFallbackOutcome());
       setManuallyShowOverlay(true);
       setShowAbandonModal(false);
     } catch {
@@ -518,8 +566,10 @@ export default function WordBuildingGame() {
   }, [router, loginAsPlayer, setSessionExpiresAt]);
 
   // ── Derive game-over overlay data ─────────────────────────────────────────
-  // Show overlay when: puzzle solved naturally, OR player chose Back to Lobby.
-  const showGameOverOverlay = (gameFinished && solved) || manuallyShowOverlay;
+  // Show the scoreboard whenever the game has ended — solved, a player left, or
+  // this player chose Back to Lobby — except while the final-letter celebration
+  // is still holding the screen; that overlay yields to this one once it ends.
+  const showGameOverOverlay = (gameFinished && !isCelebratingFinalLetter) || manuallyShowOverlay;
 
   // Prefer socket outcome (natural finish), then manually fetched/built outcome.
   const effectiveFinishOutcome = socketFinishOutcome ?? manualFinishOutcome;
@@ -657,15 +707,6 @@ export default function WordBuildingGame() {
                 cluesAcross={cluesAcross}
                 cluesDown={cluesDown}
               />
-              {/* Mobile: Info & Direction */}
-              <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
-                {selectedRow !== null && selectedCol !== null && (
-                  <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                    {direction === 'across' ? t('directionAcross') : t('directionDown')}
-                  </span>
-                )}
-                <WordBuildingRulesInfo />
-              </div>
               <GameControls onLeave={() => setShowAbandonModal(true)} />
             </div>
 
@@ -673,7 +714,7 @@ export default function WordBuildingGame() {
         </div>
       </div>
 
-      {/* Abandon modal */}
+      {/* Abandon modal — leaving only affects this player unless they're the last one active */}
       {showAbandonModal && (
         <AbandonPlayModal
           onStay={() => setShowAbandonModal(false)}
@@ -684,13 +725,23 @@ export default function WordBuildingGame() {
       )}
 
       {/* Intro overlay — dismissed by the player before first interaction */}
-      {showIntro && !showGameOverOverlay && (
+      {showIntro && !showGameOverOverlay && !isCelebratingFinalLetter && (
         <WordBuildingIntroOverlay
           playerName={playerNames.get(playerId) ?? ''}
           hostTier={localHostTier}
           hostAnimal={localHostAnimal}
           hostClothesColor={localHostColour}
           onDismiss={() => setShowIntro(false)}
+        />
+      )}
+
+      {/* Final-letter celebration — same authoritative event for every client, shown once */}
+      {isCelebratingFinalLetter && finalLetterPlaced && !manuallyShowOverlay && (
+        <WordBuildingFinalLetterOverlay
+          playerName={playerNames.get(finalLetterPlaced.playerId) ?? finalLetterPlaced.playerName}
+          hostTier={playerAvatarTiers[finalLetterPlaced.playerId] ?? 0}
+          hostAnimal={playerAvatarAnimals[finalLetterPlaced.playerId] ?? 0}
+          hostClothesColor={playerColours[finalLetterPlaced.playerId]}
         />
       )}
 

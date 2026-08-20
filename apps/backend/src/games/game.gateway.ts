@@ -349,6 +349,26 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
 
     this.wordBuildingService.cancelLockTimer(gameId, dto.row, dto.col);
 
+    // Broadcast the final-letter celebration before `game:state` / `game:finished`
+    // so every client can start the celebration on the same authoritative event
+    // and hold the scoreboard transition until it has played out.
+    if (payload.solved && payload.finalPlacement) {
+      const {
+        playerId: finalPlayerId,
+        letter,
+        row,
+        col,
+      } = payload.finalPlacement;
+      const playerName = await this.getPlayerName(gameId, finalPlayerId);
+      this.server.to(`game:${gameId}`).emit('game:finalLetterPlaced', {
+        playerId: finalPlayerId,
+        playerName,
+        letter,
+        row,
+        col,
+      });
+    }
+
     this.server.to(`game:${gameId}`).emit('game:state', payload);
 
     const locksPayload = this.wordBuildingService.getLocksPayload(gameId);
@@ -448,13 +468,23 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
   }
 
   /**
-   * Broadcasts that a player has left the game room mid-play.
+   * Broadcasts that a player has left the game room mid-play. The game itself
+   * keeps running for everyone still in it — this only updates who is shown as
+   * having left.
    *
    * @param gameId The game room to notify.
    * @param playerId The player who left.
    * @param playerName Display name captured before leave.
+   * @param leftPlayersOverride Precomputed left-player map (playerId → name)
+   *   for callers that already tracked this themselves (Word Building); falls
+   *   back to Word Soup's own tracking when omitted.
    */
-  emitPlayerLeft(gameId: number, playerId: number, playerName: string) {
+  emitPlayerLeft(
+    gameId: number,
+    playerId: number,
+    playerName: string,
+    leftPlayersOverride?: Record<number, string>,
+  ) {
     const state = this.wordSoupService.markPlayerLeft(
       gameId,
       playerId,
@@ -463,7 +493,8 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     this.server.to(`game:${gameId}`).emit('game:playerLeft', {
       playerId,
       playerName,
-      leftPlayers: state?.leftPlayers ?? { [playerId]: playerName },
+      leftPlayers: leftPlayersOverride ??
+        state?.leftPlayers ?? { [playerId]: playerName },
       playerStreaks: state?.playerStreaks,
       state: state ?? undefined,
     });
