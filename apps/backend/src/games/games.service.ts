@@ -383,6 +383,7 @@ export class GamesService {
     }
 
     await this.wordSoupService.persistScores(gameId);
+    await this.wordBuildingService.persistScores(gameId);
 
     const now = new Date();
     const soupPlayStartedAt = this.wordSoupService.getPlayStartedAt(gameId);

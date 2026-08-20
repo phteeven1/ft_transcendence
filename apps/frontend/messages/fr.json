@@ -447,7 +447,7 @@
         "returnToLobby": "Retour au lobby"
       },
       "finalLetter": {
-        "announcement": "🎉 {name} a placé la dernière lettre ! Félicitations !",
+        "announcement": "{name} a placé la dernière lettre ! Félicitations !",
         "subtext": "Puzzle terminé — scores finaux dans un instant…"
       }
     },

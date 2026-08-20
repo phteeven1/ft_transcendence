@@ -154,6 +154,10 @@ model GamePlayer {
   freezeCount    Int @default(0)
   /// Whether the player completed the puzzle (all words / crossword solved).
   completed      Boolean @default(false)
+  /// Set the moment a player explicitly leaves an active match. Null while
+  /// still actively playing. The row itself is never deleted so final
+  /// results survive — this field is what distinguishes active vs left.
+  leftAt         DateTime?
 
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)

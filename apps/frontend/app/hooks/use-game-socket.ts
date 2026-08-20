@@ -311,11 +311,23 @@ export function useGameSocket(gameId: number, playerId: number) {
     socketRef.current?.emit('guess:submit', { gameId, playerId, selection });
   }, [gameId, playerId]);
 
+  /**
+   * Merges an authoritative left-players snapshot (e.g. from a REST init/
+   * rehydrate response) into socket state, without clobbering any more-recent
+   * entries this client already received live via game:playerLeft.
+   *
+   * @param snapshot Left-player map fetched from a REST init/hydrate response.
+   */
+  const mergeLeftPlayers = useCallback((snapshot: Record<number, string>) => {
+    setState((s) => ({ ...s, leftPlayers: { ...snapshot, ...s.leftPlayers } }));
+  }, []);
+
   return {
     ...state,
     emitPlaceLetter,
     emitCellLock,
     emitCellUnlock,
     emitSubmitGuess,
+    mergeLeftPlayers,
   };
 }

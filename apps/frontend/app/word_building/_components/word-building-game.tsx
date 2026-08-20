@@ -92,6 +92,10 @@ export default function WordBuildingGame() {
   const [showAbandonModal,      setShowAbandonModal]      = useState(false);
   const [isAbandoning,          setIsAbandoning]          = useState(false);
   const [playerNames,           setPlayerNames]           = useState<Map<number, string>>(new Map());
+  // Authoritative participant count, from the game record fetched at mount —
+  // available well before the async playerNames roster fetch resolves, so
+  // this (not playerNames.size) is what should gate solo-vs-multiplayer logic.
+  const [rosterPlayerIds,       setRosterPlayerIds]       = useState<number[] | null>(null);
   const [startedTime,          setStartedTime]           = useState<string | null>(null);
   const [loading,              setLoading]               = useState(true);
   const [playerColours,        setPlayerColours]         = useState<Record<number, string>>({});
@@ -109,7 +113,7 @@ export default function WordBuildingGame() {
   // ── WebSocket ───────────────────────────────────────────────────────────────
   const {
     gameState, gameFinished, finishOutcome: socketFinishOutcome, emitPlaceLetter,
-    cellLocks, emitCellLock, emitCellUnlock, leftPlayers,
+    cellLocks, emitCellLock, emitCellUnlock, leftPlayers, mergeLeftPlayers,
     finalLetterPlaced, finalLetterPlacedSeq,
   } = useGameSocket(gameId, playerId);
 
@@ -118,23 +122,30 @@ export default function WordBuildingGame() {
   // placement so everyone sees who finished it before the transition. Gated on
   // the server-broadcast sequence number (not local timing), so it fires once,
   // in sync, for every client — including the player who placed the letter.
+  //
+  // Multiplayer-ness is derived from rosterPlayerIds (the authoritative game
+  // roster fetched at mount), not playerNames.size — that map is populated by
+  // a separate async fetch with no ordering guarantee against the final-letter
+  // event, so it can still read 0/1 for a real multiplayer game.
   const [dismissedCelebrationSeq, setDismissedCelebrationSeq] = useState(0);
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMultiplayer = (rosterPlayerIds?.length ?? playerNames.size) > 1;
   const isCelebratingFinalLetter =
-    finalLetterPlacedSeq > 0 && finalLetterPlacedSeq > dismissedCelebrationSeq;
+    isMultiplayer && finalLetterPlacedSeq > 0 && finalLetterPlacedSeq > dismissedCelebrationSeq;
 
   useEffect(() => {
+    // Solo games have no one else to celebrate in front of — skip the
+    // celebration state entirely instead of flashing it for one render.
+    if (!isMultiplayer) return;
     if (finalLetterPlacedSeq === 0 || finalLetterPlacedSeq <= dismissedCelebrationSeq) return;
     if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-    // Solo games have no one else to celebrate in front of — skip the beat.
-    const delay = playerNames.size > 1 ? FINAL_LETTER_CELEBRATION_MS : 0;
     celebrationTimerRef.current = setTimeout(() => {
       setDismissedCelebrationSeq(finalLetterPlacedSeq);
-    }, delay);
+    }, FINAL_LETTER_CELEBRATION_MS);
     return () => {
       if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
     };
-  }, [finalLetterPlacedSeq, dismissedCelebrationSeq, playerNames.size]);
+  }, [finalLetterPlacedSeq, dismissedCelebrationSeq, isMultiplayer]);
 
   // ── Refs for lock emissions (avoid stale closures) ──────────────────────────
   /** Tracks the cell currently held by this player so unlock can be emitted on navigation. */
@@ -205,6 +216,7 @@ export default function WordBuildingGame() {
       }
 
       setStartedTime(loadedGame.startedTime ?? null);
+      setRosterPlayerIds(loadedGame.players);
 
       try {
         const data = await wordBuildingApi.initCourt(gameId);
@@ -212,6 +224,7 @@ export default function WordBuildingGame() {
         setVisibleCourt(data.visibleCourt);
         setCluesAcross(data.clues.across);
         setCluesDown(data.clues.down);
+        mergeLeftPlayers(data.leftPlayers);
 
         // availableLetters is pre-computed by the backend from the solution grid.
         // trueCourt.char is intentionally empty (solution hidden), so extracting
@@ -247,7 +260,7 @@ export default function WordBuildingGame() {
     return () => {
       cancelled = true;
     };
-  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt]);
+  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt, mergeLeftPlayers]);
 
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
@@ -621,15 +634,26 @@ export default function WordBuildingGame() {
               <WordBuildingTitle solved={solved} />
             </div>
 
-            {/* Info & Direction — under title */}
+            {/* Time & Info — one row, directly under the title. Time stays left,
+                Info (plus the direction badge, shown while a cell is selected)
+                stays right; the row wraps rather than overflowing if all three
+                don't fit on one line in the narrow sidebar column. */}
             <div className="lg:col-start-1 lg:row-start-2">
-              <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
-                {selectedRow !== null && selectedCol !== null && (
-                  <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                    {direction === 'across' ? t('directionAcross') : t('directionDown')}
-                  </span>
-                )}
-                <WordBuildingRulesInfo />
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
+                <GameClock
+                  startedAtMs={startedAtMs}
+                  stopped={solved}
+                  label={t('timeLabel')}
+                  bare
+                />
+                <div className="flex shrink-0 items-center gap-2">
+                  {selectedRow !== null && selectedCol !== null && (
+                    <span className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                      {direction === 'across' ? t('directionAcross') : t('directionDown')}
+                    </span>
+                  )}
+                  <WordBuildingRulesInfo />
+                </div>
               </div>
             </div>
 
@@ -647,7 +671,7 @@ export default function WordBuildingGame() {
               />
             </div>
 
-            {/* Sidebar — players, clock, clues */}
+            {/* Sidebar — players, clues (clock now lives in the row under the title) */}
             <aside
               className="hidden min-h-0 flex-col gap-3 lg:col-start-1 lg:row-start-3 lg:flex"
               aria-label={t('scoreboardLabel')}
@@ -662,12 +686,6 @@ export default function WordBuildingGame() {
                   playerAvatarAnimals={playerAvatarAnimals}
                   leftPlayers={leftPlayers}
                   orientation="vertical"
-                />
-                <GameClock
-                  startedAtMs={startedAtMs}
-                  stopped={solved}
-                  className="w-full justify-between"
-                  label={t('timeLabel')}
                 />
                 <GameInfoColumn
                   cluesAcross={cluesAcross}
@@ -696,13 +714,8 @@ export default function WordBuildingGame() {
               <GameControls onLeave={() => setShowAbandonModal(true)} />
             </div>
 
-            {/* Mobile: clock + clues + info + back to lobby */}
+            {/* Mobile: clues + back to lobby (clock + info now live in the row under the title) */}
             <div className="flex flex-col gap-3 lg:hidden">
-              <GameClock
-                startedAtMs={startedAtMs}
-                stopped={solved}
-                label={t('timeLabel')}
-              />
               <GameInfoColumn
                 cluesAcross={cluesAcross}
                 cluesDown={cluesDown}
