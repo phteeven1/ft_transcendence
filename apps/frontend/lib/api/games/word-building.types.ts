@@ -27,6 +27,8 @@ export type IInitCourtResponse = {
     across: ClueEntry[];
     down:   ClueEntry[];
   };
+  /** playerId → name, for participants who had already left before this init/rehydrate call. */
+  leftPlayers: Record<number, string>;
 };
 
 export type IGameStatePayload = {

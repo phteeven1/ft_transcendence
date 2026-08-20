@@ -4,6 +4,7 @@ import type { Icon as PhosphorIcon, IconWeight } from '@phosphor-icons/react';
 import {
   Book,
   CircleNotch,
+  Confetti,
   Crown,
   DotsThree,
   GameController,
@@ -42,7 +43,8 @@ export type IconName =
   | 'crown'
   | 'puzzle'
   | 'gear'
-  | 'upload';
+  | 'upload'
+  | 'confetti';
 
 const ICONS: Record<IconName, PhosphorIcon> = {
   close: X,
@@ -64,6 +66,7 @@ const ICONS: Record<IconName, PhosphorIcon> = {
   puzzle: PuzzlePiece,
   gear: Gear,
   upload: UploadSimple,
+  confetti: Confetti,
 };
 
 export type IconProps = {
