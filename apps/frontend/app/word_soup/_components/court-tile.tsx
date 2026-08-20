@@ -119,8 +119,7 @@ export default function CourtTile({
         onSelectionStart(row, col);
       }}
       onMouseEnter={() => onSelectionContinue(row, col)}
-      onTouchStart={(event) => {
-        event.preventDefault();
+      onTouchStart={() => {
         onSelectionStart(row, col);
       }}
       className={[
