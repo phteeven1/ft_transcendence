@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, forwardRef, useId } from 'react';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -6,8 +6,13 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, id, className = '', ...props }, ref) => {
-    const inputId = id ?? props.name;
+  (
+    { label, error, id, name, autoComplete, className = '', ...props },
+    ref,
+  ) => {
+    const generatedId = useId();
+    const inputId = id ?? name ?? generatedId;
+    const inputName = name ?? inputId;
 
     return (
       <div className="space-y-1">
@@ -19,6 +24,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
+          name={inputName}
+          autoComplete={autoComplete}
           className={['clay-input', error ? 'clay-input-error' : '', className]
             .filter(Boolean)
             .join(' ')}

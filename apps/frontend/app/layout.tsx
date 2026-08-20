@@ -30,7 +30,7 @@ export default async function RootLayout({
           <LanguageProvider>
             <I18nProvider initialLocale={locale as LocaleCode} initialMessages={messages}>
               <TopBar />
-              <main className="flex flex-1 flex-col">{children}</main>
+              <main className="page-main flex flex-1 flex-col">{children}</main>
               <SiteFooter />
             </I18nProvider>
           </LanguageProvider>

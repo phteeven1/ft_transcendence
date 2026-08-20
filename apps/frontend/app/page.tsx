@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
-import { PageShell } from './components/ui/page-shell';
 import { useRedirectIfParent } from './hooks/use-redirect-if-parent';
 
 export default function Home() {
@@ -20,16 +19,16 @@ export default function Home() {
 
   if (isRedirecting) {
     return (
-      <PageShell centered>
+      <div className="page-content page-content--centered">
         <p className="text-center text-sm text-muted-foreground">
           {tCommon('loadingEllipsis')}
         </p>
-      </PageShell>
+      </div>
     );
   }
 
   return (
-    <PageShell centered>
+    <div className="page-content page-content--centered">
       <Card variant="feature" className="text-center max-w-2xl mx-auto">
         <p className="text-sm font-heading font-semibold uppercase tracking-widest text-primary mb-2">
           {t('tagline')}
@@ -62,6 +61,6 @@ export default function Home() {
           </Card>
         ))}
       </div>
-    </PageShell>
+    </div>
   );
 }

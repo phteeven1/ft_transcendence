@@ -63,7 +63,7 @@ export default function CreatePlayer({ open, onClose, onCreated }: Props) {
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           placeholder={t('create.playerNamePlaceholder')}
-          autoComplete="new-password"
+          autoComplete="off"
         />
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>

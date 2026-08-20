@@ -165,6 +165,7 @@ export default function InviteToPlay({ player, open, onClose }: Props) {
           value={sessionMinutes}
           onChange={(e) => setSessionMinutes(e.target.value)}
           placeholder={t('invite.minutesPlaceholder')}
+          autoComplete="off"
         />
         <div className="flex gap-2 pt-1">
           {SESSION_SHORTCUTS.map((mins) => (

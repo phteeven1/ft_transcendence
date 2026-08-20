@@ -4,7 +4,6 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { usersApi } from '@/lib/api';
-import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -57,16 +56,16 @@ export default function Register() {
 
   if (isRedirecting) {
     return (
-      <PageShell narrow centered>
+      <div className="page-content page-content--narrow page-content--centered">
         <p className="text-center text-sm text-muted-foreground">
           {tCommon('loadingEllipsis')}
         </p>
-      </PageShell>
+      </div>
     );
   }
 
   return (
-    <PageShell narrow centered>
+    <div className="page-content page-content--narrow page-content--centered">
       <Card className="w-full">
         <h1 className="font-heading text-2xl font-bold mb-2 text-foreground">{t('title')}</h1>
         <p className="mb-6 text-muted-foreground">
@@ -82,7 +81,7 @@ export default function Register() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={t('usernamePlaceholder')}
-            autoComplete="name"
+            autoComplete="username"
             required
           />
           <Input
@@ -105,6 +104,7 @@ export default function Register() {
             value={formData.userEmail}
             onChange={handleChange}
             placeholder={t('emailPlaceholder')}
+            autoComplete="email"
             required
           />
           <Button type="submit" variant="accent" fullWidth>
@@ -121,6 +121,6 @@ export default function Register() {
       >
         {t('failed')}
       </Dialog>
-    </PageShell>
+    </div>
   );
 }

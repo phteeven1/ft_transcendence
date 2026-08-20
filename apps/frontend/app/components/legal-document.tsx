@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ReactNode } from 'react';
 import { Card } from './ui/card';
-import { PageShell } from './ui/page-shell';
 
 type LegalDocumentProps = {
   title: string;
@@ -16,7 +15,7 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
   const t = useTranslations('legal');
 
   return (
-    <PageShell>
+    <div className="page-content">
       <Card className="legal-prose">
         <header className="mb-8 border-b border-border/50 pb-6">
           <p className="mb-2 text-sm font-heading font-semibold uppercase tracking-widest text-primary">
@@ -40,6 +39,6 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
           </p>
         </footer>
       </Card>
-    </PageShell>
+    </div>
   );
 }

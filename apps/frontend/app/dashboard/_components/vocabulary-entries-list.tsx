@@ -2,9 +2,7 @@
 
 import { KeyboardEvent, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Icon } from '../../components/ui';
-import ListRow from './list-row';
-import NewListRow from './new-list-row';
+import { Icon, ListRow, NewListRow } from '../../components/ui';
 import {
   MAX_VOCAB_ENTRY_CHARS,
   canAddVocabularyEntry,
@@ -130,6 +128,8 @@ export default function VocabularyEntriesList({
                   ref={(el) => {
                     wordRefs.current[index] = el;
                   }}
+                  id={`word-${index}`}
+                  name={`word-${index}`}
                   value={entry.word}
                   maxLength={MAX_VOCAB_ENTRY_CHARS}
                   onChange={(e) => handleChange(index, 'word', e.target.value)}
@@ -142,11 +142,14 @@ export default function VocabularyEntriesList({
                     .join(' ')}
                   aria-invalid={isWordDuplicate}
                   aria-label={t('wordColumn')}
+                  autoComplete="off"
                 />
                 <input
                   ref={(el) => {
                     meaningRefs.current[index] = el;
                   }}
+                  id={`meaning-${index}`}
+                  name={`meaning-${index}`}
                   value={entry.meaning}
                   maxLength={MAX_VOCAB_ENTRY_CHARS}
                   onChange={(e) =>
@@ -161,6 +164,7 @@ export default function VocabularyEntriesList({
                     .join(' ')}
                   aria-invalid={isMeaningDuplicate}
                   aria-label={t('meaningColumn')}
+                  autoComplete="off"
                 />
               </div>
             </ListRow>

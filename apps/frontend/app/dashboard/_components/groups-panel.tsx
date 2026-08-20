@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Group } from '../../types';
-import { Panel } from '../../components/ui';
+import { Panel, ListRow, NewListRow } from '../../components/ui';
 import RowMenu, { RowMenuItem } from './row-menu';
-import ListRow from './list-row';
-import NewListRow from './new-list-row';
 import CreateGroup from './create-group';
 import RenameGroup from './rename-group';
 import LeaveGroup from './leave-group';
