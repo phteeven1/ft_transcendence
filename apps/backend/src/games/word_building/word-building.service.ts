@@ -100,8 +100,11 @@ export class WordBuildingService {
       where: { gameId },
     });
     if (existing) {
-      await this.loadOrHydrate(gameId);
-      return this.rehydrateInitResponse(existing);
+      const state = await this.loadOrHydrate(gameId);
+      return {
+        ...this.rehydrateInitResponse(existing),
+        leftPlayers: Object.fromEntries(state.leftPlayers),
+      };
     }
 
     // Fetch game with vocabulary
@@ -200,14 +203,20 @@ export class WordBuildingService {
         const concurrent = await this.prisma.crossword.findUniqueOrThrow({
           where: { gameId },
         });
-        await this.loadOrHydrate(gameId);
-        return this.rehydrateInitResponse(concurrent);
+        const state = await this.loadOrHydrate(gameId);
+        return {
+          ...this.rehydrateInitResponse(concurrent),
+          leftPlayers: Object.fromEntries(state.leftPlayers),
+        };
       }
       throw error;
     }
 
-    await this.loadOrHydrate(gameId);
-    return this.buildInitResponse(solution, clues);
+    const state = await this.loadOrHydrate(gameId);
+    return {
+      ...this.buildInitResponse(solution, clues),
+      leftPlayers: Object.fromEntries(state.leftPlayers),
+    };
   }
 
   /**
@@ -251,6 +260,11 @@ export class WordBuildingService {
     // Load live state (from memory or hydrate from database)
     const state = await this.loadOrHydrate(gameId);
 
+    // Reject actions from a player who has explicitly left this match — the
+    // backend must be authoritative even if the frontend already blocks
+    // rejoining or a stale/reconnected socket sends a placement anyway.
+    if (state.leftPlayers.has(playerId)) return null;
+
     // Ignore clicks on black squares (no-op)
     if (state.solution[row]?.[col] === null) return null;
 
@@ -287,6 +301,13 @@ export class WordBuildingService {
 
     // Build payload with current state
     const payload = this.buildPayload(state);
+
+    // The cell we just wrote was guaranteed not-yet-correct (checked above), so
+    // if the board is now fully solved, this placement is the one that just
+    // completed it — the authoritative "final letter" for the celebration event.
+    if (payload.solved) {
+      payload.finalPlacement = { playerId, letter: normalized, row, col };
+    }
 
     // Persist mid-game state periodically to prevent data loss on server restart
     if (state.revision % PERSISTENCE_INTERVAL === 0) {
@@ -409,7 +430,7 @@ export class WordBuildingService {
   private buildInitResponse(
     solution: (string | null)[][],
     clues: ClueMap,
-  ): IInitCourtResponse {
+  ): Omit<IInitCourtResponse, 'leftPlayers'> {
     const { offsetRow, offsetCol } = this.getBoardOffset(solution);
     const clueNumberMap = new Map<string, number>();
     for (const entry of [...clues.across, ...clues.down]) {
@@ -498,7 +519,7 @@ export class WordBuildingService {
     playerGrid: unknown;
     creditGrid: unknown;
     clues: unknown;
-  }): IInitCourtResponse {
+  }): Omit<IInitCourtResponse, 'leftPlayers'> {
     const solution = crossword.solution as (string | null)[][];
     const playerGrid = crossword.playerGrid as (string | null)[][];
     const clues = crossword.clues as ClueMap;
@@ -602,7 +623,9 @@ export class WordBuildingService {
 
     const crossword = await this.prisma.crossword.findUniqueOrThrow({
       where: { gameId },
-      include: { game: { include: { gamePlayers: true } } },
+      include: {
+        game: { include: { gamePlayers: { include: { player: true } } } },
+      },
     });
 
     const solution = crossword.solution as (string | null)[][];
@@ -628,8 +651,13 @@ export class WordBuildingService {
         );
 
     const scores = new Map<number, number>();
+    // Reconstructed from the persisted `leftAt` column rather than started
+    // empty — this is what makes left-player status survive a process
+    // restart or a different backend instance hydrating this game.
+    const leftPlayers = new Map<number, string>();
     for (const gp of crossword.game.gamePlayers) {
       scores.set(gp.playerId, gp.score);
+      if (gp.leftAt) leftPlayers.set(gp.playerId, gp.player.name);
     }
 
     const state: InternalLiveGameState = {
@@ -640,6 +668,7 @@ export class WordBuildingService {
       clues,
       revision: crossword.revision,
       locks: new Map(), // soft cell reservations — always empty on hydration
+      leftPlayers,
       offsetRow,
       offsetCol,
       clueNumberMap,
@@ -812,6 +841,80 @@ export class WordBuildingService {
     return { offsetRow, offsetCol };
   }
 
+  // ─── Player leave tracking (called by GamesService.leave) ──────────────────
+
+  /**
+   * Marks a player as having left an active match. Word Building never deletes
+   * a GamePlayer row on leave (final scores must survive to the last-known
+   * scoreboard), so DB row count can't tell the caller who is still actively
+   * playing — this in-memory set is the only source of truth for that.
+   *
+   * @param gameId Game the player left.
+   * @param playerId Player who left.
+   * @param playerName Display name captured before leave, for the broadcast.
+   * @returns Whether every participant has now left (the match should finish),
+   *   and the current left-player map (playerId → name) for the broadcast.
+   */
+  async markPlayerLeft(
+    gameId: number,
+    playerId: number,
+    playerName: string,
+  ): Promise<{ allLeft: boolean; leftPlayers: Record<number, string> }> {
+    const state = await this.loadOrHydrate(gameId);
+    state.leftPlayers.set(playerId, playerName);
+    // Durable so hydration in this or any other backend process can
+    // reconstruct left status without relying on in-memory state.
+    await this.prisma.gamePlayer.update({
+      where: { gameId_playerId: { gameId, playerId } },
+      data: { leftAt: new Date() },
+    });
+    const allLeft = [...state.scores.keys()].every((pid) =>
+      state.leftPlayers.has(pid),
+    );
+    return { allLeft, leftPlayers: Object.fromEntries(state.leftPlayers) };
+  }
+
+  /**
+   * Flushes the in-memory scores for a live game to `GamePlayer.score`
+   * without marking the crossword solved or the game finished — called from
+   * `GamesService.finish()` so a match that ends via abandon (not a full
+   * solve) still shows the points scored before everyone left. A no-op if
+   * this game was never hydrated in this process (nothing accumulated to
+   * flush); for a fully-solved game `persistCompletion` has already written
+   * scores and evicted the live state by the time this runs.
+   *
+   * @param gameId Game whose live scores should be flushed to the database.
+   */
+  async persistScores(gameId: number): Promise<void> {
+    const state = this.liveGames.get(gameId);
+    if (!state) return;
+    await this.prisma.$transaction(async (tx) => {
+      const liveRows = await tx.gamePlayer.findMany({
+        where: { gameId },
+        select: { playerId: true },
+      });
+      const liveIds = new Set(liveRows.map((r) => r.playerId));
+      for (const [playerId, score] of state.scores.entries()) {
+        if (!liveIds.has(playerId)) continue;
+        await tx.gamePlayer.update({
+          where: { gameId_playerId: { gameId, playerId } },
+          data: { score },
+        });
+      }
+    });
+  }
+
+  /**
+   * Evicts the in-memory live state for a game once it has finished without
+   * being solved (e.g. every participant left). Mirrors WordSoupService.clearCourt;
+   * a no-op if no live state exists (already solved, or never hydrated).
+   *
+   * @param gameId Game whose live state should be dropped.
+   */
+  clearLiveGame(gameId: number): void {
+    this.liveGames.delete(gameId);
+  }
+
   // ─── Cell lock management (called by GameGateway) ──────────────────────────
 
   /**
@@ -839,6 +942,7 @@ export class WordBuildingService {
   ): ICellLocksPayload {
     const state = this.liveGames.get(gameId);
     if (!state) return { locks: [] };
+    if (state.leftPlayers.has(playerId)) return this.getLocksPayload(gameId);
     const key = `${row},${col}`;
     const existing = state.locks.get(key);
     // Don't steal a lock held by another player
@@ -876,6 +980,7 @@ export class WordBuildingService {
   ): ICellLocksPayload {
     const state = this.liveGames.get(gameId);
     if (!state) return { locks: [] };
+    if (state.leftPlayers.has(playerId)) return this.getLocksPayload(gameId);
     const key = `${row},${col}`;
     const lock = state.locks.get(key);
     if (lock?.playerId === playerId) {

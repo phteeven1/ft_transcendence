@@ -12,6 +12,7 @@ import {
 } from '../progression/progression.constants';
 import { GameGateway } from './game.gateway';
 import { WordSoupService } from './word_soup/word-soup.service';
+import { WordBuildingService } from './word_building/word-building.service';
 
 export type Game = {
   id: number;
@@ -39,6 +40,7 @@ export class GamesService {
     @Inject(forwardRef(() => GameGateway))
     private readonly gateway: GameGateway,
     private readonly wordSoupService: WordSoupService,
+    private readonly wordBuildingService: WordBuildingService,
   ) {}
 
   /**
@@ -118,6 +120,37 @@ export class GamesService {
   ): Promise<Game | null | undefined> {
     const game = await this.findById(gameId);
     if (!game) return undefined;
+
+    // Leaving is a per-player action: it must only affect the player who left,
+    // never the others. Word Building keeps every participant's GamePlayer row
+    // for the life of the match (never deletes it on leave) so final scores are
+    // never lost — but that means DB row count can no longer tell us who is
+    // still actively playing. WordBuildingService tracks that in memory instead,
+    // and the match only finishes once every participant has left it — anyone
+    // still playing keeps their board, state, and score updates exactly as before.
+    if (
+      game.isActive &&
+      matchLeaderboardGameType(game.name) === GAME_TYPE_WORD_BUILDING
+    ) {
+      const roster = await this.findPlayersForGame(gameId);
+      const playerName =
+        roster.find((player) => player.id === playerId)?.name ??
+        `Player #${playerId}`;
+      await this.playersService.clearCurrentGame(playerId);
+      const { allLeft, leftPlayers } =
+        await this.wordBuildingService.markPlayerLeft(
+          gameId,
+          playerId,
+          playerName,
+        );
+      if (allLeft) {
+        const result = await this.finish(gameId);
+        return result?.game ?? null;
+      }
+      await this.emitLobbyUpdate(game.inGroup);
+      this.gateway.emitPlayerLeft(gameId, playerId, playerName, leftPlayers);
+      return this.findById(gameId);
+    }
 
     if (
       game.isActive &&
@@ -350,6 +383,7 @@ export class GamesService {
     }
 
     await this.wordSoupService.persistScores(gameId);
+    await this.wordBuildingService.persistScores(gameId);
 
     const now = new Date();
     const soupPlayStartedAt = this.wordSoupService.getPlayStartedAt(gameId);
@@ -389,6 +423,7 @@ export class GamesService {
     await this.emitLobbyUpdate(game.inGroup);
     this.gateway.emitGameFinished(gameId, outcome);
     this.wordSoupService.clearCourt(gameId);
+    this.wordBuildingService.clearLiveGame(gameId);
     return { game: result, outcome };
   }
 
