@@ -28,6 +28,7 @@ en.subject.pdf
 
 # Frontend is not needed when building the backend
 apps/frontend
+nginx
 
 # Local dev artifacts
 **/*.log

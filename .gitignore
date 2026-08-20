@@ -1,7 +1,7 @@
 .dev/
 node_modules/
 
-# Secrets — copy from .env.example; never commit real .env files
+# Secrets — never commit real .env files
 .env
 .env.*
 !.env.example

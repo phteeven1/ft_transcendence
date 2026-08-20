@@ -68,7 +68,7 @@ unset DEV_STOP_QUIET
 
 # Locally only Postgres runs in Docker — other containers would block ports
 if command -v docker >/dev/null 2>&1; then
-  docker compose stop backend frontend 2>/dev/null || true
+  docker compose stop backend frontend nginx 2>/dev/null || true
 fi
 
 BACK_PID=""

@@ -19,10 +19,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
-  await app.listen(4000);
+  await app.listen(4000, '0.0.0.0');
 }
 void bootstrap();
