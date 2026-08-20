@@ -16,7 +16,12 @@ type FakeGame = {
   progressionAppliedAt: Date | null;
 };
 
-type FakeGamePlayer = { gameId: number; playerId: number; score: number };
+type FakeGamePlayer = {
+  gameId: number;
+  playerId: number;
+  score: number;
+  leftAt?: Date | null;
+};
 
 /**
  * Minimal in-memory Prisma stand-in covering what GamesService.leave()/finish()
@@ -30,6 +35,9 @@ function createFakePrisma(
     'endedAt' | 'playStartedAt' | 'durationMs' | 'progressionAppliedAt'
   >,
   initialGamePlayers: FakeGamePlayer[],
+  // Defaults to a single black-square cell (unsolvable) — matches the
+  // original fixture used by tests that never call placeLetter().
+  solution: (string | null)[][] = [[null]],
 ) {
   const state: FakeGame = {
     ...game,
@@ -83,18 +91,59 @@ function createFakePrisma(
       gamePlayers.filter((gp) => gp.gameId === where.gameId).length,
     ),
   );
+  const gamePlayerUpdate = jest.fn(
+    ({
+      where,
+      data,
+    }: {
+      where: { gameId_playerId: { gameId: number; playerId: number } };
+      data: Partial<FakeGamePlayer>;
+    }) => {
+      const gp = gamePlayers.find(
+        (g) =>
+          g.gameId === where.gameId_playerId.gameId &&
+          g.playerId === where.gameId_playerId.playerId,
+      );
+      if (gp) Object.assign(gp, data);
+      return Promise.resolve(undefined);
+    },
+  );
 
-  // Minimal 1x1 solved-nothing crossword — these tests never call
-  // placeLetter(), so only the participant roster (via game.gamePlayers)
-  // that WordBuildingService.markPlayerLeft() reads actually matters.
+  // These tests only call placeLetter() (via wordBuildingService directly)
+  // when a case needs to exercise real in-memory scoring — the crossword's
+  // solution grid is configurable per-fixture via the `solution` parameter.
   const crosswordFindUniqueOrThrow = jest.fn(() =>
     Promise.resolve({
-      solution: [[null]],
-      playerGrid: [[null]],
-      creditGrid: [[null]],
+      solution,
+      playerGrid: solution.map((row) => row.map(() => null)),
+      creditGrid: solution.map((row) => row.map(() => null)),
       clues: { across: [], down: [] },
       revision: 0,
-      game: { gamePlayers: gamePlayers.map((gp) => ({ ...gp })) },
+      game: {
+        gamePlayers: gamePlayers.map((gp) => ({
+          ...gp,
+          player: { name: names.get(gp.playerId) ?? `Player #${gp.playerId}` },
+        })),
+      },
+    }),
+  );
+
+  // Backs WordBuildingService.persistScores()'s transaction — reads/writes
+  // the same in-memory gamePlayers store as everything else here.
+  const transaction = jest.fn((fn: (tx: unknown) => Promise<void>) =>
+    fn({
+      gamePlayer: {
+        findMany: jest.fn(({ where }: { where: { gameId: number } }) =>
+          Promise.resolve(
+            gamePlayers
+              .filter((gp) => gp.gameId === where.gameId)
+              .map((gp) => ({ playerId: gp.playerId })),
+          ),
+        ),
+        update: gamePlayerUpdate,
+      },
+      crossword: { update: jest.fn(() => Promise.resolve(undefined)) },
+      game: { update: jest.fn(() => Promise.resolve(undefined)) },
     }),
   );
 
@@ -110,6 +159,7 @@ function createFakePrisma(
       deleteMany: gamePlayerDeleteMany,
       findMany: gamePlayerFindMany,
       count: gamePlayerCount,
+      update: gamePlayerUpdate,
       create: jest.fn(),
     },
     crossword: {
@@ -117,6 +167,7 @@ function createFakePrisma(
       findUniqueOrThrow: crosswordFindUniqueOrThrow,
       update: jest.fn(() => Promise.resolve(undefined)),
     },
+    $transaction: transaction,
   };
 
   return {
@@ -132,10 +183,12 @@ function createGamesService(
     'endedAt' | 'playStartedAt' | 'durationMs' | 'progressionAppliedAt'
   >,
   initialGamePlayers: FakeGamePlayer[],
+  solution?: (string | null)[][],
 ) {
   const { prisma, setPlayerName, getGamePlayers } = createFakePrisma(
     game,
     initialGamePlayers,
+    solution,
   );
 
   const playersService = {
@@ -194,6 +247,7 @@ function createGamesService(
     prisma,
     gateway,
     wordSoupService,
+    wordBuildingService,
     playersService,
     setPlayerName,
     getGamePlayers,
@@ -341,6 +395,47 @@ describe('GamesService.leave — Word Building (per-player leave, not game-endin
 
     expect(result?.isFinished).toBe(true);
     expect(gateway.emitGameFinished).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('GamesService.finish — Word Building abandon flushes live scores', () => {
+  it('persists in-memory scores accumulated before an abandon-finish, not just the pre-session DB values', async () => {
+    const { service, wordBuildingService, getGamePlayers } = createGamesService(
+      {
+        id: 6,
+        name: 'Word Building',
+        inGroupId: 5,
+        initiatedById: 10,
+        initiatedTime: new Date(),
+        startedTime: new Date(),
+        isActive: true,
+        isFinished: false,
+      },
+      [
+        { gameId: 6, playerId: 10, score: 0 },
+        { gameId: 6, playerId: 20, score: 0 },
+      ],
+      [['A', 'B']],
+    );
+
+    // Player 10 scores a point via a real placement before anyone leaves.
+    // The puzzle stays unsolved (only 1 of 2 cells filled), so this point
+    // only lives in WordBuildingService's in-memory state until finish()
+    // flushes it — nothing else in this flow ever writes GamePlayer.score.
+    await wordBuildingService.placeLetter({
+      gameId: 6,
+      playerId: 10,
+      row: 0,
+      col: 0,
+      letter: 'a',
+    });
+
+    await service.leave(6, 10);
+    await service.leave(6, 20);
+
+    const players = getGamePlayers();
+    expect(players.find((p) => p.playerId === 10)?.score).toBe(1);
+    expect(players.find((p) => p.playerId === 20)?.score).toBe(0);
   });
 });
 

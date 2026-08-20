@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import HostCharacter from '@/app/components/game/host-character';
+import { Icon } from '@/app/components/ui';
 
 type Props = {
   playerName: string;
@@ -45,6 +46,8 @@ export default function WordBuildingFinalLetterOverlay({
       aria-live="assertive"
       aria-label={t('announcement', { name: playerName })}
     >
+      <Icon name="confetti" size={32} weight="fill" className="shrink-0 text-amber-300" />
+
       <div className="w-full pb-4 sm:pb-5">
         <SpeechBubble text={t('announcement', { name: playerName })} />
       </div>

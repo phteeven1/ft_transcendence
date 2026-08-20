@@ -11,6 +11,12 @@ type GameClockProps = {
   stopped?: boolean;
   className?: string;
   label?: string;
+  /**
+   * When true, omits the default pill chrome (border/background/padding/
+   * shadow) so the clock can sit directly inside a caller-provided container
+   * without a chip-in-a-chip look. Timer behavior is unaffected either way.
+   */
+  bare?: boolean;
 };
 
 /**
@@ -21,6 +27,7 @@ export default function GameClock({
   stopped = false,
   className = '',
   label = 'Time',
+  bare = false,
 }: GameClockProps) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -36,7 +43,8 @@ export default function GameClock({
   return (
     <div
       className={[
-        'inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-white/90 px-3 py-1.5 shadow-sm',
+        'inline-flex items-center gap-2',
+        bare ? '' : 'rounded-xl border border-teal-200 bg-white/90 px-3 py-1.5 shadow-sm',
         className,
       ]
         .filter(Boolean)

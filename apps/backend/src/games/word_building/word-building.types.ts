@@ -132,4 +132,10 @@ export type IInitCourtResponse = {
   visibleCourt: CourtCell[][]; // initial state — all word cells are 'empty'
   availableLetters: string[]; // unique letters from solution, sorted locale-aware
   clues: { across: Omit<ClueEntry, 'word'>[]; down: Omit<ClueEntry, 'word'>[] };
+  /**
+   * playerId → name, for participants who had already left this match before
+   * this init/rehydrate call. Lets a client that (re)connects after another
+   * player left learn that without waiting for a live game:playerLeft event.
+   */
+  leftPlayers: Record<number, string>;
 };
