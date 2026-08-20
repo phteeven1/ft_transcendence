@@ -86,7 +86,6 @@ export default function GameCourt({
     if (interactionDisabled) return;
     const touch = event.touches[0];
     if (!touch) return;
-    event.preventDefault();
     continueFromPoint(touch.clientX, touch.clientY, onSelectionContinue);
   };
 

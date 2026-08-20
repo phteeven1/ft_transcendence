@@ -156,16 +156,17 @@ export function useWordSoupGameOverOverlay(
 
     const POLL_MS = 200;
     let cleared = false;
+    let timeoutId = 0;
     const check = () => {
       if (cleared) return;
       if (!celebrationActiveRef.current) {
         setStartGameOverSequence(true);
       } else {
-        window.setTimeout(check, POLL_MS);
+        timeoutId = window.setTimeout(check, POLL_MS);
       }
     };
     const initialDelay = startImmediately ? 0 : GAME_OVER_OVERLAY_GRACE_MS;
-    const timeoutId = window.setTimeout(check, initialDelay);
+    timeoutId = window.setTimeout(check, initialDelay);
 
     return () => {
       cleared = true;

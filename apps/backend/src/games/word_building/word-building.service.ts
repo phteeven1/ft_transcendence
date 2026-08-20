@@ -690,12 +690,6 @@ export class WordBuildingService {
     state: InternalLiveGameState,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      const liveRows = await tx.gamePlayer.findMany({
-        where: { gameId },
-        select: { playerId: true },
-      });
-      const liveIds = new Set(liveRows.map((r) => r.playerId));
-
       await tx.crossword.update({
         where: { gameId },
         data: {
@@ -707,9 +701,8 @@ export class WordBuildingService {
       });
 
       for (const [playerId, score] of state.scores.entries()) {
-        if (!liveIds.has(playerId)) continue;
-        await tx.gamePlayer.update({
-          where: { gameId_playerId: { gameId, playerId } },
+        await tx.gamePlayer.updateMany({
+          where: { gameId, playerId },
           data: { score, completed: true },
         });
       }

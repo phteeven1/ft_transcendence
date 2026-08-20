@@ -247,23 +247,30 @@ export default function WordSoupGame() {
       </div>
 
       {ws.showGameOverOverlay && (
-        <WordSoupGameOverOverlay
-          phase={ws.gameOverPhase}
-          bubbleText={ws.gameOverBubbleText}
-          bubbleVisible={ws.gameOverBubbleVisible}
-          revealedPlayerIds={ws.gameOverRevealedPlayerIds}
-          playersById={ws.gameOverPlayersById}
-          playerColours={ws.playerColours}
-          playerAvatarTiers={ws.playerAvatarTiers}
-          playerAvatarAnimals={ws.playerAvatarAnimals}
-          hostTier={ws.localHostTier}
-          hostAnimal={ws.localHostAnimal}
-          hostClothesColor={localHostClothesColor}
-          localPlayerId={playerId}
-          newlyUnlockedTier={ws.newlyUnlockedTier}
-          showReturnButton={ws.showGameOverReturnButton}
-          onReturnToLobby={ws.handleReturnToLobby}
-        />
+        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
+          <div
+            className="pointer-events-auto relative h-full w-full min-w-0"
+            style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_WIDTH}px)` }}
+          >
+            <WordSoupGameOverOverlay
+              phase={ws.gameOverPhase}
+              bubbleText={ws.gameOverBubbleText}
+              bubbleVisible={ws.gameOverBubbleVisible}
+              revealedPlayerIds={ws.gameOverRevealedPlayerIds}
+              playersById={ws.gameOverPlayersById}
+              playerColours={ws.playerColours}
+              playerAvatarTiers={ws.playerAvatarTiers}
+              playerAvatarAnimals={ws.playerAvatarAnimals}
+              hostTier={ws.localHostTier}
+              hostAnimal={ws.localHostAnimal}
+              hostClothesColor={localHostClothesColor}
+              localPlayerId={playerId}
+              newlyUnlockedTier={ws.newlyUnlockedTier}
+              showReturnButton={ws.showGameOverReturnButton}
+              onReturnToLobby={ws.handleReturnToLobby}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
