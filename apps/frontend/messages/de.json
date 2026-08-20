@@ -445,6 +445,10 @@
         "pointsXp": "{score} Pkt. · +{xp} XP",
         "winner": "Gewinner",
         "returnToLobby": "Zurück zur Lobby"
+      },
+      "finalLetter": {
+        "announcement": "🎉 {name} hat den letzten Buchstaben gesetzt! Glückwunsch!",
+        "subtext": "Rätsel abgeschlossen — Endergebnis folgt…"
       }
     },
     "wordSoup": {

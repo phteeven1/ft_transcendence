@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+
 import { useTranslations } from 'next-intl';
 import HostCharacter from '@/app/components/game/host-character';
 
@@ -8,7 +8,6 @@ type Props = {
   hostTier?: number;
   hostAnimal?: number;
   hostClothesColor?: string;
-  onDismiss: () => void;
 };
 
 function SpeechBubble({ text }: { text: string }) {
@@ -25,43 +24,31 @@ function SpeechBubble({ text }: { text: string }) {
   );
 }
 
-export default function WordBuildingIntroOverlay({
+/**
+ * Transient full-screen banner shown to every player the instant the server
+ * confirms the puzzle-completing letter. Bridges the gap between the last
+ * correct placement and the final scoreboard so the win reads clearly instead
+ * of the game seeming to end abruptly.
+ */
+export default function WordBuildingFinalLetterOverlay({
   playerName,
   hostTier = 0,
   hostAnimal = 0,
   hostClothesColor,
-  onDismiss,
 }: Props) {
-  const t = useTranslations('games.wordBuilding.intro');
-  
-  // 5-second countdown state
-  const [countdown, setCountdown] = useState(5);
-
-  // Auto-dismiss when countdown reaches 0
-  useEffect(() => {
-    if (countdown === 0) {
-      onDismiss();
-      return;
-    }
-    const timer = setTimeout(() => {
-      setCountdown((prev) => prev - 1);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [countdown, onDismiss]);
+  const t = useTranslations('games.wordBuilding.finalLetter');
 
   return (
     <div
       className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 overflow-hidden bg-gradient-to-b from-teal-900/92 via-emerald-900/90 to-teal-950/95 px-3 py-4 backdrop-blur-md sm:gap-4 sm:px-4 sm:py-5"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('welcome', { name: playerName })}
+      role="status"
+      aria-live="assertive"
+      aria-label={t('announcement', { name: playerName })}
     >
-      {/* Speech bubble */}
       <div className="w-full pb-4 sm:pb-5">
-        <SpeechBubble text={t('welcome', { name: playerName })} />
+        <SpeechBubble text={t('announcement', { name: playerName })} />
       </div>
 
-      {/* Host character */}
       <div className="shrink-0">
         <HostCharacter
           animated
@@ -73,20 +60,9 @@ export default function WordBuildingIntroOverlay({
         />
       </div>
 
-      {/* Briefing text */}
       <p className="max-w-[22rem] text-center text-xs font-medium text-teal-100/80 sm:text-sm">
-        {t('briefing')}
+        {t('subtext')}
       </p>
-
-      {/* Countdown indicator (replaces the button) */}
-      <div className="mt-1 flex h-10 items-center justify-center sm:h-12 lg:h-14">
-        <span
-          key={countdown} // Retriggers the pulse animation every second
-          className="animate-pulse text-3xl font-black text-emerald-400 drop-shadow-md sm:text-4xl lg:text-5xl"
-        >
-          {countdown > 0 ? countdown : ''}
-        </span>
-      </div>
     </div>
   );
 }

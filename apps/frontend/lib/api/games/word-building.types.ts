@@ -44,6 +44,15 @@ export type IPlaceLetterDto = {
   letter:   string;
 };
 
+/** Broadcast once, to every client, on the placement that completes the puzzle. */
+export type IFinalLetterPlacedPayload = {
+  playerId:   number;
+  playerName: string;
+  letter:     string;
+  row:        number;
+  col:        number;
+};
+
 // ─── Cell locking ─────────────────────────────────────────────────────────────
 
 export type ICellLocksPayload = {
