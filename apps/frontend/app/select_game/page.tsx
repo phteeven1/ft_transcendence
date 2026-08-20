@@ -29,7 +29,6 @@ import { useLobbyProgression } from '../hooks/use-lobby-progression';
 import PuzzleWindow from './_components/puzzle-window';
 import ProgressionPanel from './_components/progression/progression-panel';
 import { AvatarTierThumb } from './_components/progression/avatar-tier-thumb';
-import { PageShell } from '../components/ui/page-shell';
 import { Button } from '../components/ui/button';
 import { Icon } from '../components/ui';
 
@@ -237,7 +236,7 @@ export default function SelectGame() {
   // clicking button opens JoinGameModal, if player isn't already in game
   return (
     <>
-      <PageShell>
+      <div className="page-content">
         {unlockToastTier !== null && (
           <div
             className="mb-4 flex items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50 px-4 py-3 text-teal-950 shadow-sm"
@@ -348,7 +347,7 @@ export default function SelectGame() {
             }}
           />
         </div>
-      </PageShell>
+      </div>
 
       {modal.kind === 'initiate' && (
         <InitiateGameModal

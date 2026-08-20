@@ -1,7 +1,6 @@
 'use client';
 
 import { ChangeEvent, SyntheticEvent, KeyboardEvent } from 'react';
-import { PageShell } from '../../components/ui/page-shell';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -33,7 +32,7 @@ export default function InvitationAuth({
   const t = useTranslations('invitation.auth');
 
   return (
-    <PageShell narrow centered>
+    <div className="page-content page-content--narrow page-content--centered">
       <Card className="w-full">
         <h1 className="font-heading text-2xl font-bold mb-2 text-center text-foreground">
           {t('title', { groupName })}
@@ -71,6 +70,7 @@ export default function InvitationAuth({
             onChange={onChange}
             onKeyDown={onKeyDown}
             placeholder={t('usernamePlaceholder')}
+            autoComplete="username"
             required
           />
           <Input
@@ -82,6 +82,9 @@ export default function InvitationAuth({
             onChange={onChange}
             onKeyDown={onKeyDown}
             placeholder={t('passwordPlaceholder')}
+            autoComplete={
+              authMode === 'register' ? 'new-password' : 'current-password'
+            }
             required
           />
           {authMode === 'register' && (
@@ -93,6 +96,7 @@ export default function InvitationAuth({
               value={formData.userEmail}
               onChange={onChange}
               placeholder={t('emailPlaceholder')}
+              autoComplete="email"
               required
             />
           )}
@@ -104,6 +108,6 @@ export default function InvitationAuth({
           </Button>
         </form>
       </Card>
-    </PageShell>
+    </div>
   );
 }

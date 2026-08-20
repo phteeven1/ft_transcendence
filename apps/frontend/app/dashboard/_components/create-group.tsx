@@ -63,6 +63,7 @@ export default function CreateGroup({ open, onClose, onCreated }: Props) {
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
           placeholder={t('groupNamePlaceholder')}
+          autoComplete="off"
         />
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>

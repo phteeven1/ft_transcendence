@@ -97,6 +97,7 @@ function RenameGroupForm({
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder={t('rename.newNamePlaceholder')}
+          autoComplete="off"
           autoFocus
         />
         {error && <p className="text-destructive text-sm">{error}</p>}

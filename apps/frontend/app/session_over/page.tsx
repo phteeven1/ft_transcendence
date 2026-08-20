@@ -9,7 +9,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
-import { PageShell } from '../components/ui/page-shell';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 
@@ -24,7 +23,7 @@ export default function SessionOver() {
   }, [logoutPlayer]);
 
   return (
-    <PageShell narrow centered>
+    <div className="page-content page-content--narrow page-content--centered">
       <Card className="w-full text-center space-y-4">
         <h1 className="font-heading text-2xl font-bold text-foreground">{t('title')}</h1>
         <p className="text-muted-foreground text-sm">
@@ -42,6 +41,6 @@ export default function SessionOver() {
           {tCommon('ok')}
         </Button>
       </Card>
-    </PageShell>
+    </div>
   );
 }

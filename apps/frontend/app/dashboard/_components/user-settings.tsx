@@ -101,6 +101,7 @@ function UserSettingsDialog({
             type="text"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
+            autoComplete="username"
           />
 
           <div>
@@ -141,18 +142,21 @@ function UserSettingsDialog({
             type="password"
             value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)}
+            autoComplete="current-password"
           />
           <Input
             label={t('newPasswordLabel')}
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="new-password"
           />
           <Input
             label={t('confirmNewPasswordLabel')}
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
           />
           {passwordError && (
             <p className="text-destructive text-sm">{passwordError}</p>

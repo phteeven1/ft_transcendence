@@ -233,6 +233,7 @@ export default function AddVocabulary({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t('listNamePlaceholder')}
+            autoComplete="off"
           />
           <VocabularyEntriesList
             entries={entries}
@@ -276,10 +277,15 @@ export default function AddVocabulary({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
+              <label
+                htmlFor="vocab-from-language"
+                className="block text-sm font-semibold text-foreground mb-1"
+              >
                 {t('fromLanguage')}
               </label>
               <select
+                id="vocab-from-language"
+                name="vocab-from-language"
                 value={fromLanguage}
                 onChange={(e) => {
                   setFromLanguage(e.target.value);
@@ -295,10 +301,15 @@ export default function AddVocabulary({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
+              <label
+                htmlFor="vocab-to-language"
+                className="block text-sm font-semibold text-foreground mb-1"
+              >
                 {t('toLanguage')}
               </label>
               <select
+                id="vocab-to-language"
+                name="vocab-to-language"
                 value={toLanguage}
                 onChange={(e) => {
                   setToLanguage(e.target.value);
@@ -315,7 +326,15 @@ export default function AddVocabulary({
             </div>
           </div>
 
+          <label
+            htmlFor="vocab-ai-file"
+            className="block text-sm font-semibold text-foreground mb-1"
+          >
+            {t('aiUpload')}
+          </label>
           <input
+            id="vocab-ai-file"
+            name="vocab-ai-file"
             type="file"
             accept="image/*,.pdf"
             onChange={(e) => {

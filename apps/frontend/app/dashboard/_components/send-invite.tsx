@@ -97,13 +97,19 @@ function SendInviteForm({
     >
       <div className="flex flex-col gap-4">
         <div>
-          <label className="block text-sm font-semibold text-foreground mb-1">
+          <label
+            htmlFor="invite-message"
+            className="block text-sm font-semibold text-foreground mb-1"
+          >
             {t('sendInviteModal.invitationLabel')}
           </label>
           <textarea
+            id="invite-message"
+            name="invite-message"
             value={inviteText}
             onChange={(e) => setInviteText(e.target.value)}
             rows={6}
+            autoComplete="off"
             className="clay-input w-full resize-y text-sm"
           />
         </div>
@@ -113,6 +119,7 @@ function SendInviteForm({
           value={inviteEmail}
           onChange={(e) => setInviteEmail(e.target.value)}
           placeholder={t('sendInviteModal.emailPlaceholder')}
+          autoComplete="email"
         />
 
         {inviteStatus === 'error' && (

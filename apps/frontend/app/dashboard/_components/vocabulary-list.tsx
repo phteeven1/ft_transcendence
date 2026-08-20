@@ -2,8 +2,7 @@
 import { useTranslations } from 'next-intl';
 import { Vocabulary } from '../../types';
 import RowMenu, { RowMenuItem } from './row-menu';
-import ListRow from './list-row';
-import NewListRow from './new-list-row';
+import { ListRow, NewListRow } from '../../components/ui';
 
 export type VocabularyAction = 'edit' | 'delete';
 
