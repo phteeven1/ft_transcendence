@@ -19,11 +19,16 @@ function createFakePrisma() {
   const gamePlayerFindMany = jest.fn(() => Promise.resolve([{ playerId: 1 }]));
   const crosswordUpdate = jest.fn(() => Promise.resolve(undefined));
   const gamePlayerUpdate = jest.fn(() => Promise.resolve(undefined));
+  const gamePlayerUpdateMany = jest.fn(() => Promise.resolve({ count: 1 }));
   const gameUpdate = jest.fn(() => Promise.resolve(undefined));
 
   const transaction = jest.fn((fn: (tx: unknown) => Promise<void>) =>
     fn({
-      gamePlayer: { findMany: gamePlayerFindMany, update: gamePlayerUpdate },
+      gamePlayer: {
+        findMany: gamePlayerFindMany,
+        update: gamePlayerUpdate,
+        updateMany: gamePlayerUpdateMany,
+      },
       crossword: { update: crosswordUpdate },
       game: { update: gameUpdate },
     }),
@@ -39,13 +44,14 @@ function createFakePrisma() {
     },
     crosswordUpdate,
     gamePlayerUpdate,
+    gamePlayerUpdateMany,
     gameUpdate,
   };
 }
 
 describe('WordBuildingService.placeLetter — final-letter detection', () => {
   it('attaches finalPlacement only on the placement that completes the puzzle', async () => {
-    const { prisma, gameUpdate } = createFakePrisma();
+    const { prisma, gameUpdate, gamePlayerUpdateMany } = createFakePrisma();
     const service = new WordBuildingService(prisma as never);
 
     const payload = await service.placeLetter({
@@ -68,6 +74,10 @@ describe('WordBuildingService.placeLetter — final-letter detection', () => {
     expect(gameUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { isFinished: true } }),
     );
+    expect(gamePlayerUpdateMany).toHaveBeenCalledWith({
+      where: { gameId: 1, playerId: 1 },
+      data: { score: 1, completed: true },
+    });
   });
 
   it('does not attach finalPlacement on a placement that leaves cells unsolved', async () => {

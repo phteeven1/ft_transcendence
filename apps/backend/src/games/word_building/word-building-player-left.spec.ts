@@ -47,6 +47,7 @@ function createFakePrisma(
   );
 
   const gamePlayerUpdate = jest.fn(() => Promise.resolve(undefined));
+  const gamePlayerUpdateMany = jest.fn(() => Promise.resolve({ count: 1 }));
 
   const transactionGamePlayerFindMany = jest.fn(() =>
     Promise.resolve(liveGamePlayerIds.map((playerId) => ({ playerId }))),
@@ -56,6 +57,7 @@ function createFakePrisma(
       gamePlayer: {
         findMany: transactionGamePlayerFindMany,
         update: gamePlayerUpdate,
+        updateMany: gamePlayerUpdateMany,
       },
       crossword: { update: jest.fn(() => Promise.resolve(undefined)) },
       game: { update: jest.fn(() => Promise.resolve(undefined)) },
@@ -67,7 +69,7 @@ function createFakePrisma(
       findUniqueOrThrow: crosswordFindUniqueOrThrow,
       update: jest.fn(() => Promise.resolve(undefined)),
     },
-    gamePlayer: { update: gamePlayerUpdate },
+    gamePlayer: { update: gamePlayerUpdate, updateMany: gamePlayerUpdateMany },
     $transaction: transaction,
   };
 }
