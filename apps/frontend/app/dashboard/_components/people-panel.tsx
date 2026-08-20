@@ -3,10 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Member, Player } from '../../types';
-import { Panel, Chip, Icon } from '../../components/ui';
+import { Panel, Chip, Icon, ListRow, NewListRow } from '../../components/ui';
 import RowMenu, { RowMenuItem } from './row-menu';
-import ListRow from './list-row';
-import NewListRow from './new-list-row';
 import SendInvite from './send-invite';
 import CreatePlayer from './create-player';
 import AddVocabulary from './add-vocabulary';

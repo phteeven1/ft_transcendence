@@ -1,6 +1,5 @@
 'use client';
 
-import { PageShell } from '../../components/ui/page-shell';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { useTranslations } from 'next-intl';
@@ -19,7 +18,7 @@ export default function InvitationConfirm({
   const t = useTranslations('invitation.confirm');
 
   return (
-    <PageShell narrow centered>
+    <div className="page-content page-content--narrow page-content--centered">
       <Card className="w-full text-center">
         <h1 className="font-heading text-2xl font-bold mb-4 text-foreground">
           {t('title', { groupName })}
@@ -36,6 +35,6 @@ export default function InvitationConfirm({
           </Button>
         </div>
       </Card>
-    </PageShell>
+    </div>
   );
 }

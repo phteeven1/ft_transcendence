@@ -138,7 +138,7 @@ XP, avatars, and a lobby leaderboard live under `progression/` and are claimed a
 | Frontend + backend frameworks | Major (Web)           | 2   | Next.js 16 + NestJS 11                 | `apps/frontend/`, `apps/backend/`                            |
 | Real-time (WebSockets)        | Major (Web)           | 2   | Socket.IO lobby + in-game              | `games/game.gateway.ts`, `use-game-socket.ts`                |
 | ORM                           | Minor (Web)           | 1   | Prisma 7 + PostgreSQL 16               | `packages/database/prisma/schema.prisma`                     |
-| Custom design system          | Minor (Web)           | 1   | Claymorphism, 13 UI components         | `app/components/ui/`, `design-tokens.json`                   |
+| Custom design system          | Minor (Web)           | 1   | Claymorphism, 10 UI components         | `app/components/ui/`, `design-tokens.json`                   |
 | i18n (3 languages)            | Minor (Accessibility) | 1   | next-intl, en / de / fr, flag switcher | `messages/{en,de,fr}.json`, `flag-menu.tsx`                  |
 | Organization system           | Major (User)          | 2   | Groups, ADMIN/MEMBER, invitations      | `groups.service.ts`, `invitations.service.ts`                |
 | Game statistics               | Minor (User)          | 1   | Wins, streaks, last 5 games, per type  | `progression-stats.service.ts`, `progression-my-stats.tsx`   |

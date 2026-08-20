@@ -4,7 +4,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../context/auth-context';
-import { PageShell, Panel } from '../components/ui';
+import { Panel } from '../components/ui';
 import GroupsPanel from './_components/groups-panel';
 import PeoplePanel from './_components/people-panel';
 import { DashboardLiveProvider } from './_hooks/dashboard-live';
@@ -17,9 +17,9 @@ function DashboardLoading() {
   const tCommon = useTranslations('common');
 
   return (
-    <PageShell wide>
+    <div className="page-content page-content--wide">
       <p className="text-center text-sm text-muted-foreground">{tCommon('loadingEllipsis')}</p>
-    </PageShell>
+    </div>
   );
 }
 
@@ -66,7 +66,7 @@ function Dashboard() {
     return <DashboardLoading />;
 
   return (
-    <PageShell wide>
+    <div className="page-content page-content--wide">
       <DashboardLiveProvider
         userId={user.id}
         groupId={group?.id ?? 0}
@@ -90,6 +90,6 @@ function Dashboard() {
           </div>
         </div>
       </DashboardLiveProvider>
-    </PageShell>
+    </div>
   );
 }

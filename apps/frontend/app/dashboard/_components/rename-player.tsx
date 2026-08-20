@@ -57,11 +57,12 @@ export default function RenamePlayer({
       confirmDisabled={!renameName.trim()}
     >
       <Input
+        label={t('rename.placeholder')}
         type="text"
         value={renameName}
         onChange={(e) => setRenameName(e.target.value)}
         placeholder={t('rename.placeholder')}
-        autoComplete="new-password"
+        autoComplete="off"
       />
       {error && <p className="text-sm text-destructive mt-3">{error}</p>}
     </Dialog>
