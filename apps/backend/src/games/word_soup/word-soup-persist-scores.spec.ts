@@ -8,7 +8,9 @@ function sharedCourtsOf(service: WordSoupService): CourtMap {
   return (service as unknown as { sharedCourts: CourtMap }).sharedCourts;
 }
 
-function createCourt(overrides: Partial<SharedWordSoupCourt> = {}): SharedWordSoupCourt {
+function createCourt(
+  overrides: Partial<SharedWordSoupCourt> = {},
+): SharedWordSoupCourt {
   const now = Date.now();
   return {
     trueCourt: createEmptyCourt(),
@@ -39,9 +41,11 @@ function createCourt(overrides: Partial<SharedWordSoupCourt> = {}): SharedWordSo
   };
 }
 
-function createFakePrisma(options: {
-  survivingPlayerIds?: number[];
-} = {}) {
+function createFakePrisma(
+  options: {
+    survivingPlayerIds?: number[];
+  } = {},
+) {
   const surviving = new Set(options.survivingPlayerIds ?? [1, 2]);
 
   const gamePlayerUpdateMany = jest.fn(
@@ -88,7 +92,8 @@ describe('WordSoupService.persistScores', () => {
   });
 
   it('writes score, streak, wordsFound, freezeCount, and completed via updateMany', async () => {
-    const { prisma, gamePlayerUpdateMany, playerUpdateMany } = createFakePrisma();
+    const { prisma, gamePlayerUpdateMany, playerUpdateMany } =
+      createFakePrisma();
     const service = new WordSoupService(prisma as never);
     sharedCourtsOf(service).set(
       1,
@@ -139,9 +144,11 @@ describe('WordSoupService.persistScores', () => {
   });
 
   it('skips the Player streak bump when the GamePlayer row is already gone', async () => {
-    const { prisma, gamePlayerUpdateMany, playerUpdateMany } = createFakePrisma({
-      survivingPlayerIds: [2],
-    });
+    const { prisma, gamePlayerUpdateMany, playerUpdateMany } = createFakePrisma(
+      {
+        survivingPlayerIds: [2],
+      },
+    );
     const service = new WordSoupService(prisma as never);
     sharedCourtsOf(service).set(
       1,
@@ -170,10 +177,15 @@ describe('WordSoupService.persistScores', () => {
 
     await service.persistScores(1);
 
-    expect(gamePlayerUpdateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ completed: false }),
-      }),
-    );
+    expect(gamePlayerUpdateMany).toHaveBeenCalledWith({
+      where: { gameId: 1, playerId: 1 },
+      data: {
+        score: 35,
+        bestWordStreak: 3,
+        wordsFound: 2,
+        freezeCount: 1,
+        completed: false,
+      },
+    });
   });
 });
