@@ -112,16 +112,16 @@ export default function WordSoupGameOverOverlay({
               winner: t('winner'),
             }}
           />
-        </div>
 
-        <div className="flex w-full shrink-0 flex-col items-center justify-center">
-          <ReturnToLobbyButton
-            showReturnButton={showReturnButton}
-            isClosing={isClosing}
-            returnLabel={t('returnToLobby')}
-            almostDoneLabel={t('almostDone')}
-            onReturnToLobby={onReturnToLobby}
-          />
+          <div className="mt-1.5 flex w-full shrink-0 flex-col items-center justify-center sm:mt-2 lg:mt-3">
+            <ReturnToLobbyButton
+              showReturnButton={showReturnButton}
+              isClosing={isClosing}
+              returnLabel={t('returnToLobby')}
+              almostDoneLabel={t('almostDone')}
+              onReturnToLobby={onReturnToLobby}
+            />
+          </div>
         </div>
       </div>
     </GameOverlayShell>

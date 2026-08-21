@@ -46,6 +46,8 @@ export default function WordBuildingIntroOverlay({
 
   return (
     <GameOverlayShell
+      zIndexClass="z-30"
+      rounded
       role="dialog"
       ariaModal
       ariaLabel={bubbleText || t('briefing')}
@@ -54,6 +56,7 @@ export default function WordBuildingIntroOverlay({
         className={[
           'flex h-full w-full flex-col items-center justify-center',
           OVERLAY_SCALE.overlayPadClass,
+          OVERLAY_SCALE.stackGapClass,
         ].join(' ')}
       >
         <HostSpeechStack

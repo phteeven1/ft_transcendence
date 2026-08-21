@@ -746,16 +746,30 @@ export default function WordBuildingGame() {
 
             {/* Board — right column; wb-board-col caps size to avoid vertical overflow */}
             <div className="wb-board-col flex min-w-0 w-full flex-col gap-2 lg:col-start-2 lg:row-start-1 lg:row-span-4">
-              <GameCourt
-                court={visibleCourt}
-                selectedRow={selectedRow}
-                selectedCol={selectedCol}
-                onCellClick={handleCellClick}
-                locks={locksMap}
-                myPlayerId={playerId}
-                dragTargetRow={dragTargetRow}
-                dragTargetCol={dragTargetCol}
-              />
+              <div className="relative w-full">
+                <GameCourt
+                  court={visibleCourt}
+                  selectedRow={selectedRow}
+                  selectedCol={selectedCol}
+                  onCellClick={handleCellClick}
+                  locks={locksMap}
+                  myPlayerId={playerId}
+                  dragTargetRow={dragTargetRow}
+                  dragTargetCol={dragTargetCol}
+                />
+                {/* Intro overlay — sized to the court, matching Word Soup. */}
+                {showIntro && !showGameOverOverlay && !isCelebratingFinalLetter && (
+                  <WordBuildingIntroOverlay
+                    phase={introPhase}
+                    bubbleText={introBubbleText}
+                    bubbleVisible={introBubbleVisible}
+                    countdownValue={introCountdownValue}
+                    hostTier={localHostTier}
+                    hostAnimal={localHostAnimal}
+                    hostClothesColor={localHostColour}
+                  />
+                )}
+              </div>
               <TileRack
                 letters={availableLetters}
                 disabled={!gameReady || solved}
@@ -792,19 +806,6 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Intro overlay — driven by the shared server-synchronised timeline. */}
-      {showIntro && !showGameOverOverlay && !isCelebratingFinalLetter && (
-        <WordBuildingIntroOverlay
-          phase={introPhase}
-          bubbleText={introBubbleText}
-          bubbleVisible={introBubbleVisible}
-          countdownValue={introCountdownValue}
-          hostTier={localHostTier}
-          hostAnimal={localHostAnimal}
-          hostClothesColor={localHostColour}
-        />
-      )}
-
       {/* Final-letter celebration — same authoritative event for every client, shown once */}
       {isCelebratingFinalLetter && finalLetterPlaced && (
         <WordBuildingFinalLetterOverlay
@@ -815,25 +816,32 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Score screen — only natural completion runs the narrated outro. */}
+      {/* Score screen — framed like Word Soup (sidebar + court width, full shell height). */}
       {showGameOverOverlay && (
-        <WordBuildingGameOverOverlay
-          phase={gameOverPhase}
-          bubbleText={gameOverBubbleText}
-          bubbleVisible={gameOverBubbleVisible}
-          revealedPlayerIds={gameOverRevealedPlayerIds}
-          playersById={gameOverPlayersById}
-          playerColours={playerColours}
-          localPlayerId={playerId}
-          playerAvatarTiers={playerAvatarTiers}
-          playerAvatarAnimals={playerAvatarAnimals}
-          hostTier={localHostTier}
-          hostAnimal={localHostAnimal}
-          hostClothesColor={localHostColour}
-          newlyUnlockedTier={newlyUnlockedTier}
-          showReturnButton={showGameOverReturnButton}
-          onReturnToLobby={handleReturnToLobby}
-        />
+        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
+          <div
+            className="pointer-events-auto relative h-full w-full min-w-0"
+            style={{ maxWidth: 'calc(11.5rem + 1rem + 600px)' }}
+          >
+            <WordBuildingGameOverOverlay
+              phase={gameOverPhase}
+              bubbleText={gameOverBubbleText}
+              bubbleVisible={gameOverBubbleVisible}
+              revealedPlayerIds={gameOverRevealedPlayerIds}
+              playersById={gameOverPlayersById}
+              playerColours={playerColours}
+              localPlayerId={playerId}
+              playerAvatarTiers={playerAvatarTiers}
+              playerAvatarAnimals={playerAvatarAnimals}
+              hostTier={localHostTier}
+              hostAnimal={localHostAnimal}
+              hostClothesColor={localHostColour}
+              newlyUnlockedTier={newlyUnlockedTier}
+              showReturnButton={showGameOverReturnButton}
+              onReturnToLobby={handleReturnToLobby}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
