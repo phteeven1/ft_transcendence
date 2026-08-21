@@ -18,6 +18,6 @@ export class WordBuildingController {
     @Param('id') id: string,
   ) {
     await this.playersService.assertPlayerInGame(playerId, Number(id));
-    return this.wordBuildingService.initCourt(Number(id));
+    return this.wordBuildingService.initCourt(Number(id), playerId);
   }
 }

@@ -12,9 +12,8 @@
 //   WS    game:finalLetterPlaced → server → all clients → brief celebration banner
 //   WS    game:playerLeft → server → all clients → mark that one player as left;
 //                        the match keeps running for everyone still in it
-//   WS    game:finished → server → all clients still in the room → final scoreboard
-//                        (only once every participant has left, or the puzzle is solved;
-//                        Return to Lobby on the scoreboard is the only navigation)
+//   WS    game:finished → server → all clients still in the room → narrated results
+//                        (players who leave early navigate directly to the lobby)
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -43,6 +42,9 @@ import WordBuildingTitle from './word-building-title';
 import WordBuildingPlayerRail from './word-building-player-rail';
 import TileRack from './tile-rack';
 import GameClock from '@/app/components/game-clock';
+import { useGameIntro } from '@/app/hooks/game/use-game-intro';
+import { useGameOver } from '@/app/hooks/game/use-game-over';
+import type { OutroTranslateFn } from '@/app/hooks/game/game-over.helpers';
 import type { GameFinishOutcomeDto, GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
@@ -68,6 +70,8 @@ const EMPTY_COURT: CourtCell[][] = [];
  */
 export default function WordBuildingGame() {
   const t = useTranslations('games.wordBuilding');
+  const tIntro = useTranslations('games.wordBuilding.intro');
+  const tOutro = useTranslations('games.wordBuilding.outro');
   const searchParams = useSearchParams();
   const router = useRouter();
   const { loginAsPlayer, setSessionExpiresAt } = useAuth();
@@ -96,7 +100,9 @@ export default function WordBuildingGame() {
   // available well before the async playerNames roster fetch resolves, so
   // this (not playerNames.size) is what should gate solo-vs-multiplayer logic.
   const [rosterPlayerIds,       setRosterPlayerIds]       = useState<number[] | null>(null);
-  const [startedTime,          setStartedTime]           = useState<string | null>(null);
+  const [hasPlayerSeenIntro, setHasPlayerSeenIntro] = useState(false);
+  const [introStartedAt, setIntroStartedAt] = useState<number | null>(null);
+  const [playStartedAt, setPlayStartedAt] = useState<number | null>(null);
   const [loading,              setLoading]               = useState(true);
   const [playerColours,        setPlayerColours]         = useState<Record<number, string>>({});
   const [playerAvatarTiers,    setPlayerAvatarTiers]     = useState<Record<number, number>>({});
@@ -104,11 +110,9 @@ export default function WordBuildingGame() {
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
   const [dragTargetRow, setDragTargetRow] = useState<number | null>(null);
   const [dragTargetCol, setDragTargetCol] = useState<number | null>(null);
-  // Intro overlay: shown once on first load, dismissed by the player.
-  const [showIntro, setShowIntro] = useState(true);
-  // Manual score screen: shown when the player chooses Back to Lobby mid-game.
-  const [manuallyShowOverlay, setManuallyShowOverlay] = useState(false);
-  const [manualFinishOutcome, setManualFinishOutcome] = useState<GameFinishOutcomeDto | null>(null);
+  const [finishOutcomeFromApi, setFinishOutcomeFromApi] =
+    useState<GameFinishOutcomeDto | null>(null);
+  const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
   const {
@@ -116,6 +120,53 @@ export default function WordBuildingGame() {
     cellLocks, emitCellLock, emitCellUnlock, leftPlayers, mergeLeftPlayers,
     finalLetterPlaced, finalLetterPlacedSeq,
   } = useGameSocket(gameId, playerId);
+
+  // Puzzle fully solved — not the same as the session ending via abandon.
+  // Abandon also emits game:finished; only natural completion should run the outro.
+  const naturalGameFinished = solved;
+  const gameSessionEnded = gameFinished || solved;
+  const introTexts = useMemo(
+    () => ({
+      welcome: tIntro('welcome', {
+        name: playerNames.get(playerId) ?? '',
+      }),
+      briefing: tIntro('briefing'),
+      letsGo: tIntro('letsGo'),
+    }),
+    [playerId, playerNames, tIntro],
+  );
+  const markIntroShown = useCallback(
+    (id: number) => gamesApi.markIntroShown({ gameId: id }),
+    [],
+  );
+  const {
+    gameReady,
+    showIntro,
+    phase: introPhase,
+    bubbleText: introBubbleText,
+    bubbleVisible: introBubbleVisible,
+    countdownValue: introCountdownValue,
+  } = useGameIntro({
+    gameId,
+    courtReady: !loading,
+    hasPlayerSeenIntro,
+    introStartedAt,
+    playStartedAt,
+    introTexts,
+    skipIntro: gameSessionEnded,
+    skipMarkIntroShown: gameSessionEnded,
+    markIntroShown,
+  });
+
+  const wasShowingIntroRef = useRef(showIntro);
+  useEffect(() => {
+    if (naturalGameFinished && wasShowingIntroRef.current) {
+      setFinishedDuringIntro(true);
+    }
+  }, [naturalGameFinished]);
+  useEffect(() => {
+    wasShowingIntroRef.current = showIntro;
+  }, [showIntro]);
 
   // ── Final-letter celebration ────────────────────────────────────────────────
   // Holds the game-over scoreboard back for a beat after the puzzle-completing
@@ -215,7 +266,6 @@ export default function WordBuildingGame() {
         return;
       }
 
-      setStartedTime(loadedGame.startedTime ?? null);
       setRosterPlayerIds(loadedGame.players);
 
       try {
@@ -225,6 +275,9 @@ export default function WordBuildingGame() {
         setCluesAcross(data.clues.across);
         setCluesDown(data.clues.down);
         mergeLeftPlayers(data.leftPlayers);
+        setHasPlayerSeenIntro(data.hasPlayerSeenIntro);
+        setIntroStartedAt(data.introStartedAt);
+        setPlayStartedAt(data.playStartedAt);
 
         // availableLetters is pre-computed by the backend from the solution grid.
         // trueCourt.char is intentionally empty (solution hidden), so extracting
@@ -269,10 +322,6 @@ export default function WordBuildingGame() {
     setScores(gameState.scores);
     setSolved(gameState.solved);
   }, [gameState]);
-
-  // `game:finished` never redirects on its own — win or lose, natural finish or a
-  // player leaving, every client renders the final scoreboard overlay below and
-  // waits for the player to press "Return to Lobby" (handleReturnToLobby).
 
   /**
    * Determines which word(s) a cell belongs to by scanning from clue start positions.
@@ -452,6 +501,7 @@ export default function WordBuildingGame() {
     if (!el) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!gameReady) return;
       if (selectedRow === null || selectedCol === null) return;
       if (solved) return;
       
@@ -472,7 +522,7 @@ export default function WordBuildingGame() {
 
     el.addEventListener('keydown', handleKeyDown);
     return () => el.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRow, selectedCol, solved, gameId, playerId, emitPlaceLetter, advanceSelection]);
+  }, [gameReady, selectedRow, selectedCol, solved, gameId, playerId, emitPlaceLetter, advanceSelection]);
 
 /**
    * Handles a letter tile drop from the tile rack onto a crossword cell.
@@ -482,12 +532,12 @@ export default function WordBuildingGame() {
    * false when the cell is ineligible (no false celebration).
    */
   const handleCellDrop = useCallback((row: number, col: number, letter: string): boolean => {
-    if (solved) return false;
+    if (!gameReady || solved) return false;
     const cell = visibleCourt[row]?.[col];
     if (!cell || cell.status === 'none' || cell.status === 'correct') return false;
     emitPlaceLetter({ gameId, playerId, row, col, letter });
     return true;
-  }, [solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
+  }, [gameReady, solved, visibleCourt, gameId, playerId, emitPlaceLetter]);
 
   /** Tracks which cell the ant is hovering over so GameCourt can highlight it. */
   const handleDragTarget = useCallback((row: number | null, col: number | null) => {
@@ -510,60 +560,8 @@ export default function WordBuildingGame() {
   }, [leftPlayers, playerId, playerNames]);
 
   /**
-   * Builds a score snapshot from current state when no server outcome is available
-   * (network failure on the outcome fetch below). Participants come from the player
-   * roster — not from who happens to have a score event yet — so a player with no
-   * moves still shows up with 0 instead of vanishing from the list.
-   */
-  const buildFallbackOutcome = useCallback((): GameFinishOutcomeDto => {
-    const scoreByPlayer = new Map(scores.map((s) => [s.playerId, s.score]));
-    const rosterIds = playerNames.size > 0 ? [...playerNames.keys()] : [...scoreByPlayer.keys()];
-    const withScores = rosterIds.map((pid) => ({
-      playerId: pid,
-      score: scoreByPlayer.get(pid) ?? 0,
-    }));
-    const maxScore = withScores.reduce((max, p) => Math.max(max, p.score), 0);
-    return {
-      players: withScores.map(({ playerId: pid, score }) => ({
-        playerId: pid,
-        playerName: playerNames.get(pid) ?? `Player ${pid}`,
-        score,
-        xpAwarded: 0,
-        isWinner: score === maxScore && maxScore > 0,
-      })),
-    };
-  }, [scores, playerNames]);
-
-  /**
-   * Leaves this match and shows this player's own score screen before
-   * navigating to the lobby. This is a per-player action — other players are
-   * never redirected or otherwise affected by it. The backend only finishes
-   * the match once every participant has left (`games.service.leave`); while
-   * others are still playing it just marks this player as gone and the match
-   * continues for them, so `getFinishOutcome` may still be null here — the
-   * fallback below covers that case with this player's last-known scores.
-   */
-  const leaveToLobby = async () => {
-    setIsAbandoning(true);
-    try {
-      await gamesApi.leave({ gameId, playerId });
-      const outcome = await gamesApi.getFinishOutcome({ gameId }).catch(() => null);
-      setManualFinishOutcome(outcome ?? buildFallbackOutcome());
-      setManuallyShowOverlay(true);
-      setShowAbandonModal(false);
-    } catch {
-      // best-effort — fall back to simple overlay with current scores
-      setManualFinishOutcome(buildFallbackOutcome());
-      setManuallyShowOverlay(true);
-      setShowAbandonModal(false);
-    } finally {
-      setIsAbandoning(false);
-    }
-  };
-
-  /**
    * Handles "Return to Lobby" on the score screen.
-   * Called from both the natural game-over overlay and the manual leave overlay.
+   * Called after a natural game finish or immediately after leaving early.
    */
   const handleReturnToLobby = useCallback(() => {
     if (hasLeftForLobbyRef.current) return;
@@ -578,24 +576,78 @@ export default function WordBuildingGame() {
     }
   }, [router, loginAsPlayer, setSessionExpiresAt]);
 
-  // ── Derive game-over overlay data ─────────────────────────────────────────
-  // Show the scoreboard whenever the game has ended — solved, a player left, or
-  // this player chose Back to Lobby — except while the final-letter celebration
-  // is still holding the screen; that overlay yields to this one once it ends.
-  const showGameOverOverlay = (gameFinished && !isCelebratingFinalLetter) || manuallyShowOverlay;
+  const leaveToLobby = useCallback(async () => {
+    setIsAbandoning(true);
+    try {
+      await gamesApi.leave({ gameId, playerId });
+    } catch {
+      /* navigation still wins; the session guard prevents stale re-entry */
+    } finally {
+      setShowAbandonModal(false);
+      handleReturnToLobby();
+    }
+  }, [gameId, handleReturnToLobby, playerId]);
 
-  // Prefer socket outcome (natural finish), then manually fetched/built outcome.
-  const effectiveFinishOutcome = socketFinishOutcome ?? manualFinishOutcome;
+  // Abandon finish emits game:finished without solving — skip the outro and leave.
+  useEffect(() => {
+    if (!gameFinished || solved || hasLeftForLobbyRef.current) return;
+    handleReturnToLobby();
+  }, [gameFinished, solved, handleReturnToLobby]);
 
-  const { gameOverPlayersById, gameOverPlayerOrder } = useMemo(() => {
-    if (!effectiveFinishOutcome) return { gameOverPlayersById: {}, gameOverPlayerOrder: [] };
+  useEffect(() => {
+    if (
+      !naturalGameFinished ||
+      socketFinishOutcome ||
+      finishOutcomeFromApi
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    void gamesApi
+      .getFinishOutcome({ gameId })
+      .then((outcome) => {
+        if (!cancelled && outcome) setFinishOutcomeFromApi(outcome);
+      })
+      .catch(() => {
+        /* the socket outcome may still arrive */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    finishOutcomeFromApi,
+    gameId,
+    gameFinished,
+    naturalGameFinished,
+    socketFinishOutcome,
+  ]);
+
+  const effectiveFinishOutcome =
+    socketFinishOutcome ?? finishOutcomeFromApi;
+  const gameOverPlayersById = useMemo(() => {
+    if (!effectiveFinishOutcome) return {};
     const byId: Record<number, GameFinishPlayerOutcomeDto> = {};
     for (const p of effectiveFinishOutcome.players) byId[p.playerId] = p;
-    const order = [...effectiveFinishOutcome.players]
-      .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.playerId - b.playerId))
-      .map((p) => p.playerId);
-    return { gameOverPlayersById: byId, gameOverPlayerOrder: order };
+    return byId;
   }, [effectiveFinishOutcome]);
+
+  const {
+    showOverlay: showGameOverOverlay,
+    phase: gameOverPhase,
+    bubbleText: gameOverBubbleText,
+    bubbleVisible: gameOverBubbleVisible,
+    revealedPlayerIds: gameOverRevealedPlayerIds,
+    showReturnButton: showGameOverReturnButton,
+  } = useGameOver({
+    active:
+      naturalGameFinished && !isCelebratingFinalLetter && !isAbandoning,
+    outcome: effectiveFinishOutcome,
+    outroT: tOutro as OutroTranslateFn,
+    skipInitialHold:
+      finishedDuringIntro ||
+      (isMultiplayer && finalLetterPlacedSeq > 0),
+  });
 
   const localHostTier   = playerAvatarTiers[playerId]   ?? 0;
   const localHostAnimal = playerAvatarAnimals[playerId] ?? 0;
@@ -615,8 +667,6 @@ export default function WordBuildingGame() {
       </div>
     );
   }
-
-  const startedAtMs = startedTime ? new Date(startedTime).getTime() : null;
 
   return (
     <div
@@ -641,8 +691,8 @@ export default function WordBuildingGame() {
             <div className="lg:col-start-1 lg:row-start-2">
               <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 shadow-sm">
                 <GameClock
-                  startedAtMs={startedAtMs}
-                  stopped={solved}
+                  startedAtMs={playStartedAt}
+                  stopped={gameSessionEnded}
                   label={t('timeLabel')}
                   bare
                 />
@@ -706,7 +756,12 @@ export default function WordBuildingGame() {
                 dragTargetRow={dragTargetRow}
                 dragTargetCol={dragTargetCol}
               />
-              <TileRack letters={availableLetters} disabled={solved} onDrop={handleCellDrop} onDragTarget={handleDragTarget} />
+              <TileRack
+                letters={availableLetters}
+                disabled={!gameReady || solved}
+                onDrop={handleCellDrop}
+                onDragTarget={handleDragTarget}
+              />
             </div>
 
             {/* Back to lobby — left, row 4 */}
@@ -737,19 +792,21 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Intro overlay — dismissed by the player before first interaction */}
+      {/* Intro overlay — driven by the shared server-synchronised timeline. */}
       {showIntro && !showGameOverOverlay && !isCelebratingFinalLetter && (
         <WordBuildingIntroOverlay
-          playerName={playerNames.get(playerId) ?? ''}
+          phase={introPhase}
+          bubbleText={introBubbleText}
+          bubbleVisible={introBubbleVisible}
+          countdownValue={introCountdownValue}
           hostTier={localHostTier}
           hostAnimal={localHostAnimal}
           hostClothesColor={localHostColour}
-          onDismiss={() => setShowIntro(false)}
         />
       )}
 
       {/* Final-letter celebration — same authoritative event for every client, shown once */}
-      {isCelebratingFinalLetter && finalLetterPlaced && !manuallyShowOverlay && (
+      {isCelebratingFinalLetter && finalLetterPlaced && (
         <WordBuildingFinalLetterOverlay
           playerName={playerNames.get(finalLetterPlaced.playerId) ?? finalLetterPlaced.playerName}
           hostTier={playerAvatarTiers[finalLetterPlaced.playerId] ?? 0}
@@ -758,11 +815,14 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Score screen — shown after natural game finish or after Back to Lobby */}
+      {/* Score screen — only natural completion runs the narrated outro. */}
       {showGameOverOverlay && (
         <WordBuildingGameOverOverlay
+          phase={gameOverPhase}
+          bubbleText={gameOverBubbleText}
+          bubbleVisible={gameOverBubbleVisible}
+          revealedPlayerIds={gameOverRevealedPlayerIds}
           playersById={gameOverPlayersById}
-          playerOrder={gameOverPlayerOrder}
           playerColours={playerColours}
           localPlayerId={playerId}
           playerAvatarTiers={playerAvatarTiers}
@@ -771,6 +831,7 @@ export default function WordBuildingGame() {
           hostAnimal={localHostAnimal}
           hostClothesColor={localHostColour}
           newlyUnlockedTier={newlyUnlockedTier}
+          showReturnButton={showGameOverReturnButton}
           onReturnToLobby={handleReturnToLobby}
         />
       )}

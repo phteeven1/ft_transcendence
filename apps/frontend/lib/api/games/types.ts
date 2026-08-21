@@ -6,6 +6,8 @@ export type GameFinishPlayerOutcomeDto = {
   isWinner: boolean;
   /** Highest tier newly unlocked by this finish's XP; null/omitted if none. */
   newlyUnlockedTier?: number | null;
+  /** True when the player left before the match ended. */
+  leftEarly?: boolean;
 };
 
 export type GameFinishOutcomeDto = {

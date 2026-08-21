@@ -318,6 +318,7 @@
         "emptyStats": "Deine Stats erscheinen hier, sobald du spielst.",
         "emptyRecent": "Noch keine beendeten Spiele. Spiele eine Runde, um deine Punkte zu sehen!",
         "recentGames": "Letzte Spiele",
+        "abandoned": "Abgebrochen",
         "winner": "Sieg",
         "xpValue": "{xp} XP",
         "scoreValue": "{score} Pkt",
@@ -404,7 +405,9 @@
       "stayInGame": "Im Spiel bleiben",
       "backToLobby": "Zurück zur Lobby",
       "message": "Du verlässt dieses Spiel. Die anderen spielen weiter, und deine Spielsitzung bleibt aktiv.",
-      "lastPlayerMessage": "Du bist der letzte Spieler. Zurück zur Lobby beendet dieses Spiel. Deine Spielsitzung bleibt aktiv."
+      "lastPlayerMessage": "Du bist der letzte Spieler. Zurück zur Lobby beendet dieses Spiel. Deine Spielsitzung bleibt aktiv.",
+      "noXpWarningLeave": "Für dieses Spiel erhältst du keine XP. Andere, die zu Ende spielen, können weiterhin XP verdienen.",
+      "noXpWarningEndsGame": "Für dieses Spiel wird keine XP vergeben."
     },
     "wordBuilding": {
       "title": "Wortbau",
@@ -423,7 +426,9 @@
       "intro": {
         "welcome": "Hallo {name}! Bereit zum Wörterbauen?",
         "briefing": "Fülle das Kreuzworträtsel aus — klicke auf eine Zelle und tippe, oder ziehe Buchstaben aus dem Rack unten.",
-        "letsGo": "Los geht\u2019s!"
+        "letsGo": "Los geht\u2019s!",
+        "startingIn": "Start in",
+        "go": "LOS!"
       },
       "rules": {
         "show": "Anleitung anzeigen",
@@ -440,11 +445,19 @@
       },
       "outro": {
         "gameOverTitle": "Rätselergebnis",
-        "puzzleComplete": "Rätsel abgeschlossen!",
         "finalScores": "Endergebnis",
+        "scoresComingUp": "Punkte folgen gleich…",
         "pointsXp": "{score} Pkt. · +{xp} XP",
         "winner": "Gewinner",
-        "returnToLobby": "Zurück zur Lobby"
+        "returnToLobby": "Zurück zur Lobby",
+        "almostDone": "Fast fertig…",
+        "closingSolo": "Gut gemacht {name}, tolles Spiel! Bis bald!",
+        "closingMulti": "Gut gemacht alle zusammen, tolles Spiel! Bis bald!",
+        "placeAnnouncement": "Platz {place}: {name}, mit {score} Punkten und +{xp} XP!",
+        "firstPlaceSolo": "Gut gemacht {name}, du hast {score} Punkte erzielt und +{xp} XP verdient!",
+        "winnersPrefix": "Und die Gewinner! ",
+        "winnerPrefix": "Und der Gewinner, ",
+        "winnerAnnouncement": "{name}, mit {score} Punkten und +{xp} XP!"
       },
       "finalLetter": {
         "announcement": "{name} hat den letzten Buchstaben gesetzt! Glückwunsch!",

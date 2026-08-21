@@ -1,24 +1,48 @@
-import type { useTranslations } from 'next-intl';
-import type { GameFinishOutcomeDto, GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
+import type {
+  GameFinishOutcomeDto,
+  GameFinishPlayerOutcomeDto,
+} from '@/lib/api/games/types';
 import { computeXpAwarded, isMultiplayerGame } from '@/lib/api/progression';
 
-export type OutroTranslateFn = ReturnType<
-  typeof useTranslations<'games.wordSoup.outro'>
->;
+export type OutroTranslateFn = {
+  (key: 'closingSolo', values: { name: string }): string;
+  (key: 'closingMulti'): string;
+  (
+    key: 'placeAnnouncement',
+    values: { place: number; name: string; score: number; xp: number },
+  ): string;
+  (
+    key: 'firstPlaceSolo',
+    values: { name: string; score: number; xp: number },
+  ): string;
+  (key: 'winnersPrefix'): string;
+  (key: 'winnerPrefix'): string;
+  (
+    key: 'winnerAnnouncement',
+    values: { name: string; score: number; xp: number },
+  ): string;
+};
+
+function activePlayers(
+  players: GameFinishPlayerOutcomeDto[],
+): GameFinishPlayerOutcomeDto[] {
+  return players.filter((player) => !player.leftEarly);
+}
 
 export function getGameOverClosingText(
   players: GameFinishPlayerOutcomeDto[],
   t: OutroTranslateFn,
 ): string {
-  if (players.length === 1) {
+  const ranked = activePlayers(players);
+  if (ranked.length === 1) {
     return t('closingSolo', {
-      name: players[0]?.playerName ?? 'everyone',
+      name: ranked[0]?.playerName ?? 'everyone',
     });
   }
   return t('closingMulti');
 }
 
-export type GameOverAnnouncement = {
+type GameOverAnnouncement = {
   playerId: number;
   speech: string;
 };
@@ -27,9 +51,10 @@ export function buildGameOverAnnouncements(
   players: GameFinishPlayerOutcomeDto[],
   t: OutroTranslateFn,
 ): GameOverAnnouncement[] {
-  if (players.length === 0) return [];
+  const ranked = activePlayers(players);
+  if (ranked.length === 0) return [];
 
-  const sorted = [...players].sort((a, b) => a.score - b.score);
+  const sorted = [...ranked].sort((a, b) => a.score - b.score);
   const winners = sorted.filter((player) => player.isWinner);
   const nonWinners = sorted.filter((player) => !player.isWinner);
   const totalPlayers = sorted.length;
@@ -102,6 +127,7 @@ export function buildFallbackFinishOutcome(
         xpAwarded: computeXpAwarded(players.length, isWinner),
         isWinner,
         newlyUnlockedTier: null,
+        leftEarly: false,
       };
     }),
   };

@@ -29,6 +29,9 @@ export type IInitCourtResponse = {
   };
   /** playerId → name, for participants who had already left before this init/rehydrate call. */
   leftPlayers: Record<number, string>;
+  hasPlayerSeenIntro: boolean;
+  introStartedAt: number;
+  playStartedAt: number;
 };
 
 export type IGameStatePayload = {

@@ -318,6 +318,7 @@
         "emptyStats": "Tes stats apparaîtront ici après avoir joué.",
         "emptyRecent": "Aucune partie terminée. Joue une manche pour voir tes scores !",
         "recentGames": "Parties récentes",
+        "abandoned": "Abandonnée",
         "winner": "Victoire",
         "xpValue": "{xp} XP",
         "scoreValue": "{score} pts",
@@ -404,7 +405,9 @@
       "stayInGame": "Rester dans le jeu",
       "backToLobby": "Retour au lobby",
       "message": "Tu quittes cette partie. Les autres continuent de jouer, et ta session de jeu reste active.",
-      "lastPlayerMessage": "Tu es le dernier joueur. Retourner au lobby terminera cette partie. Ta session de jeu reste active."
+      "lastPlayerMessage": "Tu es le dernier joueur. Retourner au lobby terminera cette partie. Ta session de jeu reste active.",
+      "noXpWarningLeave": "Tu n'obtiendras pas d'XP pour cette partie. Les autres qui terminent peuvent toujours en gagner.",
+      "noXpWarningEndsGame": "Aucun XP ne sera attribué pour cette partie."
     },
     "wordBuilding": {
       "title": "Construction de mots",
@@ -423,7 +426,9 @@
       "intro": {
         "welcome": "Bonjour {name} ! Prêt(e) à construire des mots ?",
         "briefing": "Remplis la grille de mots croisés — clique sur une case et tape, ou fais glisser les tuiles depuis le rack ci-dessous.",
-        "letsGo": "C\u2019est parti !"
+        "letsGo": "C\u2019est parti !",
+        "startingIn": "Départ dans",
+        "go": "GO !"
       },
       "rules": {
         "show": "Afficher les instructions",
@@ -440,11 +445,19 @@
       },
       "outro": {
         "gameOverTitle": "Résultats du puzzle",
-        "puzzleComplete": "Puzzle terminé !",
         "finalScores": "Scores finaux",
+        "scoresComingUp": "Scores à venir…",
         "pointsXp": "{score} pts · +{xp} XP",
         "winner": "Gagnant",
-        "returnToLobby": "Retour au lobby"
+        "returnToLobby": "Retour au lobby",
+        "almostDone": "Presque fini…",
+        "closingSolo": "Bravo {name}, super partie ! À bientôt !",
+        "closingMulti": "Bravo à tous, super partie ! À bientôt !",
+        "placeAnnouncement": "{place}e place : {name}, avec {score} points et +{xp} XP !",
+        "firstPlaceSolo": "Bravo {name}, tu as marqué {score} points et gagné +{xp} XP !",
+        "winnersPrefix": "Et les gagnants ! ",
+        "winnerPrefix": "Et le gagnant, ",
+        "winnerAnnouncement": "{name}, avec {score} points et +{xp} XP !"
       },
       "finalLetter": {
         "announcement": "{name} a placé la dernière lettre ! Félicitations !",

@@ -26,7 +26,7 @@
  * 3. On solve: Persist final grid + scores → mark game finished → evict from memory
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WordBuildingPuzzleEngine } from './word-building-puzzle-engine';
 import {
@@ -44,6 +44,11 @@ import {
   WORD_BUILDING_CONFIG,
   WORD_BUILDING_GRID_SIZE,
 } from './word-building.config';
+import {
+  estimateIntroDurationMs,
+  type IntroSyncFields,
+  WORD_BUILDING_INTRO_TEXTS,
+} from '../intro-sync';
 
 const COURT_COLS = WORD_BUILDING_CONFIG.boardCols;
 const COURT_ROWS = WORD_BUILDING_CONFIG.boardRows;
@@ -66,6 +71,11 @@ export class WordBuildingService {
   private readonly logger = new Logger(WordBuildingService.name);
   /** In-memory live state, keyed by gameId. Evicted on puzzle completion. */
   private readonly liveGames = new Map<number, InternalLiveGameState>();
+  /** Per-game singleflight so concurrent hydrates share one playStartedAt clock. */
+  private readonly hydrateInFlight = new Map<
+    number,
+    Promise<InternalLiveGameState>
+  >();
   /** Timer handles for auto-expiring soft cell locks. Key: "gameId:row:col" */
   private readonly lockTimers = new Map<string, NodeJS.Timeout>();
 
@@ -94,7 +104,10 @@ export class WordBuildingService {
    * @returns Initial grid state for frontend rendering.
    * @throws If game not found or group has no active vocabulary.
    */
-  async initCourt(gameId: number): Promise<IInitCourtResponse> {
+  async initCourt(
+    gameId: number,
+    playerId: number,
+  ): Promise<IInitCourtResponse> {
     // Idempotent: if crossword already exists, rehydrate from database
     const existing = await this.prisma.crossword.findUnique({
       where: { gameId },
@@ -103,6 +116,7 @@ export class WordBuildingService {
       const state = await this.loadOrHydrate(gameId);
       return {
         ...this.rehydrateInitResponse(existing),
+        ...this.introSyncFields(state, playerId),
         leftPlayers: Object.fromEntries(state.leftPlayers),
       };
     }
@@ -206,6 +220,7 @@ export class WordBuildingService {
         const state = await this.loadOrHydrate(gameId);
         return {
           ...this.rehydrateInitResponse(concurrent),
+          ...this.introSyncFields(state, playerId),
           leftPlayers: Object.fromEntries(state.leftPlayers),
         };
       }
@@ -215,7 +230,32 @@ export class WordBuildingService {
     const state = await this.loadOrHydrate(gameId);
     return {
       ...this.buildInitResponse(solution, clues),
+      ...this.introSyncFields(state, playerId),
       leftPlayers: Object.fromEntries(state.leftPlayers),
+    };
+  }
+
+  markIntroShown(gameId: number, playerId: number): void {
+    const state = this.liveGames.get(gameId);
+    if (!state) {
+      throw new NotFoundException(`Court ${gameId} not initialized`);
+    }
+    state.isIntroAlreadyShown.set(playerId, true);
+  }
+
+  getPlayStartedAt(gameId: number): number | null {
+    const state = this.liveGames.get(gameId);
+    return state?.playStartedAt ?? null;
+  }
+
+  private introSyncFields(
+    state: InternalLiveGameState,
+    playerId: number,
+  ): IntroSyncFields {
+    return {
+      hasPlayerSeenIntro: state.isIntroAlreadyShown.get(playerId) ?? false,
+      introStartedAt: state.introStartedAt,
+      playStartedAt: state.playStartedAt,
     };
   }
 
@@ -430,7 +470,10 @@ export class WordBuildingService {
   private buildInitResponse(
     solution: (string | null)[][],
     clues: ClueMap,
-  ): Omit<IInitCourtResponse, 'leftPlayers'> {
+  ): Omit<
+    IInitCourtResponse,
+    'leftPlayers' | 'hasPlayerSeenIntro' | 'introStartedAt' | 'playStartedAt'
+  > {
     const { offsetRow, offsetCol } = this.getBoardOffset(solution);
     const clueNumberMap = new Map<string, number>();
     for (const entry of [...clues.across, ...clues.down]) {
@@ -519,7 +562,10 @@ export class WordBuildingService {
     playerGrid: unknown;
     creditGrid: unknown;
     clues: unknown;
-  }): Omit<IInitCourtResponse, 'leftPlayers'> {
+  }): Omit<
+    IInitCourtResponse,
+    'leftPlayers' | 'hasPlayerSeenIntro' | 'introStartedAt' | 'playStartedAt'
+  > {
     const solution = crossword.solution as (string | null)[][];
     const playerGrid = crossword.playerGrid as (string | null)[][];
     const clues = crossword.clues as ClueMap;
@@ -619,14 +665,30 @@ export class WordBuildingService {
    * @returns The mutable in-memory state used by placement and state refresh paths.
    */
   private async loadOrHydrate(gameId: number): Promise<InternalLiveGameState> {
-    if (this.liveGames.has(gameId)) return this.liveGames.get(gameId)!;
+    const cached = this.liveGames.get(gameId);
+    if (cached) return cached;
 
+    const inflight = this.hydrateInFlight.get(gameId);
+    if (inflight) return inflight;
+
+    const hydratePromise = this.hydrateFromDb(gameId).finally(() => {
+      this.hydrateInFlight.delete(gameId);
+    });
+    this.hydrateInFlight.set(gameId, hydratePromise);
+    return hydratePromise;
+  }
+
+  private async hydrateFromDb(gameId: number): Promise<InternalLiveGameState> {
     const crossword = await this.prisma.crossword.findUniqueOrThrow({
       where: { gameId },
       include: {
         game: { include: { gamePlayers: { include: { player: true } } } },
       },
     });
+
+    // Another concurrent hydrate may have won the race while we awaited.
+    const alreadyLive = this.liveGames.get(gameId);
+    if (alreadyLive) return alreadyLive;
 
     const solution = crossword.solution as (string | null)[][];
     const playerGrid = crossword.playerGrid as (string | null)[][];
@@ -655,9 +717,27 @@ export class WordBuildingService {
     // empty — this is what makes left-player status survive a process
     // restart or a different backend instance hydrating this game.
     const leftPlayers = new Map<number, string>();
+    const isIntroAlreadyShown = new Map<number, boolean>();
+    const introEstimateMs = estimateIntroDurationMs(WORD_BUILDING_INTRO_TEXTS);
+    let playStartedAt = crossword.game.playStartedAt?.getTime() ?? null;
+    let introStartedAt: number;
+    if (playStartedAt == null) {
+      introStartedAt = Date.now();
+      playStartedAt = introStartedAt + introEstimateMs;
+      await this.prisma.game.update({
+        where: { id: gameId },
+        data: { playStartedAt: new Date(playStartedAt) },
+      });
+    } else {
+      introStartedAt = playStartedAt - introEstimateMs;
+    }
+
+    // Play clock already elapsed → treat intro as seen so remounts skip replay.
+    const introWindowOver = Date.now() >= playStartedAt;
     for (const gp of crossword.game.gamePlayers) {
       scores.set(gp.playerId, gp.score);
       if (gp.leftAt) leftPlayers.set(gp.playerId, gp.player.name);
+      isIntroAlreadyShown.set(gp.playerId, introWindowOver);
     }
 
     const state: InternalLiveGameState = {
@@ -669,6 +749,9 @@ export class WordBuildingService {
       revision: crossword.revision,
       locks: new Map(), // soft cell reservations — always empty on hydration
       leftPlayers,
+      introStartedAt,
+      playStartedAt,
+      isIntroAlreadyShown,
       offsetRow,
       offsetCol,
       clueNumberMap,
@@ -906,6 +989,7 @@ export class WordBuildingService {
    */
   clearLiveGame(gameId: number): void {
     this.liveGames.delete(gameId);
+    this.hydrateInFlight.delete(gameId);
   }
 
   // ─── Cell lock management (called by GameGateway) ──────────────────────────

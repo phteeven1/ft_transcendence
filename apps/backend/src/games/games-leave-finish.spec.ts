@@ -86,10 +86,15 @@ function createFakePrisma(
           })),
       ),
   );
-  const gamePlayerCount = jest.fn(({ where }: { where: { gameId: number } }) =>
-    Promise.resolve(
-      gamePlayers.filter((gp) => gp.gameId === where.gameId).length,
-    ),
+  const gamePlayerCount = jest.fn(
+    ({ where }: { where: { gameId: number; leftAt?: null } }) =>
+      Promise.resolve(
+        gamePlayers.filter((gp) => {
+          if (gp.gameId !== where.gameId) return false;
+          if (where.leftAt === null) return gp.leftAt == null;
+          return true;
+        }).length,
+      ),
   );
   const gamePlayerUpdate = jest.fn(
     ({
@@ -108,6 +113,22 @@ function createFakePrisma(
       return Promise.resolve(undefined);
     },
   );
+  const gamePlayerUpdateMany = jest.fn(
+    ({
+      where,
+      data,
+    }: {
+      where: { gameId: number; playerId: number };
+      data: Partial<FakeGamePlayer>;
+    }) => {
+      for (const gp of gamePlayers) {
+        if (gp.gameId === where.gameId && gp.playerId === where.playerId) {
+          Object.assign(gp, data);
+        }
+      }
+      return Promise.resolve({ count: 1 });
+    },
+  );
 
   // These tests only call placeLetter() (via wordBuildingService directly)
   // when a case needs to exercise real in-memory scoring — the crossword's
@@ -120,6 +141,7 @@ function createFakePrisma(
       clues: { across: [], down: [] },
       revision: 0,
       game: {
+        playStartedAt: state.playStartedAt ?? new Date(Date.now() + 60_000),
         gamePlayers: gamePlayers.map((gp) => ({
           ...gp,
           player: { name: names.get(gp.playerId) ?? `Player #${gp.playerId}` },
@@ -141,9 +163,10 @@ function createFakePrisma(
           ),
         ),
         update: gamePlayerUpdate,
+        updateMany: gamePlayerUpdateMany,
       },
       crossword: { update: jest.fn(() => Promise.resolve(undefined)) },
-      game: { update: jest.fn(() => Promise.resolve(undefined)) },
+      game: { update: gameUpdate },
     }),
   );
 
@@ -158,8 +181,10 @@ function createFakePrisma(
     gamePlayer: {
       deleteMany: gamePlayerDeleteMany,
       findMany: gamePlayerFindMany,
+      findFirst: jest.fn(() => Promise.resolve(null)),
       count: gamePlayerCount,
       update: gamePlayerUpdate,
+      updateMany: gamePlayerUpdateMany,
       create: jest.fn(),
     },
     crossword: {
@@ -225,7 +250,14 @@ function createGamesService(
     getPlayStartedAt: jest.fn(() => null),
     isGameComplete: jest.fn(() => false),
     clearCourt: jest.fn(),
-    markPlayerLeft: jest.fn(() => null),
+    markPlayerLeft: jest.fn(() =>
+      Promise.resolve({
+        leftPlayers: {} as Record<number, string>,
+        playerStreaks: {},
+      }),
+    ),
+    hasAllPlayersLeft: jest.fn(() => false),
+    markIntroShown: jest.fn(),
   };
 
   // Real WordBuildingService, backed by the same fake store, so the
@@ -439,11 +471,66 @@ describe('GamesService.finish — Word Building abandon flushes live scores', ()
   });
 });
 
-describe('GamesService.leave — Word Soup (unchanged)', () => {
+describe('GamesService.leave — Word Soup (durable leftAt)', () => {
   it('keeps the match running for the remaining player instead of finishing it', async () => {
-    const { service, prisma, gateway, getGamePlayers } = createGamesService(
+    const { service, prisma, gateway, getGamePlayers, wordSoupService } =
+      createGamesService(
+        {
+          id: 5,
+          name: 'Word Soup',
+          inGroupId: 5,
+          initiatedById: 10,
+          initiatedTime: new Date(),
+          startedTime: new Date(),
+          isActive: true,
+          isFinished: false,
+        },
+        [
+          { gameId: 5, playerId: 10, score: 0 },
+          { gameId: 5, playerId: 20, score: 0 },
+        ],
+      );
+
+    wordSoupService.markPlayerLeft.mockImplementation(
+      async (gameId: number, playerId: number, playerName: string) => {
+        await prisma.gamePlayer.updateMany({
+          where: { gameId, playerId },
+          data: { leftAt: new Date() },
+        });
+        return {
+          leftPlayers: { [playerId]: playerName },
+          playerStreaks: {},
+        };
+      },
+    );
+
+    const result = await service.leave(5, 10);
+
+    expect(result?.isFinished).toBe(false);
+    expect(prisma.gamePlayer.updateMany).toHaveBeenCalled();
+    expect(prisma.gamePlayer.deleteMany).not.toHaveBeenCalled();
+    expect(getGamePlayers()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          playerId: 10,
+          leftAt: expect.any(Date) as Date,
+        }),
+        expect.objectContaining({ playerId: 20 }),
+      ]),
+    );
+    expect(gateway.emitGameFinished).not.toHaveBeenCalled();
+    expect(gateway.emitPlayerLeft).toHaveBeenCalledWith(
+      5,
+      10,
+      'Player #10',
+      expect.objectContaining({ 10: 'Player #10' }),
+    );
+  });
+
+  it('finishes the match and persists scores when the last player leaves', async () => {
+    const { service, prisma, gateway, wordSoupService } = createGamesService(
       {
-        id: 5,
+        id: 6,
         name: 'Word Soup',
         inGroupId: 5,
         initiatedById: 10,
@@ -452,20 +539,32 @@ describe('GamesService.leave — Word Soup (unchanged)', () => {
         isActive: true,
         isFinished: false,
       },
-      [
-        { gameId: 5, playerId: 10, score: 0 },
-        { gameId: 5, playerId: 20, score: 0 },
-      ],
+      [{ gameId: 6, playerId: 10, score: 42 }],
     );
 
-    const result = await service.leave(5, 10);
+    wordSoupService.markPlayerLeft.mockImplementation(
+      async (gameId: number, playerId: number, playerName: string) => {
+        await prisma.gamePlayer.updateMany({
+          where: { gameId, playerId },
+          data: { leftAt: new Date() },
+        });
+        return {
+          leftPlayers: { [playerId]: playerName },
+          playerStreaks: {},
+        };
+      },
+    );
+    wordSoupService.hasAllPlayersLeft.mockReturnValue(true);
 
-    expect(result?.isFinished).toBe(false);
-    expect(prisma.gamePlayer.deleteMany).toHaveBeenCalled();
-    expect(getGamePlayers()).toEqual([
-      expect.objectContaining({ playerId: 20 }),
-    ]);
-    expect(gateway.emitGameFinished).not.toHaveBeenCalled();
-    expect(gateway.emitPlayerLeft).toHaveBeenCalledWith(5, 10, 'Player #10');
+    const result = await service.leave(6, 10);
+
+    expect(result?.isFinished).toBe(true);
+    expect(wordSoupService.persistScores).toHaveBeenCalledWith(6);
+    expect(wordSoupService.clearCourt).toHaveBeenCalledWith(6);
+    const persistOrder =
+      wordSoupService.persistScores.mock.invocationCallOrder[0];
+    const clearOrder = wordSoupService.clearCourt.mock.invocationCallOrder[0];
+    expect(persistOrder).toBeLessThan(clearOrder);
+    expect(gateway.emitGameFinished).toHaveBeenCalled();
   });
 });

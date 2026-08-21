@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { GamesService } from './games.service';
 import { PlayerSessionGuard } from '../players/player-session.guard';
 import { AuthenticatedPlayerId } from '../players/authenticated-player.decorator';
@@ -52,6 +60,16 @@ export class GamesController {
     return this.gamesService.leave(body.gameId, playerId);
   }
 
+  @Post(':gameId/markIntroShown')
+  @UseGuards(PlayerSessionGuard)
+  async markIntroShown(
+    @AuthenticatedPlayerId() playerId: number,
+    @Param('gameId', ParseIntPipe) gameId: number,
+  ) {
+    await this.playersService.assertPlayerInGame(playerId, gameId);
+    return this.gamesService.markIntroShown(gameId, playerId);
+  }
+
   @Post('finish')
   @UseGuards(PlayerSessionGuard)
   async finish(
@@ -62,23 +80,23 @@ export class GamesController {
     return this.gamesService.finish(body.gameId);
   }
 
+  @Get('group/:groupId')
+  findByGroup(@Param('groupId', ParseIntPipe) groupId: number) {
+    return this.gamesService.findByGroup(groupId);
+  }
+
   @Get(':id/finish-outcome')
-  getFinishOutcome(@Param('id') id: string) {
-    return this.gamesService.getFinishOutcome(Number(id));
+  getFinishOutcome(@Param('id', ParseIntPipe) id: number) {
+    return this.gamesService.getFinishOutcome(id);
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.gamesService.findById(Number(id));
+  findById(@Param('id', ParseIntPipe) id: number) {
+    return this.gamesService.findById(id);
   }
 
   @Get(':id/players')
-  findPlayersForGame(@Param('id') id: string) {
-    return this.gamesService.findPlayersForGame(Number(id));
-  }
-
-  @Get('group/:groupId')
-  findByGroup(@Param('groupId') groupId: string) {
-    return this.gamesService.findByGroup(Number(groupId));
+  findPlayersForGame(@Param('id', ParseIntPipe) id: number) {
+    return this.gamesService.findPlayersForGame(id);
   }
 }

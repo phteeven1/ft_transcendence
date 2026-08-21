@@ -92,6 +92,12 @@ export type ILiveGameState = {
    * the only record of who is still actively playing vs. who has left.
    */
   leftPlayers: Map<number, string>;
+  /** Shared intro timeline start (epoch ms). */
+  introStartedAt: number;
+  /** Play clock start after intro (epoch ms). */
+  playStartedAt: number;
+  /** Per-player intro completion flags. */
+  isIntroAlreadyShown: Map<number, boolean>;
 };
 
 // ─── WebSocket payloads ───────────────────────────────────────────────────────
@@ -138,4 +144,7 @@ export type IInitCourtResponse = {
    * player left learn that without waiting for a live game:playerLeft event.
    */
   leftPlayers: Record<number, string>;
+  hasPlayerSeenIntro: boolean;
+  introStartedAt: number;
+  playStartedAt: number;
 };

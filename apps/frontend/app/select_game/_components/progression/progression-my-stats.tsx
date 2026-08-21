@@ -94,6 +94,11 @@ export function ProgressionRecentGamesList({
                   🏆
                 </span>
               )}
+              {game.abandoned && (
+                <span className="ml-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t('abandoned')}
+                </span>
+              )}
             </p>
             <p className="text-xs text-muted-foreground">
               {formatEndedAt(game.endedAt)}

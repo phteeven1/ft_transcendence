@@ -29,7 +29,7 @@ import {
   useWordSoupScorePopup,
 } from './use-word-soup-ui-effects';
 import { useWordSoupGameOver } from './use-word-soup-game-over';
-import { buildFallbackFinishOutcome } from './word-soup-game-over.helpers';
+import { buildFallbackFinishOutcome } from '@/app/hooks/game/game-over.helpers';
 
 type UseWordSoupGameArgs = {
   gameId: number;
@@ -132,12 +132,12 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     initialFrozenPlayers,
   } = useWordSoupInit(gameId, playerId);
 
-  const [manuallyFinished, setManuallyFinished] = useState(false);
-  const [isFinishingGame, setIsFinishingGame] = useState(false);
+  const gameEnded = gameFinished || Boolean(game?.isFinished);
+  const [isAbandoning, setIsAbandoning] = useState(false);
+  const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [suppressGameOver, setSuppressGameOver] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
-
-  const gameEnded =
-    manuallyFinished || gameFinished || Boolean(game?.isFinished);
 
   const {
     gameReady,
@@ -150,15 +150,33 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     totalWords: introTotalWords,
   } = useWordSoupIntro({
     gameId,
-    playerId,
     courtReady,
     solutionWords,
     hasPlayerSeenIntro,
     introStartedAt,
+    playStartedAt,
     introTexts,
     skipIntro: initIsComplete || gameEnded,
     skipMarkIntroShown: gameEnded,
   });
+
+  // Puzzle fully solved — not the same as the session ending via abandon.
+  // Declared early so finish-during-intro can skip the outro court hold.
+  const isGameOver = Boolean(
+    initIsComplete ||
+      serverState?.isComplete ||
+      (solutionWords.length > 0 && foundWords.length >= solutionWords.length),
+  );
+
+  const wasShowingIntroRef = useRef(showIntro);
+  useEffect(() => {
+    if (isGameOver && wasShowingIntroRef.current) {
+      setFinishedDuringIntro(true);
+    }
+  }, [isGameOver]);
+  useEffect(() => {
+    wasShowingIntroRef.current = showIntro;
+  }, [showIntro]);
 
   const mergedFrozenPlayers = useMemo(
     () => ({
@@ -219,13 +237,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
   const { eventBanner, eventBannerPhase, pushEvent } = useWordSoupEventBanner();
   const { scorePopup, showScorePopup } = useWordSoupScorePopup();
-
-  const isGameOver = Boolean(
-    gameEnded ||
-      initIsComplete ||
-      serverState?.isComplete ||
-      (solutionWords.length > 0 && foundWords.length >= solutionWords.length),
-  );
 
   const pendingGuessRef = useRef(false);
   const clearSelectionRef = useRef<() => void>(() => {});
@@ -295,10 +306,9 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   });
 
   const startGameOverSequence = useWordSoupGameOverOverlay(
-    isGameOver,
+    isGameOver && !suppressGameOver,
     isCelebrating,
     celebrationActiveRef,
-    manuallyFinished,
   );
 
   const [finishOutcomeFromApi, setFinishOutcomeFromApi] =
@@ -337,19 +347,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     if (finishOutcomeFromSocket) return finishOutcomeFromSocket;
     if (finishOutcomeFromApi) return finishOutcomeFromApi;
     if (!startGameOverSequence) return null;
-    const fallback = buildFallbackFinishOutcome(players, playerScores);
-    if (!manuallyFinished) return fallback;
-    return {
-      players: fallback.players.map((player) => ({
-        ...player,
-        xpAwarded: 0,
-      })),
-    };
+    return buildFallbackFinishOutcome(players, playerScores);
   }, [
     finishOutcomeFromSocket,
     finishOutcomeFromApi,
     startGameOverSequence,
-    manuallyFinished,
     players,
     playerScores,
   ]);
@@ -395,7 +397,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     revealedPlayerIds: gameOverRevealedPlayerIds,
     showReturnButton: showGameOverReturnButton,
   } = useWordSoupGameOver({
-    active: startGameOverSequence,
+    active: startGameOverSequence && !suppressGameOver,
     outcome: finishOutcome,
     outroT: tOutro,
     skipInitialHold: finishedDuringIntro,
@@ -491,9 +493,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     setIsSubmittingGuessRef.current = setIsSubmittingGuess;
   }, [clearSelection, setIsSubmittingGuess]);
 
-  const [isAbandoning, setIsAbandoning] = useState(false);
-  const [showAbandonModal, setShowAbandonModal] = useState(false);
-  const [actionError, setActionError] = useState('');
   const hasNavigatedToLobbyRef = useRef(false);
 
   const navigateToLobby = useCallback(async () => {
@@ -538,7 +537,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
   useEffect(() => {
     if (!gameFinished) return;
-    // Natural completion shows the overlay; Return to Lobby handles navigation.
+    // Natural completion shows the overlay; abandon skips the outro and leaves.
     if (isGameOver) return;
     void navigateToLobby();
   }, [gameFinished, isGameOver, navigateToLobby]);
@@ -559,39 +558,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     setActionError('');
     setShowAbandonModal(true);
   }, []);
-
-  const finishMatch = useCallback(async () => {
-    if (isGameOver || isFinishingGame) return;
-
-    const wasDuringIntro = showIntro;
-    setIsFinishingGame(true);
-    setManuallyFinished(true);
-    setActionError('');
-    if (wasDuringIntro) {
-      setFinishedDuringIntro(true);
-    }
-
-    try {
-      const result = await gamesApi.finish({ gameId });
-      if (result.outcome) {
-        const unlock = result.outcome.players.find(
-          (entry) =>
-            entry.playerId === playerId &&
-            typeof entry.newlyUnlockedTier === 'number',
-        )?.newlyUnlockedTier;
-        if (typeof unlock === 'number') {
-          stashPendingAvatarUnlock(playerId, unlock);
-        }
-        setFinishOutcomeFromApi(result.outcome);
-      }
-    } catch {
-      setManuallyFinished(false);
-      setFinishedDuringIntro(false);
-      setActionError(tControls('actionFailed'));
-    } finally {
-      setIsFinishingGame(false);
-    }
-  }, [gameId, isFinishingGame, isGameOver, showIntro, playerId, tControls]);
 
   const handleReturnToLobby = useCallback(async () => {
     try {
@@ -617,31 +583,19 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   }, [gameId, gameEnded, navigateToLobby, playerId, tControls]);
 
   const leaveToLobby = useCallback(async () => {
-    if (isLastRemaining) {
-      setShowAbandonModal(false);
-      await finishMatch();
-      return;
-    }
-
     setIsAbandoning(true);
+    setSuppressGameOver(true);
+    setShowAbandonModal(false);
     try {
       await gamesApi.leave({ gameId, playerId });
-      setShowAbandonModal(false);
       await navigateToLobby();
     } catch {
+      setSuppressGameOver(false);
       setActionError(tControls('actionFailed'));
-      setShowAbandonModal(false);
     } finally {
       setIsAbandoning(false);
     }
-  }, [
-    finishMatch,
-    gameId,
-    isLastRemaining,
-    navigateToLobby,
-    playerId,
-    tControls,
-  ]);
+  }, [gameId, navigateToLobby, playerId, tControls]);
 
   return {
     game,
@@ -663,7 +617,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     freezeSecondsByPlayer,
     frozenPlayers: mergedFrozenPlayers,
     showGameOverOverlay,
-    startGameOverSequence,
     gameOverPhase,
     gameOverBubbleText,
     gameOverBubbleVisible,
@@ -697,7 +650,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     wordsFound,
     wordsLeft,
     isGameOver,
-    isFinishingGame,
     isSubmittingGuess,
     handleSelectionStart,
     handleSelectionContinue,

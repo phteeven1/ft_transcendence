@@ -485,18 +485,13 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     playerName: string,
     leftPlayersOverride?: Record<number, string>,
   ) {
-    const state = this.wordSoupService.markPlayerLeft(
-      gameId,
-      playerId,
-      playerName,
-    );
+    const meta = this.wordSoupService.getScoreboardMeta(gameId);
     this.server.to(`game:${gameId}`).emit('game:playerLeft', {
       playerId,
       playerName,
       leftPlayers: leftPlayersOverride ??
-        state?.leftPlayers ?? { [playerId]: playerName },
-      playerStreaks: state?.playerStreaks,
-      state: state ?? undefined,
+        meta?.leftPlayers ?? { [playerId]: playerName },
+      playerStreaks: meta?.playerStreaks,
     });
   }
 }

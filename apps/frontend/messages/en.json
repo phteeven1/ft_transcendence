@@ -318,6 +318,7 @@
         "emptyStats": "Your stats will appear here after you play.",
         "emptyRecent": "No finished games yet. Play a round to see your scores!",
         "recentGames": "Recent games",
+        "abandoned": "Abandoned",
         "winner": "Win",
         "xpValue": "{xp} XP",
         "scoreValue": "{score} pts",
@@ -404,7 +405,9 @@
       "stayInGame": "Stay in game",
       "backToLobby": "Back to lobby",
       "message": "You will leave this game. The others will keep playing, and your play session will stay active.",
-      "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active."
+      "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active.",
+      "noXpWarningLeave": "You will not earn XP for this game. Others who finish can still earn XP.",
+      "noXpWarningEndsGame": "No XP will be awarded for this game."
     },
     "wordBuilding": {
       "title": "Word Building",
@@ -423,7 +426,9 @@
       "intro": {
         "welcome": "Hello {name}! Ready to build some words?",
         "briefing": "Fill in the crossword grid — click a cell and type, or drag letter tiles from the rack below.",
-        "letsGo": "Let\u2019s go!"
+        "letsGo": "OK, let's go!",
+        "startingIn": "Starting in",
+        "go": "GO!"
       },
       "rules": {
         "show": "Show instructions",
@@ -440,11 +445,19 @@
       },
       "outro": {
         "gameOverTitle": "Puzzle results",
-        "puzzleComplete": "Puzzle complete!",
         "finalScores": "Final scores",
+        "scoresComingUp": "Scores coming up…",
         "pointsXp": "{score} pts · +{xp} XP",
         "winner": "Winner",
-        "returnToLobby": "Return to lobby"
+        "returnToLobby": "Return to lobby",
+        "almostDone": "Almost done…",
+        "closingSolo": "Well done {name}, great solo game! See you again soon!",
+        "closingMulti": "Well done everyone, great game! See you again soon!",
+        "placeAnnouncement": "In {place} place, {name}, with {score} points and +{xp} XP!",
+        "firstPlaceSolo": "In 1st place, {name}, with {score} points and +{xp} XP!",
+        "winnersPrefix": "And finally, the winners! ",
+        "winnerPrefix": "And finally, the winner, ",
+        "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
       },
       "finalLetter": {
         "announcement": "{name} placed the final letter! Congrats!",
