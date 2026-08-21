@@ -198,7 +198,10 @@ export class WordSoupService {
       solutionWords: placedWords,
       foundWords: [],
       frozenUntil: {},
-      isIntroAlreadyShown: this.createIntroShownState(playerIds, introWindowOver),
+      isIntroAlreadyShown: this.createIntroShownState(
+        playerIds,
+        introWindowOver,
+      ),
       introStartedAt,
       playStartedAt,
     };
