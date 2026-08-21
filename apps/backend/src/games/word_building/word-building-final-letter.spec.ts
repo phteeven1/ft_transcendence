@@ -2,17 +2,29 @@ import { WordBuildingService } from './word-building.service';
 
 /**
  * Minimal in-memory Prisma stand-in covering only what placeLetter() touches
- * on a hydrate → place → persistCompletion pass through a 1-cell puzzle.
+ * on a hydrate → place → persistCompletion pass through a small puzzle.
+ * Must include `game.playStartedAt` (or `prisma.game.update`) so hydrateFromDb
+ * can satisfy the intro/play clock without throwing.
  */
-function createFakePrisma() {
+function createFakePrisma(solution: (string | null)[][]) {
   const crosswordFindUniqueOrThrow = jest.fn(() =>
     Promise.resolve({
-      solution: [['A']],
-      playerGrid: [[null]],
-      creditGrid: [[null]],
+      solution,
+      playerGrid: solution.map((row) => row.map(() => null)),
+      creditGrid: solution.map((row) => row.map(() => null)),
       clues: { across: [], down: [] },
       revision: 0,
-      game: { gamePlayers: [{ playerId: 1, score: 0 }] },
+      game: {
+        playStartedAt: new Date(Date.now() + 60_000),
+        gamePlayers: [
+          {
+            playerId: 1,
+            score: 0,
+            leftAt: null,
+            player: { name: 'Player #1' },
+          },
+        ],
+      },
     }),
   );
 
@@ -40,6 +52,8 @@ function createFakePrisma() {
         findUniqueOrThrow: crosswordFindUniqueOrThrow,
         update: crosswordUpdate,
       },
+      game: { update: gameUpdate },
+      gamePlayer: { update: gamePlayerUpdate, updateMany: gamePlayerUpdateMany },
       $transaction: transaction,
     },
     crosswordUpdate,
@@ -51,7 +65,9 @@ function createFakePrisma() {
 
 describe('WordBuildingService.placeLetter — final-letter detection', () => {
   it('attaches finalPlacement only on the placement that completes the puzzle', async () => {
-    const { prisma, gameUpdate, gamePlayerUpdateMany } = createFakePrisma();
+    const { prisma, gameUpdate, gamePlayerUpdateMany } = createFakePrisma([
+      ['A'],
+    ]);
     const service = new WordBuildingService(prisma as never);
 
     const payload = await service.placeLetter({
@@ -81,23 +97,9 @@ describe('WordBuildingService.placeLetter — final-letter detection', () => {
   });
 
   it('does not attach finalPlacement on a placement that leaves cells unsolved', async () => {
-    const crosswordFindUniqueOrThrow = jest.fn(() =>
-      Promise.resolve({
-        solution: [['A', 'B']],
-        playerGrid: [[null, null]],
-        creditGrid: [[null, null]],
-        clues: { across: [], down: [] },
-        revision: 0,
-        game: { gamePlayers: [{ playerId: 1, score: 0 }] },
-      }),
-    );
-    const prisma = {
-      crossword: {
-        findUniqueOrThrow: crosswordFindUniqueOrThrow,
-        update: jest.fn(() => Promise.resolve(undefined)),
-      },
-      $transaction: jest.fn(),
-    };
+    const { prisma } = createFakePrisma([
+      ['A', 'B'],
+    ]);
     const service = new WordBuildingService(prisma as never);
 
     const payload = await service.placeLetter({

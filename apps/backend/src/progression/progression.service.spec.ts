@@ -84,8 +84,18 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: null,
       gamePlayers: [
-        { playerId: 10, score: 40, player: { id: 10, name: 'Player A' } },
-        { playerId: 20, score: 60, player: { id: 20, name: 'Player B' } },
+        {
+          playerId: 10,
+          score: 40,
+          leftAt: null,
+          player: { id: 10, name: 'Player A' },
+        },
+        {
+          playerId: 20,
+          score: 60,
+          leftAt: null,
+          player: { id: 20, name: 'Player B' },
+        },
       ],
     });
     playerFindUnique
@@ -163,7 +173,12 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: null,
       gamePlayers: [
-        { playerId: 10, score: 50, player: { id: 10, name: 'Solo Player' } },
+        {
+          playerId: 10,
+          score: 50,
+          leftAt: null,
+          player: { id: 10, name: 'Solo Player' },
+        },
       ],
     });
     playerFindUnique.mockResolvedValue({
@@ -201,7 +216,12 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: new Date(),
       gamePlayers: [
-        { playerId: 10, score: 10, player: { id: 10, name: 'Player A' } },
+        {
+          playerId: 10,
+          score: 10,
+          leftAt: null,
+          player: { id: 10, name: 'Player A' },
+        },
       ],
     });
 
@@ -235,8 +255,18 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: null,
       gamePlayers: [
-        { playerId: 10, score: 4, player: { id: 10, name: 'Player A' } },
-        { playerId: 11, score: 7, player: { id: 11, name: 'Player B' } },
+        {
+          playerId: 10,
+          score: 4,
+          leftAt: null,
+          player: { id: 10, name: 'Player A' },
+        },
+        {
+          playerId: 11,
+          score: 7,
+          leftAt: null,
+          player: { id: 11, name: 'Player B' },
+        },
       ],
     });
 

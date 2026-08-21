@@ -253,7 +253,6 @@ function createGamesService(
     markPlayerLeft: jest.fn(() =>
       Promise.resolve({
         leftPlayers: {} as Record<number, string>,
-        playerStreaks: {},
       }),
     ),
     hasAllPlayersLeft: jest.fn(() => false),
@@ -499,7 +498,6 @@ describe('GamesService.leave — Word Soup (durable leftAt)', () => {
         });
         return {
           leftPlayers: { [playerId]: playerName },
-          playerStreaks: {},
         };
       },
     );
@@ -550,7 +548,6 @@ describe('GamesService.leave — Word Soup (durable leftAt)', () => {
         });
         return {
           leftPlayers: { [playerId]: playerName },
-          playerStreaks: {},
         };
       },
     );
