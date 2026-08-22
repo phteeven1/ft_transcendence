@@ -39,8 +39,6 @@ export type UpdateVocabularyEntriesInput = {
   vocabularyMeanings: string[];
 };
 
-export type ExtractVocabularyResult = {
-  title: string;
-  words: string[];
-  meanings: string[];
-};
+export type ExtractVocabularyResult =
+  | { success: true; title: string; words: string[]; meanings: string[] }
+  | { success: false; message: string };

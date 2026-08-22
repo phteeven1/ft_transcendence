@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFileSync } from 'fs';
 import OpenAI from 'openai';
@@ -16,6 +11,22 @@ import {
 } from './vocabulary-entry-rules';
 
 type ExtractionResult = { title: string; words: string[]; meanings: string[] };
+
+export type ExtractionFailure = { success: false; message: string };
+export type ExtractionSuccess = ExtractionResult & { success: true };
+export type ExtractionOutcome = ExtractionSuccess | ExtractionFailure;
+
+const UNSUPPORTED_UPLOAD_MESSAGE =
+  'HEIC images are not supported. Upload a PNG, JPEG, GIF, WebP, or PDF.';
+const UNSUPPORTED_FILE_TYPE_MESSAGE =
+  'Unsupported file type. Upload a PDF or image (PNG, JPEG, GIF, WebP).';
+const EMPTY_FILE_MESSAGE = 'Uploaded file is empty.';
+const INVALID_AI_RESPONSE_MESSAGE =
+  'AI returned an invalid response. Please try again with a clearer file.';
+
+function extractFail(message: string): ExtractionFailure {
+  return { success: false, message };
+}
 
 const MAX_TITLE_CHARS = 80;
 
@@ -74,20 +85,18 @@ export class ExtractionService {
     return /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.originalname);
   }
 
-  private resolveVisionMime(file: Express.Multer.File): string {
+  private resolveVisionMime(file: Express.Multer.File): string | null {
     if (VISION_MIMES.has(file.mimetype)) return file.mimetype;
     const fromExt =
       VISION_MIME_BY_EXT[extname(file.originalname).toLowerCase()];
     if (fromExt) return fromExt;
-    throw new BadRequestException(
-      'Unsupported image type. Upload a PNG, JPEG, GIF, WebP, or PDF.',
-    );
+    return null;
   }
 
-  private getFileBuffer(file: Express.Multer.File): Buffer {
+  private getFileBuffer(file: Express.Multer.File): Buffer | null {
     if (file.buffer?.length) return file.buffer;
     if (file.path) return readFileSync(file.path);
-    throw new BadRequestException('Uploaded file is empty.');
+    return null;
   }
 
   private buildExtractionInstructions(
@@ -127,7 +136,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
   private validatePairs(
     words: string[],
     meanings: string[],
-  ): Pick<ExtractionResult, 'words' | 'meanings'> {
+  ): Pick<ExtractionResult, 'words' | 'meanings'> | ExtractionFailure {
     const count = Math.min(words.length, meanings.length);
     const cleanedWords: string[] = [];
     const cleanedMeanings: string[] = [];
@@ -154,7 +163,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     }
 
     if (cleanedWords.length < MIN_VOCAB_PAIRS) {
-      throw new UnprocessableEntityException(
+      return extractFail(
         `AI only extracted ${cleanedWords.length} word(s), but at least ${MIN_VOCAB_PAIRS} are required. Try a clearer photo or a file with more vocabulary.`,
       );
     }
@@ -183,7 +192,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     fromLanguage: string,
     toLanguage: string,
     fallbackFilename?: string,
-  ): Promise<ExtractionResult> {
+  ): Promise<ExtractionOutcome> {
     let response: OpenAI.Chat.Completions.ChatCompletion;
     try {
       response = await this.getOpenAiClient().chat.completions.create({
@@ -247,20 +256,18 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       parsed = JSON.parse(content) as ExtractionResult;
     } catch {
       console.error('Failed to parse AI response:', content);
-      throw new UnprocessableEntityException(
-        'AI returned an invalid response. Please try again with a clearer file.',
-      );
+      return extractFail(INVALID_AI_RESPONSE_MESSAGE);
     }
 
     if (!Array.isArray(parsed.words) || !Array.isArray(parsed.meanings)) {
-      throw new UnprocessableEntityException(
-        'AI returned an invalid response. Please try again with a clearer file.',
-      );
+      return extractFail(INVALID_AI_RESPONSE_MESSAGE);
     }
 
     const validated = this.validatePairs(parsed.words, parsed.meanings);
+    if ('success' in validated) return validated;
 
     return {
+      success: true,
       title: this.resolveTitle(
         parsed,
         fromLanguage,
@@ -275,11 +282,9 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     file: Express.Multer.File,
     fromLanguage = 'French',
     toLanguage = 'English',
-  ): Promise<ExtractionResult> {
+  ): Promise<ExtractionOutcome> {
     if (this.isHeic(file)) {
-      throw new BadRequestException(
-        'HEIC images are not supported. Upload a PNG, JPEG, GIF, WebP, or PDF.',
-      );
+      return extractFail(UNSUPPORTED_UPLOAD_MESSAGE);
     }
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey?.trim() || apiKey.trim() === 'null') {
@@ -289,6 +294,9 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     }
 
     const buffer = this.getFileBuffer(file);
+    if (!buffer) {
+      return extractFail(EMPTY_FILE_MESSAGE);
+    }
     const instructions = this.buildExtractionInstructions(
       fromLanguage,
       toLanguage,
@@ -296,6 +304,9 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
 
     if (this.isImage(file)) {
       const mime = this.resolveVisionMime(file);
+      if (!mime) {
+        return extractFail(UNSUPPORTED_UPLOAD_MESSAGE);
+      }
       return this.callOpenAi(
         [
           { type: 'text', text: instructions },
@@ -324,8 +335,8 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       );
     }
 
-    throw new BadRequestException(
-      `Unsupported file type "${file.mimetype}". Upload a PDF or image (PNG, JPEG, etc.).`,
+    return extractFail(
+      `Unsupported file type "${file.mimetype}". ${UNSUPPORTED_FILE_TYPE_MESSAGE}`,
     );
   }
 }
