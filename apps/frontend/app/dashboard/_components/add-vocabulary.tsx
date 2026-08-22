@@ -18,6 +18,32 @@ import {
 
 const LANGUAGE_CODES = ['en', 'fr', 'de'] as const;
 
+function isHeicUpload(file: File): boolean {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return (
+    type === 'image/heic' ||
+    type === 'image/heif' ||
+    name.endsWith('.heic') ||
+    name.endsWith('.heif')
+  );
+}
+
+function isAllowedExtractUpload(file: File): boolean {
+  if (isHeicUpload(file)) return false;
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (
+    type === 'application/pdf' ||
+    type === 'application/x-pdf' ||
+    name.endsWith('.pdf')
+  ) {
+    return true;
+  }
+  if (type.startsWith('image/')) return true;
+  return /\.(png|jpe?g|gif|webp|bmp)$/i.test(name);
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -154,6 +180,14 @@ export default function AddVocabulary({
 
   const handleAiExtract = async () => {
     if (!selectedFile || !user || !group) return;
+    if (isHeicUpload(selectedFile)) {
+      setAiError(t('unsupportedHeic'));
+      return;
+    }
+    if (!isAllowedExtractUpload(selectedFile)) {
+      setAiError(t('unsupportedFileType'));
+      return;
+    }
     setIsExtracting(true);
     setAiError('');
     try {
@@ -166,6 +200,10 @@ export default function AddVocabulary({
         user.id,
         group.id,
       );
+      if (!data.success) {
+        setAiError(data.message);
+        return;
+      }
       setName((current) => current.trim() || data.title);
       setEntries(
         data.words.map((word, index) => ({
@@ -174,12 +212,8 @@ export default function AddVocabulary({
         })),
       );
       handleCloseAi();
-    } catch (extractError: unknown) {
-      const message =
-        extractError instanceof Error
-          ? extractError.message
-          : t('extractionFailed');
-      setAiError(message);
+    } catch {
+      setAiError(t('extractionFailed'));
     } finally {
       setIsExtracting(false);
     }
@@ -336,7 +370,7 @@ export default function AddVocabulary({
             id="vocab-ai-file"
             name="vocab-ai-file"
             type="file"
-            accept="image/*,.pdf"
+            accept="image/png,image/jpeg,image/gif,image/webp,.pdf"
             onChange={(e) => {
               if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
               setAiError('');
