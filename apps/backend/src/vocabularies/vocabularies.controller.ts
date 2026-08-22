@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -197,7 +196,10 @@ export class VocabulariesController {
     },
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded.');
+      return {
+        success: false as const,
+        message: 'No file uploaded.',
+      };
     }
     await this.vocabulariesService.assertGroupMembership(
       userId,
