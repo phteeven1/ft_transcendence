@@ -42,15 +42,15 @@ export function getGameOverClosingText(
   return t('closingMulti');
 }
 
-type GameOverAnnouncement = {
+interface IGameOverAnnouncement {
   playerId: number;
   speech: string;
-};
+}
 
 export function buildGameOverAnnouncements(
   players: GameFinishPlayerOutcomeDto[],
   t: OutroTranslateFn,
-): GameOverAnnouncement[] {
+): IGameOverAnnouncement[] {
   const ranked = activePlayers(players);
   if (ranked.length === 0) return [];
 
@@ -58,7 +58,7 @@ export function buildGameOverAnnouncements(
   const winners = sorted.filter((player) => player.isWinner);
   const nonWinners = sorted.filter((player) => !player.isWinner);
   const totalPlayers = sorted.length;
-  const announcements: GameOverAnnouncement[] = [];
+  const announcements: IGameOverAnnouncement[] = [];
 
   for (let index = 0; index < nonWinners.length; index += 1) {
     const player = nonWinners[index]!;

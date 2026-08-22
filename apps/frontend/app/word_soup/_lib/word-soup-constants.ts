@@ -22,6 +22,3 @@ export const SCORE_POPUP_MS = 2200;
 
 /** Delay before showing game-over overlay when no celebration is in flight. */
 export const GAME_OVER_OVERLAY_GRACE_MS = 400;
-
-/** Court stays fully visible for this long after the game ends before the host reveal. */
-export const GAME_OVER_COURT_HOLD_MS = 2000;

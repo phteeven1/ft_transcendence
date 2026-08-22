@@ -157,13 +157,13 @@ const IDLE_FRAME: GameOverFrame = {
   done: false,
 };
 
-export type UseGameOverProps = {
+export interface IUseGameOverProps {
   active: boolean;
   outcome: GameFinishOutcomeDto | null;
   outroT: OutroTranslateFn;
   skipInitialHold?: boolean;
   holdDurationMs?: number;
-};
+}
 
 export function useGameOver({
   active,
@@ -171,7 +171,7 @@ export function useGameOver({
   outroT,
   skipInitialHold = false,
   holdDurationMs = DEFAULT_HOLD_DURATION_MS,
-}: UseGameOverProps) {
+}: IUseGameOverProps) {
   const [frame, setFrame] = useState<GameOverFrame>(IDLE_FRAME);
   const segmentsRef = useRef<TimelineSegment[]>([]);
   const sequenceActive = active && outcome != null;

@@ -2,30 +2,35 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-type SelectionCell = { row: number; col: number };
+interface ISelectionCell {
+  row: number;
+  col: number;
+}
 
-type GuessResult = {
+interface IGuessResult {
   success: boolean;
   message: string;
   messageKey?: 'wrongPosition' | 'alreadyFoundElsewhere';
-};
+}
 
-type UseWordSoupSelectionArgs = {
+interface IUseWordSoupSelectionArgs {
   gameReady: boolean;
   isGameOver: boolean;
+  hasLeftGame: boolean;
   isLocalPlayerFrozen: boolean;
   isCelebrating: boolean;
-  guessResult: GuessResult | null;
-  emitSubmitGuess: (cells: SelectionCell[]) => void;
-  resolveGuessMessage?: (result: GuessResult) => string;
+  guessResult: IGuessResult | null;
+  emitSubmitGuess: (cells: ISelectionCell[]) => void;
+  resolveGuessMessage?: (result: IGuessResult) => string;
   onGuessSubmitted?: () => void;
   onGuessFailed?: () => void;
   onGuessSucceeded?: () => void;
-};
+}
 
 export function useWordSoupSelection({
   gameReady,
   isGameOver,
+  hasLeftGame,
   isLocalPlayerFrozen,
   isCelebrating,
   guessResult,
@@ -34,8 +39,8 @@ export function useWordSoupSelection({
   onGuessSubmitted,
   onGuessFailed,
   onGuessSucceeded,
-}: UseWordSoupSelectionArgs) {
-  const [selection, setSelection] = useState<SelectionCell[]>([]);
+}: IUseWordSoupSelectionArgs) {
+  const [selection, setSelection] = useState<ISelectionCell[]>([]);
   const [selectionMessage, setSelectionMessage] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
   const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
@@ -44,7 +49,7 @@ export function useWordSoupSelection({
   const onGuessFailedRef = useRef(onGuessFailed);
   const onGuessSucceededRef = useRef(onGuessSucceeded);
   const resolveGuessMessageRef = useRef(resolveGuessMessage);
-  const lastProcessedGuessResultRef = useRef<GuessResult | null>(null);
+  const lastProcessedGuessResultRef = useRef<IGuessResult | null>(null);
 
   useLayoutEffect(() => {
     onGuessFailedRef.current = onGuessFailed;
@@ -78,14 +83,22 @@ export function useWordSoupSelection({
 
   const handleSelectionStart = useCallback(
     (row: number, col: number) => {
-      if (!gameReady || isGameOver || isLocalPlayerFrozen || isCelebrating) return;
+      if (
+        !gameReady ||
+        isGameOver ||
+        hasLeftGame ||
+        isLocalPlayerFrozen ||
+        isCelebrating
+      ) {
+        return;
+      }
 
       isSelectingRef.current = true;
       setIsSelecting(true);
       setSelection([{ row, col }]);
       setSelectionMessage('');
     },
-    [gameReady, isGameOver, isLocalPlayerFrozen, isCelebrating],
+    [gameReady, isGameOver, hasLeftGame, isLocalPlayerFrozen, isCelebrating],
   );
 
   const handleSelectionContinue = useCallback(
@@ -94,6 +107,7 @@ export function useWordSoupSelection({
         !gameReady ||
         !isSelectingRef.current ||
         isGameOver ||
+        hasLeftGame ||
         isLocalPlayerFrozen ||
         isCelebrating
       ) {
@@ -133,7 +147,7 @@ export function useWordSoupSelection({
         return previous;
       });
     },
-    [gameReady, isGameOver, isLocalPlayerFrozen, isCelebrating],
+    [gameReady, isGameOver, hasLeftGame, isLocalPlayerFrozen, isCelebrating],
   );
 
   const handleSelectionEnd = useCallback(() => {
@@ -142,7 +156,14 @@ export function useWordSoupSelection({
   }, []);
 
   const handleSubmitGuess = useCallback(() => {
-    if (!gameReady || isGameOver || isLocalPlayerFrozen || isCelebrating || isSubmittingGuess) {
+    if (
+      !gameReady ||
+      isGameOver ||
+      hasLeftGame ||
+      isLocalPlayerFrozen ||
+      isCelebrating ||
+      isSubmittingGuess
+    ) {
       return;
     }
 
@@ -157,6 +178,7 @@ export function useWordSoupSelection({
   }, [
     gameReady,
     isGameOver,
+    hasLeftGame,
     isLocalPlayerFrozen,
     isCelebrating,
     isSubmittingGuess,

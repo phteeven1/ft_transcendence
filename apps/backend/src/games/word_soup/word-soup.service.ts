@@ -11,13 +11,13 @@ import {
   Position,
   GuessResult,
   WordSoupGameState,
-  FREEZE_DURATION_SECONDS,
-  POINTS_PER_WORD,
 } from './word-soup.types';
 import {
   COURT_COLS,
   COURT_ROWS,
+  FREEZE_DURATION_SECONDS,
   PLAYER_COLOURS,
+  POINTS_PER_WORD,
   WORDS_IN_GAME,
   estimateIntroDurationMs,
 } from './word-soup.constants';

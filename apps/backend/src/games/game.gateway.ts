@@ -17,12 +17,12 @@ import { PlayersService } from '../players/players.service';
 import {
   FREEZE_DURATION_SECONDS,
   POINTS_PER_WORD,
-} from './word_soup/word-soup.types';
+} from './word_soup/word-soup.constants';
 import type {
   IPlaceLetterDto,
   ILockCellDto,
 } from './word_building/word-building.types';
-import { CELL_LOCK_TIMEOUT_MS } from './word_building/word-building.types';
+import { CELL_LOCK_TIMEOUT_MS } from './word_building/word-building.config';
 
 interface SocketData {
   groupId?: number;
@@ -205,9 +205,9 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
 
     const isPlayer = await this.gamesService.isPlayerInGame(gameId, playerId);
     if (!isPlayer) {
-      client.emit('game:error', {
-        message: 'You are not a player in this game.',
-      });
+      const message = 'You are not a player in this game.';
+      client.emit('game:error', { message });
+      client.emit('game:guessResult', { success: false, message });
       return;
     }
 

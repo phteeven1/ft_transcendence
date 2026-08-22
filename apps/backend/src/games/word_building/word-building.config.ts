@@ -36,3 +36,9 @@ export const WORD_BUILDING_GRID_SIZE = Math.min(
   WORD_BUILDING_CONFIG.boardCols,
   WORD_BUILDING_CONFIG.boardRows,
 );
+
+/**
+ * Configurable timeout (ms) for soft cell reservations.
+ * Short enough to avoid blocking gameplay; long enough to prevent race conditions.
+ */
+export const CELL_LOCK_TIMEOUT_MS = 5_000;

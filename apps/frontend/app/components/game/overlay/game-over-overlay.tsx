@@ -2,20 +2,26 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  AvatarUnlockToast,
-  GameOverlayShell,
-  GameScorePanel,
-  HostSpeechStack,
-  OVERLAY_SCALE,
-  ReturnToLobbyButton,
-  SpeechBubble,
-} from '@/app/components/game/overlay';
+
 import type { GameOverPhase } from '@/app/hooks/game/use-game-over';
 import type { GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import { clearPendingAvatarUnlock } from '@/lib/avatar-unlock';
 
-type WordBuildingGameOverOverlayProps = {
+import { AvatarUnlockToast } from './avatar-unlock-toast';
+import { GameOverlayShell } from './game-overlay-shell';
+import { GameScorePanel } from './game-score-panel';
+import { HostSpeechStack } from './host-speech-stack';
+import { OVERLAY_SCALE } from './overlay-scale';
+import { ReturnToLobbyButton } from './return-to-lobby-button';
+import { SpeechBubble } from './speech-bubble';
+
+export type GameOutroNamespace =
+  | 'games.wordSoup.outro'
+  | 'games.wordBuilding.outro';
+
+type GameOverOverlayProps = {
+  outroNamespace: GameOutroNamespace;
+  overlayId: string;
   phase: GameOverPhase;
   bubbleText: string;
   bubbleVisible: boolean;
@@ -33,7 +39,9 @@ type WordBuildingGameOverOverlayProps = {
   onReturnToLobby: () => void;
 };
 
-export default function WordBuildingGameOverOverlay({
+export function GameOverOverlay({
+  outroNamespace,
+  overlayId,
   phase,
   bubbleText,
   bubbleVisible,
@@ -49,8 +57,8 @@ export default function WordBuildingGameOverOverlay({
   newlyUnlockedTier = null,
   showReturnButton,
   onReturnToLobby,
-}: WordBuildingGameOverOverlayProps) {
-  const t = useTranslations('games.wordBuilding.outro');
+}: GameOverOverlayProps) {
+  const t = useTranslations(outroNamespace);
   const unlockTier =
     typeof newlyUnlockedTier === 'number' ? newlyUnlockedTier : null;
   const isClosing = phase === 'closing' || phase === 'closing-gap';
@@ -65,9 +73,9 @@ export default function WordBuildingGameOverOverlay({
     <GameOverlayShell
       role="dialog"
       ariaModal
-      ariaLabelledBy="word-building-game-over-title"
+      ariaLabelledBy={overlayId}
     >
-      <h2 id="word-building-game-over-title" className="sr-only">
+      <h2 id={overlayId} className="sr-only">
         {t('gameOverTitle')}
       </h2>
 

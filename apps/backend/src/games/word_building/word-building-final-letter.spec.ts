@@ -53,7 +53,10 @@ function createFakePrisma(solution: (string | null)[][]) {
         update: crosswordUpdate,
       },
       game: { update: gameUpdate },
-      gamePlayer: { update: gamePlayerUpdate, updateMany: gamePlayerUpdateMany },
+      gamePlayer: {
+        update: gamePlayerUpdate,
+        updateMany: gamePlayerUpdateMany,
+      },
       $transaction: transaction,
     },
     crosswordUpdate,
@@ -97,9 +100,7 @@ describe('WordBuildingService.placeLetter — final-letter detection', () => {
   });
 
   it('does not attach finalPlacement on a placement that leaves cells unsolved', async () => {
-    const { prisma } = createFakePrisma([
-      ['A', 'B'],
-    ]);
+    const { prisma } = createFakePrisma([['A', 'B']]);
     const service = new WordBuildingService(prisma as never);
 
     const payload = await service.placeLetter({

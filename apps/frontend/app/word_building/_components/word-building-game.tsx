@@ -21,20 +21,20 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
-import {
-  getPlayerSession,
-  isSessionExpired,
-} from '@/lib/player-session';
-import { restorePlayerFromSession } from '@/lib/restore-player-session';
 import { playersApi } from '@/lib/api';
 import { gamesApi } from '@/lib/api/games';
 import { wordBuildingApi } from '@/lib/api/games/word-building.api';
+import { computeIsLastRemaining, returnToLobbyOnce } from '@/app/hooks/game/game-leave.helpers';
+import {
+  useAbandonFinishRedirect,
+  useGameLeave,
+} from '@/app/hooks/game/use-game-leave';
 import GameCourt from './game-court';
-import { CourtCell } from './court-tile';
+import type { CourtCell } from '@/lib/api/games/word-building.types';
 import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from '../../components/abandon-play-modal';
-import WordBuildingGameOverOverlay from './word-building-game-over-overlay';
+import { GameOverOverlay } from '@/app/components/game/overlay';
 import WordBuildingFinalLetterOverlay from './word-building-final-letter-overlay';
 import WordBuildingIntroOverlay from './word-building-intro-overlay';
 import WordBuildingRulesInfo from './word-building-rules-info';
@@ -80,6 +80,9 @@ export default function WordBuildingGame() {
   const gameId   = Number(searchParams.get('gameId'));
   const playerId = Number(searchParams.get('playerId'));
 
+  const { hasLeftForLobbyRef, handleReturnToLobby, leaveToLobby: leaveMatch } =
+    useGameLeave({ router, loginAsPlayer, setSessionExpiresAt });
+
   // ── Grid state ──────────────────────────────────────────────────────────────
   const [visibleCourt, setVisibleCourt] = useState<CourtCell[][]>(EMPTY_COURT);
   const [cluesAcross,  setCluesAcross]  = useState<IInitCourtResponse['clues']['across']>([]);
@@ -112,7 +115,6 @@ export default function WordBuildingGame() {
   const [dragTargetCol, setDragTargetCol] = useState<number | null>(null);
   const [finishOutcomeFromApi, setFinishOutcomeFromApi] =
     useState<GameFinishOutcomeDto | null>(null);
-  const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
   const {
@@ -158,10 +160,14 @@ export default function WordBuildingGame() {
     markIntroShown,
   });
 
+  const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
+
   const wasShowingIntroRef = useRef(showIntro);
   useEffect(() => {
     if (naturalGameFinished && wasShowingIntroRef.current) {
-      setFinishedDuringIntro(true);
+      queueMicrotask(() => {
+        setFinishedDuringIntro(true);
+      });
     }
   }, [naturalGameFinished]);
   useEffect(() => {
@@ -203,10 +209,16 @@ export default function WordBuildingGame() {
   const prevSelectionRef = useRef<{ row: number; col: number } | null>(null);
   /** Up-to-date player name map for lock payloads — updated in sync with playerNames state. */
   const playerNamesRef = useRef<Map<number, string>>(new Map());
-  const hasLeftForLobbyRef = useRef(false);
   useEffect(() => { playerNamesRef.current = playerNames; }, [playerNames]);
 
   // ── Derive locks map from WS payload ────────────────────────────────────────
+  const [lockNowMs, setLockNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!cellLocks?.locks.length) return;
+    const id = window.setInterval(() => setLockNowMs(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [cellLocks]);
+
   /**
    * Active soft locks filtered to non-expired entries.
    * Keyed by "row,col" so GameCourt can look them up per-cell efficiently.
@@ -214,14 +226,13 @@ export default function WordBuildingGame() {
   const locksMap = useMemo(() => {
     const map = new Map<string, { playerName: string; playerId: number }>();
     if (!cellLocks) return map;
-    const now = Date.now();
     for (const lock of cellLocks.locks) {
-      if (lock.expiresAt > now) {
+      if (lock.expiresAt > lockNowMs) {
         map.set(`${lock.row},${lock.col}`, { playerName: lock.playerName, playerId: lock.playerId });
       }
     }
     return map;
-  }, [cellLocks]);
+  }, [cellLocks, lockNowMs]);
 
   // ── On mount: init court via REST ──────────────────────────────────────────
   useEffect(() => {
@@ -234,15 +245,13 @@ export default function WordBuildingGame() {
     let cancelled = false;
 
     const redirectAfterEndedGame = async () => {
-      if (hasLeftForLobbyRef.current) return;
-      hasLeftForLobbyRef.current = true;
-      const stored = getPlayerSession();
-      if (stored && !isSessionExpired(stored.expiresAt)) {
-        await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
-        if (!cancelled) router.replace('/select_game');
-        return;
-      }
-      if (!cancelled) router.replace('/session_over');
+      if (cancelled) return;
+      returnToLobbyOnce(hasLeftForLobbyRef, {
+        router,
+        loginAsPlayer,
+        setSessionExpiresAt,
+        method: 'replace',
+      });
     };
 
     const load = async () => {
@@ -313,14 +322,16 @@ export default function WordBuildingGame() {
     return () => {
       cancelled = true;
     };
-  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt, mergeLeftPlayers]);
+  }, [gameId, playerId, router, loginAsPlayer, setSessionExpiresAt, mergeLeftPlayers, hasLeftForLobbyRef]);
 
   // ── React to game:state WS events ─────────────────────────────────────────
   useEffect(() => {
     if (!gameState) return;
-    setVisibleCourt(gameState.visibleCourt);
-    setScores(gameState.scores);
-    setSolved(gameState.solved);
+    queueMicrotask(() => {
+      setVisibleCourt(gameState.visibleCourt);
+      setScores(gameState.scores);
+      setSolved(gameState.solved);
+    });
   }, [gameState]);
 
   /**
@@ -551,48 +562,28 @@ export default function WordBuildingGame() {
    * game" vs. "the others keep playing"). Leaving itself is always the same
    * REST call — the backend decides whether the match actually ends.
    */
-  const isLastRemaining = useMemo(() => {
-    if (playerNames.size === 0) return false;
-    const remaining = [...playerNames.keys()].filter(
-      (id) => id === playerId || !leftPlayers[id],
-    );
-    return remaining.length <= 1;
-  }, [leftPlayers, playerId, playerNames]);
-
-  /**
-   * Handles "Return to Lobby" on the score screen.
-   * Called after a natural game finish or immediately after leaving early.
-   */
-  const handleReturnToLobby = useCallback(() => {
-    if (hasLeftForLobbyRef.current) return;
-    hasLeftForLobbyRef.current = true;
-    const stored = getPlayerSession();
-    if (stored && !isSessionExpired(stored.expiresAt)) {
-      void restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt }).then(() => {
-        router.push('/select_game');
-      });
-    } else {
-      router.push('/session_over');
-    }
-  }, [router, loginAsPlayer, setSessionExpiresAt]);
+  const isLastRemaining = useMemo(
+    () =>
+      computeIsLastRemaining(
+        [...playerNames.keys()],
+        playerId,
+        leftPlayers,
+      ),
+    [leftPlayers, playerId, playerNames],
+  );
 
   const leaveToLobby = useCallback(async () => {
     setIsAbandoning(true);
-    try {
-      await gamesApi.leave({ gameId, playerId });
-    } catch {
-      /* navigation still wins; the session guard prevents stale re-entry */
-    } finally {
-      setShowAbandonModal(false);
-      handleReturnToLobby();
-    }
-  }, [gameId, handleReturnToLobby, playerId]);
+    setShowAbandonModal(false);
+    await leaveMatch(gameId, playerId);
+  }, [gameId, leaveMatch, playerId]);
 
-  // Abandon finish emits game:finished without solving — skip the outro and leave.
-  useEffect(() => {
-    if (!gameFinished || solved || hasLeftForLobbyRef.current) return;
-    handleReturnToLobby();
-  }, [gameFinished, solved, handleReturnToLobby]);
+  useAbandonFinishRedirect(
+    gameFinished,
+    solved,
+    handleReturnToLobby,
+    hasLeftForLobbyRef,
+  );
 
   useEffect(() => {
     if (
@@ -823,7 +814,9 @@ export default function WordBuildingGame() {
             className="pointer-events-auto relative h-full w-full min-w-0"
             style={{ maxWidth: 'calc(11.5rem + 1rem + 600px)' }}
           >
-            <WordBuildingGameOverOverlay
+            <GameOverOverlay
+              outroNamespace="games.wordBuilding.outro"
+              overlayId="word-building-game-over-title"
               phase={gameOverPhase}
               bubbleText={gameOverBubbleText}
               bubbleVisible={gameOverBubbleVisible}

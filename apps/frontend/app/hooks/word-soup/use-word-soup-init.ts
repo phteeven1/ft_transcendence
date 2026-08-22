@@ -8,11 +8,7 @@ import type { GameRosterPlayerDto } from '@/lib/api/games';
 import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
 import type { Game } from '@/app/types';
 import { useAuth } from '@/app/context/auth-context';
-import {
-  getPlayerSession,
-  isSessionExpired,
-} from '@/lib/player-session';
-import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import { returnToLobbyOnce } from '@/app/hooks/game/game-leave.helpers';
 import { COURT_COLS, COURT_ROWS } from '@/app/word_soup/_lib/word-soup-constants';
 
 function createEmptyCourt(): WordSoupCourtCell[][] {
@@ -40,11 +36,6 @@ function isEndedGameError(error: unknown): boolean {
     message.includes('game not found') ||
     /game \d+ not found/.test(message)
   );
-}
-
-function hasActivePlayerSession(): boolean {
-  const stored = getPlayerSession();
-  return Boolean(stored && !isSessionExpired(stored.expiresAt));
 }
 
 export function useWordSoupInit(gameId: number, playerId: number) {
@@ -81,15 +72,13 @@ export function useWordSoupInit(gameId: number, playerId: number) {
 
   const hasLeftForLobbyRef = useRef(false);
 
-  const leaveFinishedGameForLobby = useCallback(async () => {
-    if (hasLeftForLobbyRef.current) return;
-    hasLeftForLobbyRef.current = true;
-    if (hasActivePlayerSession()) {
-      await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
-      router.replace('/select_game');
-      return;
-    }
-    router.replace('/session_over');
+  const leaveFinishedGameForLobby = useCallback(() => {
+    returnToLobbyOnce(hasLeftForLobbyRef, {
+      router,
+      loginAsPlayer,
+      setSessionExpiresAt,
+      method: 'replace',
+    });
   }, [loginAsPlayer, router, setSessionExpiresAt]);
 
   useEffect(() => {

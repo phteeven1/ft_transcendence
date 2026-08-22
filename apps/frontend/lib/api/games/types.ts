@@ -55,3 +55,15 @@ export type GameIdPlayerIdInput = {
 export type GameIdInput = {
   gameId: number;
 };
+
+/** `game:playerLeft` socket payload (playerId + display name). */
+export type IPlayerLeftNoticeDto = {
+  playerId: number;
+  playerName: string;
+};
+
+/** Client-side game socket error surfaced to hooks (e.g. after leave). */
+export type IGameSocketErrorDto = {
+  message: string;
+  seq: number;
+};

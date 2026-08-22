@@ -19,14 +19,14 @@ export type IntroPhase =
 
 export type IntroCountdownValue = 3 | 2 | 1 | 'go' | null;
 
-export type IntroTexts = {
+export interface IIntroTexts {
   welcome: string;
   briefing: string;
   wordsIntro?: string;
   letsGo: string;
-};
+}
 
-export type UseGameIntroProps = {
+export interface IUseGameIntroProps {
   gameId: number;
   courtReady: boolean;
   solutionWords?: string[];
@@ -38,12 +38,12 @@ export type UseGameIntroProps = {
    * instant so locale / name length drift cannot desync multiplayer starts.
    */
   playStartedAt: number | null;
-  introTexts: IntroTexts;
+  introTexts: IIntroTexts;
   skipIntro?: boolean;
   /** When true, do not call markIntroShown (e.g. game ended before intro finished). */
   skipMarkIntroShown?: boolean;
   markIntroShown?: (gameId: number) => Promise<unknown>;
-};
+}
 
 const CHAR_MS = 42;
 const WORD_CHAR_MS = 70;
@@ -82,7 +82,7 @@ function speechBlockMs(text: string, charMs: number): number {
 function getIntroFrameAt(
   elapsedMs: number,
   solutionWords: string[],
-  introTexts: IntroTexts,
+  introTexts: IIntroTexts,
 ): IntroFrame {
   if (elapsedMs < 0) {
     return {
@@ -247,7 +247,7 @@ export function useGameIntro({
   skipIntro = false,
   skipMarkIntroShown = false,
   markIntroShown,
-}: UseGameIntroProps) {
+}: IUseGameIntroProps) {
   const [frame, setFrame] = useState<IntroFrame>(IDLE_FRAME);
   const [playClockReady, setPlayClockReady] = useState(false);
   const [activeGameId, setActiveGameId] = useState(gameId);

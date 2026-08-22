@@ -13,7 +13,13 @@ import type {
   IntroCountdownValue,
   IntroPhase,
 } from '@/app/hooks/game/use-game-intro';
-import { longestSolutionWord } from './intro-bubble-width';
+
+function longestSolutionWord(words: string[]): string {
+  if (words.length === 0) return '';
+  return words.reduce((longest, word) =>
+    word.length > longest.length ? word : longest,
+  );
+}
 
 type WordSoupIntroOverlayProps = {
   phase: IntroPhase;

@@ -42,12 +42,6 @@ export type ClueMap = {
 // ─── Cell locking ─────────────────────────────────────────────────────────────
 
 /**
- * Configurable timeout (ms) for soft cell reservations.
- * Short enough to avoid blocking gameplay; long enough to prevent race conditions.
- */
-export const CELL_LOCK_TIMEOUT_MS = 5_000;
-
-/**
  * One soft lock record: which player reserved a cell and when it expires.
  */
 export type ICellLock = {

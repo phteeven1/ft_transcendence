@@ -7,6 +7,9 @@ import {
 export const COURT_COLS = 18;
 export const COURT_ROWS = 18;
 
+export const FREEZE_DURATION_SECONDS = 5;
+export const POINTS_PER_WORD = 10;
+
 /** Number of words drawn from the vocabulary for a Word Soup round. */
 export const WORDS_IN_GAME = 10;
 

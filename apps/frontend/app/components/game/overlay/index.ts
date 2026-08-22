@@ -1,3 +1,4 @@
+export * from './game-over-overlay';
 export * from './avatar-unlock-toast';
 export * from './countdown-bubble';
 export * from './game-overlay-shell';
