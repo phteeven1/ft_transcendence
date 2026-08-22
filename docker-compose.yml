@@ -2,8 +2,8 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     environment:
       CERT_SAN: ${CERT_SAN:-localhost,127.0.0.1}
     depends_on:
@@ -27,7 +27,7 @@ services:
       - apps/backend/.env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-transcendence}
-      APP_URL: https://${PUBLIC_HOST:-localhost}
+      APP_URL: https://${PUBLIC_HOST:-localhost}:${PUBLIC_PORT:-8443}
     depends_on:
       postgres:
         condition: service_healthy
