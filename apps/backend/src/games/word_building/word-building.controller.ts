@@ -1,4 +1,4 @@
-import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { WordBuildingService } from './word-building.service';
 import { PlayerSessionGuard } from '../../players/player-session.guard';
 import { AuthenticatedPlayerId } from '../../players/authenticated-player.decorator';
@@ -15,9 +15,10 @@ export class WordBuildingController {
   @UseGuards(PlayerSessionGuard)
   async initCourt(
     @AuthenticatedPlayerId() playerId: number,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
   ) {
-    await this.playersService.assertPlayerInGame(playerId, Number(id));
-    return this.wordBuildingService.initCourt(Number(id));
+    await this.playersService.assertPlayerInGame(playerId, id);
+    return this.wordBuildingService.initCourt(id);
   }
 }
+
