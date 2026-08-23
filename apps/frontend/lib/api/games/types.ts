@@ -29,8 +29,10 @@ export type GameDto = {
   players: number[];
   isActive: boolean;
   isFinished: boolean;
-  /** Not returned by backend today; UI treats missing as open lobby (0). */
-  waitingFor?: number;
+  /** Configured player cap — single source of truth is the backend. */
+  maxPlayers: number;
+  /** ISO timestamp the game auto-starts at if still WAITING; null once active/finished. */
+  autoStartAt: string | null;
 };
 
 /** Roster row from GET /games/:id/players (scoreboard / intro avatars). */

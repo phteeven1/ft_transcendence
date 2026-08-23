@@ -256,9 +256,9 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ### `tsternbe` (Tobias Sternberg)
 
-- Features:
-- Modules:
-- Challenges overcome:
+- Features: overall product design. User management system. Basic frontend structure. Setting up website navigation and frontend directory structure. Admins/Users/players. Invite, Game lobby, mini games for game lobby. Language and sign in buttons.
+- Modules: Organization system, Frontend/Backend (partly), setup for games (websockets, multiplayer, remote players, session tokens)
+- Challenges overcome: learning to work with entirely new technical stack. Communicating and handing over. Keeping overall vision and still contributing specific code.
 
 ### `kmooney` (Kevin Mooney)
 
@@ -274,9 +274,9 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ### `avarghes` (Alvin Abraham Varghese)
 
-- Features:
-- Modules:
-- Challenges overcome:
+- Features: Multiplayer crossword game (Word Building) — drag-and-drop or keyboard tile placement, per-cell scoring, live scoreboard.
+- Modules: Puzzle generator and game service (backend), Word Building game UI (frontend), `Crossword` DB model.
+- Challenges overcome: Generating well-formed crosswords from random vocab lists; handling concurrent players editing the same puzzle in real time.
 
 ### `sgavrilo` (Sergej Gavrilov)
 

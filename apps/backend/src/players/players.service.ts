@@ -310,6 +310,39 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     return result.count;
   }
 
+  /**
+   * Reaps expired sessions for the game-lobby lifecycle sweep — distinct
+   * from cleanupExpiredSessions(), which stays a cheap bulk delete because
+   * it runs on the hot path (validateSession(), called on every
+   * authenticated request). This method needs the playerId of who expired
+   * (to act on their game memberships), and deletes by exact token rather
+   * than a blind bulk delete: startSession() always issues a fresh token on
+   * renewal, so if the token read here is already gone by the time we try to
+   * delete it, the player renewed in the interim and must NOT be treated as
+   * expired.
+   *
+   * @returns The players whose session was actually reaped.
+   */
+  async reapExpiredSessions(): Promise<{ playerId: number; token: string }[]> {
+    const candidates = await this.prisma.playerSession.findMany({
+      where: { expiresAt: { lte: new Date() } },
+      select: { token: true, playerId: true },
+    });
+
+    const reaped: { playerId: number; token: string }[] = [];
+    for (const candidate of candidates) {
+      const { count } = await this.prisma.playerSession.deleteMany({
+        where: { token: candidate.token },
+      });
+      if (count === 1) reaped.push(candidate);
+    }
+
+    for (const { playerId } of reaped) {
+      this.gateway.emitPlayerSessionReplaced(playerId);
+    }
+    return reaped;
+  }
+
   private toSessionDto(session: {
     token: string;
     playerId: number;

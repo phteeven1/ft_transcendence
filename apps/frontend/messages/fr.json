@@ -377,7 +377,7 @@
       "clickToStart": "Cliquer pour démarrer",
       "waiting": "En attente...",
       "clickToJoin": "Cliquer pour rejoindre",
-      "playerCount": "{count, plural, one {# joueur} other {# joueurs}}, {elapsed}"
+      "playerCount": "{count}/{max} joueurs, {elapsed}"
     },
     "puzzle": {
       "loading": "Chargement du puzzle…",

@@ -377,7 +377,7 @@
       "clickToStart": "Click to Start",
       "waiting": "Waiting...",
       "clickToJoin": "Click to Join",
-      "playerCount": "{count, plural, one {# player} other {# players}}, {elapsed}"
+      "playerCount": "{count}/{max} players, {elapsed}"
     },
     "puzzle": {
       "loading": "Loading puzzle…",

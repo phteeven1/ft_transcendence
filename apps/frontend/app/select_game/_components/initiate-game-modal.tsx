@@ -1,8 +1,9 @@
 'use client';
 /*
 Simple confirmation modal asking the player if they want to initiate a new game.
-waitingFor is always 0 (open lobby, starts after 5 minutes or when force-started).
-Players join via the pending game button, and the initiator can force-start at any time.
+The backend auto-starts the game once it reaches maxPlayers or once autoStartAt
+elapses (both server-driven, see GameDto) — the initiator can also force-start earlier.
+Players join via the pending game button.
 */
 
 import { useTranslations } from 'next-intl';
