@@ -39,6 +39,18 @@ export type UpdateVocabularyEntriesInput = {
   vocabularyMeanings: string[];
 };
 
+export type ExtractionErrorCode =
+  | 'UNSUPPORTED_FILE_TYPE'
+  | 'EMPTY_FILE'
+  | 'INVALID_AI_RESPONSE'
+  | 'EXTRACTION_FAILED'
+  | 'OPENAI_NOT_CONFIGURED'
+  | 'TOO_FEW_WORDS';
+
 export type ExtractVocabularyResult =
   | { success: true; title: string; words: string[]; meanings: string[] }
-  | { success: false; message: string };
+  | {
+      success: false;
+      code: ExtractionErrorCode;
+      extractedCount?: number;
+    };

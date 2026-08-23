@@ -269,8 +269,10 @@
     "minimumWordsAlert": "Une liste de vocabulaire doit contenir au moins 5 mots.",
     "duplicatePairAlert": "Chaque mot et chaque signification doivent être uniques.",
     "extractionFailed": "L'extraction par IA a échoué. Veuillez vous assurer que le fichier contient au moins 5 mots et réessayer.",
-    "unsupportedHeic": "Les images HEIC ne sont pas prises en charge. Téléversez un PNG, JPEG, GIF, WebP ou PDF.",
     "unsupportedFileType": "Type de fichier non pris en charge. Téléversez un PDF ou une image (PNG, JPEG, GIF, WebP).",
+    "emptyFile": "Le fichier téléversé est vide.",
+    "extractionUnavailable": "L'extraction par IA n'est pas disponible. Veuillez réessayer plus tard.",
+    "tooFewWords": "L'IA n'a extrait que {count} mot(s), alors qu'au moins {min} sont requis. Essayez une photo plus nette ou un fichier avec plus de vocabulaire.",
     "edit": {
       "title": "Modifier : {name}"
     },
