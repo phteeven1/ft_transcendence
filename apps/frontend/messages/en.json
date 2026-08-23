@@ -269,7 +269,6 @@
     "minimumWordsAlert": "A vocabulary list must have at least 5 words.",
     "duplicatePairAlert": "Each word and each meaning must be unique.",
     "extractionFailed": "AI extraction failed. Please ensure the file has at least 5 words and try again.",
-    "unsupportedHeic": "HEIC images are not supported. Upload a PNG, JPEG, GIF, WebP, or PDF.",
     "unsupportedFileType": "Unsupported file type. Upload a PDF or image (PNG, JPEG, GIF, WebP).",
     "edit": {
       "title": "Edit: {name}"

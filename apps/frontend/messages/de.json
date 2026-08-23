@@ -269,7 +269,6 @@
     "minimumWordsAlert": "Eine Vokabelliste muss mindestens 5 Wörter enthalten.",
     "duplicatePairAlert": "Jedes Wort und jede Bedeutung darf nur einmal vorkommen.",
     "extractionFailed": "KI-Extraktion fehlgeschlagen. Bitte stellen Sie sicher, dass die Datei mindestens 5 Wörter enthält, und versuchen Sie es erneut.",
-    "unsupportedHeic": "HEIC-Bilder werden nicht unterstützt. Laden Sie ein PNG, JPEG, GIF, WebP oder PDF hoch.",
     "unsupportedFileType": "Nicht unterstützter Dateityp. Laden Sie ein PDF oder Bild (PNG, JPEG, GIF, WebP) hoch.",
     "edit": {
       "title": "Bearbeiten: {name}"
