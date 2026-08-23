@@ -10,19 +10,18 @@ import GameCourt from './game-court';
 import AbandonPlayModal from '../../components/abandon-play-modal';
 import PlayerScoreboardBanner from './player-scoreboard-banner';
 import WordSoupIntroOverlay from './word-soup-intro-overlay';
-import WordSoupGameOverOverlay from './word-soup-game-over-overlay';
+import { GameOverOverlay } from '@/app/components/game/overlay';
 import WordSoupEventBannerView from './word-soup-event-banner';
 import WordSoupTitle from './word-soup-title';
 import GameClock from '@/app/components/game-clock';
-import CourtControls from './court-controls';
+import GameRulesInfo from './game-rules-info';
 import WordStats from './word-stats';
-import SessionActions from './session-actions';
-import SubmitGuessButton from './submit-guess-button';
-import { MAX_COURT_WIDTH } from '../_lib/word-soup-constants';
+import { Button } from '../../components/ui/button';
 
 export default function WordSoupGame() {
   const tCommon = useTranslations('common');
   const t = useTranslations('games.wordSoup');
+  const tControls = useTranslations('games.controls');
   useSessionGuard();
 
   const searchParams = useSearchParams();
@@ -90,10 +89,7 @@ export default function WordSoupGame() {
         </div>
       ) : null}
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
-        <div
-          className="w-full min-w-0"
-          style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_WIDTH}px)` }}
-        >
+        <div className="w-full min-w-0 max-w-[calc(11.5rem+1rem+600px)]">
           {/*
             Desktop:
               row1: [title] [message banner + rules]  (controls right edge = court)
@@ -114,10 +110,7 @@ export default function WordSoupGame() {
             {/* Message + court controls — right edge flush with court.
                 Banner may expand downward over the court when messages wrap. */}
             <div className="relative z-20 lg:col-start-2 lg:row-start-1">
-              <div
-                className="flex w-full items-start gap-2 sm:gap-3"
-                style={{ maxWidth: MAX_COURT_WIDTH }}
-              >
+              <div className="flex w-full max-w-[600px] items-start gap-2 sm:gap-3">
                 <div className="min-w-0 flex-1">
                   <WordSoupEventBannerView
                     event={ws.eventBanner}
@@ -128,7 +121,9 @@ export default function WordSoupGame() {
                   />
                 </div>
                 <div className="flex h-14 shrink-0 items-center sm:h-16">
-                  <CourtControls />
+                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                    <GameRulesInfo />
+                  </div>
                 </div>
               </div>
             </div>
@@ -164,10 +159,7 @@ export default function WordSoupGame() {
             </aside>
 
             {/* Court */}
-            <div
-              className="relative z-0 min-w-0 w-full lg:col-start-2 lg:row-start-2"
-              style={{ maxWidth: MAX_COURT_WIDTH }}
-            >
+            <div className="relative z-0 min-w-0 w-full max-w-[600px] lg:col-start-2 lg:row-start-2">
               <GameCourt
                 visibleCourt={ws.visibleCourt}
                 playerColours={ws.playerColours}
@@ -201,22 +193,26 @@ export default function WordSoupGame() {
 
             {/* Back to lobby — height-matched to Submit */}
             <div className="hidden h-full lg:col-start-1 lg:row-start-3 lg:block">
-              <SessionActions
+              <WordSoupSessionActions
                 fillHeight
                 onLeave={ws.handleLeaveClick}
+                backLabel={tControls('backToLobby')}
               />
             </div>
 
             {/* Submit */}
             <div className="lg:col-start-2 lg:row-start-3">
-              <div className="h-full w-full" style={{ maxWidth: MAX_COURT_WIDTH }}>
-                <SubmitGuessButton
+              <div className="h-full w-full max-w-[600px]">
+                <WordSoupSubmitGuessButton
                   fillHeight
                   onSubmitGuess={ws.handleSubmitGuess}
                   selectionCount={ws.selection.length}
                   isSubmittingGuess={ws.isSubmittingGuess}
                   isLocalPlayerFrozen={ws.isLocalPlayerFrozen}
-                  freezeSecondsLeft={ws.freezeSecondsLeft}
+                  hasLeftGame={ws.hasLeftGame}
+                  frozenLabel={t('frozen', { seconds: ws.freezeSecondsLeft })}
+                  submittingLabel={t('submitting')}
+                  submitLabel={t('submitGuess')}
                 />
               </div>
             </div>
@@ -228,8 +224,9 @@ export default function WordSoupGame() {
                 wordsFound={ws.wordsFound}
                 wordsLeft={ws.wordsLeft}
               />
-              <SessionActions
+              <WordSoupSessionActions
                 onLeave={ws.handleLeaveClick}
+                backLabel={tControls('backToLobby')}
               />
             </div>
           </div>
@@ -249,10 +246,11 @@ export default function WordSoupGame() {
       {ws.showGameOverOverlay && (
         <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
           <div
-            className="pointer-events-auto relative h-full w-full min-w-0"
-            style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_WIDTH}px)` }}
+            className="pointer-events-auto relative h-full w-full min-w-0 max-w-[calc(11.5rem+1rem+600px)]"
           >
-            <WordSoupGameOverOverlay
+            <GameOverOverlay
+              outroNamespace="games.wordSoup.outro"
+              overlayId="word-soup-game-over-title"
               phase={ws.gameOverPhase}
               bubbleText={ws.gameOverBubbleText}
               bubbleVisible={ws.gameOverBubbleVisible}
@@ -272,6 +270,85 @@ export default function WordSoupGame() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type WordSoupSessionActionsProps = {
+  onLeave: () => void;
+  backLabel: string;
+  fillHeight?: boolean;
+};
+
+function WordSoupSessionActions({
+  onLeave,
+  backLabel,
+  fillHeight = false,
+}: WordSoupSessionActionsProps) {
+  return (
+    <div
+      className={[
+        'flex w-full flex-col gap-1.5',
+        fillHeight ? 'h-full' : '',
+      ].join(' ')}
+    >
+      <Button
+        variant="primary"
+        size="sm"
+        fullWidth
+        onClick={onLeave}
+        className={fillHeight ? 'min-h-0 flex-1' : ''}
+      >
+        {backLabel}
+      </Button>
+    </div>
+  );
+}
+
+type WordSoupSubmitGuessButtonProps = {
+  onSubmitGuess: () => void;
+  selectionCount: number;
+  isSubmittingGuess: boolean;
+  isLocalPlayerFrozen: boolean;
+  hasLeftGame: boolean;
+  frozenLabel: string;
+  submittingLabel: string;
+  submitLabel: string;
+  fillHeight?: boolean;
+};
+
+function WordSoupSubmitGuessButton({
+  onSubmitGuess,
+  selectionCount,
+  isSubmittingGuess,
+  isLocalPlayerFrozen,
+  hasLeftGame,
+  frozenLabel,
+  submittingLabel,
+  submitLabel,
+  fillHeight = false,
+}: WordSoupSubmitGuessButtonProps) {
+  return (
+    <div className={['z-10 w-full', fillHeight ? 'h-full' : 'sticky bottom-2'].join(' ')}>
+      <Button
+        variant="secondary"
+        fullWidth
+        size="lg"
+        onClick={onSubmitGuess}
+        disabled={
+          selectionCount < 2 ||
+          isSubmittingGuess ||
+          isLocalPlayerFrozen ||
+          hasLeftGame
+        }
+        className={['shadow-md', fillHeight ? '!h-full' : ''].join(' ')}
+      >
+        {isLocalPlayerFrozen
+          ? frozenLabel
+          : isSubmittingGuess
+            ? submittingLabel
+            : submitLabel}
+      </Button>
     </div>
   );
 }

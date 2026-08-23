@@ -570,49 +570,49 @@ body {
   50% { transform: translateY(-4px); }
 }
 
-.word-soup-intro-overlay {
-  animation: word-soup-intro-overlay-in 280ms ease-out;
+.game-overlay-backdrop {
+  animation: game-overlay-backdrop-in 280ms ease-out;
 }
 
-@keyframes word-soup-intro-overlay-in {
+@keyframes game-overlay-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.word-soup-intro-host {
-  animation: word-soup-intro-host-bob 2.4s ease-in-out infinite;
+.game-overlay-host {
+  animation: game-overlay-host-bob 2.4s ease-in-out infinite;
   transform-origin: center bottom;
 }
 
-@keyframes word-soup-intro-host-bob {
+@keyframes game-overlay-host-bob {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
   50% { transform: translateY(-6px) rotate(1.5deg); }
 }
 
-.word-soup-intro-caret {
-  animation: word-soup-intro-caret-blink 0.7s steps(1, end) infinite;
+.game-overlay-caret {
+  animation: game-overlay-caret-blink 0.7s steps(1, end) infinite;
 }
 
-@keyframes word-soup-intro-caret-blink {
+@keyframes game-overlay-caret-blink {
   0%, 45% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
 
-.word-soup-intro-countdown {
-  animation: word-soup-intro-countdown-pop 420ms cubic-bezier(0.22, 1.2, 0.36, 1);
+.game-overlay-countdown {
+  animation: game-overlay-countdown-pop 420ms cubic-bezier(0.22, 1.2, 0.36, 1);
 }
 
-@keyframes word-soup-intro-countdown-pop {
+@keyframes game-overlay-countdown-pop {
   0% { opacity: 0; transform: scale(0.55); }
   70% { opacity: 1; transform: scale(1.08); }
   100% { opacity: 1; transform: scale(1); }
 }
 
-.word-soup-game-over-score-row {
-  animation: word-soup-game-over-row-in 320ms cubic-bezier(0.22, 1.1, 0.36, 1);
+.game-overlay-score-row {
+  animation: game-overlay-score-row-in 320ms cubic-bezier(0.22, 1.1, 0.36, 1);
 }
 
-@keyframes word-soup-game-over-row-in {
+@keyframes game-overlay-score-row-in {
   0% {
     opacity: 0;
     transform: translateY(-10px);

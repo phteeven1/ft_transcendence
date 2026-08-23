@@ -42,12 +42,6 @@ export type ClueMap = {
 // ─── Cell locking ─────────────────────────────────────────────────────────────
 
 /**
- * Configurable timeout (ms) for soft cell reservations.
- * Short enough to avoid blocking gameplay; long enough to prevent race conditions.
- */
-export const CELL_LOCK_TIMEOUT_MS = 5_000;
-
-/**
  * One soft lock record: which player reserved a cell and when it expires.
  */
 export type ICellLock = {
@@ -92,6 +86,12 @@ export type ILiveGameState = {
    * the only record of who is still actively playing vs. who has left.
    */
   leftPlayers: Map<number, string>;
+  /** Shared intro timeline start (epoch ms). */
+  introStartedAt: number;
+  /** Play clock start after intro (epoch ms). */
+  playStartedAt: number;
+  /** Per-player intro completion flags. */
+  isIntroAlreadyShown: Map<number, boolean>;
 };
 
 // ─── WebSocket payloads ───────────────────────────────────────────────────────
@@ -105,25 +105,12 @@ export type IPlaceLetterDto = {
   letter: string;
 };
 
-/**
- * Set only on the single placement that completes the puzzle (transitions
- * `solved` from false to true) — the authoritative source for the final-letter
- * celebration broadcast. Absent on every other placement.
- */
-export type IFinalPlacement = {
-  playerId: number;
-  letter: string;
-  row: number;
-  col: number;
-};
-
 /** Broadcast server → all clients after every letter placement. */
 export type IGameStatePayload = {
   visibleCourt: CourtCell[][]; // full grid with status info — no solution data
   scores: Array<{ playerId: number; score: number }>;
   solved: boolean;
   revision: number;
-  finalPlacement?: IFinalPlacement;
 };
 
 /** Response shape for POST /games/:id/initWordBuildingCourt */
@@ -138,4 +125,7 @@ export type IInitCourtResponse = {
    * player left learn that without waiting for a live game:playerLeft event.
    */
   leftPlayers: Record<number, string>;
+  hasPlayerSeenIntro: boolean;
+  introStartedAt: number;
+  playStartedAt: number;
 };

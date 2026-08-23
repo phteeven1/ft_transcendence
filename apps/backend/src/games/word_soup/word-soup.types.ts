@@ -1,6 +1,3 @@
-export const FREEZE_DURATION_SECONDS = 5;
-export const POINTS_PER_WORD = 10;
-
 export type CourtCell = {
   char: string;
   highlightedByPlayerId?: number;

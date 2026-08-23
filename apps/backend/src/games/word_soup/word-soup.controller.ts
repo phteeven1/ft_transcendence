@@ -29,14 +29,4 @@ export class WordSoupController {
     await this.playersService.assertPlayerInGame(playerId, id);
     return this.wordSoupService.initCourt(id, playerId);
   }
-
-  @Post(':gameId/markWordSoupIntroShown')
-  @UseGuards(PlayerSessionGuard)
-  async markIntroShown(
-    @AuthenticatedPlayerId() playerId: number,
-    @Param('gameId', ParseIntPipe) gameId: number,
-  ) {
-    await this.playersService.assertPlayerInGame(playerId, gameId);
-    return this.wordSoupService.markIntroShown(gameId, playerId);
-  }
 }

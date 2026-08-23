@@ -3,13 +3,7 @@
     "cancel": "Abbrechen",
     "ok": "OK",
     "confirm": "Bestätigen",
-    "save": "Speichern",
     "delete": "Löschen",
-    "loading": "Wird geladen…",
-    "back": "Zurück",
-    "close": "Schließen",
-    "error": "Fehler",
-    "success": "Erfolg",
     "submit": "Absenden",
     "rename": "Umbenennen",
     "edit": "Bearbeiten",
@@ -20,10 +14,8 @@
     "promote": "Befördern",
     "resign": "Zurücktreten",
     "expel": "Entfernen",
-    "stay": "Bleiben",
     "skip": "Überspringen",
     "next": "Weiter",
-    "sending": "Wird gesendet…",
     "sendingEllipsis": "Wird gesendet...",
     "starting": "Wird gestartet…",
     "leaving": "Wird verlassen…",
@@ -33,14 +25,9 @@
     "admin": "Admin",
     "member": "Mitglied",
     "you": "du",
-    "active": "Aktiv",
     "unknownError": "Unbekannter Fehler",
     "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "playerNumber": "Spieler #{id}",
-    "and": "und",
-    "word": "Wort",
-    "meaning": "Bedeutung",
-    "minutes": "Minuten",
     "email": "E-Mail"
   },
   "nav": {
@@ -322,18 +309,19 @@
         "emptyStats": "Deine Stats erscheinen hier, sobald du spielst.",
         "emptyRecent": "Noch keine beendeten Spiele. Spiele eine Runde, um deine Punkte zu sehen!",
         "recentGames": "Letzte Spiele",
+        "abandoned": "Abgebrochen",
         "winner": "Sieg",
         "xpValue": "{xp} XP",
         "scoreValue": "{score} Pkt",
         "noGames": "—",
         "avatarTab": "XP & Avatar",
         "rankTitle": "Rang",
-        "rankHint": "Dein Rang folgt automatisch deiner XP",
+        "rankHint": "Dein Rang hängt von deiner XP-Stufe ab",
         "currentRank": "Aktueller Rang: {label}",
         "unlockedRank": "{label} erreicht ab {xp} XP",
         "currentRankLabel": "Aktuell",
-        "animalTitle": "Tier",
-        "animalHint": "Wähle jederzeit ein Tier",
+        "animalTitle": "Avatar",
+        "animalHint": "Wähle dein Avatar-Tier",
         "animalFree": "Frei",
         "equipAnimal": "{label} auswählen",
         "equipping": "Speichern…",
@@ -342,7 +330,7 @@
         "unlockAt": "Ab {xp} XP",
         "lockedTier": "{label} gesperrt — braucht {xp} XP",
         "unlockToastTitle": "Neuer Rang freigeschaltet!",
-        "unlockToastBody": "Du hast {label} erreicht. Dein Aussehen aktualisiert sich automatisch.",
+        "unlockToastBody": "Du hast {label} erreicht!",
         "unlockToastDismiss": "Super!",
         "modeLabels": {
           "solo": "Solo",
@@ -372,7 +360,7 @@
       }
     },
     "initiate": {
-      "message": "Möchtest du eine neue Sitzung starten? Andere in deiner Gruppe können beitreten, bevor sie beginnt."
+      "message": "Möchtest du ein neues Spiel erstellen? Andere in deiner Gruppe können beitreten, bevor es beginnt."
     },
     "join": {
       "title": "{gameName} beitreten?",
@@ -383,7 +371,7 @@
       "timingMorePlayers": "wenn {count} weitere Spieler beitreten"
     },
     "forceStart": {
-      "message": "Möchtest du das Warten abbrechen und {gameName} mit {count, plural, one {# Spieler} other {# Spielern}} starten?"
+      "message": "Möchtest du {gameName} mit {count, plural, one {# Spieler} other {# Spielern}} starten?"
     },
     "pending": {
       "clickToStart": "Zum Starten klicken",
@@ -408,7 +396,9 @@
       "stayInGame": "Im Spiel bleiben",
       "backToLobby": "Zurück zur Lobby",
       "message": "Du verlässt dieses Spiel. Die anderen spielen weiter, und deine Spielsitzung bleibt aktiv.",
-      "lastPlayerMessage": "Du bist der letzte Spieler. Zurück zur Lobby beendet dieses Spiel. Deine Spielsitzung bleibt aktiv."
+      "lastPlayerMessage": "Du bist der letzte Spieler. Zurück zur Lobby beendet dieses Spiel. Deine Spielsitzung bleibt aktiv.",
+      "noXpWarningLeave": "Für dieses Spiel erhältst du keine XP. Andere, die zu Ende spielen, können weiterhin XP verdienen.",
+      "noXpWarningEndsGame": "Für dieses Spiel wird keine XP vergeben."
     },
     "wordBuilding": {
       "title": "Wortbau",
@@ -416,10 +406,8 @@
       "scoreboardLabel": "Spieler",
       "leftGame": "Spiel verlassen",
       "generating": "Kreuzworträtsel wird erstellt…",
-      "instructions": "Klicke auf eine Zelle, um die Richtung automatisch auszuwählen · Tippe Buchstaben zum Ausfüllen · Grün = richtig · Blau = leer · Rot = falsch · Leertaste/Tab zum Umschalten der Richtung",
       "directionAcross": "→ Waagerecht",
       "directionDown": "↓ Senkrecht",
-      "scores": "Punkte",
       "noPointsYet": "Noch keine Punkte",
       "across": "Waagerecht",
       "down": "Senkrecht",
@@ -427,7 +415,9 @@
       "intro": {
         "welcome": "Hallo {name}! Bereit zum Wörterbauen?",
         "briefing": "Fülle das Kreuzworträtsel aus — klicke auf eine Zelle und tippe, oder ziehe Buchstaben aus dem Rack unten.",
-        "letsGo": "Los geht\u2019s!"
+        "letsGo": "Los geht\u2019s!",
+        "startingIn": "Start in",
+        "go": "LOS!"
       },
       "rules": {
         "show": "Anleitung anzeigen",
@@ -444,15 +434,19 @@
       },
       "outro": {
         "gameOverTitle": "Rätselergebnis",
-        "puzzleComplete": "Rätsel abgeschlossen!",
         "finalScores": "Endergebnis",
+        "scoresComingUp": "Punkte folgen gleich…",
         "pointsXp": "{score} Pkt. · +{xp} XP",
         "winner": "Gewinner",
-        "returnToLobby": "Zurück zur Lobby"
-      },
-      "finalLetter": {
-        "announcement": "{name} hat den letzten Buchstaben gesetzt! Glückwunsch!",
-        "subtext": "Rätsel abgeschlossen — Endergebnis folgt…"
+        "returnToLobby": "Zurück zur Lobby",
+        "almostDone": "Fast fertig…",
+        "closingSolo": "Gut gemacht {name}, tolles Solo-Spiel! Bis bald!",
+        "closingMulti": "Gut gemacht alle zusammen, tolles Spiel! Bis bald!",
+        "placeAnnouncement": "Platz {placeLabel}: {name}, mit {score} Punkten und +{xp} XP!",
+        "firstPlaceSolo": "Platz 1: {name}, mit {score} Punkten und +{xp} XP!",
+        "winnersPrefix": "Und schließlich die Gewinner! ",
+        "winnerPrefix": "Und schließlich der Gewinner, ",
+        "winnerAnnouncement": "{name}, mit {score} Punkten und +{xp} XP!"
       }
     },
     "wordSoup": {
@@ -501,12 +495,12 @@
         "winner": "Gewinner",
         "returnToLobby": "Zurück zur Lobby",
         "almostDone": "Fast fertig…",
-        "closingSolo": "Gut gemacht {name}, tolles Solo-Spiel! Bis bald!",
+        "closingSolo": "Gut gemacht {name}, tolles Spiel! Bis bald!",
         "closingMulti": "Gut gemacht alle zusammen, tolles Spiel! Bis bald!",
-        "placeAnnouncement": "Platz {place}: {name}, mit {score} Punkten und +{xp} XP!",
-        "firstPlaceSolo": "Platz 1: {name}, mit {score} Punkten und +{xp} XP!",
-        "winnersPrefix": "Und zum Schluss die Gewinner! ",
-        "winnerPrefix": "Und zum Schluss der Gewinner, ",
+        "placeAnnouncement": "Platz {placeLabel}: {name}, mit {score} Punkten und +{xp} XP!",
+        "firstPlaceSolo": "Gut gemacht {name}, du hast {score} Punkte erzielt und +{xp} XP verdient!",
+        "winnersPrefix": "Und die Gewinner! ",
+        "winnerPrefix": "Und der Gewinner, ",
         "winnerAnnouncement": "{name}, mit {score} Punkten und +{xp} XP!"
       },
       "events": {

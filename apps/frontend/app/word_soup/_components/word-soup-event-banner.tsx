@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import HostCharacter from '@/app/components/game/host-character';
 import {
+  SpeechBubble,
+  SpeechBubbleCaret,
+} from '@/app/components/game/overlay';
+import {
   getEventBannerDurations,
   type EventBannerPhase,
   type WordSoupEventBanner,
@@ -39,7 +43,10 @@ function revealByProgress(
   return { headline: headlineShown, detail: detailShown };
 }
 
-function useRevealProgress(phase: EventBannerPhase, event: WordSoupEventBanner | null): number {
+function useRevealProgress(
+  phase: EventBannerPhase,
+  event: WordSoupEventBanner | null,
+): number {
   const [progress, setProgress] = useState(0);
   const [trackedPhase, setTrackedPhase] = useState(phase);
   const [trackedEventId, setTrackedEventId] = useState(event?.id ?? null);
@@ -107,7 +114,9 @@ export default function WordSoupEventBannerView({
         : revealByProgress(event.headline, event.detail, progress)
       : { headline: '', detail: '' };
 
-  const liveMessage = [revealed.headline, revealed.detail].filter(Boolean).join(' — ');
+  const liveMessage = [revealed.headline, revealed.detail]
+    .filter(Boolean)
+    .join(' — ');
 
   return (
     /*
@@ -134,46 +143,37 @@ export default function WordSoupEventBannerView({
         />
 
         <div className="relative min-w-0 flex-1 pt-0.5">
-          <div
+          <SpeechBubble
+            visible={bubbleVisible}
+            showCaret={false}
+            tail="left"
             className={[
-              'word-soup-event-bubble relative flex min-h-14 items-center rounded-2xl border-[3px] border-teal-700 bg-white px-3 py-2 shadow-[3px_4px_0_rgba(15,118,110,0.22)] transition-all duration-300 sm:min-h-16 sm:px-4',
+              'transition-all duration-300',
               bubbleVisible
-                ? 'translate-x-0 scale-100 opacity-100'
-                : 'pointer-events-none -translate-x-1 scale-[0.98] opacity-0',
+                ? 'translate-x-0 scale-100'
+                : '-translate-x-1 scale-[0.98]',
             ].join(' ')}
-            aria-hidden={!bubbleVisible}
           >
-            {/* Tail pointing left toward the host */}
-            <span
-              className="absolute right-full top-5 -translate-y-1/2 sm:top-6"
-              aria-hidden="true"
-            >
-              <span className="block h-0 w-0 border-y-[11px] border-r-[14px] border-y-transparent border-r-teal-700" />
-              <span className="absolute left-[3px] top-1/2 -translate-y-1/2 border-y-[8px] border-r-[10px] border-y-transparent border-r-white" />
-            </span>
-
             <div className="min-w-0 flex-1 leading-snug">
               <p className="whitespace-pre-wrap break-words text-sm font-bold text-teal-950 sm:text-base">
                 <span>{revealed.headline}</span>
                 {showCaret &&
-                  !(event?.detail && revealed.headline.length >= event.headline.length) && (
-                    <span className="word-soup-intro-caret ml-0.5 inline-block align-baseline text-teal-500">
-                      ▌
-                    </span>
-                  )}
+                  !(
+                    event?.detail &&
+                    revealed.headline.length >= event.headline.length
+                  ) && <SpeechBubbleCaret />}
               </p>
               {event?.detail ? (
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-xs font-semibold text-teal-800/75 sm:text-sm">
                   <span>{revealed.detail}</span>
-                  {showCaret && revealed.headline.length >= event.headline.length && (
-                    <span className="word-soup-intro-caret ml-0.5 inline-block align-baseline text-teal-500">
-                      ▌
-                    </span>
-                  )}
+                  {showCaret &&
+                    revealed.headline.length >= event.headline.length && (
+                      <SpeechBubbleCaret />
+                    )}
                 </p>
               ) : null}
             </div>
-          </div>
+          </SpeechBubble>
         </div>
       </div>
     </div>

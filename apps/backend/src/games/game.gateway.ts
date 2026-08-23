@@ -17,12 +17,12 @@ import { PlayersService } from '../players/players.service';
 import {
   FREEZE_DURATION_SECONDS,
   POINTS_PER_WORD,
-} from './word_soup/word-soup.types';
+} from './word_soup/word-soup.constants';
 import type {
   IPlaceLetterDto,
   ILockCellDto,
 } from './word_building/word-building.types';
-import { CELL_LOCK_TIMEOUT_MS } from './word_building/word-building.types';
+import { CELL_LOCK_TIMEOUT_MS } from './word_building/word-building.config';
 
 interface SocketData {
   groupId?: number;
@@ -205,9 +205,9 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
 
     const isPlayer = await this.gamesService.isPlayerInGame(gameId, playerId);
     if (!isPlayer) {
-      client.emit('game:error', {
-        message: 'You are not a player in this game.',
-      });
+      const message = 'You are not a player in this game.';
+      client.emit('game:error', { message });
+      client.emit('game:guessResult', { success: false, message });
       return;
     }
 
@@ -349,26 +349,6 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
 
     this.wordBuildingService.cancelLockTimer(gameId, dto.row, dto.col);
 
-    // Broadcast the final-letter celebration before `game:state` / `game:finished`
-    // so every client can start the celebration on the same authoritative event
-    // and hold the scoreboard transition until it has played out.
-    if (payload.solved && payload.finalPlacement) {
-      const {
-        playerId: finalPlayerId,
-        letter,
-        row,
-        col,
-      } = payload.finalPlacement;
-      const playerName = await this.getPlayerName(gameId, finalPlayerId);
-      this.server.to(`game:${gameId}`).emit('game:finalLetterPlaced', {
-        playerId: finalPlayerId,
-        playerName,
-        letter,
-        row,
-        col,
-      });
-    }
-
     this.server.to(`game:${gameId}`).emit('game:state', payload);
 
     const locksPayload = this.wordBuildingService.getLocksPayload(gameId);
@@ -485,18 +465,13 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     playerName: string,
     leftPlayersOverride?: Record<number, string>,
   ) {
-    const state = this.wordSoupService.markPlayerLeft(
-      gameId,
-      playerId,
-      playerName,
-    );
+    const meta = this.wordSoupService.getScoreboardMeta(gameId);
     this.server.to(`game:${gameId}`).emit('game:playerLeft', {
       playerId,
       playerName,
       leftPlayers: leftPlayersOverride ??
-        state?.leftPlayers ?? { [playerId]: playerName },
-      playerStreaks: state?.playerStreaks,
-      state: state ?? undefined,
+        meta?.leftPlayers ?? { [playerId]: playerName },
+      playerStreaks: meta?.playerStreaks,
     });
   }
 }

@@ -11,13 +11,13 @@ import {
   Position,
   GuessResult,
   WordSoupGameState,
-  FREEZE_DURATION_SECONDS,
-  POINTS_PER_WORD,
 } from './word-soup.types';
 import {
   COURT_COLS,
   COURT_ROWS,
+  FREEZE_DURATION_SECONDS,
   PLAYER_COLOURS,
+  POINTS_PER_WORD,
   WORDS_IN_GAME,
   estimateIntroDurationMs,
 } from './word-soup.constants';
@@ -64,7 +64,7 @@ export class WordSoupService {
 
     if (!court.playerColours[playerId] && !(playerId in court.playerScores)) {
       const isMember = await this.prisma.gamePlayer.count({
-        where: { gameId, playerId },
+        where: { gameId, playerId, leftAt: null },
       });
       if (!isMember) {
         throw new BadRequestException('You are not a player in this game.');
@@ -78,7 +78,10 @@ export class WordSoupService {
   private async getOrCreateCourt(gameId: number): Promise<SharedWordSoupCourt> {
     const cached = this.sharedCourts.get(gameId);
     if (cached) {
-      this.ensureCourtDefaults(cached);
+      const backfilledPlayStartedAt = this.ensureCourtDefaults(cached);
+      if (backfilledPlayStartedAt) {
+        await this.persistPlayStartedAt(gameId, cached.playStartedAt);
+      }
       return cached;
     }
 
@@ -94,7 +97,11 @@ export class WordSoupService {
     return createPromise;
   }
 
-  private ensureCourtDefaults(court: SharedWordSoupCourt): void {
+  /**
+   * Fills missing in-memory fields on older courts.
+   * @returns Whether `playStartedAt` was backfilled (caller should persist to DB).
+   */
+  private ensureCourtDefaults(court: SharedWordSoupCourt): boolean {
     if (!court.playerStreaks) court.playerStreaks = {};
     if (!court.playerBestWordStreaks) court.playerBestWordStreaks = {};
     if (!court.playerFreezeCounts) court.playerFreezeCounts = {};
@@ -104,13 +111,32 @@ export class WordSoupService {
       court.playStartedAt =
         court.introStartedAt +
         estimateIntroDurationMs(court.solutionWords.map((item) => item.word));
+      return true;
     }
+    return false;
+  }
+
+  /**
+   * Persists playStartedAt only when the DB row still has null — never
+   * overwrite an in-progress match clock after court recreate.
+   */
+  private async persistPlayStartedAt(
+    gameId: number,
+    playStartedAt: number,
+  ): Promise<void> {
+    await this.prisma.game.updateMany({
+      where: { id: gameId, playStartedAt: null },
+      data: { playStartedAt: new Date(playStartedAt) },
+    });
   }
 
   private async createCourt(gameId: number): Promise<SharedWordSoupCourt> {
     const existing = this.sharedCourts.get(gameId);
     if (existing) {
-      this.ensureCourtDefaults(existing);
+      const backfilledPlayStartedAt = this.ensureCourtDefaults(existing);
+      if (backfilledPlayStartedAt) {
+        await this.persistPlayStartedAt(gameId, existing.playStartedAt);
+      }
       return existing;
     }
 
@@ -131,7 +157,33 @@ export class WordSoupService {
     }
 
     const visibleCourt = this.generateVisibleCourt(trueCourt);
-    const introStartedAt = Date.now();
+    const introEstimateMs = estimateIntroDurationMs(
+      placedWords.map((item) => item.word),
+    );
+
+    // Reuse the durable play clock when recreating after memory loss / restart
+    // (same pattern as Word Building hydrate).
+    let playStartedAt = game.playStartedAt?.getTime() ?? null;
+    let introStartedAt: number;
+    let shouldPersistPlayStartedAt = false;
+    if (playStartedAt == null) {
+      introStartedAt = Date.now();
+      playStartedAt = introStartedAt + introEstimateMs;
+      shouldPersistPlayStartedAt = true;
+    } else {
+      introStartedAt = playStartedAt - introEstimateMs;
+    }
+
+    // Reconstruct leavers from leftAt so scoreboards stay correct after recreate.
+    const leftPlayers: Record<number, string> = {};
+    for (const gp of game.gamePlayers) {
+      if (gp.leftAt) {
+        leftPlayers[gp.playerId] = gp.player.name;
+      }
+    }
+
+    // Play clock already elapsed → treat intro as seen so remounts skip replay.
+    const introWindowOver = Date.now() >= playStartedAt;
 
     const sharedCourt: SharedWordSoupCourt = {
       trueCourt,
@@ -142,18 +194,22 @@ export class WordSoupService {
       playerStreaks: this.createPlayerStreaks(playerIds),
       playerBestWordStreaks: this.createPlayerStreaks(playerIds),
       playerFreezeCounts: this.createPlayerStreaks(playerIds),
-      leftPlayers: {},
+      leftPlayers,
       solutionWords: placedWords,
       foundWords: [],
       frozenUntil: {},
-      isIntroAlreadyShown: this.createIntroShownState(playerIds),
+      isIntroAlreadyShown: this.createIntroShownState(
+        playerIds,
+        introWindowOver,
+      ),
       introStartedAt,
-      playStartedAt:
-        introStartedAt +
-        estimateIntroDurationMs(placedWords.map((item) => item.word)),
+      playStartedAt,
     };
 
     this.sharedCourts.set(gameId, sharedCourt);
+    if (shouldPersistPlayStartedAt) {
+      await this.persistPlayStartedAt(gameId, playStartedAt);
+    }
     return sharedCourt;
   }
 
@@ -214,7 +270,8 @@ export class WordSoupService {
           },
         });
 
-        // Leaver's GamePlayer row is already gone — skip streak bump.
+        // Rows are retained after leave (leftAt); still raise career streak from
+        // words found before the player left.
         if (count > 0 && peak > 0) {
           await tx.player.updateMany({
             where: { id: playerId, bestWordStreak: { lt: peak } },
@@ -251,8 +308,11 @@ export class WordSoupService {
     );
   }
 
-  private createIntroShownState(playerIds: number[]) {
-    return Object.fromEntries(playerIds.map((id) => [id, false]));
+  private createIntroShownState(
+    playerIds: number[],
+    introAlreadySeen = false,
+  ): Record<number, boolean> {
+    return Object.fromEntries(playerIds.map((id) => [id, introAlreadySeen]));
   }
 
   private createPlayerColours(playerIds: number[]) {
@@ -277,13 +337,19 @@ export class WordSoupService {
 
   /**
    * Marks a player as having left mid-game so the scoreboard can show them as gone.
-   * Evicts the court when every rostered player has left.
+   * Persists `leftAt`. Does not evict the court — `GamesService.finish()` must
+   * still call `persistScores()` before `clearCourt()`.
    */
-  markPlayerLeft(
+  async markPlayerLeft(
     gameId: number,
     playerId: number,
     playerName: string,
-  ): WordSoupGameState | null {
+  ): Promise<WordSoupGameState | null> {
+    await this.prisma.gamePlayer.updateMany({
+      where: { gameId, playerId },
+      data: { leftAt: new Date() },
+    });
+
     const court = this.sharedCourts.get(gameId);
     if (!court) return null;
 
@@ -292,17 +358,21 @@ export class WordSoupService {
     this.cancelFreezeTimer(gameId, playerId);
     delete court.frozenUntil[playerId];
 
-    const state = this.buildGameState(court, playerId);
+    return this.buildGameState(court, playerId);
+  }
 
+  /**
+   * Whether every rostered player has left this in-memory court.
+   * Used when GamePlayer rows are retained (leftAt) instead of deleted.
+   */
+  hasAllPlayersLeft(gameId: number): boolean {
+    const court = this.sharedCourts.get(gameId);
+    if (!court) return false;
     const rosterIds = Object.keys(court.playerScores).map(Number);
-    const allLeft =
+    return (
       rosterIds.length > 0 &&
-      rosterIds.every((id) => Boolean(court.leftPlayers[id]));
-    if (allLeft) {
-      this.clearCourt(gameId);
-    }
-
-    return state;
+      rosterIds.every((id) => Boolean(court.leftPlayers[id]))
+    );
   }
 
   getScoreboardMeta(gameId: number): {
@@ -440,6 +510,10 @@ export class WordSoupService {
 
     if (!court) {
       return { success: false, message: 'Game not found' };
+    }
+
+    if (court.leftPlayers[playerId]) {
+      return { success: false, message: 'You have left this game.' };
     }
 
     if (this.isCourtComplete(court)) {

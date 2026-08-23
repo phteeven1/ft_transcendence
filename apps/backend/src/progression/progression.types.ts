@@ -12,6 +12,8 @@ export type GameFinishPlayerOutcome = {
   isWinner: boolean;
   /** Highest tier newly unlocked by this finish's XP; null if none. */
   newlyUnlockedTier: number | null;
+  /** True when the player left before the match ended. */
+  leftEarly: boolean;
 };
 
 export type GameFinishOutcome = {
@@ -73,6 +75,8 @@ export type RecentGameEntry = {
   endedAt: string;
   isWinner: boolean;
   xpAwarded: number;
+  /** True when the player left early or the match finished without progression. */
+  abandoned: boolean;
 };
 
 export type PlayerGroupStats = {

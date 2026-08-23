@@ -16,7 +16,9 @@ import type { Vocabulary } from '../vocabularies/vocabularies.service';
 
 type UserWithMemberships = DbUser & { memberships: GroupMembership[] };
 type GroupWithMemberships = DbGroup & { memberships: GroupMembership[] };
-type GameWithPlayers = DbGame & { gamePlayers: { playerId: number }[] };
+type GameWithPlayers = DbGame & {
+  gamePlayers: { playerId: number; leftAt?: Date | null }[];
+};
 type PlayerWithSession = DbPlayer & { session: DbPlayerSession | null };
 
 export function toApiUser(user: UserWithMemberships): User {
@@ -84,7 +86,11 @@ export function toApiGame(game: GameWithPlayers): Game {
     initiatedBy: game.initiatedById,
     initiatedTime: game.initiatedTime,
     startedTime: game.startedTime,
-    players: game.gamePlayers.map((gp) => gp.playerId),
+    // Active roster only — early leavers keep a GamePlayer row (leftAt) for
+    // scores / progression but are no longer "in" the match.
+    players: game.gamePlayers
+      .filter((gp) => gp.leftAt == null)
+      .map((gp) => gp.playerId),
     isActive: game.isActive,
     isFinished: game.isFinished,
   };

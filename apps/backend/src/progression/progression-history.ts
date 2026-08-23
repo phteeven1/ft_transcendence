@@ -46,6 +46,7 @@ export async function buildGameHistoryStats(
           wordsFound: true,
           freezeCount: true,
           completed: true,
+          leftAt: true,
         },
       },
     },
@@ -60,16 +61,20 @@ export async function buildGameHistoryStats(
     const gameType = matchLeaderboardGameType(game.name);
     if (!gameType) continue;
 
-    const participantCount = game.gamePlayers.length;
+    // Match recordGameOutcome: leavers get no XP / gamesPlayed / win credit.
+    const activePlayers = game.gamePlayers.filter((gp) => gp.leftAt == null);
+    if (activePlayers.length === 0) continue;
+
+    const participantCount = activePlayers.length;
     const isMultiplayer = participantCount >= 2;
     const winnerIds = resolveWinnerIds(
-      game.gamePlayers.map((gp) => ({
+      activePlayers.map((gp) => ({
         playerId: gp.playerId,
         score: gp.score,
       })),
     );
 
-    for (const gp of game.gamePlayers) {
+    for (const gp of activePlayers) {
       const current = map.get(gp.playerId) ?? emptyByGame();
       const bucket = current[gameType];
       const isWinner = winnerIds.has(gp.playerId);

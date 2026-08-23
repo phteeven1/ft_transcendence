@@ -36,6 +36,7 @@ function createFakePrisma(
       clues: { across: [], down: [] },
       revision: 0,
       game: {
+        playStartedAt: new Date(Date.now() + 60_000),
         gamePlayers: gamePlayers.map((gp) => ({
           playerId: gp.playerId,
           score: gp.score,
@@ -48,6 +49,7 @@ function createFakePrisma(
 
   const gamePlayerUpdate = jest.fn(() => Promise.resolve(undefined));
   const gamePlayerUpdateMany = jest.fn(() => Promise.resolve({ count: 1 }));
+  const gameUpdate = jest.fn(() => Promise.resolve(undefined));
 
   const transactionGamePlayerFindMany = jest.fn(() =>
     Promise.resolve(liveGamePlayerIds.map((playerId) => ({ playerId }))),
@@ -60,7 +62,7 @@ function createFakePrisma(
         updateMany: gamePlayerUpdateMany,
       },
       crossword: { update: jest.fn(() => Promise.resolve(undefined)) },
-      game: { update: jest.fn(() => Promise.resolve(undefined)) },
+      game: { update: gameUpdate },
     }),
   );
 
@@ -70,6 +72,7 @@ function createFakePrisma(
       update: jest.fn(() => Promise.resolve(undefined)),
     },
     gamePlayer: { update: gamePlayerUpdate, updateMany: gamePlayerUpdateMany },
+    game: { update: gameUpdate },
     $transaction: transaction,
   };
 }

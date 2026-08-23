@@ -55,6 +55,7 @@ function createFakePrisma(
       }),
   );
   const playerUpdateMany = jest.fn(() => Promise.resolve({ count: 1 }));
+  const gameUpdateMany = jest.fn(() => Promise.resolve({ count: 1 }));
 
   const transaction = jest.fn((fn: (tx: unknown) => Promise<void>) =>
     fn({
@@ -64,9 +65,14 @@ function createFakePrisma(
   );
 
   return {
-    prisma: { $transaction: transaction },
+    prisma: {
+      $transaction: transaction,
+      gamePlayer: { updateMany: gamePlayerUpdateMany },
+      game: { updateMany: gameUpdateMany },
+    },
     gamePlayerUpdateMany,
     playerUpdateMany,
+    gameUpdateMany,
     transaction,
   };
 }
@@ -187,5 +193,146 @@ describe('WordSoupService.persistScores', () => {
         completed: false,
       },
     });
+  });
+});
+
+describe('WordSoupService.markPlayerLeft', () => {
+  it('keeps the court loaded when every player has left so finish can persist scores', async () => {
+    const { prisma, gamePlayerUpdateMany } = createFakePrisma();
+    const service = new WordSoupService(prisma as never);
+    sharedCourtsOf(service).set(1, createCourt());
+
+    await service.markPlayerLeft(1, 1, 'Alice');
+    await service.markPlayerLeft(1, 2, 'Bob');
+
+    expect(sharedCourtsOf(service).has(1)).toBe(true);
+    expect(service.hasAllPlayersLeft(1)).toBe(true);
+
+    await service.persistScores(1);
+
+    expect(gamePlayerUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { gameId: 1, playerId: 1 },
+        data: expect.objectContaining({ score: 35 }) as Record<string, unknown>,
+      }),
+    );
+  });
+
+  it('rejects guesses from a player who has already left', async () => {
+    const { prisma } = createFakePrisma();
+    const service = new WordSoupService(prisma as never);
+    sharedCourtsOf(service).set(1, createCourt());
+
+    await service.markPlayerLeft(1, 1, 'Alice');
+
+    const result = service.submitGuess(1, 1, [
+      { row: 0, col: 0 },
+      { row: 0, col: 1 },
+    ]);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe('You have left this game.');
+  });
+});
+
+describe('WordSoupService.createCourt (via initCourt)', () => {
+  const storedPlayStartedAt = new Date('2026-01-01T12:00:00.000Z');
+
+  function createInitPrisma(options: {
+    playStartedAt?: Date | null;
+    leftAtByPlayer?: Record<number, Date | null>;
+  }) {
+    const leftAtByPlayer = options.leftAtByPlayer ?? {
+      1: null,
+      2: null,
+    };
+    const gameUpdateMany = jest.fn(() => Promise.resolve({ count: 1 }));
+    const gameFindUnique = jest.fn(() =>
+      Promise.resolve({
+        id: 1,
+        isFinished: false,
+        playStartedAt:
+          options.playStartedAt === undefined
+            ? storedPlayStartedAt
+            : options.playStartedAt,
+        group: {
+          currentVocabulary: {
+            words: ['CAT', 'DOG', 'BIRD', 'FISH', 'TREE', 'HOUSE', 'APPLE'],
+          },
+        },
+        gamePlayers: [
+          {
+            playerId: 1,
+            score: 0,
+            leftAt: leftAtByPlayer[1] ?? null,
+            player: { id: 1, name: 'Alice' },
+          },
+          {
+            playerId: 2,
+            score: 0,
+            leftAt: leftAtByPlayer[2] ?? null,
+            player: { id: 2, name: 'Bob' },
+          },
+        ],
+      }),
+    );
+
+    return {
+      prisma: {
+        game: { findUnique: gameFindUnique, updateMany: gameUpdateMany },
+        gamePlayer: {
+          count: jest.fn(() => Promise.resolve(1)),
+          updateMany: jest.fn(() => Promise.resolve({ count: 1 })),
+        },
+        $transaction: jest.fn(),
+      },
+      gameUpdateMany,
+      gameFindUnique,
+    };
+  }
+
+  it('reuses DB playStartedAt and does not overwrite it on recreate', async () => {
+    const { prisma, gameUpdateMany } = createInitPrisma({
+      playStartedAt: storedPlayStartedAt,
+    });
+    const service = new WordSoupService(prisma as never);
+
+    const state = await service.initCourt(1, 2);
+
+    expect(state.playStartedAt).toBe(storedPlayStartedAt.getTime());
+    expect(gameUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('rehydrates leftPlayers from GamePlayer.leftAt', async () => {
+    const leftAt = new Date('2026-01-01T11:55:00.000Z');
+    const { prisma } = createInitPrisma({
+      playStartedAt: storedPlayStartedAt,
+      leftAtByPlayer: { 1: leftAt, 2: null },
+    });
+    const service = new WordSoupService(prisma as never);
+
+    const state = await service.initCourt(1, 2);
+
+    expect(state.leftPlayers).toEqual({ 1: 'Alice' });
+    expect(service.hasAllPlayersLeft(1)).toBe(false);
+  });
+
+  it('persists playStartedAt only when the DB value is still null', async () => {
+    const { prisma, gameUpdateMany } = createInitPrisma({
+      playStartedAt: null,
+    });
+    const service = new WordSoupService(prisma as never);
+
+    const state = await service.initCourt(1, 1);
+
+    expect(typeof state.playStartedAt).toBe('number');
+    expect(gameUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1, playStartedAt: null },
+        data: {
+          playStartedAt: new Date(state.playStartedAt),
+        },
+      }),
+    );
   });
 });
