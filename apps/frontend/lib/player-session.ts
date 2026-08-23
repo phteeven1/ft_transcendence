@@ -35,8 +35,11 @@ export function getPlayerSession(): StoredPlayerSession | null {
 
   if (!playerIdRaw || !token || !expiresAt) return null;
 
+  const playerId = Number(playerIdRaw);
+  if (!Number.isFinite(playerId) || playerId <= 0) return null;
+
   return {
-    playerId: Number(playerIdRaw),
+    playerId,
     token,
     expiresAt,
   };
