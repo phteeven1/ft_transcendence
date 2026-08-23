@@ -1,4 +1,5 @@
-import { apiRequest, applySessionHeaders } from '../http';
+import { apiRequest, applySessionHeaders, notifyUnauthorized } from '../http';
+import { ApiError } from '../errors';
 import type {
   CreateVocabularyInput,
   ExtractVocabularyResult,
@@ -84,22 +85,10 @@ export const vocabulariesApi = {
     });
 
     if (!response.ok) {
-      let message = 'Failed to extract vocabulary';
-      const errorText = await response.text();
-      try {
-        const errorData = JSON.parse(errorText) as {
-          message?: string | string[];
-        };
-        const backendMessage = errorData.message;
-        if (typeof backendMessage === 'string') {
-          message = backendMessage;
-        } else if (Array.isArray(backendMessage)) {
-          message = backendMessage.join(', ');
-        }
-      } catch {
-        if (errorText) message = errorText;
+      if (response.status === 401) {
+        notifyUnauthorized('/vocabularies/extract');
       }
-      return { success: false, message };
+      throw new ApiError(response.status);
     }
     return response.json() as Promise<ExtractVocabularyResult>;
   },

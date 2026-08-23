@@ -270,6 +270,9 @@
     "duplicatePairAlert": "Jedes Wort und jede Bedeutung darf nur einmal vorkommen.",
     "extractionFailed": "KI-Extraktion fehlgeschlagen. Bitte stellen Sie sicher, dass die Datei mindestens 5 Wörter enthält, und versuchen Sie es erneut.",
     "unsupportedFileType": "Nicht unterstützter Dateityp. Laden Sie ein PDF oder Bild (PNG, JPEG, GIF, WebP) hoch.",
+    "emptyFile": "Die hochgeladene Datei ist leer.",
+    "extractionUnavailable": "KI-Extraktion ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
+    "tooFewWords": "Die KI hat nur {count} Wort/Wörter erkannt, mindestens {min} sind erforderlich. Versuchen Sie ein klareres Foto oder eine Datei mit mehr Vokabeln.",
     "edit": {
       "title": "Bearbeiten: {name}"
     },

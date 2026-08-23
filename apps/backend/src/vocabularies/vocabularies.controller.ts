@@ -201,7 +201,7 @@ export class VocabulariesController {
     if (!file) {
       return {
         success: false as const,
-        message: 'No file uploaded.',
+        code: 'EMPTY_FILE' as const,
       };
     }
     await this.vocabulariesService.assertGroupMembership(

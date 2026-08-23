@@ -12,21 +12,23 @@ import {
 
 type ExtractionResult = { title: string; words: string[]; meanings: string[] };
 
-export type ExtractionFailure = { success: false; message: string };
+export type ExtractionErrorCode =
+  | 'UNSUPPORTED_FILE_TYPE'
+  | 'EMPTY_FILE'
+  | 'INVALID_AI_RESPONSE'
+  | 'EXTRACTION_FAILED'
+  | 'OPENAI_NOT_CONFIGURED'
+  | 'TOO_FEW_WORDS';
+
+export type ExtractionFailure = {
+  success: false;
+  code: ExtractionErrorCode;
+  extractedCount?: number;
+};
 export type ExtractionSuccess = ExtractionResult & { success: true };
 export type ExtractionOutcome = ExtractionSuccess | ExtractionFailure;
 
-const UNSUPPORTED_FILE_TYPE_MESSAGE =
-  'Unsupported file type. Upload a PDF or image (PNG, JPEG, GIF, WebP).';
-const EMPTY_FILE_MESSAGE = 'Uploaded file is empty.';
-const INVALID_AI_RESPONSE_MESSAGE =
-  'AI returned an invalid response. Please try again with a clearer file.';
-const EXTRACTION_FAILED_MESSAGE =
-  'AI extraction failed. Please try again with a clearer file.';
-const OPENAI_NOT_CONFIGURED_MESSAGE =
-  'AI extraction is not available. Please try again later.';
-
-type SniffedUploadKind = 'png' | 'jpeg' | 'gif' | 'webp' | 'pdf';
+export type SniffedUploadKind = 'png' | 'jpeg' | 'gif' | 'webp' | 'pdf';
 
 const SNIFFED_IMAGE_MIME: Record<Exclude<SniffedUploadKind, 'pdf'>, string> = {
   png: 'image/png',
@@ -35,8 +37,14 @@ const SNIFFED_IMAGE_MIME: Record<Exclude<SniffedUploadKind, 'pdf'>, string> = {
   webp: 'image/webp',
 };
 
-function extractFail(message: string): ExtractionFailure {
-  return { success: false, message };
+function extractFail(
+  code: ExtractionErrorCode,
+  extractedCount?: number,
+): ExtractionFailure {
+  if (extractedCount === undefined) {
+    return { success: false, code };
+  }
+  return { success: false, code, extractedCount };
 }
 
 function isExtractionFailure(
@@ -45,7 +53,7 @@ function isExtractionFailure(
   return 'success' in value && value.success === false;
 }
 
-function sniffUploadKind(buffer: Uint8Array): SniffedUploadKind | null {
+export function sniffUploadKind(buffer: Uint8Array): SniffedUploadKind | null {
   if (buffer.length < 12) return null;
   if (
     buffer[0] === 0x89 &&
@@ -178,9 +186,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     }
 
     if (cleanedWords.length < MIN_VOCAB_PAIRS) {
-      return extractFail(
-        `AI only extracted ${cleanedWords.length} word(s), but at least ${MIN_VOCAB_PAIRS} are required. Try a clearer photo or a file with more vocabulary.`,
-      );
+      return extractFail('TOO_FEW_WORDS', cleanedWords.length);
     }
 
     return {
@@ -210,7 +216,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
   ): Promise<ExtractionOutcome> {
     const client = this.getOpenAiClient();
     if (!client) {
-      return extractFail(OPENAI_NOT_CONFIGURED_MESSAGE);
+      return extractFail('OPENAI_NOT_CONFIGURED');
     }
     let response: OpenAI.Chat.Completions.ChatCompletion;
     try {
@@ -264,7 +270,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       const message =
         error instanceof Error ? error.message : 'OpenAI request failed';
       console.error('OpenAI extraction error:', message);
-      return extractFail(EXTRACTION_FAILED_MESSAGE);
+      return extractFail('EXTRACTION_FAILED');
     }
     const content = response.choices[0]?.message?.content ?? '{}';
 
@@ -273,11 +279,11 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       parsed = JSON.parse(content) as ExtractionResult;
     } catch {
       console.error('Failed to parse AI response:', content);
-      return extractFail(INVALID_AI_RESPONSE_MESSAGE);
+      return extractFail('INVALID_AI_RESPONSE');
     }
 
     if (!Array.isArray(parsed.words) || !Array.isArray(parsed.meanings)) {
-      return extractFail(INVALID_AI_RESPONSE_MESSAGE);
+      return extractFail('INVALID_AI_RESPONSE');
     }
 
     const validated = this.validatePairs(parsed.words, parsed.meanings);
@@ -302,12 +308,12 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
   ): Promise<ExtractionOutcome> {
     const buffer = this.getFileBuffer(file);
     if (!buffer) {
-      return extractFail(EMPTY_FILE_MESSAGE);
+      return extractFail('EMPTY_FILE');
     }
 
     const kind = sniffUploadKind(buffer);
     if (!kind) {
-      return extractFail(UNSUPPORTED_FILE_TYPE_MESSAGE);
+      return extractFail('UNSUPPORTED_FILE_TYPE');
     }
 
     const instructions = this.buildExtractionInstructions(

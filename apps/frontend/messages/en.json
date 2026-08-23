@@ -270,6 +270,9 @@
     "duplicatePairAlert": "Each word and each meaning must be unique.",
     "extractionFailed": "AI extraction failed. Please ensure the file has at least 5 words and try again.",
     "unsupportedFileType": "Unsupported file type. Upload a PDF or image (PNG, JPEG, GIF, WebP).",
+    "emptyFile": "Uploaded file is empty.",
+    "extractionUnavailable": "AI extraction is not available. Please try again later.",
+    "tooFewWords": "AI only extracted {count} word(s), but at least {min} are required. Try a clearer photo or a file with more vocabulary.",
     "edit": {
       "title": "Edit: {name}"
     },

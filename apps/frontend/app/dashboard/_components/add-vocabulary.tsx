@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
+import type { ExtractionErrorCode } from '@/lib/api/vocabularies/types';
 import { Vocabulary } from '../../types';
 import { Button, Dialog, Icon, Input } from '../../components/ui';
 import VocabularyEntriesList, {
@@ -85,6 +86,23 @@ function sniffUploadKind(
     return 'pdf';
   }
   return null;
+}
+
+function messageForExtractionFailure(
+  t: ReturnType<typeof useTranslations<'vocabulary'>>,
+  code: ExtractionErrorCode,
+  extractedCount?: number,
+): string {
+  if (code === 'TOO_FEW_WORDS') {
+    return t('tooFewWords', {
+      count: extractedCount ?? 0,
+      min: MIN_VOCAB_PAIRS,
+    });
+  }
+  if (code === 'UNSUPPORTED_FILE_TYPE') return t('unsupportedFileType');
+  if (code === 'EMPTY_FILE') return t('emptyFile');
+  if (code === 'OPENAI_NOT_CONFIGURED') return t('extractionUnavailable');
+  return t('extractionFailed');
 }
 
 type Props = {
@@ -251,7 +269,9 @@ export default function AddVocabulary({
         group.id,
       );
       if (!data.success) {
-        setAiError(data.message || t('extractionFailed'));
+        setAiError(
+          messageForExtractionFailure(t, data.code, data.extractedCount),
+        );
         return;
       }
       setName((current) => current.trim() || data.title);
