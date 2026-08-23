@@ -23,21 +23,39 @@ export class MailService {
       : createTransport({ jsonTransport: true });
   }
 
+  private escapeHtml(value: string): string {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return value.replace(/[&<>"']/g, (ch) => map[ch] ?? ch);
+  }
+
   async sendInvitation(
     toEmail: string,
     invitationText: string,
     groupName: string,
     inviteLink: string,
   ): Promise<void> {
+    const safeInvitationHtml = this.escapeHtml(invitationText).replace(
+      /\n/g,
+      '<br>',
+    );
+    const safeGroupName = this.escapeHtml(groupName);
+    const safeInviteLink = this.escapeHtml(inviteLink);
+
     await this.transporter.sendMail({
       from: `"Dictee" <${process.env.MAIL_FROM ?? 'no-reply@localhost'}>`,
       to: toEmail,
       subject: 'Invitation to Dictée vocabulary learning space',
       text: `${invitationText}\n\n${inviteLink}`,
       html: `
-        <p>${invitationText.replace(/\n/g, '<br>')}</p>
+        <p>${safeInvitationHtml}</p>
         <br>
-        <a href="${inviteLink}">Click here to join ${groupName}</a>
+        <a href="${safeInviteLink}">Click here to join ${safeGroupName}</a>
       `,
     });
 
