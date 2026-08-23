@@ -48,7 +48,7 @@ export function notifySessionUnauthorized(
   );
 }
 
-function notifyUnauthorized(path: string): void {
+export function notifyUnauthorized(path: string): void {
   if (typeof window === 'undefined') return;
   if (SKIP_UNAUTHORIZED_EVENT_PATHS.has(path)) return;
   const kind = getPlayerSession() ? 'player' : 'parent';

@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   UploadedFile,
@@ -178,6 +180,7 @@ export class VocabulariesController {
   }
 
   @Post('extract')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(UserSessionGuard)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -198,7 +201,7 @@ export class VocabulariesController {
     if (!file) {
       return {
         success: false as const,
-        message: 'No file uploaded.',
+        code: 'EMPTY_FILE' as const,
       };
     }
     await this.vocabulariesService.assertGroupMembership(

@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFileSync } from 'fs';
 import OpenAI from 'openai';
@@ -12,33 +12,92 @@ import {
 
 type ExtractionResult = { title: string; words: string[]; meanings: string[] };
 
-export type ExtractionFailure = { success: false; message: string };
+export type ExtractionErrorCode =
+  | 'UNSUPPORTED_FILE_TYPE'
+  | 'EMPTY_FILE'
+  | 'INVALID_AI_RESPONSE'
+  | 'EXTRACTION_FAILED'
+  | 'OPENAI_NOT_CONFIGURED'
+  | 'TOO_FEW_WORDS';
+
+export type ExtractionFailure = {
+  success: false;
+  code: ExtractionErrorCode;
+  extractedCount?: number;
+};
 export type ExtractionSuccess = ExtractionResult & { success: true };
 export type ExtractionOutcome = ExtractionSuccess | ExtractionFailure;
 
-const UNSUPPORTED_UPLOAD_MESSAGE =
-  'HEIC images are not supported. Upload a PNG, JPEG, GIF, WebP, or PDF.';
-const UNSUPPORTED_FILE_TYPE_MESSAGE =
-  'Unsupported file type. Upload a PDF or image (PNG, JPEG, GIF, WebP).';
-const EMPTY_FILE_MESSAGE = 'Uploaded file is empty.';
-const INVALID_AI_RESPONSE_MESSAGE =
-  'AI returned an invalid response. Please try again with a clearer file.';
+export type SniffedUploadKind = 'png' | 'jpeg' | 'gif' | 'webp' | 'pdf';
 
-function extractFail(message: string): ExtractionFailure {
-  return { success: false, message };
+const SNIFFED_IMAGE_MIME: Record<Exclude<SniffedUploadKind, 'pdf'>, string> = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+};
+
+function extractFail(
+  code: ExtractionErrorCode,
+  extractedCount?: number,
+): ExtractionFailure {
+  if (extractedCount === undefined) {
+    return { success: false, code };
+  }
+  return { success: false, code, extractedCount };
+}
+
+function isExtractionFailure(
+  value: Pick<ExtractionResult, 'words' | 'meanings'> | ExtractionFailure,
+): value is ExtractionFailure {
+  return 'success' in value && value.success === false;
+}
+
+export function sniffUploadKind(buffer: Uint8Array): SniffedUploadKind | null {
+  if (buffer.length < 12) return null;
+  if (
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return 'png';
+  }
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return 'jpeg';
+  }
+  if (
+    buffer[0] === 0x47 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x38
+  ) {
+    return 'gif';
+  }
+  if (
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
+    return 'webp';
+  }
+  if (
+    buffer[0] === 0x25 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x44 &&
+    buffer[3] === 0x46
+  ) {
+    return 'pdf';
+  }
+  return null;
 }
 
 const MAX_TITLE_CHARS = 80;
-
-const VISION_MIME_BY_EXT: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-};
-
-const VISION_MIMES = new Set(Object.values(VISION_MIME_BY_EXT));
 
 @Injectable()
 export class ExtractionService {
@@ -46,51 +105,15 @@ export class ExtractionService {
 
   constructor(private configService: ConfigService) {}
 
-  private getOpenAiClient(): OpenAI {
+  private getOpenAiClient(): OpenAI | null {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey?.trim() || apiKey.trim() === 'null') {
-      throw new InternalServerErrorException(
-        'OPENAI_API_KEY is not configured on the server.',
-      );
+      return null;
     }
     if (!this.openai) {
       this.openai = new OpenAI({ apiKey });
     }
     return this.openai;
-  }
-
-  private isPdf(file: Express.Multer.File): boolean {
-    const ext = extname(file.originalname).toLowerCase();
-    const pdfMimes = new Set(['application/pdf', 'application/x-pdf']);
-    return (
-      pdfMimes.has(file.mimetype) ||
-      (ext === '.pdf' && !file.mimetype.startsWith('image/'))
-    );
-  }
-
-  private isHeic(file: Express.Multer.File): boolean {
-    const mime = file.mimetype.toLowerCase();
-    const ext = extname(file.originalname).toLowerCase();
-    return (
-      mime === 'image/heic' ||
-      mime === 'image/heif' ||
-      ext === '.heic' ||
-      ext === '.heif'
-    );
-  }
-
-  private isImage(file: Express.Multer.File): boolean {
-    if (this.isHeic(file)) return false;
-    if (file.mimetype.startsWith('image/')) return true;
-    return /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.originalname);
-  }
-
-  private resolveVisionMime(file: Express.Multer.File): string | null {
-    if (VISION_MIMES.has(file.mimetype)) return file.mimetype;
-    const fromExt =
-      VISION_MIME_BY_EXT[extname(file.originalname).toLowerCase()];
-    if (fromExt) return fromExt;
-    return null;
   }
 
   private getFileBuffer(file: Express.Multer.File): Buffer | null {
@@ -163,9 +186,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     }
 
     if (cleanedWords.length < MIN_VOCAB_PAIRS) {
-      return extractFail(
-        `AI only extracted ${cleanedWords.length} word(s), but at least ${MIN_VOCAB_PAIRS} are required. Try a clearer photo or a file with more vocabulary.`,
-      );
+      return extractFail('TOO_FEW_WORDS', cleanedWords.length);
     }
 
     return {
@@ -193,9 +214,13 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     toLanguage: string,
     fallbackFilename?: string,
   ): Promise<ExtractionOutcome> {
+    const client = this.getOpenAiClient();
+    if (!client) {
+      return extractFail('OPENAI_NOT_CONFIGURED');
+    }
     let response: OpenAI.Chat.Completions.ChatCompletion;
     try {
-      response = await this.getOpenAiClient().chat.completions.create({
+      response = await client.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
@@ -245,9 +270,7 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       const message =
         error instanceof Error ? error.message : 'OpenAI request failed';
       console.error('OpenAI extraction error:', message);
-      throw new InternalServerErrorException(
-        `AI extraction failed: ${message}`,
-      );
+      return extractFail('EXTRACTION_FAILED');
     }
     const content = response.choices[0]?.message?.content ?? '{}';
 
@@ -256,15 +279,15 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       parsed = JSON.parse(content) as ExtractionResult;
     } catch {
       console.error('Failed to parse AI response:', content);
-      return extractFail(INVALID_AI_RESPONSE_MESSAGE);
+      return extractFail('INVALID_AI_RESPONSE');
     }
 
     if (!Array.isArray(parsed.words) || !Array.isArray(parsed.meanings)) {
-      return extractFail(INVALID_AI_RESPONSE_MESSAGE);
+      return extractFail('INVALID_AI_RESPONSE');
     }
 
     const validated = this.validatePairs(parsed.words, parsed.meanings);
-    if ('success' in validated) return validated;
+    if (isExtractionFailure(validated)) return validated;
 
     return {
       success: true,
@@ -283,47 +306,22 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
     fromLanguage = 'French',
     toLanguage = 'English',
   ): Promise<ExtractionOutcome> {
-    if (this.isHeic(file)) {
-      return extractFail(UNSUPPORTED_UPLOAD_MESSAGE);
-    }
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
-    if (!apiKey?.trim() || apiKey.trim() === 'null') {
-      throw new InternalServerErrorException(
-        'OPENAI_API_KEY is not configured on the server.',
-      );
-    }
-
     const buffer = this.getFileBuffer(file);
     if (!buffer) {
-      return extractFail(EMPTY_FILE_MESSAGE);
+      return extractFail('EMPTY_FILE');
     }
+
+    const kind = sniffUploadKind(buffer);
+    if (!kind) {
+      return extractFail('UNSUPPORTED_FILE_TYPE');
+    }
+
     const instructions = this.buildExtractionInstructions(
       fromLanguage,
       toLanguage,
     );
 
-    if (this.isImage(file)) {
-      const mime = this.resolveVisionMime(file);
-      if (!mime) {
-        return extractFail(UNSUPPORTED_UPLOAD_MESSAGE);
-      }
-      return this.callOpenAi(
-        [
-          { type: 'text', text: instructions },
-          {
-            type: 'image_url',
-            image_url: {
-              url: `data:${mime};base64,${buffer.toString('base64')}`,
-            },
-          },
-        ],
-        fromLanguage,
-        toLanguage,
-        file.originalname,
-      );
-    }
-
-    if (this.isPdf(file)) {
+    if (kind === 'pdf') {
       return this.callOpenAi(
         [
           { type: 'text', text: instructions },
@@ -335,8 +333,20 @@ Return strictly JSON: { "title": "...", "words": ["..."], "meanings": ["..."] } 
       );
     }
 
-    return extractFail(
-      `Unsupported file type "${file.mimetype}". ${UNSUPPORTED_FILE_TYPE_MESSAGE}`,
+    const mime = SNIFFED_IMAGE_MIME[kind];
+    return this.callOpenAi(
+      [
+        { type: 'text', text: instructions },
+        {
+          type: 'image_url',
+          image_url: {
+            url: `data:${mime};base64,${buffer.toString('base64')}`,
+          },
+        },
+      ],
+      fromLanguage,
+      toLanguage,
+      file.originalname,
     );
   }
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
+import type { ExtractionErrorCode } from '@/lib/api/vocabularies/types';
 import { Vocabulary } from '../../types';
 import { Button, Dialog, Icon, Input } from '../../components/ui';
 import VocabularyEntriesList, {
@@ -18,19 +19,16 @@ import {
 
 const LANGUAGE_CODES = ['en', 'fr', 'de'] as const;
 
-function isHeicUpload(file: File): boolean {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
-  return (
-    type === 'image/heic' ||
-    type === 'image/heif' ||
-    name.endsWith('.heic') ||
-    name.endsWith('.heif')
-  );
-}
+const VISION_UPLOAD_MIMES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);
+
+const VISION_UPLOAD_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
 function isAllowedExtractUpload(file: File): boolean {
-  if (isHeicUpload(file)) return false;
   const type = file.type.toLowerCase();
   const name = file.name.toLowerCase();
   if (
@@ -40,8 +38,71 @@ function isAllowedExtractUpload(file: File): boolean {
   ) {
     return true;
   }
-  if (type.startsWith('image/')) return true;
-  return /\.(png|jpe?g|gif|webp|bmp)$/i.test(name);
+  if (VISION_UPLOAD_MIMES.has(type)) return true;
+  return VISION_UPLOAD_EXTENSIONS.some((extension) => name.endsWith(extension));
+}
+
+function sniffUploadKind(
+  bytes: Uint8Array,
+): 'png' | 'jpeg' | 'gif' | 'webp' | 'pdf' | null {
+  if (bytes.length < 12) return null;
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return 'png';
+  }
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'jpeg';
+  }
+  if (
+    bytes[0] === 0x47 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x38
+  ) {
+    return 'gif';
+  }
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return 'webp';
+  }
+  if (
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46
+  ) {
+    return 'pdf';
+  }
+  return null;
+}
+
+function messageForExtractionFailure(
+  t: ReturnType<typeof useTranslations<'vocabulary'>>,
+  code: ExtractionErrorCode,
+  extractedCount?: number,
+): string {
+  if (code === 'TOO_FEW_WORDS') {
+    return t('tooFewWords', {
+      count: extractedCount ?? 0,
+      min: MIN_VOCAB_PAIRS,
+    });
+  }
+  if (code === 'UNSUPPORTED_FILE_TYPE') return t('unsupportedFileType');
+  if (code === 'EMPTY_FILE') return t('emptyFile');
+  if (code === 'OPENAI_NOT_CONFIGURED') return t('extractionUnavailable');
+  return t('extractionFailed');
 }
 
 type Props = {
@@ -180,11 +241,18 @@ export default function AddVocabulary({
 
   const handleAiExtract = async () => {
     if (!selectedFile || !user || !group) return;
-    if (isHeicUpload(selectedFile)) {
-      setAiError(t('unsupportedHeic'));
+    if (!isAllowedExtractUpload(selectedFile)) {
+      setAiError(t('unsupportedFileType'));
       return;
     }
-    if (!isAllowedExtractUpload(selectedFile)) {
+    let header: Uint8Array;
+    try {
+      header = new Uint8Array(await selectedFile.slice(0, 16).arrayBuffer());
+    } catch {
+      setAiError(t('unsupportedFileType'));
+      return;
+    }
+    if (!sniffUploadKind(header)) {
       setAiError(t('unsupportedFileType'));
       return;
     }
@@ -201,7 +269,9 @@ export default function AddVocabulary({
         group.id,
       );
       if (!data.success) {
-        setAiError(data.message);
+        setAiError(
+          messageForExtractionFailure(t, data.code, data.extractedCount),
+        );
         return;
       }
       setName((current) => current.trim() || data.title);
