@@ -1,4 +1,4 @@
-import { SESSION_RESTORE_TIMEOUT_MS } from '@/app/hooks/game/game-leave.helpers';
+import { SESSION_RESTORE_TIMEOUT_MS } from '@/lib/session-restore.constants';
 import { playersApi } from '@/lib/api';
 import type { PlayerDto } from '@/lib/api/players/types';
 import {

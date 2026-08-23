@@ -349,26 +349,6 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
 
     this.wordBuildingService.cancelLockTimer(gameId, dto.row, dto.col);
 
-    // Broadcast the final-letter celebration before `game:state` / `game:finished`
-    // so every client can start the celebration on the same authoritative event
-    // and hold the scoreboard transition until it has played out.
-    if (payload.solved && payload.finalPlacement) {
-      const {
-        playerId: finalPlayerId,
-        letter,
-        row,
-        col,
-      } = payload.finalPlacement;
-      const playerName = await this.getPlayerName(gameId, finalPlayerId);
-      this.server.to(`game:${gameId}`).emit('game:finalLetterPlaced', {
-        playerId: finalPlayerId,
-        playerName,
-        letter,
-        row,
-        col,
-      });
-    }
-
     this.server.to(`game:${gameId}`).emit('game:state', payload);
 
     const locksPayload = this.wordBuildingService.getLocksPayload(gameId);

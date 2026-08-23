@@ -17,7 +17,6 @@ import GameClock from '@/app/components/game-clock';
 import GameRulesInfo from './game-rules-info';
 import WordStats from './word-stats';
 import { Button } from '../../components/ui/button';
-import { MAX_COURT_WIDTH } from '../_lib/word-soup-constants';
 
 export default function WordSoupGame() {
   const tCommon = useTranslations('common');
@@ -90,10 +89,7 @@ export default function WordSoupGame() {
         </div>
       ) : null}
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
-        <div
-          className="w-full min-w-0"
-          style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_WIDTH}px)` }}
-        >
+        <div className="w-full min-w-0 max-w-[calc(11.5rem+1rem+600px)]">
           {/*
             Desktop:
               row1: [title] [message banner + rules]  (controls right edge = court)
@@ -114,10 +110,7 @@ export default function WordSoupGame() {
             {/* Message + court controls — right edge flush with court.
                 Banner may expand downward over the court when messages wrap. */}
             <div className="relative z-20 lg:col-start-2 lg:row-start-1">
-              <div
-                className="flex w-full items-start gap-2 sm:gap-3"
-                style={{ maxWidth: MAX_COURT_WIDTH }}
-              >
+              <div className="flex w-full max-w-[600px] items-start gap-2 sm:gap-3">
                 <div className="min-w-0 flex-1">
                   <WordSoupEventBannerView
                     event={ws.eventBanner}
@@ -166,10 +159,7 @@ export default function WordSoupGame() {
             </aside>
 
             {/* Court */}
-            <div
-              className="relative z-0 min-w-0 w-full lg:col-start-2 lg:row-start-2"
-              style={{ maxWidth: MAX_COURT_WIDTH }}
-            >
+            <div className="relative z-0 min-w-0 w-full max-w-[600px] lg:col-start-2 lg:row-start-2">
               <GameCourt
                 visibleCourt={ws.visibleCourt}
                 playerColours={ws.playerColours}
@@ -212,7 +202,7 @@ export default function WordSoupGame() {
 
             {/* Submit */}
             <div className="lg:col-start-2 lg:row-start-3">
-              <div className="h-full w-full" style={{ maxWidth: MAX_COURT_WIDTH }}>
+              <div className="h-full w-full max-w-[600px]">
                 <WordSoupSubmitGuessButton
                   fillHeight
                   onSubmitGuess={ws.handleSubmitGuess}
@@ -256,8 +246,7 @@ export default function WordSoupGame() {
       {ws.showGameOverOverlay && (
         <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
           <div
-            className="pointer-events-auto relative h-full w-full min-w-0"
-            style={{ maxWidth: `calc(11.5rem + 1rem + ${MAX_COURT_WIDTH}px)` }}
+            className="pointer-events-auto relative h-full w-full min-w-0 max-w-[calc(11.5rem+1rem+600px)]"
           >
             <GameOverOverlay
               outroNamespace="games.wordSoup.outro"

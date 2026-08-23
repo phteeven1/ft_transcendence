@@ -2,6 +2,15 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 
+import {
+  CHAR_MS,
+  COUNTDOWN_STEP_MS,
+  GAP_DURATION_MS,
+  GO_HOLD_MS,
+  HOLD_AFTER_TYPE_MS,
+  WORD_CHAR_MS,
+} from './game-timing.constants';
+
 export type IntroPhase =
   | 'idle'
   | 'welcome'
@@ -45,16 +54,7 @@ export interface IUseGameIntroProps {
   markIntroShown?: (gameId: number) => Promise<unknown>;
 }
 
-const CHAR_MS = 42;
-const WORD_CHAR_MS = 70;
-const HOLD_AFTER_TYPE_MS = 900;
-const BUBBLE_FADE_MS = 380;
-const GAP_MS = 420;
-const COUNTDOWN_STEP_MS = 750;
-const GO_HOLD_MS = 900;
-
 const EMPTY_SOLUTION_WORDS: string[] = [];
-const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
 
 type IntroFrame = {
   phase: IntroPhase;

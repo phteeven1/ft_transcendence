@@ -8,9 +8,6 @@ import {
 } from '@/lib/player-session';
 import { restorePlayerFromSession } from '@/lib/restore-player-session';
 
-/** Max wait for session rehydrate before navigating anyway. */
-export const SESSION_RESTORE_TIMEOUT_MS = 10_000;
-
 /**
  * Whether the local player is the last active participant — used only for
  * abandon-modal copy ("you'll end the game" vs "others keep playing").

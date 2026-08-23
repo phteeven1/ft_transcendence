@@ -342,13 +342,6 @@ export class WordBuildingService {
     // Build payload with current state
     const payload = this.buildPayload(state);
 
-    // The cell we just wrote was guaranteed not-yet-correct (checked above), so
-    // if the board is now fully solved, this placement is the one that just
-    // completed it — the authoritative "final letter" for the celebration event.
-    if (payload.solved) {
-      payload.finalPlacement = { playerId, letter: normalized, row, col };
-    }
-
     // Persist mid-game state periodically to prevent data loss on server restart
     if (state.revision % PERSISTENCE_INTERVAL === 0) {
       await this.persistMidGameState(gameId, state);

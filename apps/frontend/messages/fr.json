@@ -3,13 +3,7 @@
     "cancel": "Annuler",
     "ok": "OK",
     "confirm": "Confirmer",
-    "save": "Enregistrer",
     "delete": "Supprimer",
-    "loading": "Chargement…",
-    "back": "Retour",
-    "close": "Fermer",
-    "error": "Erreur",
-    "success": "Succès",
     "submit": "Envoyer",
     "rename": "Renommer",
     "edit": "Modifier",
@@ -20,10 +14,8 @@
     "promote": "Promouvoir",
     "resign": "Démissionner",
     "expel": "Exclure",
-    "stay": "Rester",
     "skip": "Passer",
     "next": "Suivant",
-    "sending": "Envoi…",
     "sendingEllipsis": "Envoi...",
     "starting": "Démarrage…",
     "leaving": "Départ…",
@@ -33,14 +25,9 @@
     "admin": "Admin",
     "member": "Membre",
     "you": "toi",
-    "active": "Actif",
     "unknownError": "Erreur inconnue",
     "somethingWentWrong": "Une erreur s'est produite. Veuillez réessayer.",
     "playerNumber": "Joueur #{id}",
-    "and": "et",
-    "word": "Mot",
-    "meaning": "Signification",
-    "minutes": "Minutes",
     "email": "E-mail"
   },
   "nav": {
@@ -327,12 +314,12 @@
         "noGames": "—",
         "avatarTab": "XP & Avatar",
         "rankTitle": "Rang",
-        "rankHint": "Ton rang suit automatiquement ton XP",
+        "rankHint": "Ton rang dépend de ton niveau d'XP",
         "currentRank": "Rang actuel : {label}",
         "unlockedRank": "{label} atteint à {xp} XP",
         "currentRankLabel": "Actuel",
-        "animalTitle": "Animal",
-        "animalHint": "Choisis n'importe quel animal à tout moment",
+        "animalTitle": "Avatar",
+        "animalHint": "Choisis ton animal d'avatar",
         "animalFree": "Libre",
         "equipAnimal": "Équiper {label}",
         "equipping": "Enregistrement…",
@@ -341,7 +328,7 @@
         "unlockAt": "Débloquer à {xp} XP",
         "lockedTier": "{label} verrouillé — nécessite {xp} XP",
         "unlockToastTitle": "Nouveau rang débloqué !",
-        "unlockToastBody": "Tu as atteint {label}. Ton apparence se met à jour automatiquement.",
+        "unlockToastBody": "Tu as atteint {label} !",
         "unlockToastDismiss": "Super !",
         "modeLabels": {
           "solo": "Solo",
@@ -371,7 +358,7 @@
       }
     },
     "initiate": {
-      "message": "Veux-tu démarrer une nouvelle session ? D'autres membres de ton groupe peuvent rejoindre avant qu'elle ne commence."
+      "message": "Veux-tu créer un nouveau jeu ? D'autres membres de ton groupe peuvent rejoindre avant qu'il ne commence."
     },
     "join": {
       "title": "Rejoindre {gameName} ?",
@@ -382,7 +369,7 @@
       "timingMorePlayers": "quand {count} joueurs de plus rejoindront"
     },
     "forceStart": {
-      "message": "Veux-tu interrompre l'attente et démarrer {gameName} avec {count, plural, one {# joueur} other {# joueurs}} ?"
+      "message": "Veux-tu démarrer {gameName} avec {count, plural, one {# joueur} other {# joueurs}} ?"
     },
     "pending": {
       "clickToStart": "Cliquer pour démarrer",
@@ -417,10 +404,8 @@
       "scoreboardLabel": "Joueurs",
       "leftGame": "A quitté le jeu",
       "generating": "Génération de la grille…",
-      "instructions": "Clique sur une case pour sélectionner automatiquement la direction · Tape des lettres pour remplir · Vert = correct · Bleu = vide · Rouge = faux · Espace/Tab pour changer de direction",
       "directionAcross": "→ Horizontal",
       "directionDown": "↓ Vertical",
-      "scores": "Scores",
       "noPointsYet": "Aucun point pour le moment",
       "across": "Horizontal",
       "down": "Vertical",
@@ -453,17 +438,13 @@
         "winner": "Gagnant",
         "returnToLobby": "Retour au lobby",
         "almostDone": "Presque fini…",
-        "closingSolo": "Bravo {name}, super partie ! À bientôt !",
+        "closingSolo": "Bravo {name}, super partie solo ! À bientôt !",
         "closingMulti": "Bravo à tous, super partie ! À bientôt !",
-        "placeAnnouncement": "{place}e place : {name}, avec {score} points et +{xp} XP !",
-        "firstPlaceSolo": "Bravo {name}, tu as marqué {score} points et gagné +{xp} XP !",
-        "winnersPrefix": "Et les gagnants ! ",
-        "winnerPrefix": "Et le gagnant, ",
+        "placeAnnouncement": "{placeLabel} place : {name}, avec {score} points et +{xp} XP !",
+        "firstPlaceSolo": "1re place : {name}, avec {score} points et +{xp} XP !",
+        "winnersPrefix": "Et enfin, les gagnants ! ",
+        "winnerPrefix": "Et enfin, le gagnant, ",
         "winnerAnnouncement": "{name}, avec {score} points et +{xp} XP !"
-      },
-      "finalLetter": {
-        "announcement": "{name} a placé la dernière lettre ! Félicitations !",
-        "subtext": "Puzzle terminé — scores finaux dans un instant…"
       }
     },
     "wordSoup": {
@@ -514,7 +495,7 @@
         "almostDone": "Presque fini…",
         "closingSolo": "Bravo {name}, super partie ! À bientôt !",
         "closingMulti": "Bravo à tous, super partie ! À bientôt !",
-        "placeAnnouncement": "{place}e place : {name}, avec {score} points et +{xp} XP !",
+        "placeAnnouncement": "{placeLabel} place : {name}, avec {score} points et +{xp} XP !",
         "firstPlaceSolo": "Bravo {name}, tu as marqué {score} points et gagné +{xp} XP !",
         "winnersPrefix": "Et les gagnants ! ",
         "winnerPrefix": "Et le gagnant, ",

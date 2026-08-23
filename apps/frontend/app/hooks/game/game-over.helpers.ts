@@ -3,13 +3,15 @@ import type {
   GameFinishPlayerOutcomeDto,
 } from '@/lib/api/games/types';
 import { computeXpAwarded, isMultiplayerGame } from '@/lib/api/progression';
+import { formatPlaceOrdinal } from '@/lib/format-place-ordinal';
+import type { LocaleCode } from '@/i18n/config';
 
 export type OutroTranslateFn = {
   (key: 'closingSolo', values: { name: string }): string;
   (key: 'closingMulti'): string;
   (
     key: 'placeAnnouncement',
-    values: { place: number; name: string; score: number; xp: number },
+    values: { placeLabel: string; name: string; score: number; xp: number },
   ): string;
   (
     key: 'firstPlaceSolo',
@@ -50,6 +52,7 @@ interface IGameOverAnnouncement {
 export function buildGameOverAnnouncements(
   players: GameFinishPlayerOutcomeDto[],
   t: OutroTranslateFn,
+  locale: LocaleCode,
 ): IGameOverAnnouncement[] {
   const ranked = activePlayers(players);
   if (ranked.length === 0) return [];
@@ -66,7 +69,7 @@ export function buildGameOverAnnouncements(
     announcements.push({
       playerId: player.playerId,
       speech: t('placeAnnouncement', {
-        place,
+        placeLabel: formatPlaceOrdinal(place, locale),
         name: player.playerName,
         score: player.score,
         xp: player.xpAwarded,
@@ -109,6 +112,7 @@ export function buildGameOverAnnouncements(
 export function buildFallbackFinishOutcome(
   players: Array<{ id: number; name: string }>,
   playerScores: Record<number, number>,
+  leftPlayers: Record<number, string> = {},
 ): GameFinishOutcomeDto {
   const scores = players.map((player) => playerScores[player.id] ?? 0);
   const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
@@ -127,7 +131,7 @@ export function buildFallbackFinishOutcome(
         xpAwarded: computeXpAwarded(players.length, isWinner),
         isWinner,
         newlyUnlockedTier: null,
-        leftEarly: false,
+        leftEarly: Boolean(leftPlayers[player.id]),
       };
     }),
   };

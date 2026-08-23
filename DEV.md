@@ -91,7 +91,7 @@ Gateway: `apps/backend/src/games/game.gateway.ts` (`@WebSocketGateway({ cors: { 
 | `joinGroup` `{ groupId, playerId, token }` | `lobby:update`, `game:started` |
 | `joinDashboard` `{ groupId, userId, token }` | `dashboard:update`, `membership:changed` |
 | `joinGame` `{ gameId, playerId, token }` | `game:state`, `game:playerLeft` |
-| `placeLetter` | `cell:locks`, `game:finalLetterPlaced` (Word Building, once per puzzle) |
+| `placeLetter` | `cell:locks` |
 | `cell:lock` / `cell:unlock` | `game:finished` |
 | `guess:submit` | `game:guessResult`, `game:wordGuessed`, `game:playerFrozen` / `game:playerUnfrozen`, `game:error` |
 

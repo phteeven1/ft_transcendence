@@ -9,7 +9,6 @@
 //   REST  GET  /games/:id/players               → player names for scoreboard
 //   WS    placeLetter  → client → server
 //   WS    game:state   → server → all clients → update visibleCourt + scores
-//   WS    game:finalLetterPlaced → server → all clients → brief celebration banner
 //   WS    game:playerLeft → server → all clients → mark that one player as left;
 //                        the match keeps running for everyone still in it
 //   WS    game:finished → server → all clients still in the room → narrated results
@@ -17,7 +16,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import type { LocaleCode } from '@/i18n/config';
 import { useAuth } from '../../context/auth-context';
 import { useSessionGuard } from '../../hooks/use-session-guard';
 import { useGameSocket } from '../../hooks/use-game-socket';
@@ -25,6 +25,7 @@ import { playersApi } from '@/lib/api';
 import { gamesApi } from '@/lib/api/games';
 import { wordBuildingApi } from '@/lib/api/games/word-building.api';
 import { computeIsLastRemaining, returnToLobbyOnce } from '@/app/hooks/game/game-leave.helpers';
+import { INTRO_ESTIMATE_PLAYER_NAME } from '@/app/hooks/game/game-timing.constants';
 import {
   useAbandonFinishRedirect,
   useGameLeave,
@@ -35,7 +36,6 @@ import GameInfoColumn from './game-info-column';
 import GameControls from './game-controls';
 import AbandonPlayModal from '../../components/abandon-play-modal';
 import { GameOverOverlay } from '@/app/components/game/overlay';
-import WordBuildingFinalLetterOverlay from './word-building-final-letter-overlay';
 import WordBuildingIntroOverlay from './word-building-intro-overlay';
 import WordBuildingRulesInfo from './word-building-rules-info';
 import WordBuildingTitle from './word-building-title';
@@ -44,7 +44,10 @@ import TileRack from './tile-rack';
 import GameClock from '@/app/components/game-clock';
 import { useGameIntro } from '@/app/hooks/game/use-game-intro';
 import { useGameOver } from '@/app/hooks/game/use-game-over';
-import type { OutroTranslateFn } from '@/app/hooks/game/game-over.helpers';
+import {
+  buildFallbackFinishOutcome,
+  type OutroTranslateFn,
+} from '@/app/hooks/game/game-over.helpers';
 import type { GameFinishOutcomeDto, GameFinishPlayerOutcomeDto } from '@/lib/api/games/types';
 import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word-building.types';
 
@@ -52,12 +55,6 @@ import type { IInitCourtResponse, IGameStatePayload } from '@/lib/api/games/word
 const PLAYER_COLOUR_PALETTE = [
   '#5EEAD4', '#A78BFA', '#FB923C', '#F472B6', '#34D399', '#60A5FA',
 ];
-
-/**
- * How long the final-letter celebration banner stays up before the final
- * scoreboard takes over. Long enough to read, short enough to stay snappy.
- */
-const FINAL_LETTER_CELEBRATION_MS = 3000;
 
 // The initial state is an empty array; the real court arrives from the API
 // and replaces it before the board is rendered (loading screen covers this gap).
@@ -72,6 +69,7 @@ export default function WordBuildingGame() {
   const t = useTranslations('games.wordBuilding');
   const tIntro = useTranslations('games.wordBuilding.intro');
   const tOutro = useTranslations('games.wordBuilding.outro');
+  const locale = useLocale() as LocaleCode;
   const searchParams = useSearchParams();
   const router = useRouter();
   const { loginAsPlayer, setSessionExpiresAt } = useAuth();
@@ -99,9 +97,9 @@ export default function WordBuildingGame() {
   const [showAbandonModal,      setShowAbandonModal]      = useState(false);
   const [isAbandoning,          setIsAbandoning]          = useState(false);
   const [playerNames,           setPlayerNames]           = useState<Map<number, string>>(new Map());
-  // Authoritative participant count, from the game record fetched at mount —
-  // available well before the async playerNames roster fetch resolves, so
-  // this (not playerNames.size) is what should gate solo-vs-multiplayer logic.
+  // Authoritative participant count from GET /games/:id/players (full historical
+  // roster, including leavers). Game.players is active-only and must not be used
+  // for solo-vs-multiplayer logic after a refresh.
   const [rosterPlayerIds,       setRosterPlayerIds]       = useState<number[] | null>(null);
   const [hasPlayerSeenIntro, setHasPlayerSeenIntro] = useState(false);
   const [introStartedAt, setIntroStartedAt] = useState<number | null>(null);
@@ -120,17 +118,18 @@ export default function WordBuildingGame() {
   const {
     gameState, gameFinished, finishOutcome: socketFinishOutcome, emitPlaceLetter,
     cellLocks, emitCellLock, emitCellUnlock, leftPlayers, mergeLeftPlayers,
-    finalLetterPlaced, finalLetterPlacedSeq,
   } = useGameSocket(gameId, playerId);
 
   // Puzzle fully solved — not the same as the session ending via abandon.
   // Abandon also emits game:finished; only natural completion should run the outro.
-  const naturalGameFinished = solved;
-  const gameSessionEnded = gameFinished || solved;
+  // Prefer the live socket payload so we do not lag behind game:finished (Word Soup
+  // reads serverState.isComplete the same way).
+  const naturalGameFinished = solved || gameState?.solved === true;
+  const gameSessionEnded = gameFinished || naturalGameFinished;
   const introTexts = useMemo(
     () => ({
       welcome: tIntro('welcome', {
-        name: playerNames.get(playerId) ?? '',
+        name: playerNames.get(playerId) ?? INTRO_ESTIMATE_PLAYER_NAME,
       }),
       briefing: tIntro('briefing'),
       letsGo: tIntro('letsGo'),
@@ -173,36 +172,6 @@ export default function WordBuildingGame() {
   useEffect(() => {
     wasShowingIntroRef.current = showIntro;
   }, [showIntro]);
-
-  // ── Final-letter celebration ────────────────────────────────────────────────
-  // Holds the game-over scoreboard back for a beat after the puzzle-completing
-  // placement so everyone sees who finished it before the transition. Gated on
-  // the server-broadcast sequence number (not local timing), so it fires once,
-  // in sync, for every client — including the player who placed the letter.
-  //
-  // Multiplayer-ness is derived from rosterPlayerIds (the authoritative game
-  // roster fetched at mount), not playerNames.size — that map is populated by
-  // a separate async fetch with no ordering guarantee against the final-letter
-  // event, so it can still read 0/1 for a real multiplayer game.
-  const [dismissedCelebrationSeq, setDismissedCelebrationSeq] = useState(0);
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isMultiplayer = (rosterPlayerIds?.length ?? playerNames.size) > 1;
-  const isCelebratingFinalLetter =
-    isMultiplayer && finalLetterPlacedSeq > 0 && finalLetterPlacedSeq > dismissedCelebrationSeq;
-
-  useEffect(() => {
-    // Solo games have no one else to celebrate in front of — skip the
-    // celebration state entirely instead of flashing it for one render.
-    if (!isMultiplayer) return;
-    if (finalLetterPlacedSeq === 0 || finalLetterPlacedSeq <= dismissedCelebrationSeq) return;
-    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-    celebrationTimerRef.current = setTimeout(() => {
-      setDismissedCelebrationSeq(finalLetterPlacedSeq);
-    }, FINAL_LETTER_CELEBRATION_MS);
-    return () => {
-      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-    };
-  }, [finalLetterPlacedSeq, dismissedCelebrationSeq, isMultiplayer]);
 
   // ── Refs for lock emissions (avoid stale closures) ──────────────────────────
   /** Tracks the cell currently held by this player so unlock can be emitted on navigation. */
@@ -255,9 +224,10 @@ export default function WordBuildingGame() {
     };
 
     const load = async () => {
-      const [loadedGame, player] = await Promise.all([
+      const [loadedGame, player, rosterPlayers] = await Promise.all([
         gamesApi.getById({ gameId }).catch(() => null),
         playersApi.getById(playerId).catch(() => null),
+        wordBuildingApi.getPlayersForGame(gameId).catch(() => []),
       ]);
       if (cancelled) return;
 
@@ -275,7 +245,22 @@ export default function WordBuildingGame() {
         return;
       }
 
-      setRosterPlayerIds(loadedGame.players);
+      setRosterPlayerIds(rosterPlayers.map((p) => p.id));
+
+      const nameMap = new Map<number, string>();
+      const colours: Record<number, string> = {};
+      const tiers: Record<number, number> = {};
+      const animals: Record<number, number> = {};
+      rosterPlayers.forEach((p, index) => {
+        nameMap.set(p.id, p.name);
+        colours[p.id] = PLAYER_COLOUR_PALETTE[index % PLAYER_COLOUR_PALETTE.length];
+        tiers[p.id] = p.avatarTier ?? 0;
+        animals[p.id] = p.avatarAnimal ?? 0;
+      });
+      setPlayerNames(nameMap);
+      setPlayerColours(colours);
+      setPlayerAvatarTiers(tiers);
+      setPlayerAvatarAnimals(animals);
 
       try {
         const data = await wordBuildingApi.initCourt(gameId);
@@ -300,24 +285,6 @@ export default function WordBuildingGame() {
     };
 
     void load();
-
-    wordBuildingApi.getPlayersForGame(gameId).then((players) => {
-      if (cancelled) return;
-      const nameMap = new Map<number, string>();
-      const colours: Record<number, string> = {};
-      const tiers: Record<number, number> = {};
-      const animals: Record<number, number> = {};
-      players.forEach((p, index) => {
-        nameMap.set(p.id, p.name);
-        colours[p.id] = PLAYER_COLOUR_PALETTE[index % PLAYER_COLOUR_PALETTE.length];
-        tiers[p.id] = p.avatarTier ?? 0;
-        animals[p.id] = p.avatarAnimal ?? 0;
-      });
-      setPlayerNames(nameMap);
-      setPlayerColours(colours);
-      setPlayerAvatarTiers(tiers);
-      setPlayerAvatarAnimals(animals);
-    });
 
     return () => {
       cancelled = true;
@@ -565,11 +532,11 @@ export default function WordBuildingGame() {
   const isLastRemaining = useMemo(
     () =>
       computeIsLastRemaining(
-        [...playerNames.keys()],
+        rosterPlayerIds ?? [],
         playerId,
         leftPlayers,
       ),
-    [leftPlayers, playerId, playerNames],
+    [leftPlayers, playerId, rosterPlayerIds],
   );
 
   const leaveToLobby = useCallback(async () => {
@@ -580,10 +547,27 @@ export default function WordBuildingGame() {
 
   useAbandonFinishRedirect(
     gameFinished,
-    solved,
+    naturalGameFinished,
     handleReturnToLobby,
     hasLeftForLobbyRef,
   );
+
+  const outcomePlayers = useMemo(
+    () =>
+      (rosterPlayerIds ?? []).map((id) => ({
+        id,
+        name: playerNames.get(id) ?? leftPlayers[id] ?? `Player ${id}`,
+      })),
+    [rosterPlayerIds, playerNames, leftPlayers],
+  );
+
+  const playerScoresRecord = useMemo(() => {
+    const record: Record<number, number> = {};
+    for (const entry of gameState?.scores ?? scores) {
+      record[entry.playerId] = entry.score;
+    }
+    return record;
+  }, [gameState?.scores, scores]);
 
   useEffect(() => {
     if (
@@ -601,7 +585,7 @@ export default function WordBuildingGame() {
         if (!cancelled && outcome) setFinishOutcomeFromApi(outcome);
       })
       .catch(() => {
-        /* the socket outcome may still arrive */
+        /* overlay still uses the local fallback outcome */
       });
     return () => {
       cancelled = true;
@@ -609,19 +593,35 @@ export default function WordBuildingGame() {
   }, [
     finishOutcomeFromApi,
     gameId,
-    gameFinished,
     naturalGameFinished,
     socketFinishOutcome,
   ]);
 
-  const effectiveFinishOutcome =
-    socketFinishOutcome ?? finishOutcomeFromApi;
+  const finishOutcome = useMemo((): GameFinishOutcomeDto | null => {
+    if (!naturalGameFinished) return null;
+    if (socketFinishOutcome) return socketFinishOutcome;
+    if (finishOutcomeFromApi) return finishOutcomeFromApi;
+    if (outcomePlayers.length === 0) return null;
+    return buildFallbackFinishOutcome(
+      outcomePlayers,
+      playerScoresRecord,
+      leftPlayers,
+    );
+  }, [
+    naturalGameFinished,
+    socketFinishOutcome,
+    finishOutcomeFromApi,
+    outcomePlayers,
+    playerScoresRecord,
+    leftPlayers,
+  ]);
+
   const gameOverPlayersById = useMemo(() => {
-    if (!effectiveFinishOutcome) return {};
+    if (!finishOutcome) return {};
     const byId: Record<number, GameFinishPlayerOutcomeDto> = {};
-    for (const p of effectiveFinishOutcome.players) byId[p.playerId] = p;
+    for (const p of finishOutcome.players) byId[p.playerId] = p;
     return byId;
-  }, [effectiveFinishOutcome]);
+  }, [finishOutcome]);
 
   const {
     showOverlay: showGameOverOverlay,
@@ -631,13 +631,11 @@ export default function WordBuildingGame() {
     revealedPlayerIds: gameOverRevealedPlayerIds,
     showReturnButton: showGameOverReturnButton,
   } = useGameOver({
-    active:
-      naturalGameFinished && !isCelebratingFinalLetter && !isAbandoning,
-    outcome: effectiveFinishOutcome,
+    active: naturalGameFinished && !isAbandoning,
+    outcome: finishOutcome,
     outroT: tOutro as OutroTranslateFn,
-    skipInitialHold:
-      finishedDuringIntro ||
-      (isMultiplayer && finalLetterPlacedSeq > 0),
+    locale,
+    skipInitialHold: finishedDuringIntro,
   });
 
   const localHostTier   = playerAvatarTiers[playerId]   ?? 0;
@@ -645,9 +643,9 @@ export default function WordBuildingGame() {
   const localHostColour = playerColours[playerId];
 
   const newlyUnlockedTier = useMemo(() => {
-    const tier = effectiveFinishOutcome?.players.find((p) => p.playerId === playerId)?.newlyUnlockedTier;
+    const tier = finishOutcome?.players.find((p) => p.playerId === playerId)?.newlyUnlockedTier;
     return typeof tier === 'number' ? tier : null;
-  }, [effectiveFinishOutcome, playerId]);
+  }, [finishOutcome, playerId]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -667,12 +665,12 @@ export default function WordBuildingGame() {
     >
       <div className="mx-auto flex w-full max-w-[1600px] justify-center px-3 py-3 sm:px-4 sm:py-4">
         {/* maxWidth matches Word Soup: sidebar (11.5rem) + gap (1rem) + board cap (600px) = 800px */}
-        <div className="w-full" style={{ maxWidth: 'calc(11.5rem + 1rem + 600px)' }}>
+        <div className="w-full max-w-[calc(11.5rem+1rem+600px)]">
           <div className="grid w-full grid-cols-1 items-stretch gap-x-4 gap-y-2 sm:gap-y-2.5 lg:grid-cols-[11.5rem_minmax(0,1fr)]">
 
             {/* Title — top left */}
             <div className="lg:col-start-1 lg:row-start-1">
-              <WordBuildingTitle solved={solved} />
+              <WordBuildingTitle solved={naturalGameFinished} />
             </div>
 
             {/* Time & Info — one row, directly under the title. Time stays left,
@@ -749,7 +747,7 @@ export default function WordBuildingGame() {
                   dragTargetCol={dragTargetCol}
                 />
                 {/* Intro overlay — sized to the court, matching Word Soup. */}
-                {showIntro && !showGameOverOverlay && !isCelebratingFinalLetter && (
+                {showIntro && !showGameOverOverlay && (
                   <WordBuildingIntroOverlay
                     phase={introPhase}
                     bubbleText={introBubbleText}
@@ -763,7 +761,7 @@ export default function WordBuildingGame() {
               </div>
               <TileRack
                 letters={availableLetters}
-                disabled={!gameReady || solved}
+                disabled={!gameReady || naturalGameFinished}
                 onDrop={handleCellDrop}
                 onDragTarget={handleDragTarget}
               />
@@ -788,7 +786,7 @@ export default function WordBuildingGame() {
       </div>
 
       {/* Abandon modal — leaving only affects this player unless they're the last one active */}
-      {showAbandonModal && (
+      {showAbandonModal && rosterPlayerIds !== null && (
         <AbandonPlayModal
           onStay={() => setShowAbandonModal(false)}
           onLeave={leaveToLobby}
@@ -797,22 +795,11 @@ export default function WordBuildingGame() {
         />
       )}
 
-      {/* Final-letter celebration — same authoritative event for every client, shown once */}
-      {isCelebratingFinalLetter && finalLetterPlaced && (
-        <WordBuildingFinalLetterOverlay
-          playerName={playerNames.get(finalLetterPlaced.playerId) ?? finalLetterPlaced.playerName}
-          hostTier={playerAvatarTiers[finalLetterPlaced.playerId] ?? 0}
-          hostAnimal={playerAvatarAnimals[finalLetterPlaced.playerId] ?? 0}
-          hostClothesColor={playerColours[finalLetterPlaced.playerId]}
-        />
-      )}
-
       {/* Score screen — framed like Word Soup (sidebar + court width, full shell height). */}
       {showGameOverOverlay && (
         <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
           <div
-            className="pointer-events-auto relative h-full w-full min-w-0"
-            style={{ maxWidth: 'calc(11.5rem + 1rem + 600px)' }}
+            className="pointer-events-auto relative h-full w-full min-w-0 max-w-[calc(11.5rem+1rem+600px)]"
           >
             <GameOverOverlay
               outroNamespace="games.wordBuilding.outro"

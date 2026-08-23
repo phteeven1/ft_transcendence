@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { gamesApi, wordSoupApi } from '@/lib/api';
+import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
 import type { GameRosterPlayerDto } from '@/lib/api/games';
 import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
 import type { Game } from '@/app/types';
@@ -91,14 +91,20 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     let isMounted = true;
 
     const load = async () => {
-      const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
+      const [loadedGame, player] = await Promise.all([
+        gamesApi.getById({ gameId }).catch(() => null),
+        playersApi.getById(playerId).catch(() => null),
+      ]);
+
       if (!loadedGame) {
         // Game gone (e.g. cleaned up after finish) — return to lobby if session is live.
         await leaveFinishedGameForLobby();
         return;
       }
 
-      if (loadedGame.isFinished) {
+      const hasLeftThisGame = player != null && player.currentGameId !== gameId;
+
+      if (loadedGame.isFinished || hasLeftThisGame) {
         await leaveFinishedGameForLobby();
         return;
       }

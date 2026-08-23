@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { gamesApi } from '@/lib/api';
+import type { LocaleCode } from '@/i18n/config';
 import type { GameFinishOutcomeDto, IGameSocketErrorDto, IPlayerLeftNoticeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import type {
@@ -64,6 +65,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: IUseWordSoupGameAr
   const tOutro = useTranslations('games.wordSoup.outro');
   const tEvents = useTranslations('games.wordSoup.events');
   const tControls = useTranslations('games.controls');
+  const locale = useLocale() as LocaleCode;
 
   const introTexts = useMemo(
     () => ({
@@ -363,13 +365,14 @@ export function useWordSoupGame({ gameId, playerId, socket }: IUseWordSoupGameAr
       return finishOutcomeFromApi;
     }
     if (!startGameOverSequence) return null;
-    return buildFallbackFinishOutcome(players, playerScores);
+    return buildFallbackFinishOutcome(players, playerScores, leftPlayers);
   }, [
     finishOutcomeFromSocket,
     finishOutcomeFromApi,
     startGameOverSequence,
     players,
     playerScores,
+    leftPlayers,
   ]);
 
   const playersByOutcomeId = useMemo(() => {
@@ -416,6 +419,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: IUseWordSoupGameAr
     active: startGameOverSequence && !isAbandoning,
     outcome: finishOutcome,
     outroT: tOutro,
+    locale,
     skipInitialHold: finishedDuringIntro,
   });
 

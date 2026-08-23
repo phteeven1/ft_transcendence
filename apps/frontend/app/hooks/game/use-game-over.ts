@@ -4,6 +4,13 @@ import { useLayoutEffect, useRef, useState } from 'react';
 
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import {
+  CHAR_MS,
+  DEFAULT_HOLD_DURATION_MS,
+  GAP_DURATION_MS,
+  HOLD_AFTER_TYPE_MS,
+} from './game-timing.constants';
+import type { LocaleCode } from '@/i18n/config';
+import {
   buildGameOverAnnouncements,
   getGameOverClosingText,
   type OutroTranslateFn,
@@ -17,13 +24,6 @@ export type GameOverPhase =
   | 'closing'
   | 'closing-gap'
   | 'done';
-
-const CHAR_MS = 42;
-const HOLD_AFTER_TYPE_MS = 900;
-const BUBBLE_FADE_MS = 380;
-const GAP_MS = 420;
-const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
-const DEFAULT_HOLD_DURATION_MS = 2000;
 
 type TimelineSegment =
   | { kind: 'hold'; duration: number }
@@ -51,6 +51,7 @@ function speechBlockMs(text: string): number {
 function buildTimelineSegments(
   outcome: GameFinishOutcomeDto,
   t: OutroTranslateFn,
+  locale: LocaleCode,
   holdDurationMs: number,
   skipInitialHold = false,
 ): TimelineSegment[] {
@@ -58,7 +59,7 @@ function buildTimelineSegments(
     ? []
     : [{ kind: 'hold', duration: holdDurationMs }];
 
-  for (const announcement of buildGameOverAnnouncements(outcome.players, t)) {
+  for (const announcement of buildGameOverAnnouncements(outcome.players, t, locale)) {
     segments.push({
       kind: 'announce',
       playerId: announcement.playerId,
@@ -161,6 +162,7 @@ export interface IUseGameOverProps {
   active: boolean;
   outcome: GameFinishOutcomeDto | null;
   outroT: OutroTranslateFn;
+  locale: LocaleCode;
   skipInitialHold?: boolean;
   holdDurationMs?: number;
 }
@@ -169,6 +171,7 @@ export function useGameOver({
   active,
   outcome,
   outroT,
+  locale,
   skipInitialHold = false,
   holdDurationMs = DEFAULT_HOLD_DURATION_MS,
 }: IUseGameOverProps) {
@@ -182,6 +185,7 @@ export function useGameOver({
     segmentsRef.current = buildTimelineSegments(
       outcome,
       outroT,
+      locale,
       holdDurationMs,
       skipInitialHold,
     );
@@ -220,6 +224,7 @@ export function useGameOver({
     sequenceActive,
     outcome,
     outroT,
+    locale,
     skipInitialHold,
     holdDurationMs,
   ]);

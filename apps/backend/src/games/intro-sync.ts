@@ -1,6 +1,7 @@
 /**
  * Shared intro timeline duration estimation for Word Soup and Word Building.
- * Keep timing constants in sync with apps/frontend/app/hooks/game/use-game-intro.ts
+ * Keep timing constants in sync with apps/frontend/app/hooks/game/game-timing.constants.ts
+ * (verified by intro-sync.constants.spec.ts).
  *
  * Clients unlock at `playStartedAt` (not when their local typewriter ends), so
  * English-default estimates here only need to be a stable shared target. Use a
