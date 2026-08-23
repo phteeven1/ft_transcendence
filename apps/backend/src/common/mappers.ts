@@ -9,6 +9,7 @@ import {
   Vocabulary as DbVocabulary,
 } from '@ft-transcendence/database';
 import type { Game } from '../games/games.service';
+import { GAME_LOBBY_CONFIG } from '../games/game-lobby.config';
 import type { Group } from '../groups/groups.service';
 import type { Player } from '../players/players.service';
 import type { User } from '../users/users.service';
@@ -79,6 +80,7 @@ export function toApiVocabulary(vocabulary: DbVocabulary): Vocabulary {
 }
 
 export function toApiGame(game: GameWithPlayers): Game {
+  const isPending = !game.isActive && !game.isFinished;
   return {
     id: game.id,
     name: game.name,
@@ -93,6 +95,12 @@ export function toApiGame(game: GameWithPlayers): Game {
       .map((gp) => gp.playerId),
     isActive: game.isActive,
     isFinished: game.isFinished,
+    maxPlayers: GAME_LOBBY_CONFIG.maxPlayers,
+    autoStartAt: isPending
+      ? new Date(
+          game.initiatedTime.getTime() + GAME_LOBBY_CONFIG.autoStartTimeoutMs,
+        ).toISOString()
+      : null,
   };
 }
 

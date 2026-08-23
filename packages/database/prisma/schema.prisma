@@ -140,6 +140,8 @@ model Game {
   gamePlayers     GamePlayer[]
   currentPlayers  Player[]     @relation("PlayerCurrentGame")
   crossword       Crossword?
+
+  @@index([isActive, isFinished, initiatedTime])
 }
 
 model GamePlayer {

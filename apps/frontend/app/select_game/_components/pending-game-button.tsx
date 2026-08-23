@@ -78,7 +78,11 @@ export default function PendingGameButton({ game, currentPlayerId, onClick, onFo
   }
 
   const elapsed = now > 0 ? formatElapsed(game.initiatedTime, now) : '0:00';
-  const bottomLabel = t('playerCount', { count: game.players.length, elapsed });
+  const bottomLabel = t('playerCount', {
+    count: game.players.length,
+    max: game.maxPlayers,
+    elapsed,
+  });
 
   const isDisabled = !isInitiator && alreadyJoined;
 

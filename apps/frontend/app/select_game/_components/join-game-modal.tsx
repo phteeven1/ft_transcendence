@@ -32,20 +32,17 @@ function getJoinDescription(
   game: Game,
   t: ReturnType<typeof useTranslations<'games.join'>>,
 ): string {
-  if ((game.waitingFor ?? 0) === 0) {
-    const initiatedTime = new Date(game.initiatedTime);
-    const expiresAt = new Date(initiatedTime.getTime() + 5 * 60 * 1000);
-    const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
-    const mins = Math.floor(secondsLeft / 60);
-    const secs = secondsLeft % 60;
-    return t('timingIn', { minutes: mins, seconds: secs });
-  }
+  if (!game.autoStartAt) return t('timingSoon');
 
-  const waitingFor = game.waitingFor ?? 0;
-  const playersStillNeeded = waitingFor + 1 - game.players.length;
-  if (playersStillNeeded <= 0) return t('timingSoon');
-  if (playersStillNeeded === 1) return t('timingOneMore');
-  return t('timingMorePlayers', { count: playersStillNeeded });
+  const secondsLeft = Math.max(
+    0,
+    Math.floor((new Date(game.autoStartAt).getTime() - Date.now()) / 1000),
+  );
+  if (secondsLeft === 0) return t('timingSoon');
+
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+  return t('timingIn', { minutes: mins, seconds: secs });
 }
 
 export default function JoinGameModal({ game, error, onCancel, onJoin }: Props) {

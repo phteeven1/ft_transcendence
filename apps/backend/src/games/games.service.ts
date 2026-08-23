@@ -1,6 +1,9 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
   forwardRef,
   Inject,
 } from '@nestjs/common';
@@ -18,6 +21,7 @@ import {
 import { GameGateway } from './game.gateway';
 import { WordSoupService } from './word_soup/word-soup.service';
 import { WordBuildingService } from './word_building/word-building.service';
+import { GAME_LOBBY_CONFIG } from './game-lobby.config';
 
 export type Game = {
   id: number;
@@ -29,6 +33,8 @@ export type Game = {
   players: number[];
   isActive: boolean;
   isFinished: boolean;
+  maxPlayers: number;
+  autoStartAt: string | null;
 };
 
 export type FinishGameResponse = {
@@ -37,7 +43,10 @@ export type FinishGameResponse = {
 };
 
 @Injectable()
-export class GamesService {
+export class GamesService implements OnModuleInit, OnModuleDestroy {
+  private sweepTimer: ReturnType<typeof setInterval> | null = null;
+  private sweeping = false;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly playersService: PlayersService,
@@ -47,6 +56,126 @@ export class GamesService {
     private readonly wordSoupService: WordSoupService,
     private readonly wordBuildingService: WordBuildingService,
   ) {}
+
+  onModuleInit(): void {
+    void this.runSweep();
+    this.sweepTimer = setInterval(() => {
+      void this.runSweep();
+    }, GAME_LOBBY_CONFIG.sweepIntervalMs);
+  }
+
+  onModuleDestroy(): void {
+    if (this.sweepTimer) clearInterval(this.sweepTimer);
+  }
+
+  /**
+   * Authoritative background lifecycle sweep — the only place a WAITING or
+   * STARTED game gets resolved when no client is around to trigger it (a
+   * closed browser, an expired session, or a timed-out lobby). Runs on its
+   * own timer rather than any browser timer so it works with zero connected
+   * clients. Re-entrancy guarded so a slow tick can't overlap the next one.
+   */
+  private async runSweep(): Promise<void> {
+    if (this.sweeping) return;
+    this.sweeping = true;
+    try {
+      await this.reapAbandonedPlayers();
+      await this.sweepPendingGames();
+    } catch (error) {
+      console.error('GamesService background sweep failed', error);
+    } finally {
+      this.sweeping = false;
+    }
+  }
+
+  /**
+   * Finds players whose session has genuinely expired (not merely a
+   * disconnected socket — reconnects with a still-valid session are
+   * unaffected) and routes them through the exact same `leave()` used for an
+   * explicit Leave click. This is the single mechanism behind both waiting-game
+   * owner transfer/cancellation and started-game abandonment cleanup — no
+   * separate logic is needed for either, `leave()` already handles both.
+   */
+  private async reapAbandonedPlayers(): Promise<void> {
+    const reaped = await this.playersService.reapExpiredSessions();
+    for (const { playerId } of reaped) {
+      const memberships = await this.prisma.gamePlayer.findMany({
+        where: { playerId, leftAt: null },
+        select: { gameId: true },
+      });
+      for (const { gameId } of memberships) {
+        try {
+          await this.leave(gameId, playerId);
+        } catch (error) {
+          console.error(
+            `Sweep: leave() failed for expired player ${playerId} in game ${gameId}`,
+            error,
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Resolves WAITING games that have outlived the auto-start timeout: starts
+   * them if they still meet the minimum-player requirement, otherwise
+   * cancels them once they've also outlived the (longer, separate)
+   * cancellation timeout. A game that fails the start requirement but hasn't
+   * yet hit the cancellation cutoff is left waiting.
+   */
+  private async sweepPendingGames(): Promise<void> {
+    const now = Date.now();
+    const startCutoff = new Date(now - GAME_LOBBY_CONFIG.autoStartTimeoutMs);
+    const cancelCutoff = new Date(
+      now - GAME_LOBBY_CONFIG.cancellationTimeoutMs,
+    );
+
+    const due = await this.prisma.game.findMany({
+      where: {
+        isActive: false,
+        isFinished: false,
+        initiatedTime: { lte: startCutoff },
+      },
+      include: { gamePlayers: true },
+    });
+
+    for (const g of due) {
+      if (g.gamePlayers.length >= GAME_LOBBY_CONFIG.minPlayersToStart) {
+        const game = await this.findById(g.id);
+        if (game && !game.isActive && !game.isFinished) {
+          await this.startGame(game);
+        }
+      } else if (g.initiatedTime <= cancelCutoff) {
+        await this.cancelWaitingGame(g.id);
+      }
+    }
+  }
+
+  /**
+   * Hard-deletes a WAITING game that never reached start conditions. Mirrors
+   * the existing convention elsewhere in this file (startGame()'s empty-lobby
+   * sweep, leave()'s empty-game delete) of not persisting a separate
+   * cancelled/expired status for a game that never actually started.
+   * Conditional on the where clause so it safely no-ops if the game was
+   * already started or removed by another path in the meantime.
+   */
+  private async cancelWaitingGame(gameId: number): Promise<void> {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: { gamePlayers: true },
+    });
+    if (!game || game.isActive || game.isFinished) return;
+
+    const { count } = await this.prisma.game.deleteMany({
+      where: { id: gameId, isActive: false, isFinished: false },
+    });
+    if (count !== 1) return;
+
+    for (const gp of game.gamePlayers) {
+      await this.playersService.clearCurrentGame(gp.playerId);
+    }
+    await this.emitLobbyUpdate(game.inGroupId);
+  }
 
   /**
    * Creates a new game, adds the initiating player to it, and refreshes the lobby view.
@@ -77,25 +206,82 @@ export class GamesService {
   }
 
   /**
-   * Adds a player to a pending game when the game is still joinable.
+   * Adds a player to a pending game when the game is still joinable and not
+   * already at the configured player cap. Runs the capacity check and the
+   * insert inside one transaction, row-locking the Game so two concurrent
+   * joins for the same game can never both squeeze past the limit (Postgres'
+   * default Read Committed isolation would otherwise let two transactions
+   * both read the same pre-join count). If the join fills the last seat, the
+   * game is flipped to active in the same locked transaction so the max-
+   * players-reached auto-start can never be missed or double-fired either.
    *
    * @param gameId Game to join.
    * @param playerId Player joining the game.
    * @returns The updated game, or `undefined` if joining is not allowed.
+   * @throws ConflictException if the game is already at its player cap.
    */
   async join(gameId: number, playerId: number): Promise<Game | undefined> {
-    const game = await this.findById(gameId);
-    if (!game || game.isActive) return undefined;
+    type JoinOutcome =
+      | { kind: 'unjoinable' }
+      | { kind: 'full' }
+      | { kind: 'already-in' }
+      | { kind: 'joined'; inGroupId: number; autoStarted: boolean };
 
-    if (!game.players.includes(playerId)) {
-      await this.prisma.gamePlayer.create({
-        data: { gameId, playerId },
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          id: number;
+          inGroupId: number;
+          isActive: boolean;
+          isFinished: boolean;
+        }[]
+      >`SELECT "id", "inGroupId", "isActive", "isFinished" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+      const game = rows[0];
+      if (!game || game.isActive || game.isFinished) {
+        return { kind: 'unjoinable' } satisfies JoinOutcome;
+      }
+
+      const existing = await tx.gamePlayer.findUnique({
+        where: { gameId_playerId: { gameId, playerId } },
       });
-      await this.playersService.setCurrentGame(playerId, gameId);
+      if (existing) return { kind: 'already-in' } satisfies JoinOutcome;
+
+      const count = await tx.gamePlayer.count({ where: { gameId } });
+      if (count >= GAME_LOBBY_CONFIG.maxPlayers) {
+        return { kind: 'full' } satisfies JoinOutcome;
+      }
+
+      await tx.gamePlayer.create({ data: { gameId, playerId } });
+
+      const autoStarted = count + 1 >= GAME_LOBBY_CONFIG.maxPlayers;
+      if (autoStarted) {
+        await tx.game.update({
+          where: { id: gameId },
+          data: { isActive: true, startedTime: new Date() },
+        });
+      }
+      return {
+        kind: 'joined',
+        inGroupId: game.inGroupId,
+        autoStarted,
+      } satisfies JoinOutcome;
+    });
+
+    if (outcome.kind === 'unjoinable') return undefined;
+    if (outcome.kind === 'full') {
+      throw new ConflictException('This game is already full');
     }
-    const result = await this.findById(gameId);
-    if (result) await this.emitLobbyUpdate(game.inGroup);
-    return result;
+    if (outcome.kind === 'already-in') return this.findById(gameId);
+
+    await this.playersService.setCurrentGame(playerId, gameId);
+
+    if (outcome.autoStarted) {
+      const started = await this.findById(gameId);
+      if (started) await this.applyStartSideEffects(started);
+    } else {
+      await this.emitLobbyUpdate(outcome.inGroupId);
+    }
+    return this.findById(gameId);
   }
 
   /**
@@ -299,17 +485,37 @@ export class GamesService {
   }
 
   /**
-   * Promotes a pending game to active status, updates related player state,
-   * and removes empty stale games that were left behind in the same cleanup pass.
+   * Promotes a pending game to active status and runs its start side
+   * effects. Idempotent: the flip is a conditional update that only
+   * succeeds if the game was still pending, so a game already started (by a
+   * concurrent max-players auto-start, a concurrent manual force-start, or a
+   * concurrent sweep tick) safely does nothing on a second call — no
+   * duplicate `game:started` emit, no duplicate state initialization.
    *
    * @param game Game to start.
    */
   private async startGame(game: Game): Promise<void> {
-    await this.prisma.game.update({
-      where: { id: game.id },
+    const claimed = await this.prisma.game.updateMany({
+      where: { id: game.id, isActive: false, isFinished: false },
       data: { isActive: true, startedTime: new Date() },
     });
+    if (claimed.count !== 1) return;
 
+    await this.applyStartSideEffects(game);
+  }
+
+  /**
+   * Everything that must happen once a game has been flipped to active:
+   * stealing the starting players out of any other pending lobbies they were
+   * still sitting in, resetting currentGameId, sweeping up any pending games
+   * left empty by that, and emitting the start/lobby events. Split out from
+   * startGame() so join()'s max-players auto-start (which flips isActive
+   * itself, inside its own row-locked transaction) can reuse this without
+   * re-running — or racing — the idempotent flip above.
+   *
+   * @param game Game that has already been flipped to active.
+   */
+  private async applyStartSideEffects(game: Game): Promise<void> {
     for (const pId of game.players) {
       await this.playersService.clearCurrentGame(pId);
 
