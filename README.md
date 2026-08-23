@@ -256,9 +256,9 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ### `tsternbe` (Tobias Sternberg)
 
-- Features:
-- Modules:
-- Challenges overcome:
+- Features: overall product design. User management system. Basic frontend structure. Setting up website navigation and frontend directory structure. Admins/Users/players. Invite, Game lobby, mini games for game lobby. Language and sign in buttons.
+- Modules: Organization system, Frontend/Backend (partly), setup for games (websockets, multiplayer, remote players, session tokens)
+- Challenges overcome: learning to work with entirely new technical stack. Communicating and handing over. Keeping overall vision and still contributing specific code.
 
 ### `kmooney` (Kevin Mooney)
 
