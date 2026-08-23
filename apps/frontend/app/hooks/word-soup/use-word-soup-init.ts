@@ -3,16 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { gamesApi, wordSoupApi } from '@/lib/api';
+import { gamesApi, playersApi, wordSoupApi } from '@/lib/api';
 import type { GameRosterPlayerDto } from '@/lib/api/games';
 import type { WordSoupCourtCell, WordSoupFoundWord } from '@/lib/api/games/word-soup/types';
 import type { Game } from '@/app/types';
 import { useAuth } from '@/app/context/auth-context';
-import {
-  getPlayerSession,
-  isSessionExpired,
-} from '@/lib/player-session';
-import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import { returnToLobbyOnce } from '@/app/hooks/game/game-leave.helpers';
 import { COURT_COLS, COURT_ROWS } from '@/app/word_soup/_lib/word-soup-constants';
 
 function createEmptyCourt(): WordSoupCourtCell[][] {
@@ -40,11 +36,6 @@ function isEndedGameError(error: unknown): boolean {
     message.includes('game not found') ||
     /game \d+ not found/.test(message)
   );
-}
-
-function hasActivePlayerSession(): boolean {
-  const stored = getPlayerSession();
-  return Boolean(stored && !isSessionExpired(stored.expiresAt));
 }
 
 export function useWordSoupInit(gameId: number, playerId: number) {
@@ -81,15 +72,13 @@ export function useWordSoupInit(gameId: number, playerId: number) {
 
   const hasLeftForLobbyRef = useRef(false);
 
-  const leaveFinishedGameForLobby = useCallback(async () => {
-    if (hasLeftForLobbyRef.current) return;
-    hasLeftForLobbyRef.current = true;
-    if (hasActivePlayerSession()) {
-      await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
-      router.replace('/select_game');
-      return;
-    }
-    router.replace('/session_over');
+  const leaveFinishedGameForLobby = useCallback(() => {
+    returnToLobbyOnce(hasLeftForLobbyRef, {
+      router,
+      loginAsPlayer,
+      setSessionExpiresAt,
+      method: 'replace',
+    });
   }, [loginAsPlayer, router, setSessionExpiresAt]);
 
   useEffect(() => {
@@ -102,14 +91,20 @@ export function useWordSoupInit(gameId: number, playerId: number) {
     let isMounted = true;
 
     const load = async () => {
-      const loadedGame = await gamesApi.getById({ gameId }).catch(() => null);
+      const [loadedGame, player] = await Promise.all([
+        gamesApi.getById({ gameId }).catch(() => null),
+        playersApi.getById(playerId).catch(() => null),
+      ]);
+
       if (!loadedGame) {
         // Game gone (e.g. cleaned up after finish) — return to lobby if session is live.
         await leaveFinishedGameForLobby();
         return;
       }
 
-      if (loadedGame.isFinished) {
+      const hasLeftThisGame = player != null && player.currentGameId !== gameId;
+
+      if (loadedGame.isFinished || hasLeftThisGame) {
         await leaveFinishedGameForLobby();
         return;
       }

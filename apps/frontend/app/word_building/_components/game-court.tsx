@@ -4,7 +4,8 @@
 // Board dimensions are determined by the court prop (derived from the backend
 // API response). See word-building.config.ts for the authoritative config.
 
-import { CourtCell, CourtTile } from './court-tile';
+import type { CourtCell } from '@/lib/api/games/word-building.types';
+import { CourtTile } from './court-tile';
 
 type GameCourtProps = {
   court:           CourtCell[][];

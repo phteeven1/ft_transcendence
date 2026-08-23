@@ -3,13 +3,7 @@
     "cancel": "Cancel",
     "ok": "OK",
     "confirm": "Confirm",
-    "save": "Save",
     "delete": "Delete",
-    "loading": "Loading…",
-    "back": "Back",
-    "close": "Close",
-    "error": "Error",
-    "success": "Success",
     "submit": "Submit",
     "rename": "Rename",
     "edit": "Edit",
@@ -20,10 +14,8 @@
     "promote": "Promote",
     "resign": "Resign",
     "expel": "Expel",
-    "stay": "Stay",
     "skip": "Skip",
     "next": "Next",
-    "sending": "Sending…",
     "sendingEllipsis": "Sending...",
     "starting": "Starting…",
     "leaving": "Leaving…",
@@ -33,14 +25,9 @@
     "admin": "Admin",
     "member": "Member",
     "you": "you",
-    "active": "Active",
     "unknownError": "Unknown error",
     "somethingWentWrong": "Something went wrong. Please try again.",
     "playerNumber": "Player #{id}",
-    "and": "and",
-    "word": "Word",
-    "meaning": "Meaning",
-    "minutes": "Minutes",
     "email": "Email"
   },
   "nav": {
@@ -322,6 +309,7 @@
         "emptyStats": "Your stats will appear here after you play.",
         "emptyRecent": "No finished games yet. Play a round to see your scores!",
         "recentGames": "Recent games",
+        "abandoned": "Abandoned",
         "winner": "Win",
         "xpValue": "{xp} XP",
         "scoreValue": "{score} pts",
@@ -342,7 +330,7 @@
         "unlockAt": "Unlock at {xp} XP",
         "lockedTier": "{label} locked — needs {xp} XP",
         "unlockToastTitle": "New rank unlocked!",
-        "unlockToastBody": "You reached {label}. Your look updates automatically.",
+        "unlockToastBody": "You reached {label}!",
         "unlockToastDismiss": "Nice!",
         "modeLabels": {
           "solo": "Solo",
@@ -372,7 +360,7 @@
       }
     },
     "initiate": {
-      "message": "Do you want to start a new session? Others in your group can join before it begins."
+      "message": "Do you want to create a new game? Others in your group can join before it begins."
     },
     "join": {
       "title": "Join {gameName}?",
@@ -383,7 +371,7 @@
       "timingMorePlayers": "when {count} more players join"
     },
     "forceStart": {
-      "message": "Do you want to interrupt waiting and start {gameName} with {count, plural, one {# player} other {# players}}?"
+      "message": "Do you want to start {gameName} with {count, plural, one {# player} other {# players}}?"
     },
     "pending": {
       "clickToStart": "Click to Start",
@@ -408,7 +396,9 @@
       "stayInGame": "Stay in game",
       "backToLobby": "Back to lobby",
       "message": "You will leave this game. The others will keep playing, and your play session will stay active.",
-      "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active."
+      "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active.",
+      "noXpWarningLeave": "You will not earn XP for this game. Others who finish can still earn XP.",
+      "noXpWarningEndsGame": "No XP will be awarded for this game."
     },
     "wordBuilding": {
       "title": "Word Building",
@@ -416,10 +406,8 @@
       "scoreboardLabel": "Players",
       "leftGame": "Left the game",
       "generating": "Generating crossword…",
-      "instructions": "Click a cell to auto-select direction · Type letters to fill · Green = correct · Blue = empty · Red = wrong · Space/Tab to toggle direction",
       "directionAcross": "→ Across",
       "directionDown": "↓ Down",
-      "scores": "Scores",
       "noPointsYet": "No points yet",
       "across": "Across",
       "down": "Down",
@@ -427,7 +415,9 @@
       "intro": {
         "welcome": "Hello {name}! Ready to build some words?",
         "briefing": "Fill in the crossword grid — click a cell and type, or drag letter tiles from the rack below.",
-        "letsGo": "Let\u2019s go!"
+        "letsGo": "OK, let's go!",
+        "startingIn": "Starting in",
+        "go": "GO!"
       },
       "rules": {
         "show": "Show instructions",
@@ -444,15 +434,19 @@
       },
       "outro": {
         "gameOverTitle": "Puzzle results",
-        "puzzleComplete": "Puzzle complete!",
         "finalScores": "Final scores",
+        "scoresComingUp": "Scores coming up…",
         "pointsXp": "{score} pts · +{xp} XP",
         "winner": "Winner",
-        "returnToLobby": "Return to lobby"
-      },
-      "finalLetter": {
-        "announcement": "{name} placed the final letter! Congrats!",
-        "subtext": "Puzzle complete — final scores coming up…"
+        "returnToLobby": "Return to lobby",
+        "almostDone": "Almost done…",
+        "closingSolo": "Well done {name}, great solo game! See you again soon!",
+        "closingMulti": "Well done everyone, great game! See you again soon!",
+        "placeAnnouncement": "In {placeLabel} place, {name}, with {score} points and +{xp} XP!",
+        "firstPlaceSolo": "In 1st place, {name}, with {score} points and +{xp} XP!",
+        "winnersPrefix": "And finally, the winners! ",
+        "winnerPrefix": "And finally, the winner, ",
+        "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
       }
     },
     "wordSoup": {
@@ -501,12 +495,12 @@
         "winner": "Winner",
         "returnToLobby": "Return to lobby",
         "almostDone": "Almost done…",
-        "closingSolo": "Well done {name}, great solo game! See you again soon!",
+        "closingSolo": "Well done {name}, great game! See you again soon!",
         "closingMulti": "Well done everyone, great game! See you again soon!",
-        "placeAnnouncement": "In {place} place, {name}, with {score} points and +{xp} XP!",
-        "firstPlaceSolo": "In 1st place, {name}, with {score} points and +{xp} XP!",
-        "winnersPrefix": "And finally, the winners! ",
-        "winnerPrefix": "And finally, the winner, ",
+        "placeAnnouncement": "In {placeLabel} place, {name}, with {score} points and +{xp} XP!",
+        "firstPlaceSolo": "Good job {name}, you scored {score} points and earned +{xp} XP!",
+        "winnersPrefix": "And the winners! ",
+        "winnerPrefix": "And the winner, ",
         "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
       },
       "events": {

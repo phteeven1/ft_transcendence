@@ -225,7 +225,7 @@ export class PlayersService implements OnModuleInit, OnModuleDestroy {
     const row = await this.prisma.gamePlayer.findUnique({
       where: { gameId_playerId: { gameId, playerId } },
     });
-    if (!row) {
+    if (!row || row.leftAt != null) {
       throw new ForbiddenException('You are not a player in this game');
     }
   }

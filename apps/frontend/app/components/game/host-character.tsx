@@ -70,7 +70,7 @@ export default function HostCharacter({
     <svg
       viewBox="0 0 160 160"
       className={[
-        animated ? 'word-soup-intro-host' : '',
+        animated ? 'game-overlay-host' : '',
         sizeClass,
         className,
       ]

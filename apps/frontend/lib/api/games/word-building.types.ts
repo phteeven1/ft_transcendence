@@ -29,6 +29,9 @@ export type IInitCourtResponse = {
   };
   /** playerId → name, for participants who had already left before this init/rehydrate call. */
   leftPlayers: Record<number, string>;
+  hasPlayerSeenIntro: boolean;
+  introStartedAt: number;
+  playStartedAt: number;
 };
 
 export type IGameStatePayload = {
@@ -44,15 +47,6 @@ export type IPlaceLetterDto = {
   row:      number;
   col:      number;
   letter:   string;
-};
-
-/** Broadcast once, to every client, on the placement that completes the puzzle. */
-export type IFinalLetterPlacedPayload = {
-  playerId:   number;
-  playerName: string;
-  letter:     string;
-  row:        number;
-  col:        number;
 };
 
 // ─── Cell locking ─────────────────────────────────────────────────────────────

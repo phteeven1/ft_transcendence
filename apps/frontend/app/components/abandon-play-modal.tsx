@@ -40,6 +40,12 @@ export default function AbandonPlayModal({
       : endsGame
         ? tLobby('lastPlayerMessage')
         : tLobby('message');
+  const noXpWarning =
+    kind === 'lobby'
+      ? endsGame
+        ? tLobby('noXpWarningEndsGame')
+        : tLobby('noXpWarningLeave')
+      : null;
 
   return (
     <Dialog
@@ -53,6 +59,11 @@ export default function AbandonPlayModal({
       confirmDisabled={isLeaving}
     >
       <p className="leading-relaxed">{message}</p>
+      {noXpWarning ? (
+        <p className="mt-3 font-semibold leading-relaxed text-destructive">
+          {noXpWarning}
+        </p>
+      ) : null}
     </Dialog>
   );
 }

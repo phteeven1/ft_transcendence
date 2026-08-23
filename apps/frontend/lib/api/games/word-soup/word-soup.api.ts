@@ -11,10 +11,4 @@ export const wordSoupApi = {
       },
     );
   },
-
-  markIntroShown(input: GameIdInput) {
-    return apiRequest(`/games/${input.gameId}/markWordSoupIntroShown`, {
-      method: 'POST',
-    });
-  },
 };

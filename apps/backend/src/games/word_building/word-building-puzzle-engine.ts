@@ -1,7 +1,22 @@
-import {
-  IWordBuildingPuzzleEngine,
-  IEngineResult,
-} from './word-building-engine.interface';
+export interface IEngineResult {
+  rows: number;
+  cols: number;
+  solution: (string | null)[][];
+  placements: Array<{
+    word: string;
+    clue: string;
+    row: number;
+    col: number;
+    direction: 'across' | 'down';
+    number: number;
+  }>;
+}
+
+export interface IWordBuildingPuzzleEngine {
+  generate(
+    entries: Array<{ word: string; clue: string }>,
+  ): IEngineResult & { unplacedWords: string[] };
+}
 
 /**
  * Represents a single cell in the crossword grid.

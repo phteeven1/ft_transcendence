@@ -68,6 +68,7 @@ export type RecentGameEntryDto = {
   endedAt: string;
   isWinner: boolean;
   xpAwarded: number;
+  abandoned: boolean;
 };
 
 export type PlayerGroupStatsDto = {

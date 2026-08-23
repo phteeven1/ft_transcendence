@@ -268,7 +268,10 @@ export class ProgressionStatsService {
             id: true,
             name: true,
             endedAt: true,
-            gamePlayers: { select: { playerId: true, score: true } },
+            progressionAppliedAt: true,
+            gamePlayers: {
+              select: { playerId: true, score: true, leftAt: true },
+            },
           },
         },
       },
@@ -277,13 +280,23 @@ export class ProgressionStatsService {
     });
 
     return participations.map((participation) => {
-      const scores = participation.game.gamePlayers.map((gp) => ({
+      const activePlayers = participation.game.gamePlayers.filter(
+        (gp) => gp.leftAt == null,
+      );
+      const scores = activePlayers.map((gp) => ({
         playerId: gp.playerId,
         score: gp.score,
       }));
-      const participantCount = participation.game.gamePlayers.length;
+      const participantCount = activePlayers.length;
       const winnerIds = resolveWinnerIds(scores);
-      const isWinner = winnerIds.has(playerId);
+      const leftEarly = participation.leftAt != null;
+      const abandoned =
+        leftEarly || participation.game.progressionAppliedAt == null;
+      const isWinner = !abandoned && winnerIds.has(playerId);
+      const xpAwarded =
+        abandoned || leftEarly
+          ? 0
+          : computeXpAwarded(participantCount, isWinner);
 
       return {
         gameId: participation.game.id,
@@ -291,7 +304,8 @@ export class ProgressionStatsService {
         score: participation.score,
         endedAt: participation.game.endedAt!.toISOString(),
         isWinner,
-        xpAwarded: computeXpAwarded(participantCount, isWinner),
+        xpAwarded,
+        abandoned,
       };
     });
   }

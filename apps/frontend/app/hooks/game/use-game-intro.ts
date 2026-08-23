@@ -2,7 +2,14 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 
-import { wordSoupApi } from '@/lib/api';
+import {
+  CHAR_MS,
+  COUNTDOWN_STEP_MS,
+  GAP_DURATION_MS,
+  GO_HOLD_MS,
+  HOLD_AFTER_TYPE_MS,
+  WORD_CHAR_MS,
+} from './game-timing.constants';
 
 export type IntroPhase =
   | 'idle'
@@ -21,48 +28,33 @@ export type IntroPhase =
 
 export type IntroCountdownValue = 3 | 2 | 1 | 'go' | null;
 
-export type IntroTexts = {
+export interface IIntroTexts {
   welcome: string;
   briefing: string;
-  wordsIntro: string;
+  wordsIntro?: string;
   letsGo: string;
-};
+}
 
-type UseWordSoupIntroProps = {
+export interface IUseGameIntroProps {
   gameId: number;
-  playerId: number;
   courtReady: boolean;
-  solutionWords: string[];
+  solutionWords?: string[];
   hasPlayerSeenIntro: boolean;
   /** Shared server timeline start (epoch ms) so all clients stay in sync. */
   introStartedAt: number | null;
-  introTexts: IntroTexts;
+  /**
+   * Shared server play-clock start (epoch ms). Interaction unlocks at this
+   * instant so locale / name length drift cannot desync multiplayer starts.
+   */
+  playStartedAt: number | null;
+  introTexts: IIntroTexts;
   skipIntro?: boolean;
   /** When true, do not call markIntroShown (e.g. game ended before intro finished). */
   skipMarkIntroShown?: boolean;
-};
+  markIntroShown?: (gameId: number) => Promise<unknown>;
+}
 
-const CHAR_MS = 42;
-const WORD_CHAR_MS = 70;
-const HOLD_AFTER_TYPE_MS = 900;
-const BUBBLE_FADE_MS = 380;
-const GAP_MS = 420;
-const COUNTDOWN_STEP_MS = 750;
-const GO_HOLD_MS = 900;
-
-const WELCOME_TEXT = 'Welcome to Word Soup!';
-const BRIEFING_TEXT = 'In this game, you have to find words in the grid.';
-const WORDS_INTRO_TEXT = 'Here are the words...';
-const LETS_GO_TEXT = "OK, let's go!";
-
-const DEFAULT_INTRO_TEXTS: IntroTexts = {
-  welcome: WELCOME_TEXT,
-  briefing: BRIEFING_TEXT,
-  wordsIntro: WORDS_INTRO_TEXT,
-  letsGo: LETS_GO_TEXT,
-};
-
-const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
+const EMPTY_SOLUTION_WORDS: string[] = [];
 
 type IntroFrame = {
   phase: IntroPhase;
@@ -90,7 +82,7 @@ function speechBlockMs(text: string, charMs: number): number {
 function getIntroFrameAt(
   elapsedMs: number,
   solutionWords: string[],
-  introTexts: IntroTexts = DEFAULT_INTRO_TEXTS,
+  introTexts: IIntroTexts,
 ): IntroFrame {
   if (elapsedMs < 0) {
     return {
@@ -149,13 +141,23 @@ function getIntroFrameAt(
   hit = runSpeech('briefing', 'briefing-gap', introTexts.briefing, CHAR_MS, 0);
   if (hit) return hit;
 
-  hit = runSpeech('words-intro', 'words-intro-gap', introTexts.wordsIntro, CHAR_MS, 0);
-  if (hit) return hit;
+  if (solutionWords.length > 0) {
+    if (introTexts.wordsIntro) {
+      hit = runSpeech(
+        'words-intro',
+        'words-intro-gap',
+        introTexts.wordsIntro,
+        CHAR_MS,
+        0,
+      );
+      if (hit) return hit;
+    }
 
-  for (let index = 0; index < solutionWords.length; index += 1) {
-    const word = solutionWords[index] ?? '';
-    hit = runSpeech('word', 'word-gap', word, WORD_CHAR_MS, index);
-    if (hit) return hit;
+    for (let index = 0; index < solutionWords.length; index += 1) {
+      const word = solutionWords[index] ?? '';
+      hit = runSpeech('word', 'word-gap', word, WORD_CHAR_MS, index);
+      if (hit) return hit;
+    }
   }
 
   hit = runSpeech(
@@ -210,61 +212,123 @@ const IDLE_FRAME: IntroFrame = {
   done: false,
 };
 
-export function useWordSoupIntro({
+function holdingGoFrame(wordRevealIndex: number): IntroFrame {
+  return {
+    phase: 'countdown',
+    bubbleText: '',
+    typedLength: 0,
+    bubbleVisible: false,
+    wordRevealIndex,
+    countdownValue: 'go',
+    done: false,
+  };
+}
+
+function doneFrame(wordRevealIndex: number): IntroFrame {
+  return {
+    phase: 'done',
+    bubbleText: '',
+    typedLength: 0,
+    bubbleVisible: false,
+    wordRevealIndex,
+    countdownValue: null,
+    done: true,
+  };
+}
+
+export function useGameIntro({
   gameId,
-  playerId,
   courtReady,
-  solutionWords,
+  solutionWords = EMPTY_SOLUTION_WORDS,
   hasPlayerSeenIntro,
   introStartedAt,
+  playStartedAt,
   introTexts,
   skipIntro = false,
   skipMarkIntroShown = false,
-}: UseWordSoupIntroProps) {
+  markIntroShown,
+}: IUseGameIntroProps) {
   const [frame, setFrame] = useState<IntroFrame>(IDLE_FRAME);
-  const [timelineReady, setTimelineReady] = useState(false);
+  const [playClockReady, setPlayClockReady] = useState(false);
   const [activeGameId, setActiveGameId] = useState(gameId);
 
   const markedIntroRef = useRef(false);
+  const markedForGameIdRef = useRef<number | null>(null);
   const wordsRef = useRef(solutionWords);
+  const introTextsRef = useRef(introTexts);
+  const markIntroShownRef = useRef(markIntroShown);
+  const skipMarkIntroShownRef = useRef(skipMarkIntroShown);
 
   const shouldSkipIntro = hasPlayerSeenIntro || skipIntro;
 
   if (gameId !== activeGameId) {
     setActiveGameId(gameId);
     setFrame(IDLE_FRAME);
-    setTimelineReady(false);
+    setPlayClockReady(false);
   }
 
   useLayoutEffect(() => {
+    markedIntroRef.current = false;
+    markedForGameIdRef.current = null;
+  }, [gameId]);
+
+  useLayoutEffect(() => {
     wordsRef.current = solutionWords;
+    introTextsRef.current = introTexts;
+    markIntroShownRef.current = markIntroShown;
+    skipMarkIntroShownRef.current = skipMarkIntroShown;
   });
 
   useLayoutEffect(() => {
     if (!courtReady || shouldSkipIntro) return;
-    if (solutionWords.length === 0) return;
-    if (introStartedAt == null) return;
+    if (introStartedAt == null || playStartedAt == null) return;
 
-    markedIntroRef.current = false;
+    if (markedForGameIdRef.current !== gameId) {
+      markedIntroRef.current = false;
+    }
 
     let rafId = 0;
     let cancelled = false;
 
+    const markSeenIfNeeded = () => {
+      const alreadyMarkedForGame =
+        markedIntroRef.current && markedForGameIdRef.current === gameId;
+      if (
+        alreadyMarkedForGame ||
+        skipMarkIntroShownRef.current ||
+        !markIntroShownRef.current
+      ) {
+        return;
+      }
+      markedIntroRef.current = true;
+      markedForGameIdRef.current = gameId;
+      void markIntroShownRef.current(gameId).catch(() => {
+        /* intro already finished locally */
+      });
+    };
+
     const applyElapsed = () => {
       if (cancelled) return;
-      const elapsed = Date.now() - introStartedAt;
-      const next = getIntroFrameAt(elapsed, wordsRef.current, introTexts);
-      setFrame(next);
+      const now = Date.now();
+      const words = wordsRef.current;
+      const lastWordIndex = Math.max(0, words.length - 1);
 
-      if (next.done) {
-        setTimelineReady(true);
-        if (!markedIntroRef.current && !skipMarkIntroShown) {
-          markedIntroRef.current = true;
-          void wordSoupApi.markIntroShown({ gameId }).catch(() => {
-            /* intro already finished locally */
-          });
-        }
+      if (now >= playStartedAt) {
+        setFrame(doneFrame(lastWordIndex));
+        setPlayClockReady(true);
+        markSeenIfNeeded();
         return;
+      }
+
+      const elapsed = now - introStartedAt;
+      const next = getIntroFrameAt(elapsed, words, introTextsRef.current);
+
+      // Local typewriter finished early (shorter locale / name): hold GO until
+      // the shared playStartedAt so every client unlocks together.
+      if (next.done) {
+        setFrame(holdingGoFrame(lastWordIndex));
+      } else {
+        setFrame(next);
       }
 
       rafId = window.requestAnimationFrame(applyElapsed);
@@ -285,26 +349,12 @@ export function useWordSoupIntro({
       window.cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [
-    courtReady,
-    gameId,
-    playerId,
-    solutionWords,
-    introStartedAt,
-    introTexts,
-    shouldSkipIntro,
-    skipMarkIntroShown,
-  ]);
+  }, [courtReady, gameId, introStartedAt, playStartedAt, shouldSkipIntro]);
 
-  const gameReady = shouldSkipIntro ? courtReady : timelineReady;
+  const gameReady = shouldSkipIntro ? courtReady : playClockReady;
   const displayFrame =
     shouldSkipIntro && courtReady
-      ? {
-          ...IDLE_FRAME,
-          phase: 'done' as const,
-          done: true,
-          wordRevealIndex: Math.max(0, solutionWords.length - 1),
-        }
+      ? doneFrame(Math.max(0, solutionWords.length - 1))
       : frame;
 
   const showIntro =

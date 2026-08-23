@@ -84,8 +84,18 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: null,
       gamePlayers: [
-        { playerId: 10, score: 40, player: { id: 10, name: 'Player A' } },
-        { playerId: 20, score: 60, player: { id: 20, name: 'Player B' } },
+        {
+          playerId: 10,
+          score: 40,
+          leftAt: null,
+          player: { id: 10, name: 'Player A' },
+        },
+        {
+          playerId: 20,
+          score: 60,
+          leftAt: null,
+          player: { id: 20, name: 'Player B' },
+        },
       ],
     });
     playerFindUnique
@@ -163,7 +173,12 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: null,
       gamePlayers: [
-        { playerId: 10, score: 50, player: { id: 10, name: 'Solo Player' } },
+        {
+          playerId: 10,
+          score: 50,
+          leftAt: null,
+          player: { id: 10, name: 'Solo Player' },
+        },
       ],
     });
     playerFindUnique.mockResolvedValue({
@@ -201,7 +216,12 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: new Date(),
       gamePlayers: [
-        { playerId: 10, score: 10, player: { id: 10, name: 'Player A' } },
+        {
+          playerId: 10,
+          score: 10,
+          leftAt: null,
+          player: { id: 10, name: 'Player A' },
+        },
       ],
     });
 
@@ -235,8 +255,18 @@ describe('ProgressionService', () => {
       isFinished: true,
       progressionAppliedAt: null,
       gamePlayers: [
-        { playerId: 10, score: 4, player: { id: 10, name: 'Player A' } },
-        { playerId: 11, score: 7, player: { id: 11, name: 'Player B' } },
+        {
+          playerId: 10,
+          score: 4,
+          leftAt: null,
+          player: { id: 10, name: 'Player A' },
+        },
+        {
+          playerId: 11,
+          score: 7,
+          leftAt: null,
+          player: { id: 11, name: 'Player B' },
+        },
       ],
     });
 
@@ -250,6 +280,7 @@ describe('ProgressionService', () => {
         xpAwarded: 0,
         newlyUnlockedTier: null,
         isWinner: false,
+        leftEarly: false,
       },
       {
         playerId: 11,
@@ -258,9 +289,66 @@ describe('ProgressionService', () => {
         xpAwarded: 0,
         newlyUnlockedTier: null,
         isWinner: true,
+        leftEarly: false,
       },
     ]);
     expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('excludes early leavers from winners and XP when reading finish outcome', async () => {
+    gameFindUnique.mockResolvedValue({
+      id: 1,
+      isFinished: true,
+      progressionAppliedAt: new Date(),
+      gamePlayers: [
+        {
+          playerId: 10,
+          score: 90,
+          leftAt: new Date(),
+          player: { id: 10, name: 'Leaver' },
+        },
+        {
+          playerId: 11,
+          score: 40,
+          leftAt: null,
+          player: { id: 11, name: 'Winner' },
+        },
+        {
+          playerId: 12,
+          score: 10,
+          leftAt: null,
+          player: { id: 12, name: 'Runner-up' },
+        },
+      ],
+    });
+
+    const outcome = await service.getFinishOutcome(1);
+
+    expect(outcome?.players).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          playerId: 10,
+          score: 90,
+          xpAwarded: 0,
+          isWinner: false,
+          leftEarly: true,
+        }),
+        expect.objectContaining({
+          playerId: 11,
+          score: 40,
+          xpAwarded: PARTICIPATION_XP + WIN_XP,
+          isWinner: true,
+          leftEarly: false,
+        }),
+        expect.objectContaining({
+          playerId: 12,
+          score: 10,
+          xpAwarded: PARTICIPATION_XP,
+          isWinner: false,
+          leftEarly: false,
+        }),
+      ]),
+    );
   });
 
   it('ranks leaderboard entries by XP', async () => {

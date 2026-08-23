@@ -46,6 +46,12 @@ export const gamesApi = {
     });
   },
 
+  markIntroShown(input: GameIdInput) {
+    return apiRequest(`/games/${input.gameId}/markIntroShown`, {
+      method: 'POST',
+    });
+  },
+
   finish(input: GameIdInput): Promise<FinishGameResultDto> {
     return apiRequest<FinishGameResultDto>('/games/finish', {
       method: 'POST',

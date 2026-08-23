@@ -6,16 +6,17 @@ import {
   SCORE_POPUP_MS,
 } from '@/app/word_soup/_lib/word-soup-constants';
 import type { WordSoupEventBanner } from './use-word-soup-event-banner';
+import type { IPlayerLeftNoticeDto } from '@/lib/api/games/types';
 import type { WordSoupFreezeNoticeDto } from '@/lib/api/games/word-soup/types';
 
-type ScorePopup = {
+interface IScorePopup {
   id: number;
   playerId: number;
   points: number;
-};
+}
 
 export function useWordSoupScorePopup() {
-  const [scorePopup, setScorePopup] = useState<ScorePopup | null>(null);
+  const [scorePopup, setScorePopup] = useState<IScorePopup | null>(null);
   const scorePopupTimerRef = useRef<number | null>(null);
 
   const showScorePopup = useCallback((playerIdForPopup: number, points: number) => {
@@ -41,16 +42,16 @@ export function useWordSoupScorePopup() {
   return { scorePopup, showScorePopup };
 }
 
-type FreezeBridgeArgs = {
+interface IWordSoupEventBridgeArgs {
   playerId: number;
   latestFreezeNotice: WordSoupFreezeNoticeDto | null;
-  latestPlayerLeft: { playerId: number; playerName: string } | null;
+  latestPlayerLeft: IPlayerLeftNoticeDto | null;
   playerColours: Record<number, string>;
   pushEvent: (event: Omit<WordSoupEventBanner, 'id'>) => void;
   formatPlayerFrozen: (name: string) => string;
   formatPlayerUnfrozen: (name: string) => string;
   formatPlayerLeft: (name: string) => string;
-};
+}
 
 export function useWordSoupEventBridge({
   playerId,
@@ -61,7 +62,7 @@ export function useWordSoupEventBridge({
   formatPlayerFrozen,
   formatPlayerUnfrozen,
   formatPlayerLeft,
-}: FreezeBridgeArgs) {
+}: IWordSoupEventBridgeArgs) {
   const lastFreezeEventKeyRef = useRef('');
   const lastLeftEventKeyRef = useRef('');
 
@@ -119,7 +120,6 @@ export function useWordSoupGameOverOverlay(
   isGameOver: boolean,
   isCelebrating: boolean,
   celebrationActiveRef: { current: boolean },
-  startImmediately = false,
 ) {
   const [startGameOverSequence, setStartGameOverSequence] = useState(false);
   const [sawCompletionCelebration, setSawCompletionCelebration] = useState(false);
@@ -165,8 +165,7 @@ export function useWordSoupGameOverOverlay(
         timeoutId = window.setTimeout(check, POLL_MS);
       }
     };
-    const initialDelay = startImmediately ? 0 : GAME_OVER_OVERLAY_GRACE_MS;
-    timeoutId = window.setTimeout(check, initialDelay);
+    timeoutId = window.setTimeout(check, GAME_OVER_OVERLAY_GRACE_MS);
 
     return () => {
       cleared = true;
@@ -178,7 +177,6 @@ export function useWordSoupGameOverOverlay(
     sawCompletionCelebration,
     startGameOverSequence,
     celebrationActiveRef,
-    startImmediately,
   ]);
 
   return startGameOverSequence && !isCelebrating;

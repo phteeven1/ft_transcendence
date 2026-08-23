@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { gamesApi } from '@/lib/api';
-import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
-import { restorePlayerFromSession } from '@/lib/restore-player-session';
+import type { LocaleCode } from '@/i18n/config';
+import type { GameFinishOutcomeDto, IGameSocketErrorDto, IPlayerLeftNoticeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import type {
   WordSoupWordGuessedDto,
@@ -16,8 +16,15 @@ import type {
  } from '@/lib/api/games/word-soup/types';
 
 import { useAuth } from '../../context/auth-context';
+import { computeIsLastRemaining } from '@/app/hooks/game/game-leave.helpers';
+import { buildFallbackFinishOutcome } from '@/app/hooks/game/game-over.helpers';
+import { useGameIntro } from '@/app/hooks/game/use-game-intro';
+import {
+  useAbandonFinishRedirect,
+  useGameLeave,
+} from '@/app/hooks/game/use-game-leave';
+import { useGameOver } from '@/app/hooks/game/use-game-over';
 import { useWordSoupInit } from './use-word-soup-init';
-import { useWordSoupIntro } from './use-word-soup-intro';
 import { useWordSoupFreeze } from './use-word-soup-freeze';
 import { useWordSoupSelection } from './use-word-soup-selection';
 import { useWordSoupCelebration } from './use-word-soup-celebration';
@@ -28,10 +35,8 @@ import {
   useWordSoupGameOverOverlay,
   useWordSoupScorePopup,
 } from './use-word-soup-ui-effects';
-import { useWordSoupGameOver } from './use-word-soup-game-over';
-import { buildFallbackFinishOutcome } from './word-soup-game-over.helpers';
 
-type UseWordSoupGameArgs = {
+type IUseWordSoupGameArgs = {
   gameId: number;
   playerId: number;
   socket: {
@@ -45,13 +50,14 @@ type UseWordSoupGameArgs = {
     frozenPlayers: Record<number, number>;
     freezeNotice: WordSoupFreezeNoticeDto | null;
     leftPlayers: Record<number, string>;
-    playerLeftNotice: { playerId: number; playerName: string } | null;
+    playerLeftNotice: IPlayerLeftNoticeDto | null;
     playerStreaks: Record<number, number>;
+    gameError: IGameSocketErrorDto | null;
     emitSubmitGuess: (cells: Array<{ row: number; col: number }>) => void;
   };
 };
 
-export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArgs) {
+export function useWordSoupGame({ gameId, playerId, socket }: IUseWordSoupGameArgs) {
   const router = useRouter();
   const { loginAsPlayer, setSessionExpiresAt } = useAuth();
   const tGuess = useTranslations('games.wordSoup.guess');
@@ -59,6 +65,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   const tOutro = useTranslations('games.wordSoup.outro');
   const tEvents = useTranslations('games.wordSoup.events');
   const tControls = useTranslations('games.controls');
+  const locale = useLocale() as LocaleCode;
 
   const introTexts = useMemo(
     () => ({
@@ -68,6 +75,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       letsGo: tIntro('letsGo'),
     }),
     [tIntro],
+  );
+
+  const markIntroShown = useCallback(
+    (id: number) => gamesApi.markIntroShown({ gameId: id }),
+    [],
   );
 
   const formatPlayerFoundWord = useCallback(
@@ -101,8 +113,12 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     leftPlayers: leftPlayersFromSocket,
     playerLeftNotice,
     playerStreaks: playerStreaksFromSocket,
+    gameError,
     emitSubmitGuess,
   } = socket;
+
+  const { hasLeftForLobbyRef, handleReturnToLobby, leaveToLobby: leaveMatch } =
+    useGameLeave({ router, loginAsPlayer, setSessionExpiresAt });
 
   const {
     loading,
@@ -132,12 +148,10 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     initialFrozenPlayers,
   } = useWordSoupInit(gameId, playerId);
 
-  const [manuallyFinished, setManuallyFinished] = useState(false);
-  const [isFinishingGame, setIsFinishingGame] = useState(false);
-  const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
-
-  const gameEnded =
-    manuallyFinished || gameFinished || Boolean(game?.isFinished);
+  const gameEnded = gameFinished || Boolean(game?.isFinished);
+  const [isAbandoning, setIsAbandoning] = useState(false);
+  const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const {
     gameReady,
@@ -148,17 +162,40 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     wordRevealIndex,
     countdownValue: introCountdownValue,
     totalWords: introTotalWords,
-  } = useWordSoupIntro({
+  } = useGameIntro({
     gameId,
-    playerId,
     courtReady,
     solutionWords,
     hasPlayerSeenIntro,
     introStartedAt,
+    playStartedAt,
     introTexts,
     skipIntro: initIsComplete || gameEnded,
     skipMarkIntroShown: gameEnded,
+    markIntroShown,
   });
+
+  // Puzzle fully solved — not the same as the session ending via abandon.
+  // Declared early so finish-during-intro can skip the outro court hold.
+  const isGameOver = Boolean(
+    initIsComplete ||
+      serverState?.isComplete ||
+      (solutionWords.length > 0 && foundWords.length >= solutionWords.length),
+  );
+
+  const [finishedDuringIntro, setFinishedDuringIntro] = useState(false);
+
+  const wasShowingIntroRef = useRef(showIntro);
+  useEffect(() => {
+    if (isGameOver && wasShowingIntroRef.current) {
+      queueMicrotask(() => {
+        setFinishedDuringIntro(true);
+      });
+    }
+  }, [isGameOver]);
+  useEffect(() => {
+    wasShowingIntroRef.current = showIntro;
+  }, [showIntro]);
 
   const mergedFrozenPlayers = useMemo(
     () => ({
@@ -219,13 +256,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
   const { eventBanner, eventBannerPhase, pushEvent } = useWordSoupEventBanner();
   const { scorePopup, showScorePopup } = useWordSoupScorePopup();
-
-  const isGameOver = Boolean(
-    gameEnded ||
-      initIsComplete ||
-      serverState?.isComplete ||
-      (solutionWords.length > 0 && foundWords.length >= solutionWords.length),
-  );
 
   const pendingGuessRef = useRef(false);
   const clearSelectionRef = useRef<() => void>(() => {});
@@ -295,20 +325,16 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   });
 
   const startGameOverSequence = useWordSoupGameOverOverlay(
-    isGameOver,
+    isGameOver && !isAbandoning,
     isCelebrating,
     celebrationActiveRef,
-    manuallyFinished,
   );
 
   const [finishOutcomeFromApi, setFinishOutcomeFromApi] =
     useState<GameFinishOutcomeDto | null>(null);
 
   useEffect(() => {
-    if (!startGameOverSequence) {
-      setFinishOutcomeFromApi(null);
-      return;
-    }
+    if (!startGameOverSequence) return;
     if (finishOutcomeFromSocket || finishOutcomeFromApi) return;
 
     let cancelled = false;
@@ -335,23 +361,18 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
 
   const finishOutcome = useMemo(() => {
     if (finishOutcomeFromSocket) return finishOutcomeFromSocket;
-    if (finishOutcomeFromApi) return finishOutcomeFromApi;
+    if (startGameOverSequence && finishOutcomeFromApi) {
+      return finishOutcomeFromApi;
+    }
     if (!startGameOverSequence) return null;
-    const fallback = buildFallbackFinishOutcome(players, playerScores);
-    if (!manuallyFinished) return fallback;
-    return {
-      players: fallback.players.map((player) => ({
-        ...player,
-        xpAwarded: 0,
-      })),
-    };
+    return buildFallbackFinishOutcome(players, playerScores, leftPlayers);
   }, [
     finishOutcomeFromSocket,
     finishOutcomeFromApi,
     startGameOverSequence,
-    manuallyFinished,
     players,
     playerScores,
+    leftPlayers,
   ]);
 
   const playersByOutcomeId = useMemo(() => {
@@ -394,10 +415,11 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     bubbleVisible: gameOverBubbleVisible,
     revealedPlayerIds: gameOverRevealedPlayerIds,
     showReturnButton: showGameOverReturnButton,
-  } = useWordSoupGameOver({
-    active: startGameOverSequence,
+  } = useGameOver({
+    active: startGameOverSequence && !isAbandoning,
     outcome: finishOutcome,
     outroT: tOutro,
+    locale,
     skipInitialHold: finishedDuringIntro,
   });
 
@@ -433,6 +455,8 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     [tGuess],
   );
 
+  const hasLeftGame = Boolean(leftPlayers[playerId]) || isAbandoning;
+
   const {
     selection,
     selectionMessage,
@@ -446,6 +470,7 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   } = useWordSoupSelection({
     gameReady,
     isGameOver,
+    hasLeftGame,
     isLocalPlayerFrozen,
     isCelebrating,
     guessResult,
@@ -487,21 +512,24 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
   }, [selectionMessage]);
 
   useEffect(() => {
+    if (!gameError) return;
+    pendingGuessRef.current = false;
+    celebrationActiveRef.current = false;
+    pendingCourtRef.current = null;
+    setIsSubmittingGuess(false);
+  }, [gameError, celebrationActiveRef, pendingCourtRef, setIsSubmittingGuess]);
+
+  useEffect(() => {
     clearSelectionRef.current = clearSelection;
     setIsSubmittingGuessRef.current = setIsSubmittingGuess;
   }, [clearSelection, setIsSubmittingGuess]);
 
-  const [isAbandoning, setIsAbandoning] = useState(false);
-  const [showAbandonModal, setShowAbandonModal] = useState(false);
-  const [actionError, setActionError] = useState('');
-  const hasNavigatedToLobbyRef = useRef(false);
-
-  const navigateToLobby = useCallback(async () => {
-    if (hasNavigatedToLobbyRef.current) return;
-    hasNavigatedToLobbyRef.current = true;
-    await restorePlayerFromSession({ loginAsPlayer, setSessionExpiresAt });
-    router.push('/select_game');
-  }, [loginAsPlayer, router, setSessionExpiresAt]);
+  useAbandonFinishRedirect(
+    gameFinished,
+    isGameOver,
+    handleReturnToLobby,
+    hasLeftForLobbyRef,
+  );
 
   useEffect(() => {
     if (!serverState) return;
@@ -536,13 +564,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     pendingCourtRef,
   ]);
 
-  useEffect(() => {
-    if (!gameFinished) return;
-    // Natural completion shows the overlay; Return to Lobby handles navigation.
-    if (isGameOver) return;
-    void navigateToLobby();
-  }, [gameFinished, isGameOver, navigateToLobby]);
-
   const wordsFound = foundWords.length;
   const wordsLeft = Math.max(solutionWords.length - wordsFound, 0);
 
@@ -550,50 +571,18 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     (a, b) => (playerScores[b.id] ?? 0) - (playerScores[a.id] ?? 0),
   );
 
-  const isLastRemaining =
-    players.length > 0 &&
-    players.filter((entry) => entry.id === playerId || !leftPlayers[entry.id])
-      .length <= 1;
+  const isLastRemaining = computeIsLastRemaining(
+    players.map((entry) => entry.id),
+    playerId,
+    leftPlayers,
+  );
 
   const handleLeaveClick = useCallback(() => {
     setActionError('');
     setShowAbandonModal(true);
   }, []);
 
-  const finishMatch = useCallback(async () => {
-    if (isGameOver || isFinishingGame) return;
-
-    const wasDuringIntro = showIntro;
-    setIsFinishingGame(true);
-    setManuallyFinished(true);
-    setActionError('');
-    if (wasDuringIntro) {
-      setFinishedDuringIntro(true);
-    }
-
-    try {
-      const result = await gamesApi.finish({ gameId });
-      if (result.outcome) {
-        const unlock = result.outcome.players.find(
-          (entry) =>
-            entry.playerId === playerId &&
-            typeof entry.newlyUnlockedTier === 'number',
-        )?.newlyUnlockedTier;
-        if (typeof unlock === 'number') {
-          stashPendingAvatarUnlock(playerId, unlock);
-        }
-        setFinishOutcomeFromApi(result.outcome);
-      }
-    } catch {
-      setManuallyFinished(false);
-      setFinishedDuringIntro(false);
-      setActionError(tControls('actionFailed'));
-    } finally {
-      setIsFinishingGame(false);
-    }
-  }, [gameId, isFinishingGame, isGameOver, showIntro, playerId, tControls]);
-
-  const handleReturnToLobby = useCallback(async () => {
+  const handleReturnToLobbyFromOverlay = useCallback(async () => {
     try {
       if (!gameEnded) {
         const result = await gamesApi.finish({ gameId });
@@ -613,35 +602,14 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
       setActionError(tControls('actionFailed'));
       return;
     }
-    await navigateToLobby();
-  }, [gameId, gameEnded, navigateToLobby, playerId, tControls]);
+    handleReturnToLobby();
+  }, [gameId, gameEnded, handleReturnToLobby, playerId, tControls]);
 
   const leaveToLobby = useCallback(async () => {
-    if (isLastRemaining) {
-      setShowAbandonModal(false);
-      await finishMatch();
-      return;
-    }
-
     setIsAbandoning(true);
-    try {
-      await gamesApi.leave({ gameId, playerId });
-      setShowAbandonModal(false);
-      await navigateToLobby();
-    } catch {
-      setActionError(tControls('actionFailed'));
-      setShowAbandonModal(false);
-    } finally {
-      setIsAbandoning(false);
-    }
-  }, [
-    finishMatch,
-    gameId,
-    isLastRemaining,
-    navigateToLobby,
-    playerId,
-    tControls,
-  ]);
+    setShowAbandonModal(false);
+    await leaveMatch(gameId, playerId);
+  }, [gameId, leaveMatch, playerId]);
 
   return {
     game,
@@ -663,7 +631,6 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     freezeSecondsByPlayer,
     frozenPlayers: mergedFrozenPlayers,
     showGameOverOverlay,
-    startGameOverSequence,
     gameOverPhase,
     gameOverBubbleText,
     gameOverBubbleVisible,
@@ -693,18 +660,18 @@ export function useWordSoupGame({ gameId, playerId, socket }: UseWordSoupGameArg
     showAbandonModal,
     isAbandoning,
     isLastRemaining,
+    hasLeftGame,
     actionError,
     wordsFound,
     wordsLeft,
     isGameOver,
-    isFinishingGame,
     isSubmittingGuess,
     handleSelectionStart,
     handleSelectionContinue,
     handleSelectionEnd,
     handleSubmitGuess,
     handleLeaveClick,
-    handleReturnToLobby,
+    handleReturnToLobby: handleReturnToLobbyFromOverlay,
     leaveToLobby,
     closeAbandonModal: () => setShowAbandonModal(false),
   };

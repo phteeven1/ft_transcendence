@@ -3,14 +3,7 @@
 // Word Building cell: letter plus correct/wrong/empty status.
 // Word Soup has its own court-tile.tsx.
 
-export type CellStatus = 'correct' | 'wrong' | 'empty' | 'none';
-
-export type CourtCell = {
-  char:         string;
-  status:       CellStatus;
-  clueNumber?:  number;    // rendered in the top-left corner of word-start cells
-  placedBy?:    number;    // playerId of first correct placer
-};
+import type { CellStatus, CourtCell } from '@/lib/api/games/word-building.types';
 
 // ─── Colour map ───────────────────────────────────────────────────────────────
 

@@ -21,6 +21,7 @@ export class ProgressionOutcomeService {
   /**
    * Returns finish outcomes for a completed game (scores + XP that was or would be awarded).
    * Unlock celebrations are only available on the live `recordGameOutcome` path.
+   * Unrewarded / abandoned finishes and players who left early always show 0 XP.
    */
   async getFinishOutcome(gameId: number): Promise<GameFinishOutcome | null> {
     const game = await this.prisma.game.findUnique({
@@ -33,33 +34,38 @@ export class ProgressionOutcomeService {
     });
     if (!game?.isFinished) return null;
 
-    // Solo matches should not award win XP / win streaks; they still award
-    // participation XP and gamesPlayed++.
-    const participantCount = game.gamePlayers.length;
+    const activePlayers = game.gamePlayers.filter((gp) => gp.leftAt == null);
+    const participantCount = activePlayers.length;
     const winnerIds = resolveWinnerIds(
-      game.gamePlayers.map((gp) => ({
+      activePlayers.map((gp) => ({
         playerId: gp.playerId,
         score: gp.score,
       })),
     );
+    const rewarded = game.progressionAppliedAt != null;
 
     return {
-      players: game.gamePlayers.map((gp) =>
-        toPlayerOutcome(
+      players: game.gamePlayers.map((gp) => {
+        const leftEarly = gp.leftAt != null;
+        const awardXp = rewarded && !leftEarly;
+        return toPlayerOutcome(
           gp.playerId,
           gp.player.name,
           gp.score,
           winnerIds,
           participantCount,
           null,
-        ),
-      ),
+          awardXp,
+          leftEarly,
+        );
+      }),
     };
   }
 
   /**
    * Applies participation/win XP and streak updates once per finished game.
    * Idempotent: returns stored outcome when `progressionAppliedAt` is already set.
+   * Players who left early (`leftAt`) receive no XP and no gamesPlayed bump.
    */
   async recordGameOutcome(gameId: number): Promise<GameFinishOutcome | null> {
     const game = await this.prisma.game.findUnique({
@@ -76,9 +82,10 @@ export class ProgressionOutcomeService {
       return this.getFinishOutcome(gameId);
     }
 
-    const participantCount = game.gamePlayers.length;
+    const activePlayers = game.gamePlayers.filter((gp) => gp.leftAt == null);
+    const participantCount = activePlayers.length;
     const winnerIds = resolveWinnerIds(
-      game.gamePlayers.map((gp) => ({
+      activePlayers.map((gp) => ({
         playerId: gp.playerId,
         score: gp.score,
       })),
@@ -88,6 +95,23 @@ export class ProgressionOutcomeService {
 
     await this.prisma.$transaction(async (tx) => {
       for (const gp of game.gamePlayers) {
+        const leftEarly = gp.leftAt != null;
+        if (leftEarly) {
+          outcomePlayers.push(
+            toPlayerOutcome(
+              gp.playerId,
+              gp.player.name,
+              gp.score,
+              winnerIds,
+              participantCount,
+              null,
+              false,
+              true,
+            ),
+          );
+          continue;
+        }
+
         const player = await tx.player.findUnique({
           where: { id: gp.playerId },
         });
@@ -122,6 +146,8 @@ export class ProgressionOutcomeService {
             winnerIds,
             participantCount,
             newlyUnlockedTier,
+            true,
+            false,
           ),
         );
       }
@@ -159,14 +185,17 @@ function toPlayerOutcome(
   winnerIds: Set<number>,
   participantCount: number,
   newlyUnlockedTier: number | null,
+  awardXp: boolean,
+  leftEarly: boolean,
 ): GameFinishPlayerOutcome {
   const isWinner = winnerIds.has(playerId);
   return {
     playerId,
     playerName,
     score,
-    xpAwarded: computeXpAwarded(participantCount, isWinner),
+    xpAwarded: awardXp ? computeXpAwarded(participantCount, isWinner) : 0,
     isWinner,
     newlyUnlockedTier,
+    leftEarly,
   };
 }

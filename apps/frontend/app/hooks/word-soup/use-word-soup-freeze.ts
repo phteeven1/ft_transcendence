@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { WordSoupFreezeNoticeDto } from '@/lib/api/games/word-soup/types';
+import type { IPlayerLeftNoticeDto } from '@/lib/api/games/types';
 
-type UseWordSoupFreezeArgs = {
+interface IUseWordSoupFreezeArgs {
   playerId: number;
   frozenPlayers: Record<number, number>;
   freezeNotice: WordSoupFreezeNoticeDto | null;
-  playerLeftNotice?: { playerId: number; playerName: string } | null;
-};
+  playerLeftNotice?: IPlayerLeftNoticeDto | null;
+}
 
 function computeFreezeSecondsMap(
   frozenPlayers: Record<number, number>,
@@ -29,7 +30,7 @@ export function useWordSoupFreeze({
   frozenPlayers,
   freezeNotice,
   playerLeftNotice = null,
-}: UseWordSoupFreezeArgs) {
+}: IUseWordSoupFreezeArgs) {
   const [now, setNow] = useState<number | null>(null);
   const [latestFreezeNotice, setLatestFreezeNotice] =
     useState<WordSoupFreezeNoticeDto | null>(null);

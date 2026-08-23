@@ -3,7 +3,38 @@
 import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 import type { WordSoupCourtCell } from '@/lib/api/games/word-soup/types';
-import { lightenHexColor } from '../_lib/color-utils';
+
+function clampByte(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function parseHex(hex: string): { r: number; g: number; b: number } | null {
+  const normalized = hex.trim().replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function toHex({ r, g, b }: { r: number; g: number; b: number }): string {
+  return `#${clampByte(r).toString(16).padStart(2, '0')}${clampByte(g)
+    .toString(16)
+    .padStart(2, '0')}${clampByte(b).toString(16).padStart(2, '0')}`;
+}
+
+function lightenHexColor(hex: string, percent = 40): string {
+  const rgb = parseHex(hex);
+  if (!rgb) return hex;
+  const amount = percent / 100;
+  const lightened = toHex({
+    r: rgb.r + (255 - rgb.r) * amount,
+    g: rgb.g + (255 - rgb.g) * amount,
+    b: rgb.b + (255 - rgb.b) * amount,
+  });
+  return lightened.toUpperCase();
+}
 
 type CourtCell = WordSoupCourtCell;
 

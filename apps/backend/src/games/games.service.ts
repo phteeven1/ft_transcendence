@@ -1,4 +1,9 @@
-import { Injectable, forwardRef, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { gameWithPlayers, toApiGame } from '../common/mappers';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlayersService } from '../players/players.service';
@@ -122,31 +127,53 @@ export class GamesService {
     if (!game) return undefined;
 
     // Leaving is a per-player action: it must only affect the player who left,
-    // never the others. Word Building keeps every participant's GamePlayer row
-    // for the life of the match (never deletes it on leave) so final scores are
-    // never lost — but that means DB row count can no longer tell us who is
-    // still actively playing. WordBuildingService tracks that in memory instead,
-    // and the match only finishes once every participant has left it — anyone
-    // still playing keeps their board, state, and score updates exactly as before.
+    // never the others. Active matches keep every participant's GamePlayer row
+    // (set leftAt) so recent games / scores survive. In-memory services track
+    // who is still playing; the match finishes once every participant has left.
+    const leaderboardType = matchLeaderboardGameType(game.name);
     if (
       game.isActive &&
-      matchLeaderboardGameType(game.name) === GAME_TYPE_WORD_BUILDING
+      (leaderboardType === GAME_TYPE_WORD_BUILDING ||
+        leaderboardType === GAME_TYPE_WORD_SOUP)
     ) {
       const roster = await this.findPlayersForGame(gameId);
       const playerName =
         roster.find((player) => player.id === playerId)?.name ??
         `Player #${playerId}`;
       await this.playersService.clearCurrentGame(playerId);
-      const { allLeft, leftPlayers } =
-        await this.wordBuildingService.markPlayerLeft(
-          gameId,
-          playerId,
-          playerName,
-        );
-      if (allLeft) {
+
+      if (leaderboardType === GAME_TYPE_WORD_BUILDING) {
+        const { allLeft, leftPlayers } =
+          await this.wordBuildingService.markPlayerLeft(
+            gameId,
+            playerId,
+            playerName,
+          );
+        if (allLeft) {
+          const result = await this.finish(gameId);
+          return result?.game ?? null;
+        }
+        await this.emitLobbyUpdate(game.inGroup);
+        this.gateway.emitPlayerLeft(gameId, playerId, playerName, leftPlayers);
+        return this.findById(gameId);
+      }
+
+      // Word Soup — durable leftAt + in-memory leftPlayers
+      const soupState = await this.wordSoupService.markPlayerLeft(
+        gameId,
+        playerId,
+        playerName,
+      );
+      const leftPlayers = soupState?.leftPlayers ?? { [playerId]: playerName };
+
+      const remaining = await this.prisma.gamePlayer.count({
+        where: { gameId, leftAt: null },
+      });
+      if (remaining === 0 || this.wordSoupService.hasAllPlayersLeft(gameId)) {
         const result = await this.finish(gameId);
         return result?.game ?? null;
       }
+
       await this.emitLobbyUpdate(game.inGroup);
       this.gateway.emitPlayerLeft(gameId, playerId, playerName, leftPlayers);
       return this.findById(gameId);
@@ -217,7 +244,7 @@ export class GamesService {
 
   async isPlayerInGame(gameId: number, playerId: number): Promise<boolean> {
     const count = await this.prisma.gamePlayer.count({
-      where: { gameId, playerId },
+      where: { gameId, playerId, leftAt: null },
     });
     return count > 0;
   }
@@ -362,6 +389,32 @@ export class GamesService {
   }
 
   /**
+   * Marks the intro as seen for one player (Word Soup or Word Building).
+   */
+  async markIntroShown(
+    gameId: number,
+    playerId: number,
+  ): Promise<{ ok: true }> {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: { name: true },
+    });
+    if (!game) {
+      throw new NotFoundException(`Game ${gameId} not found`);
+    }
+
+    const gameType = matchLeaderboardGameType(game.name);
+    if (gameType === GAME_TYPE_WORD_SOUP) {
+      this.wordSoupService.markIntroShown(gameId, playerId);
+    } else if (gameType === GAME_TYPE_WORD_BUILDING) {
+      this.wordBuildingService.markIntroShown(gameId, playerId);
+    } else {
+      throw new NotFoundException(`Game ${gameId} does not support intro sync`);
+    }
+    return { ok: true };
+  }
+
+  /**
    * Marks a game as finished, persists final scores, applies progression once,
    * clears player session state, and emits the end-game event.
    *
@@ -387,8 +440,11 @@ export class GamesService {
 
     const now = new Date();
     const soupPlayStartedAt = this.wordSoupService.getPlayStartedAt(gameId);
+    const buildingPlayStartedAt =
+      this.wordBuildingService.getPlayStartedAt(gameId);
     const playStartedAtMs =
       soupPlayStartedAt ??
+      buildingPlayStartedAt ??
       dbGame.playStartedAt?.getTime() ??
       dbGame.startedTime?.getTime() ??
       dbGame.initiatedTime.getTime();

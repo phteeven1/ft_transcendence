@@ -4,11 +4,17 @@ import { useLayoutEffect, useRef, useState } from 'react';
 
 import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
 import {
+  CHAR_MS,
+  DEFAULT_HOLD_DURATION_MS,
+  GAP_DURATION_MS,
+  HOLD_AFTER_TYPE_MS,
+} from './game-timing.constants';
+import type { LocaleCode } from '@/i18n/config';
+import {
   buildGameOverAnnouncements,
   getGameOverClosingText,
   type OutroTranslateFn,
-} from './word-soup-game-over.helpers';
-import { GAME_OVER_COURT_HOLD_MS } from '@/app/word_soup/_lib/word-soup-constants';
+} from './game-over.helpers';
 
 export type GameOverPhase =
   | 'idle'
@@ -18,12 +24,6 @@ export type GameOverPhase =
   | 'closing'
   | 'closing-gap'
   | 'done';
-
-const CHAR_MS = 42;
-const HOLD_AFTER_TYPE_MS = 900;
-const BUBBLE_FADE_MS = 380;
-const GAP_MS = 420;
-const GAP_DURATION_MS = BUBBLE_FADE_MS + GAP_MS;
 
 type TimelineSegment =
   | { kind: 'hold'; duration: number }
@@ -51,13 +51,15 @@ function speechBlockMs(text: string): number {
 function buildTimelineSegments(
   outcome: GameFinishOutcomeDto,
   t: OutroTranslateFn,
+  locale: LocaleCode,
+  holdDurationMs: number,
   skipInitialHold = false,
 ): TimelineSegment[] {
   const segments: TimelineSegment[] = skipInitialHold
     ? []
-    : [{ kind: 'hold', duration: GAME_OVER_COURT_HOLD_MS }];
+    : [{ kind: 'hold', duration: holdDurationMs }];
 
-  for (const announcement of buildGameOverAnnouncements(outcome.players, t)) {
+  for (const announcement of buildGameOverAnnouncements(outcome.players, t, locale)) {
     segments.push({
       kind: 'announce',
       playerId: announcement.playerId,
@@ -156,19 +158,23 @@ const IDLE_FRAME: GameOverFrame = {
   done: false,
 };
 
-type UseWordSoupGameOverProps = {
+export interface IUseGameOverProps {
   active: boolean;
   outcome: GameFinishOutcomeDto | null;
   outroT: OutroTranslateFn;
+  locale: LocaleCode;
   skipInitialHold?: boolean;
-};
+  holdDurationMs?: number;
+}
 
-export function useWordSoupGameOver({
+export function useGameOver({
   active,
   outcome,
   outroT,
+  locale,
   skipInitialHold = false,
-}: UseWordSoupGameOverProps) {
+  holdDurationMs = DEFAULT_HOLD_DURATION_MS,
+}: IUseGameOverProps) {
   const [frame, setFrame] = useState<GameOverFrame>(IDLE_FRAME);
   const segmentsRef = useRef<TimelineSegment[]>([]);
   const sequenceActive = active && outcome != null;
@@ -176,7 +182,13 @@ export function useWordSoupGameOver({
   useLayoutEffect(() => {
     if (!sequenceActive || !outcome) return;
 
-    segmentsRef.current = buildTimelineSegments(outcome, outroT, skipInitialHold);
+    segmentsRef.current = buildTimelineSegments(
+      outcome,
+      outroT,
+      locale,
+      holdDurationMs,
+      skipInitialHold,
+    );
 
     let rafId = 0;
     let cancelled = false;
@@ -208,7 +220,14 @@ export function useWordSoupGameOver({
       window.cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [sequenceActive, outcome, outroT, skipInitialHold]);
+  }, [
+    sequenceActive,
+    outcome,
+    outroT,
+    locale,
+    skipInitialHold,
+    holdDurationMs,
+  ]);
 
   const displayFrame = sequenceActive ? frame : IDLE_FRAME;
   const displayedText = displayFrame.bubbleText.slice(0, displayFrame.typedLength);
@@ -219,7 +238,6 @@ export function useWordSoupGameOver({
 
   return {
     showOverlay,
-    isCourtHold: sequenceActive && displayFrame.phase === 'hold',
     phase: displayFrame.phase,
     bubbleText: displayedText,
     bubbleVisible: displayFrame.bubbleVisible,

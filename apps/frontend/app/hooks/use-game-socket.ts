@@ -9,20 +9,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
-import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto, IFinalLetterPlacedPayload } from '@/lib/api/games/word-building.types';
+import type { IGameStatePayload, IPlaceLetterDto, ICellLocksPayload, ILockCellDto } from '@/lib/api/games/word-building.types';
 import type { 
   WordSoupWordGuessedDto,
   WordSoupGuessResultDto,
   WordSoupDto,
   WordSoupFreezeNoticeDto,
 } from '@/lib/api/games/word-soup/types';
-import type { GameFinishOutcomeDto } from '@/lib/api/games/types';
+import type { GameFinishOutcomeDto, IGameSocketErrorDto, IPlayerLeftNoticeDto } from '@/lib/api/games/types';
 import { stashPendingAvatarUnlock } from '@/lib/avatar-unlock';
 import { acquireSocket, releaseSocket } from '@/lib/socket';
 import { getPlayerSession } from '@/lib/player-session';
 import { notifySessionUnauthorized } from '@/lib/api/http';
 
-interface GameSocketState {
+interface IGameSocketState {
   gameFinished: boolean;
   finishOutcome: GameFinishOutcomeDto | null;
   isConnected: boolean;
@@ -35,10 +35,9 @@ interface GameSocketState {
   frozenPlayers: Record<number, number>;
   freezeNotice: WordSoupFreezeNoticeDto | null;
   leftPlayers: Record<number, string>;
-  playerLeftNotice: { playerId: number; playerName: string } | null;
+  playerLeftNotice: IPlayerLeftNoticeDto | null;
   playerStreaks: Record<number, number>;
-  finalLetterPlaced: IFinalLetterPlacedPayload | null;
-  finalLetterPlacedSeq: number;
+  gameError: IGameSocketErrorDto | null;
 }
 
 /**
@@ -51,7 +50,7 @@ interface GameSocketState {
  */
 export function useGameSocket(gameId: number, playerId: number) {
   const socketRef = useRef<Socket | null>(null);
-  const [state, setState] = useState<GameSocketState>({
+  const [state, setState] = useState<IGameSocketState>({
     gameFinished: false,
     finishOutcome: null,
     isConnected: false,
@@ -66,8 +65,7 @@ export function useGameSocket(gameId: number, playerId: number) {
     leftPlayers: {},
     playerLeftNotice: null,
     playerStreaks: {},
-    finalLetterPlaced: null,
-    finalLetterPlacedSeq: 0,
+    gameError: null,
   });
 
   useEffect(() => {
@@ -213,15 +211,6 @@ export function useGameSocket(gameId: number, playerId: number) {
       }));
     };
 
-    const onFinalLetterPlaced = (payload: IFinalLetterPlacedPayload) => {
-      if (!active) return;
-      setState((s) => ({
-        ...s,
-        finalLetterPlaced: payload,
-        finalLetterPlacedSeq: s.finalLetterPlacedSeq + 1,
-      }));
-    };
-
     const onGameFinished = (payload?: { outcome?: GameFinishOutcomeDto | null }) => {
       if (!active) return;
       const outcome = payload?.outcome ?? null;
@@ -245,6 +234,17 @@ export function useGameSocket(gameId: number, playerId: number) {
       notifySessionUnauthorized('player');
     };
 
+    const onGameError = (payload: { message: string }) => {
+      if (!active) return;
+      setState((s) => ({
+        ...s,
+        gameError: {
+          message: payload.message,
+          seq: (s.gameError?.seq ?? 0) + 1,
+        },
+      }));
+    };
+
     socket.on('connect', join);
     socket.on('disconnect', onDisconnect);
     socket.on('game:state', onGameState);
@@ -254,9 +254,9 @@ export function useGameSocket(gameId: number, playerId: number) {
     socket.on('game:playerFrozen', onPlayerFrozen);
     socket.on('game:playerUnfrozen', onPlayerUnfrozen);
     socket.on('game:playerLeft', onPlayerLeft);
-    socket.on('game:finalLetterPlaced', onFinalLetterPlaced);
     socket.on('game:finished', onGameFinished);
     socket.on('session:replaced', onSessionReplaced);
+    socket.on('game:error', onGameError);
 
     if (socket.connected) join();
 
@@ -271,9 +271,9 @@ export function useGameSocket(gameId: number, playerId: number) {
       socket.off('game:playerFrozen', onPlayerFrozen);
       socket.off('game:playerUnfrozen', onPlayerUnfrozen);
       socket.off('game:playerLeft', onPlayerLeft);
-      socket.off('game:finalLetterPlaced', onFinalLetterPlaced);
       socket.off('game:finished', onGameFinished);
       socket.off('session:replaced', onSessionReplaced);
+      socket.off('game:error', onGameError);
       if (socketRef.current === socket) socketRef.current = null;
       releaseSocket(key);
     };
