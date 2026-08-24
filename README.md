@@ -8,6 +8,8 @@ Day-to-day development: [DEV.md](./DEV.md). Agent rules: [AGENTS.md](./AGENTS.md
 
 ---
 
+
+
 ## Table of contents
 
 - [Description](#description)
@@ -27,6 +29,8 @@ Day-to-day development: [DEV.md](./DEV.md). Agent rules: [AGENTS.md](./AGENTS.md
 
 ---
 
+
+
 ## Description
 
 Turn shared vocabulary homework into live, group-based word games that parents can supervise.
@@ -38,7 +42,11 @@ There are two kinds of account:
 
 ---
 
+
+
 ## Instructions
+
+
 
 ### Prerequisites
 
@@ -72,6 +80,8 @@ Stop the Node apps with `Ctrl+C` (Postgres keeps running). Stop everything:
 npm run dev:stop
 ```
 
+
+
 ### Full Docker stack (HTTPS)
 
 ```bash
@@ -95,31 +105,35 @@ npm run db:migrate:deploy   # apply migrations (CI / prod)
 npm run db:studio           # Prisma Studio GUI
 ```
 
+
+
 ### CI
 
 GitHub Actions (`.github/workflows/ci.yml`): database migrate → backend build and test → frontend lint and build.
 
 ---
 
+
+
 ## Features
 
 
-| Feature                | Description                                     | Paths                                             |
-| ---------------------- | ----------------------------------------------- | ------------------------------------------------- |
-| Registration / sign-in | Parent accounts; bcrypt passwords; exclusive `UserSession` | `app/register`, `app/signin`, `users.service.ts` |
-| Dashboard              | Group list, members, players, profile settings  | `app/dashboard`                                   |
-| Groups                 | Create, join, leave, admin roles                | `app/dashboard`                                   |
-| Email invitations      | Tokenized invite links, Gmail SMTP              | `app/accept_invitation`, `invitations.service.ts` |
-| Players                | Child CRUD, Play Now                            | `app/dashboard` (Players tab), `players.service.ts` |
-| Vocabulary             | Add/edit in one dialog; hidden starter fallback | `app/dashboard` (Vocabulary tab)                  |
-| AI import              | GPT-4o on photos (`image_url`) and PDFs (file parts, not pdf-parse) | `extraction.service.ts`, `add-vocabulary.tsx` |
-| Game lobby             | Pending/ongoing games, optional warm-up puzzles | `app/select_game`                                 |
-| Word Building          | Multiplayer crossword, cell locks, scores       | `word_building/`, `word-building.service.ts`      |
-| Word Soup              | Multiplayer word search                         | `word_soup/`, `word-soup.service.ts`              |
-| Player sessions        | One active Play Now token per child; replace kicks the previous client | `PlayerSession` model, `players.service.ts` |
-| Parent sessions        | One active token per parent; replace kicks the previous client         | `UserSession` model, `users.service.ts`     |
-| Language picker        | en / de / fr via next-intl                      | `language-context.tsx`, `flag-menu.tsx`           |
-| Legal                  | Privacy Policy and Terms of Service             | `app/privacy`, `app/terms`                        |
+| Feature                | Description                                                            | Paths                                               |
+| ---------------------- | ---------------------------------------------------------------------- | --------------------------------------------------- |
+| Registration / sign-in | Parent accounts; bcrypt passwords; exclusive `UserSession`             | `app/register`, `app/signin`, `users.service.ts`    |
+| Dashboard              | Group list, members, players, profile settings                         | `app/dashboard`                                     |
+| Groups                 | Create, join, leave, admin roles                                       | `app/dashboard`                                     |
+| Email invitations      | Tokenized invite links, Gmail SMTP                                     | `app/accept_invitation`, `invitations.service.ts`   |
+| Players                | Child CRUD, Play Now                                                   | `app/dashboard` (Players tab), `players.service.ts` |
+| Vocabulary             | Add/edit in one dialog; hidden starter fallback                        | `app/dashboard` (Vocabulary tab)                    |
+| AI import              | GPT-4o on photos (`image_url`) and PDFs (file parts, not pdf-parse)    | `extraction.service.ts`, `add-vocabulary.tsx`       |
+| Game lobby             | Pending/ongoing games, optional warm-up puzzles                        | `app/select_game`                                   |
+| Word Building          | Multiplayer crossword, cell locks, scores                              | `word_building/`, `word-building.service.ts`        |
+| Word Soup              | Multiplayer word search                                                | `word_soup/`, `word-soup.service.ts`                |
+| Player sessions        | One active Play Now token per child; replace kicks the previous client | `PlayerSession` model, `players.service.ts`         |
+| Parent sessions        | One active token per parent; replace kicks the previous client         | `UserSession` model, `users.service.ts`             |
+| Language picker        | en / de / fr via next-intl                                             | `language-context.tsx`, `flag-menu.tsx`             |
+| Legal                  | Privacy Policy and Terms of Service                                    | `app/privacy`, `app/terms`                          |
 
 
 XP, avatars, and a lobby leaderboard live under `progression/` and are claimed as gamification plus game statistics (see Modules below).
@@ -127,6 +141,8 @@ XP, avatars, and a lobby leaderboard live under `progression/` and are claimed a
 **Exclusive sessions.** There is at most one live parent token (`UserSession`) and one live Play Now token (`PlayerSession`) at a time. Sign-in and Play Now **replace** the stored token and emit Socket.IO `session:replaced` so the previous tab or browser is kicked. Mutating parent REST calls send `x-user-id` and `x-user-session-token`; child game/lobby calls send `x-player-id` and `x-player-session-token` (`@/lib/api` attaches them). Play Now wipes parent credentials in **this browser** (`logout({ localOnly: true })`) so a child cannot open dashboard settings; the server `UserSession` stays, so a parent on another device is not kicked. Other same-browser parent tabs lose `localStorage` and are signed out. Leave session goes to `/session_over`. Changing the password rotates the parent token and returns the new one to that tab. `GET /players/:id/activeSession` is parent-guarded and returns `{ expiresAt }` only. Apply migration `20260819140000_add_user_session` (`npm run db:migrate` / `db:migrate:deploy`). Details: [DEV.md](./DEV.md#player-sessions-play-now).
 
 ---
+
+
 
 ## Modules (eval)
 
@@ -165,6 +181,8 @@ Not claimed: SSR, LLM streaming UI, friends system, standard user management (no
 
 ---
 
+
+
 ## Eval demo
 
 Walk these in order. Use Chrome with the console open — no red errors.
@@ -185,6 +203,8 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 
 ---
 
+
+
 ## Technical stack
 
 
@@ -202,6 +222,8 @@ Talking points: server owns the crossword solution; Socket.IO rooms are `group:{
 Parent auth is a server `UserSession` token stored in `localStorage` (`parent-session.ts`), not JWT. Child Play Now uses `PlayerSession` in `sessionStorage`.
 
 ---
+
+
 
 ## Database schema
 
@@ -222,6 +244,8 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ---
 
+
+
 ## Team information
 
 > **Update with 42 logins before evaluation.**
@@ -240,6 +264,8 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ---
 
+
+
 ## Project management
 
 - **Workflow:** Git feature branches → pull requests → `development` / `main` (see [AGENTS.md](./AGENTS.md))
@@ -250,9 +276,13 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ---
 
+
+
 ## Individual contributions
 
 > **Each member must fill in their section before evaluation.**
+
+
 
 ### `tsternbe` (Tobias Sternberg)
 
@@ -260,17 +290,23 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 - Modules: Organization system, Frontend/Backend (partly), setup for games (websockets, multiplayer, remote players, session tokens)
 - Challenges overcome: learning to work with entirely new technical stack. Communicating and handing over. Keeping overall vision and still contributing specific code.
 
+
+
 ### `kmooney` (Kevin Mooney)
 
-- Features:
-- Modules:
-- Challenges overcome:
+- Features: Word Soup, player sessions 
+- Modules: WebSockets + Word Building + remote, Multiplayer 3+, Add another game
+- Challenges overcome: Project planning, life events getting in the way
+
+
 
 ### `smanthey` (Steven Manthey)
 
-- Features: technical leadership and stack decisions (Next.js, NestJS, Prisma, PostgreSQL, Docker). Monorepo layout, local/CI scripts, and coding guidelines. PostgreSQL/Prisma integration and general work on the backend (services, wiring, reviews). Docker Compose stack with Nginx reverse proxy and HTTPS so frontend, API, and WebSockets share one secure host.
-- Modules: 
+- Features: First Setup (Next.js, NestJS, Prisma, PostgreSQL, Docker). Local CI, monorepo layout, and coding guidelines. PostgreSQL/Prisma integration and general work on the backend (services, wiring, reviews). Docker Compose stack with Nginx reverse proxy and HTTPS so frontend, API, and WebSockets share one secure host.
+- Modules: Frontend/Backend (partly)
 - Challenges overcome: choosing and orchestrating a stack the team had not used together. Keeping reviews and PRs moving while still writing backend and infra. Putting HTTPS, REST, and Socket.IO behind one reverse proxy without breaking local `npm run dev:local`.
+
+
 
 ### `avarghes` (Alvin Abraham Varghese)
 
@@ -278,13 +314,17 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 - Modules: Puzzle generator and game service (backend), Word Building game UI (frontend), `Crossword` DB model.
 - Challenges overcome: Generating well-formed crosswords from random vocab lists; handling concurrent players editing the same puzzle in real time.
 
+
+
 ### `sgavrilo` (Sergej Gavrilov)
 
-- Features:
-- Modules:
-- Challenges overcome:
+- Features: Ai Vocabulary Upload, improved UX / UI
+- Modules: Design System, Image Recognition
+- Challenges overcome: how to achieve the best balance of trade-offs when it comes to the Ai Vocabulary Upload; getting more comfortable with the stack
 
 ---
+
+
 
 ## Resources and AI usage
 
@@ -292,16 +332,18 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 - [OpenAI API](https://platform.openai.com/docs)
 
 
-| Task                                   | Tool                    | Where                                   |
-| -------------------------------------- | ----------------------- | --------------------------------------- |
+| Task                                   | Tool                    | Where                                                               |
+| -------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
 | Vocabulary extraction from photos/PDFs | OpenAI GPT-4o           | `extraction.service.ts` (images as `image_url`, PDFs as file parts) |
-| Development assistance                 | Cursor / Copilot        | Review, debugging, documentation drafts |
-| Puzzle / game logic design             | Team + AI brainstorming | Word Building engine                    |
+| Development assistance                 | Cursor / Copilot        | Review, debugging, documentation drafts                             |
+| Puzzle / game logic design             | Team + AI brainstorming | Word Building engine                                                |
 
 
 All AI-generated code was reviewed, tested, and understood by the team before merge.
 
 ---
+
+
 
 ## Known limitations
 
@@ -313,6 +355,8 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ---
 
+
+
 ## Legal and credits
 
 - Privacy Policy: `/privacy`
@@ -320,22 +364,4 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 - Flag icons: [flagicons.lipis.dev](https://flagicons.lipis.dev/), MIT license
 
 ---
-
-## Project structure
-
-```
-ft_transcendence/
-├── apps/
-│   ├── frontend/          # Next.js app
-│   └── backend/           # NestJS API + WebSockets
-├── packages/
-│   └── database/          # Prisma schema and migrations
-├── scripts/
-│   ├── docker-up.sh       # HTTPS stack + LAN URLs
-│   ├── dev-local.sh
-│   └── dev-stop.sh
-├── nginx/                 # Reverse proxy + self-signed TLS
-├── docker-compose.yml
-└── .github/workflows/ci.yml
-```
 
