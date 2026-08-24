@@ -268,9 +268,9 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ### `smanthey` (Steven Manthey)
 
-- Features:
-- Modules:
-- Challenges overcome:
+- Features: technical leadership and stack decisions (Next.js, NestJS, Prisma, PostgreSQL, Docker). Monorepo layout, local/CI scripts, and coding guidelines. PostgreSQL/Prisma integration and general work on the backend (services, wiring, reviews). Docker Compose stack with Nginx reverse proxy and HTTPS so frontend, API, and WebSockets share one secure host.
+- Modules: 
+- Challenges overcome: choosing and orchestrating a stack the team had not used together. Keeping reviews and PRs moving while still writing backend and infra. Putting HTTPS, REST, and Socket.IO behind one reverse proxy without breaking local `npm run dev:local`.
 
 ### `avarghes` (Alvin Abraham Varghese)
 
