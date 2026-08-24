@@ -365,3 +365,21 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 
 ---
 
+
+## Project structure
+
+```
+ft_transcendence/
+├── apps/
+│   ├── frontend/          # Next.js app
+│   └── backend/           # NestJS API + WebSockets
+├── packages/
+│   └── database/          # Prisma schema and migrations
+├── scripts/
+│   ├── docker-up.sh       # HTTPS stack + LAN URLs
+│   ├── dev-local.sh
+│   └── dev-stop.sh
+├── nginx/                 # Reverse proxy + self-signed TLS
+├── docker-compose.yml
+└── .github/workflows/ci.yml
+```
