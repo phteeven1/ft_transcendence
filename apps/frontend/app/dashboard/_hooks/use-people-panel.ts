@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi, playersApi, vocabulariesApi } from '@/lib/api';
@@ -85,6 +85,9 @@ export function usePeoplePanel(): UsePeoplePanelResult {
 
   const selectedGroupId = group?.id;
   const userId = user?.id;
+	const currentVocabularyId = group?.currentVocabulary;
+  const currentVocabularyIdRef = useRef(currentVocabularyId);
+  currentVocabularyIdRef.current = currentVocabularyId;
   const isAdmin = Boolean(
     userId && group && group.admins.includes(userId),
   );
@@ -135,12 +138,20 @@ export function usePeoplePanel(): UsePeoplePanelResult {
         (vocabulary) => !isStarterVocabulary(vocabulary.name),
       );
       setVocabularies(custom);
+
+      if (!currentVocabularyIdRef.current) {
+        const updated = await vocabulariesApi.setActive({
+          vocabularyId: starter.id,
+          vocabularyInGroup: selectedGroupId,
+        });
+        if (updated) await syncGroup(selectedGroupId);
+      }
     } catch {
       /* keep last vocabularies */
     } finally {
       setIsVocabLoading(false);
     }
-  }, [selectedGroupId, userId]);
+ 	}, [selectedGroupId, userId, syncGroup]);
 
   const syncAndRefresh = useCallback(async (): Promise<void> => {
     if (!selectedGroupId || !userId) return;
