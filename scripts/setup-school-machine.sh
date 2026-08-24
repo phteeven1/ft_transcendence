@@ -1,6 +1,7 @@
 #!/bin/bash
 # setup-school-machine.sh
-# Run once per fresh 42 school machine, before `docker compose up --build`.
+# Run once per fresh 42 school machine. Next time on same machine
+# npm run build
 # Fixes: rootless Docker filling up the tiny /home partition (ENOSPC),
 # and redirects npm's cache off /home too.
 #
@@ -84,7 +85,4 @@ echo ""
 echo "==> Disk usage summary:"
 df -h / /home/"${LOGIN}" /goinfre 2>/dev/null
 
-echo ""
-echo "==> Done. You can now run: docker compose up --build"
-echo "==> Note: nginx must map its HOST port as 8080:80 (not 80:80) in"
-echo "==> docker-compose.yml, since rootless Docker can't bind port 80."
+npm run build
