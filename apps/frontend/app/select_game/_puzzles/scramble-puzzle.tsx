@@ -76,6 +76,9 @@ function pickEntry(vocabulary: VocabularyDto): [string, string] | null {
 
 const TILE_SIZE = 48; // px, base tile width/height
 const TILE_GAP = 4;   // px between tiles
+// clay-panel draws a 4px bottom lip plus a soft drop shadow outside the box
+const TILE_SHADOW_CLEARANCE = 8;
+const BLINK_DURATION_MS = 900;
 
 // components sho
 export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
@@ -107,10 +110,14 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
       ? tileOverride.tiles
       : (basePuzzle?.tiles ?? []);
   const meaning = basePuzzle?.meaning ?? '';
+  const tilesRef = useRef<Tile[]>(activeTiles);
+  tilesRef.current = activeTiles;
+  const successTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (!basePuzzle) return;
     wordRef.current = basePuzzle.word;
+    successTriggeredRef.current = false;
   }, [basePuzzle]);
 
   const updateTiles = useCallback(
@@ -121,7 +128,9 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
           prev?.word === puzzleWord
             ? prev.tiles
             : (basePuzzle?.tiles ?? []);
-        return { word: puzzleWord, tiles: updater(current) };
+        const next = updater(current);
+        tilesRef.current = next;
+        return { word: puzzleWord, tiles: next };
       });
     },
     [basePuzzle?.tiles, puzzleWord],
@@ -140,21 +149,22 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     originSlot: number;
   } | null>(null);
 
-  // sets blinking to true, blinks for 900ms then turns off
-  // sets success to true
   const triggerSuccess = useCallback(() => {
+    if (successTriggeredRef.current) return;
+    successTriggeredRef.current = true;
     setBlinking(true);
-    setTimeout(() => setBlinking(false), 900);
-    setTimeout(() => setSuccess(true), 900);
+    window.setTimeout(() => setBlinking(false), BLINK_DURATION_MS);
+    window.setTimeout(() => setSuccess(true), BLINK_DURATION_MS);
   }, []);
 
 
   // tells browser that this element owns all future pointer events.
   // records the drag start position and the tile's slot at the start (originSlot)
   // setDragState triggers the one re-render needed to switch tile to "grabbed" visual state
-  const handlePointerDown = (e: React.PointerEvent, tileId: number) => {
-    if (success) return;  // guards against dragging after success
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, tileId: number) => {
+    if (success) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
     const tile = activeTiles.find((t) => t.id === tileId)!;
     dragging.current = {
       tileId,
@@ -167,8 +177,9 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
 
   // Runs every frame while a tile is being dragged. Figures out how far the tile has moved,
   // clamps the movement to x axis, snaps to nearest slot, and shuffles other tiles away
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;  // guards against nothing being dragged
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    e.preventDefault();
     const d = dragging.current; // shorthand that holds relevant info
     const rawOffset = e.clientX - d.startX; // e.clientX is current mouse/finger X position, d,startX is start of drag
     const tileCount = activeTiles.length;
@@ -207,16 +218,16 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     });
   };
 
-  // runs when user releases the tile
-  const handlePointerUp = () => {
-    if (!dragging.current) return;  // guards against phantom event
-    dragging.current = null;  // clear drag ref
-    setDragState(null); // clears visual drag offset
-    // Read word from ref — closure-safe, always current
-    updateTiles((prev) => {
-      if (isCorrect(prev, wordRef.current)) triggerSuccess();
-      return prev;
-    });
+  const endDrag = (e?: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current || success || successTriggeredRef.current) return;
+    dragging.current = null;
+    if (e?.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setDragState(null);
+    if (isCorrect(tilesRef.current, wordRef.current)) {
+      triggerSuccess();
+    }
   };
 
   const step = TILE_SIZE + TILE_GAP;
@@ -226,7 +237,7 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
   if (!basePuzzle || activeTiles.length === 0) return null;
 
   return (
-    <div className="flex flex-col h-full px-4 py-3 select-none">
+    <div className="flex h-full touch-none select-none flex-col px-4 py-3">
 
       {/* Instruction + meaning */}
       <p className="text-sm text-muted-foreground mb-3 leading-snug">
@@ -235,10 +246,13 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
       </p>
 
       {/* Tile row */}
-      <div className="flex-1 flex items-center justify-center overflow-hidden">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-x-auto overscroll-x-contain">
         <div
           className="relative"
-          style={{ width: totalWidth, height: TILE_SIZE }}
+          style={{
+            width: totalWidth,
+            height: TILE_SIZE + TILE_SHADOW_CLEARANCE,
+          }}
         >
           {activeTiles.map((tile) => {
             const isDragging = dragState?.tileId === tile.id;
@@ -255,7 +269,8 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
                 key={tile.id}
                 onPointerDown={(e) => handlePointerDown(e, tile.id)}
                 onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
                 style={{
                   position: 'absolute',
                   left: visualX + dragOffset,
@@ -267,12 +282,13 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
                   cursor: isDragging ? 'grabbing' : 'grab',
                 }}
                 className={[
-                  'flex items-center justify-center rounded-lg text-lg font-bold clay-panel',
-                  tile.char === ' '
-                    ? 'bg-muted text-muted-foreground'
-                    : 'bg-surface text-foreground',
+                  'flex touch-none items-center justify-center rounded-lg text-lg font-bold leading-none clay-panel',
+                  blinking
+                    ? 'animate-blink-orange'
+                    : tile.char === ' '
+                      ? 'bg-muted text-muted-foreground'
+                      : 'bg-surface text-foreground',
                   isDragging ? 'scale-105 shadow-lg' : '',
-                  blinking ? 'animate-blink-orange' : '',
                 ].join(' ')}
               >
                 {tile.char === ' ' ? ' ' : tile.char}

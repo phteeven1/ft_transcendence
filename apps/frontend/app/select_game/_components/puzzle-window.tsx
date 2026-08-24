@@ -116,14 +116,29 @@ export default function PuzzleWindow() {
     }
 
     const props = { vocabulary, onSkip: handleSkip };
-    if (puzzleIndex === MEANS_WHAT_INDEX && canPlayMeansWhat(vocabulary)) {
+    const isMeansWhat =
+      puzzleIndex === MEANS_WHAT_INDEX && canPlayMeansWhat(vocabulary);
+    if (isMeansWhat) {
       return <MeansWhatPuzzle key={key} {...props} />;
     }
     return <ScramblePuzzle key={key} {...props} />;
   };
 
+  const isMeansWhat =
+    !loading &&
+    vocabulary != null &&
+    puzzleIndex === MEANS_WHAT_INDEX &&
+    canPlayMeansWhat(vocabulary);
+
   return (
-    <div className="clay-panel w-full aspect-[1/1] md:aspect-[4/1] overflow-hidden">
+    <div
+      className={[
+        'clay-panel w-full overflow-hidden',
+        isMeansWhat
+          ? 'h-auto min-h-56 md:h-52'
+          : 'h-56 md:h-52',
+      ].join(' ')}
+    >
       {renderPuzzle()}
     </div>
   );

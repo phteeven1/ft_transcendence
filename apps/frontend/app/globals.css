@@ -66,8 +66,14 @@
 }
 
 @keyframes blink-orange {
-  0%, 100% { background-color: var(--color-surface); }
-  50% { background-color: var(--color-accent); color: white; }
+  0%, 100% {
+    background-color: var(--color-surface) !important;
+    color: var(--color-foreground) !important;
+  }
+  50% {
+    background-color: var(--color-accent) !important;
+    color: #ffffff !important;
+  }
 }
 
 .animate-blink-orange {
@@ -81,6 +87,13 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Keep a visible success flash even when motion is reduced. */
+  .animate-blink-orange {
+    animation: none !important;
+    background-color: var(--color-accent) !important;
+    color: #ffffff !important;
   }
 }
 
