@@ -105,14 +105,20 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
   const wordRef = useRef('');
 
   const puzzleWord = basePuzzle?.word ?? '';
-  const activeTiles =
-    tileOverride?.word === puzzleWord
-      ? tileOverride.tiles
-      : (basePuzzle?.tiles ?? []);
+  const activeTiles = useMemo(
+    () =>
+      tileOverride?.word === puzzleWord
+        ? tileOverride.tiles
+        : (basePuzzle?.tiles ?? []),
+    [basePuzzle?.tiles, puzzleWord, tileOverride],
+  );
   const meaning = basePuzzle?.meaning ?? '';
   const tilesRef = useRef<Tile[]>(activeTiles);
-  tilesRef.current = activeTiles;
   const successTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    tilesRef.current = activeTiles;
+  }, [activeTiles]);
 
   useEffect(() => {
     if (!basePuzzle) return;
