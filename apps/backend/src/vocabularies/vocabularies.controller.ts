@@ -14,7 +14,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { VocabulariesService } from './vocabularies.service';
 import { ExtractionService } from './extraction.service';
-import { GameGateway } from '../games/game.gateway';
 import { UserSessionGuard } from '../users/user-session.guard';
 import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
 
@@ -25,7 +24,6 @@ export class VocabulariesController {
   constructor(
     private readonly vocabulariesService: VocabulariesService,
     private readonly extractionService: ExtractionService,
-    private readonly gateway: GameGateway,
   ) {}
 
   @Post('create')
@@ -44,15 +42,13 @@ export class VocabulariesController {
       userId,
       body.vocabularyInGroup,
     );
-    const created = await this.vocabulariesService.create(
+    return this.vocabulariesService.create(
       body.vocabularyInGroup,
       userId,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
     );
-    if (created) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
-    return created;
   }
 
   @Post('findOrCreate')
@@ -71,15 +67,13 @@ export class VocabulariesController {
       userId,
       body.vocabularyInGroup,
     );
-    const vocabulary = await this.vocabulariesService.findOrCreate(
+    return this.vocabulariesService.findOrCreate(
       body.vocabularyInGroup,
       userId,
       body.vocabularyName,
       body.vocabularyWords ?? [],
       body.vocabularyMeanings ?? [],
     );
-    this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
-    return vocabulary;
   }
 
   @Post('setActive')
@@ -96,12 +90,10 @@ export class VocabulariesController {
       userId,
       body.vocabularyInGroup,
     );
-    const updated = await this.vocabulariesService.setActive(
+    return this.vocabulariesService.setActive(
       body.vocabularyId,
       body.vocabularyInGroup,
     );
-    if (updated) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
-    return updated;
   }
 
   @Post('rename')
@@ -119,13 +111,11 @@ export class VocabulariesController {
       userId,
       body.vocabularyInGroup,
     );
-    const renamed = await this.vocabulariesService.rename(
+    return this.vocabulariesService.rename(
       body.vocabularyId,
       body.vocabularyName,
       body.vocabularyInGroup,
     );
-    if (renamed) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
-    return renamed;
   }
 
   @Post('update-entries')
@@ -144,14 +134,12 @@ export class VocabulariesController {
       userId,
       body.vocabularyInGroup,
     );
-    const updated = await this.vocabulariesService.updateEntries(
+    return this.vocabulariesService.updateEntries(
       body.vocabularyId,
       body.vocabularyInGroup,
       body.vocabularyWords,
       body.vocabularyMeanings,
     );
-    if (updated) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
-    return updated;
   }
 
   @Post('remove')
@@ -168,12 +156,10 @@ export class VocabulariesController {
       userId,
       body.vocabularyInGroup,
     );
-    const removed = await this.vocabulariesService.remove(
+    return this.vocabulariesService.remove(
       body.vocabularyId,
       body.vocabularyInGroup,
     );
-    if (removed) this.gateway.emitDashboardUpdate(body.vocabularyInGroup);
-    return removed;
   }
 
   @Get('group/:groupId')

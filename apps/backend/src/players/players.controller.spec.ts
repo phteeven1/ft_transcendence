@@ -6,7 +6,6 @@ describe('PlayersController.clearSession', () => {
     clearSession: jest.fn(),
     assertCanManagePlayer: jest.fn(),
   };
-  const gateway = { emitDashboardUpdate: jest.fn() };
   const usersService = { validateSession: jest.fn() };
 
   let controller: PlayersController;
@@ -18,7 +17,6 @@ describe('PlayersController.clearSession', () => {
     usersService.validateSession.mockResolvedValue({ valid: true });
     controller = new PlayersController(
       playersService as never,
-      gateway as never,
       usersService as never,
     );
   });

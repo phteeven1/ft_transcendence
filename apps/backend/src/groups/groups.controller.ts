@@ -1,15 +1,11 @@
 import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
 import { GroupsService } from './groups.service';
-import { GameGateway } from '../games/game.gateway';
 import { UserSessionGuard } from '../users/user-session.guard';
 import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
 
 @Controller('groups')
 export class GroupsController {
-  constructor(
-    private readonly groupsService: GroupsService,
-    private readonly gateway: GameGateway,
-  ) {}
+  constructor(private readonly groupsService: GroupsService) {}
 
   @Post('create')
   @UseGuards(UserSessionGuard)
@@ -17,10 +13,7 @@ export class GroupsController {
     @AuthenticatedUserId() userId: number,
     @Body() body: { groupName: string },
   ) {
-    const created = await this.groupsService.create(body.groupName, userId);
-    this.gateway.emitDashboardUpdate(created.id);
-    this.gateway.emitMembershipChanged(userId);
-    return created;
+    return this.groupsService.create(body.groupName, userId);
   }
 
   @Post('addMember')
@@ -29,12 +22,7 @@ export class GroupsController {
     @AuthenticatedUserId() userId: number,
     @Body() body: { groupId: number },
   ) {
-    const group = await this.groupsService.addMember(body.groupId, userId);
-    if (group) {
-      this.gateway.emitDashboardUpdate(body.groupId);
-      this.gateway.emitMembershipChanged(userId);
-    }
-    return group;
+    return this.groupsService.addMember(body.groupId, userId);
   }
 
   @Post('promote')
@@ -44,9 +32,7 @@ export class GroupsController {
     @Body() body: { groupId: number; userId: number },
   ) {
     await this.groupsService.assertAdmin(userId, body.groupId);
-    const group = await this.groupsService.promote(body.groupId, body.userId);
-    if (group) this.gateway.emitDashboardUpdate(body.groupId);
-    return group;
+    return this.groupsService.promote(body.groupId, body.userId);
   }
 
   @Post('demote')
@@ -56,9 +42,7 @@ export class GroupsController {
     @Body() body: { groupId: number; userId: number },
   ) {
     await this.groupsService.assertAdmin(userId, body.groupId);
-    const group = await this.groupsService.demote(body.groupId, body.userId);
-    if (group) this.gateway.emitDashboardUpdate(body.groupId);
-    return group;
+    return this.groupsService.demote(body.groupId, body.userId);
   }
 
   @Post('leave')
@@ -67,10 +51,7 @@ export class GroupsController {
     @AuthenticatedUserId() userId: number,
     @Body() body: { groupId: number },
   ) {
-    const remaining = await this.groupsService.leave(body.groupId, userId);
-    this.gateway.emitDashboardUpdate(body.groupId);
-    this.gateway.emitMembershipChanged(userId);
-    return remaining;
+    return this.groupsService.leave(body.groupId, userId);
   }
 
   @Post('rename')
@@ -80,12 +61,7 @@ export class GroupsController {
     @Body() body: { groupId: number; groupName: string },
   ) {
     await this.groupsService.assertAdmin(userId, body.groupId);
-    const renamed = await this.groupsService.rename(
-      body.groupId,
-      body.groupName,
-    );
-    if (renamed) this.gateway.emitDashboardUpdate(body.groupId);
-    return renamed;
+    return this.groupsService.rename(body.groupId, body.groupName);
   }
 
   @Post('expel')
@@ -95,12 +71,7 @@ export class GroupsController {
     @Body() body: { groupId: number; userId: number },
   ) {
     await this.groupsService.assertAdmin(userId, body.groupId);
-    const remaining = await this.groupsService.expel(body.groupId, body.userId);
-    if (remaining) {
-      this.gateway.emitDashboardUpdate(body.groupId);
-      this.gateway.emitMembershipChanged(body.userId);
-    }
-    return remaining;
+    return this.groupsService.expel(body.groupId, body.userId);
   }
 
   @Post('delete')
@@ -111,12 +82,6 @@ export class GroupsController {
   ) {
     await this.groupsService.assertAdmin(userId, body.groupId);
     const result = await this.groupsService.delete(body.groupId);
-    if (result.deleted) {
-      this.gateway.emitDashboardUpdate(body.groupId);
-      for (const memberId of result.memberIds) {
-        this.gateway.emitMembershipChanged(memberId);
-      }
-    }
     return result.deleted;
   }
 
