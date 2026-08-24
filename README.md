@@ -86,6 +86,7 @@ npm run dev:stop
 
 ```bash
 npm run build          # rebuild images, then start (prints LAN URLs)
+npm run build:school   # redirects container to sgoinfre, rebuild images, then start (prints LAN URLs)
 npm run dev            # start without rebuilding
 npm run down           # stop the stack
 ```
