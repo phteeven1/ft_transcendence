@@ -46,6 +46,19 @@ export type FinishGameResponse = {
 export class GamesService implements OnModuleInit, OnModuleDestroy {
   private sweepTimer: ReturnType<typeof setInterval> | null = null;
   private sweeping = false;
+  // Set at the start of onModuleDestroy(). Guards against an in-flight async
+  // operation (rescheduleAutoStartTimers()'s DB query, a create() call still
+  // awaiting its insert) resolving AFTER shutdown and scheduling a new timer
+  // that onModuleDestroy()'s own clear-everything loop already ran past.
+  private destroyed = false;
+  // Per-game precise auto-start timers, keyed by gameId. These are what
+  // actually fire a WAITING game's start at (initiatedTime + autoStartTimeoutMs)
+  // — see the class doc comment on scheduleAutoStart() for why the periodic
+  // sweep alone isn't enough for that.
+  private readonly autoStartTimers = new Map<
+    number,
+    ReturnType<typeof setTimeout>
+  >();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -58,6 +71,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    void this.rescheduleAutoStartTimers();
     void this.runSweep();
     this.sweepTimer = setInterval(() => {
       void this.runSweep();
@@ -65,7 +79,85 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy(): void {
+    this.destroyed = true;
     if (this.sweepTimer) clearInterval(this.sweepTimer);
+    for (const timer of this.autoStartTimers.values()) clearTimeout(timer);
+    this.autoStartTimers.clear();
+  }
+
+  /**
+   * Schedules a precise one-shot check for one game's auto-start deadline
+   * (initiatedTime + autoStartTimeoutMs), instead of relying solely on the
+   * periodic sweep to notice it. The sweep's setInterval is anchored to
+   * server boot time, not to any individual game's initiatedTime — a game
+   * created at an arbitrary phase relative to that fixed tick schedule only
+   * gets checked on the NEXT tick after its deadline, adding up to a full
+   * sweepIntervalMs of unnecessary delay (variable, not fixed — confirmed
+   * empirically: with a 400ms sweep interval, observed overshoot ranged
+   * ~74–343ms across trials). This timer fires at the actual deadline
+   * instead; the sweep remains as a reliability backstop (crash recovery,
+   * a missed/lost timer) via rescheduleAutoStartTimers() on boot and its
+   * own periodic due-game scan, so nothing regresses if this timer is ever
+   * lost.
+   *
+   * @param gameId Game to schedule.
+   * @param initiatedTime The game's creation time the deadline is anchored to.
+   */
+  private scheduleAutoStart(gameId: number, initiatedTime: Date): void {
+    if (this.destroyed) return;
+    this.clearAutoStartTimer(gameId);
+    const dueAt =
+      initiatedTime.getTime() + GAME_LOBBY_CONFIG.autoStartTimeoutMs;
+    const delay = Math.max(0, dueAt - Date.now());
+    const timer = setTimeout(() => {
+      this.autoStartTimers.delete(gameId);
+      this.tryAutoStartOne(gameId).catch((error: unknown) => {
+        console.error(`Scheduled auto-start failed for game ${gameId}`, error);
+      });
+    }, delay);
+    this.autoStartTimers.set(gameId, timer);
+  }
+
+  /** Cancels a game's pending precise auto-start timer, if any. Safe to call for a game with no timer scheduled. */
+  private clearAutoStartTimer(gameId: number): void {
+    const timer = this.autoStartTimers.get(gameId);
+    if (timer) {
+      clearTimeout(timer);
+      this.autoStartTimers.delete(gameId);
+    }
+  }
+
+  /**
+   * Re-arms precise auto-start timers for every currently WAITING game on
+   * boot, so a process restart doesn't fall back to periodic-sweep-only
+   * timing for games that were already waiting. A deadline already in the
+   * past schedules with delay 0 — fires on the next tick instead of waiting
+   * for the sweep.
+   */
+  private async rescheduleAutoStartTimers(): Promise<void> {
+    const pending = await this.prisma.game.findMany({
+      where: { isActive: false, isFinished: false },
+      select: { id: true, initiatedTime: true },
+    });
+    for (const g of pending) {
+      this.scheduleAutoStart(g.id, g.initiatedTime);
+    }
+  }
+
+  /**
+   * Fired by a game's precise auto-start timer. Re-checks fresh state (the
+   * game may have already started, been cancelled, or lost players since the
+   * timer was scheduled) before acting — startGame() is idempotent regardless,
+   * but this avoids an unnecessary write attempt. Never cancels: a game that
+   * still lacks minPlayersToStart is left for the periodic sweep's separate
+   * cancellation-timeout check, matching the existing "these are two
+   * different timers" rule.
+   */
+  private async tryAutoStartOne(gameId: number): Promise<void> {
+    const game = await this.findById(gameId);
+    if (!game || game.isActive || game.isFinished) return;
+    if (game.players.length < GAME_LOBBY_CONFIG.minPlayersToStart) return;
+    await this.startGame(game);
   }
 
   /**
@@ -76,7 +168,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
    * clients. Re-entrancy guarded so a slow tick can't overlap the next one.
    */
   private async runSweep(): Promise<void> {
-    if (this.sweeping) return;
+    if (this.sweeping || this.destroyed) return;
     this.sweeping = true;
     try {
       await this.reapAbandonedPlayers();
@@ -171,6 +263,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
     });
     if (count !== 1) return;
 
+    this.clearAutoStartTimer(gameId);
     for (const gp of game.gamePlayers) {
       await this.playersService.clearCurrentGame(gp.playerId);
     }
@@ -200,6 +293,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
       ...gameWithPlayers,
     });
     await this.playersService.setCurrentGame(initiatedBy, game.id);
+    this.scheduleAutoStart(game.id, game.initiatedTime);
     const result = toApiGame(game);
     await this.emitLobbyUpdate(inGroup);
     return result;
@@ -276,6 +370,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
     await this.playersService.setCurrentGame(playerId, gameId);
 
     if (outcome.autoStarted) {
+      this.clearAutoStartTimer(gameId);
       const started = await this.findById(gameId);
       if (started) await this.applyStartSideEffects(started);
     } else {
@@ -396,6 +491,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
     const updated = await this.findById(gameId);
     if (!updated || updated.players.length === 0) {
       await this.prisma.game.delete({ where: { id: gameId } }).catch(() => {});
+      this.clearAutoStartTimer(gameId);
       await this.emitLobbyUpdate(game.inGroup);
       emitLeftIfActive();
       return null;
@@ -501,6 +597,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
     });
     if (claimed.count !== 1) return;
 
+    this.clearAutoStartTimer(game.id);
     await this.applyStartSideEffects(game);
   }
 
@@ -540,6 +637,7 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
 
         if (count === 0) {
           await this.prisma.game.delete({ where: { id: other.id } });
+          this.clearAutoStartTimer(other.id);
         } else {
           // if the leaving player was the initiator, promote the first remaining player
           if (other.initiatedById === pId) {
@@ -561,13 +659,19 @@ export class GamesService implements OnModuleInit, OnModuleDestroy {
       await this.playersService.setCurrentGame(pId, game.id);
     }
 
-    await this.prisma.game.deleteMany({
-      where: {
-        isActive: false,
-        isFinished: false,
-        gamePlayers: { none: {} },
-      },
+    const emptyPendingWhere = {
+      isActive: false,
+      isFinished: false,
+      gamePlayers: { none: {} },
+    };
+    const emptyPending = await this.prisma.game.findMany({
+      where: emptyPendingWhere,
+      select: { id: true },
     });
+    for (const { id } of emptyPending) {
+      this.clearAutoStartTimer(id);
+    }
+    await this.prisma.game.deleteMany({ where: emptyPendingWhere });
 
     // Emit after all DB work is done
     const started = await this.findById(game.id);
