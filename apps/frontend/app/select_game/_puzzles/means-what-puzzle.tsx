@@ -5,12 +5,13 @@ Means-What puzzle: player sees a meaning and picks the matching word from three 
 - Two distractor words are picked randomly from the remaining entries.
 - The three answer buttons are shuffled so the correct answer is not always in the same position.
 - One attempt only: clicking any button locks in the answer.
-- Correct guess: wrong buttons dim, correct button turns green, SUCCESS appears, Skip → Next.
+- Correct guess: wrong buttons dim, correct button flashes orange three times, then turns
+  green, SUCCESS appears, Skip → Next.
 - Wrong guess: wrong buttons dim, clicked button turns red, correct button turns green,
   FALSE appears, Skip → Next.
 - Layout: buttons side by side on desktop/landscape, stacked on portrait mobile.
 */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { Button } from '../../components/ui/button';
@@ -24,6 +25,8 @@ interface AnswerOption {
   word: string;
   correct: boolean;
 }
+
+const BLINK_DURATION_MS = 900;
 
 // Pick a random index from an array
 function randomIndex(length: number): number {
@@ -86,38 +89,64 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
   const [guessed, setGuessed] = useState(false);
   const [result, setResult] = useState<'success' | 'false' | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [blinking, setBlinking] = useState(false);
+  const blinkTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (blinkTimeoutRef.current !== null) {
+        window.clearTimeout(blinkTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleGuess = (index: number) => {
     if (guessed || puzzleData.kind !== 'ready') return;
     setSelectedIndex(index);
     setGuessed(true);
-    setResult(puzzleData.options[index].correct ? 'success' : 'false');
+    if (puzzleData.options[index].correct) {
+      setBlinking(true);
+      blinkTimeoutRef.current = window.setTimeout(() => {
+        blinkTimeoutRef.current = null;
+        setBlinking(false);
+        setResult('success');
+      }, BLINK_DURATION_MS);
+      return;
+    }
+    setResult('false');
   };
 
   const buttonClasses = (index: number): string => {
     if (puzzleData.kind !== 'ready') return '';
     const { options, correctIndex } = puzzleData;
     const base = [
-      'flex-1 px-4 py-3 rounded-lg text-sm font-semibold text-foreground text-left clay-panel',
-      'transition-colors duration-200',
+      'flex-1 shrink-0 px-4 py-3 rounded-lg text-sm font-semibold text-left clay-panel',
       'whitespace-normal break-words',
     ];
 
     if (!guessed) {
-      base.push('cursor-pointer hover:opacity-90');
+      base.push(
+        'cursor-pointer text-foreground transition-colors duration-200 hover:opacity-90',
+      );
+    } else if (blinking) {
+      if (options[index].correct) {
+        base.push('animate-blink-orange cursor-default');
+      } else {
+        base.push('cursor-default text-foreground opacity-35');
+      }
     } else if (result === 'success') {
       if (options[index].correct) {
-        base.push('border-primary text-primary');
+        base.push('cursor-default border-primary text-primary');
       } else {
-        base.push('opacity-35 cursor-default');
+        base.push('cursor-default text-foreground opacity-35');
       }
     } else {
       if (index === selectedIndex) {
-        base.push('border-destructive text-destructive cursor-default');
+        base.push('cursor-default border-destructive text-destructive');
       } else if (index === correctIndex) {
-        base.push('border-primary text-primary cursor-default');
+        base.push('cursor-default border-primary text-primary');
       } else {
-        base.push('opacity-35 cursor-default');
+        base.push('cursor-default text-foreground opacity-35');
       }
     }
 
@@ -129,14 +158,16 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
   const { meaning, options } = puzzleData;
 
   return (
-    <div className="flex flex-col h-full px-4 py-3 select-none">
+    <div className="flex min-h-0 flex-col px-4 py-3 select-none md:h-full">
 
       {/* Prompt */}
-      <p className="text-sm text-muted-foreground mb-1">{t('meansWhatPrompt')}</p>
-      <p className="text-base font-semibold font-heading text-foreground mb-4 leading-snug">{meaning}</p>
+      <p className="mb-1 shrink-0 text-sm text-muted-foreground">{t('meansWhatPrompt')}</p>
+      <p className="mb-4 shrink-0 font-heading text-base font-semibold leading-snug text-foreground">
+        {meaning}
+      </p>
 
       {/* Answer buttons — row on landscape/desktop, column on portrait mobile */}
-      <div className="flex-1 flex flex-col md:flex-row gap-3 items-stretch">
+      <div className="flex min-h-0 flex-1 flex-col items-stretch gap-3 md:flex-row">
         {options.map((option, index) => (
           <button
             key={index}
@@ -150,7 +181,7 @@ export default function MeansWhatPuzzle({ vocabulary, onSkip }: Props) {
       </div>
 
       {/* Bottom bar: result label + skip/next button */}
-      <div className="flex items-center justify-between mt-3">
+      <div className="mt-3 flex shrink-0 items-center justify-between">
         <span
           className={[
             'text-sm font-semibold transition-opacity duration-300',

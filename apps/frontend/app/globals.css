@@ -65,9 +65,29 @@
   --font-sans: var(--font-body);
 }
 
+/* Horizontal tile strip: pan/scroll; hide native bar (phones fade it — custom track in JSX). */
+.scramble-tile-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.scramble-tile-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* !important beats .clay-panel background so the flash is visible on tiles/buttons. */
 @keyframes blink-orange {
-  0%, 100% { background-color: var(--color-surface); }
-  50% { background-color: var(--color-accent); color: white; }
+  0%, 100% {
+    background-color: var(--color-surface) !important;
+    color: var(--color-foreground) !important;
+  }
+  50% {
+    background-color: var(--color-accent) !important;
+    color: var(--color-on-primary) !important;
+  }
 }
 
 .animate-blink-orange {
@@ -81,6 +101,13 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Keep a visible success flash even when motion is reduced. */
+  .animate-blink-orange {
+    animation: none !important;
+    background-color: var(--color-accent) !important;
+    color: var(--color-on-primary) !important;
   }
 }
 

@@ -11,7 +11,7 @@ Scramble puzzle: player drags letter tiles to reconstruct a word from its meanin
 - On correct arrangement: tiles blink orange three times, then "SUCCESS!" appears
   and Skip becomes Next.
 */
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import type { VocabularyDto } from '@/lib/api/vocabularies/types';
 import { Button } from '../../components/ui/button';
@@ -76,11 +76,20 @@ function pickEntry(vocabulary: VocabularyDto): [string, string] | null {
 
 const TILE_SIZE = 48; // px, base tile width/height
 const TILE_GAP = 4;   // px between tiles
+// clay-panel draws a 4px bottom lip plus a soft drop shadow outside the box
+const TILE_SHADOW_CLEARANCE = 8;
+const BLINK_DURATION_MS = 900;
+const SCROLL_OVERFLOW_EPSILON_PX = 1;
 
-// components sho
+interface ScrollMetrics {
+  thumbRatio: number;
+  thumbOffset: number;
+}
+
 export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
   const t = useTranslations('games.puzzle');
   const tCommon = useTranslations('common');
+  const scrollRegionId = useId();
   const basePuzzle = useMemo(() => {
     const picked = pickEntry(vocabulary);
     if (!picked) return null;
@@ -99,19 +108,121 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
   } | null>(null);
   const [success, setSuccess] = useState(false);
   const [blinking, setBlinking] = useState(false);
+  const [scrollMetrics, setScrollMetrics] = useState<ScrollMetrics | null>(null);
   const wordRef = useRef('');
+  const blinkTimeoutRef = useRef<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollbarDragging = useRef<{
+    pointerId: number;
+    startX: number;
+    startScrollLeft: number;
+  } | null>(null);
 
   const puzzleWord = basePuzzle?.word ?? '';
-  const activeTiles =
-    tileOverride?.word === puzzleWord
-      ? tileOverride.tiles
-      : (basePuzzle?.tiles ?? []);
+  const activeTiles = useMemo(
+    () =>
+      tileOverride?.word === puzzleWord
+        ? tileOverride.tiles
+        : (basePuzzle?.tiles ?? []),
+    [basePuzzle?.tiles, puzzleWord, tileOverride],
+  );
   const meaning = basePuzzle?.meaning ?? '';
+  const tilesRef = useRef<Tile[]>(activeTiles);
+  const successTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    tilesRef.current = activeTiles;
+  }, [activeTiles]);
 
   useEffect(() => {
     if (!basePuzzle) return;
     wordRef.current = basePuzzle.word;
+    successTriggeredRef.current = false;
   }, [basePuzzle]);
+
+  useEffect(() => {
+    return () => {
+      if (blinkTimeoutRef.current !== null) {
+        window.clearTimeout(blinkTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const updateScrollMetrics = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) {
+      setScrollMetrics(null);
+      return;
+    }
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    if (scrollWidth <= clientWidth + SCROLL_OVERFLOW_EPSILON_PX) {
+      setScrollMetrics(null);
+      return;
+    }
+    setScrollMetrics({
+      thumbRatio: clientWidth / scrollWidth,
+      thumbOffset: scrollLeft / scrollWidth,
+    });
+  }, []);
+
+  const step = TILE_SIZE + TILE_GAP;
+  const totalWidth =
+    activeTiles.length * TILE_SIZE + (activeTiles.length - 1) * TILE_GAP;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      updateScrollMetrics();
+    });
+    observer.observe(el);
+    const frame = window.requestAnimationFrame(() => {
+      updateScrollMetrics();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [totalWidth, updateScrollMetrics]);
+
+  const handleScrollbarPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    const el = scrollRef.current;
+    if (!el || !scrollMetrics) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    scrollbarDragging.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startScrollLeft: el.scrollLeft,
+    };
+  };
+
+  const handleScrollbarPointerMove = (
+    e: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    const drag = scrollbarDragging.current;
+    const el = scrollRef.current;
+    if (!drag || drag.pointerId !== e.pointerId || !el) return;
+    e.preventDefault();
+    const trackWidth = e.currentTarget.clientWidth;
+    if (trackWidth <= 0) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const deltaRatio = (e.clientX - drag.startX) / trackWidth;
+    el.scrollLeft = drag.startScrollLeft + deltaRatio * el.scrollWidth;
+    el.scrollLeft = Math.max(0, Math.min(maxScroll, el.scrollLeft));
+    updateScrollMetrics();
+  };
+
+  const handleScrollbarPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (scrollbarDragging.current?.pointerId !== e.pointerId) return;
+    scrollbarDragging.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
 
   const updateTiles = useCallback(
     (updater: (prev: Tile[]) => Tile[]) => {
@@ -121,7 +232,9 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
           prev?.word === puzzleWord
             ? prev.tiles
             : (basePuzzle?.tiles ?? []);
-        return { word: puzzleWord, tiles: updater(current) };
+        const next = updater(current);
+        tilesRef.current = next;
+        return { word: puzzleWord, tiles: next };
       });
     },
     [basePuzzle?.tiles, puzzleWord],
@@ -140,21 +253,24 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     originSlot: number;
   } | null>(null);
 
-  // sets blinking to true, blinks for 900ms then turns off
-  // sets success to true
   const triggerSuccess = useCallback(() => {
+    if (successTriggeredRef.current) return;
+    successTriggeredRef.current = true;
     setBlinking(true);
-    setTimeout(() => setBlinking(false), 900);
-    setTimeout(() => setSuccess(true), 900);
+    blinkTimeoutRef.current = window.setTimeout(() => {
+      blinkTimeoutRef.current = null;
+      setBlinking(false);
+      setSuccess(true);
+    }, BLINK_DURATION_MS);
   }, []);
-
 
   // tells browser that this element owns all future pointer events.
   // records the drag start position and the tile's slot at the start (originSlot)
   // setDragState triggers the one re-render needed to switch tile to "grabbed" visual state
-  const handlePointerDown = (e: React.PointerEvent, tileId: number) => {
-    if (success) return;  // guards against dragging after success
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, tileId: number) => {
+    if (success || successTriggeredRef.current) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
     const tile = activeTiles.find((t) => t.id === tileId)!;
     dragging.current = {
       tileId,
@@ -167,22 +283,23 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
 
   // Runs every frame while a tile is being dragged. Figures out how far the tile has moved,
   // clamps the movement to x axis, snaps to nearest slot, and shuffles other tiles away
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;  // guards against nothing being dragged
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    e.preventDefault();
     const d = dragging.current; // shorthand that holds relevant info
     const rawOffset = e.clientX - d.startX; // e.clientX is current mouse/finger X position, d,startX is start of drag
     const tileCount = activeTiles.length;
-    const step = TILE_SIZE + TILE_GAP;  // one 'unit' of movement
+    const moveStep = TILE_SIZE + TILE_GAP;  // one 'unit' of movement
 
     // Clamp offset so tile can't go past first or last slot
-    const minOffset = (0 - d.originSlot) * step;
-    const maxOffset = (tileCount - 1 - d.originSlot) * step;
+    const minOffset = (0 - d.originSlot) * moveStep;
+    const maxOffset = (tileCount - 1 - d.originSlot) * moveStep;
     const clampedOffset = Math.max(minOffset, Math.min(maxOffset, rawOffset));
 
     d.currentX = d.startX + clampedOffset;  // updates ref with tile's current x position
 
     // Which slot is the dragged tile's center currently over? Converts pixels back into slot numbers
-    const floatSlot = d.originSlot + clampedOffset / step;  // gives fractional slot count
+    const floatSlot = d.originSlot + clampedOffset / moveStep;  // gives fractional slot count
     const targetSlot = Math.round(floatSlot); // rounds to nearest whole, so 'snaps' in place
 
     updateTiles((prev) => {
@@ -207,26 +324,23 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
     });
   };
 
-  // runs when user releases the tile
-  const handlePointerUp = () => {
-    if (!dragging.current) return;  // guards against phantom event
-    dragging.current = null;  // clear drag ref
-    setDragState(null); // clears visual drag offset
-    // Read word from ref — closure-safe, always current
-    updateTiles((prev) => {
-      if (isCorrect(prev, wordRef.current)) triggerSuccess();
-      return prev;
-    });
+  const endDrag = (e?: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    dragging.current = null;
+    if (e?.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setDragState(null);
+    if (success || successTriggeredRef.current) return;
+    if (isCorrect(tilesRef.current, wordRef.current)) {
+      triggerSuccess();
+    }
   };
-
-  const step = TILE_SIZE + TILE_GAP;
-  const totalWidth =
-    activeTiles.length * TILE_SIZE + (activeTiles.length - 1) * TILE_GAP;
 
   if (!basePuzzle || activeTiles.length === 0) return null;
 
   return (
-    <div className="flex flex-col h-full px-4 py-3 select-none">
+    <div className="flex h-full select-none flex-col px-4 py-3">
 
       {/* Instruction + meaning */}
       <p className="text-sm text-muted-foreground mb-3 leading-snug">
@@ -234,52 +348,98 @@ export default function ScramblePuzzle({ vocabulary, onSkip }: Props) {
         <span className="font-semibold text-foreground">{meaning}</span>
       </p>
 
-      {/* Tile row */}
-      <div className="flex-1 flex items-center justify-center overflow-hidden">
+      {/* Tile row: pan-x on the scroller; touch-none only on tiles so drag still works. */}
+      <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className="relative"
-          style={{ width: totalWidth, height: TILE_SIZE }}
+          ref={scrollRef}
+          id={scrollRegionId}
+          className="scramble-tile-scroll min-h-0 flex-1"
+          onScroll={updateScrollMetrics}
         >
-          {activeTiles.map((tile) => {
-            const isDragging = dragState?.tileId === tile.id;
+          <div
+            className="flex min-h-full items-center justify-center"
+            style={{ width: `max(100%, ${totalWidth}px)` }}
+          >
+            <div
+              className="relative shrink-0"
+              style={{
+                width: totalWidth,
+                height: TILE_SIZE + TILE_SHADOW_CLEARANCE,
+              }}
+            >
+              {activeTiles.map((tile) => {
+                const isDragging = dragState?.tileId === tile.id;
 
-            const visualX = tile.slot * step;
+                const visualX = tile.slot * step;
 
-            const dragOffset =
-              isDragging && dragState
-                ? dragState.offsetX - (tile.slot - dragState.originSlot) * step
-                : 0;
+                const dragOffset =
+                  isDragging && dragState
+                    ? dragState.offsetX - (tile.slot - dragState.originSlot) * step
+                    : 0;
 
-            return (
-              <div
-                key={tile.id}
-                onPointerDown={(e) => handlePointerDown(e, tile.id)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                style={{
-                  position: 'absolute',
-                  left: visualX + dragOffset,
-                  top: 0,
-                  width: TILE_SIZE,
-                  height: TILE_SIZE,
-                  transition: isDragging ? 'none' : 'left 0.12s ease',
-                  zIndex: isDragging ? 10 : 1,
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                }}
-                className={[
-                  'flex items-center justify-center rounded-lg text-lg font-bold clay-panel',
-                  tile.char === ' '
-                    ? 'bg-muted text-muted-foreground'
-                    : 'bg-surface text-foreground',
-                  isDragging ? 'scale-105 shadow-lg' : '',
-                  blinking ? 'animate-blink-orange' : '',
-                ].join(' ')}
-              >
-                {tile.char === ' ' ? ' ' : tile.char}
-              </div>
-            );
-          })}
+                return (
+                  <div
+                    key={tile.id}
+                    onPointerDown={(e) => handlePointerDown(e, tile.id)}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                    style={{
+                      position: 'absolute',
+                      left: visualX + dragOffset,
+                      top: 0,
+                      width: TILE_SIZE,
+                      height: TILE_SIZE,
+                      transition: isDragging ? 'none' : 'left 0.12s ease',
+                      zIndex: isDragging ? 10 : 1,
+                      cursor: isDragging ? 'grabbing' : 'grab',
+                    }}
+                    className={[
+                      'flex touch-none items-center justify-center rounded-lg text-lg font-bold leading-none clay-panel',
+                      blinking
+                        ? 'animate-blink-orange'
+                        : tile.char === ' '
+                          ? 'bg-muted text-muted-foreground'
+                          : 'bg-surface text-foreground',
+                      isDragging ? 'scale-105 shadow-lg' : '',
+                    ].join(' ')}
+                  >
+                    {tile.char === ' ' ? ' ' : tile.char}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
+
+        {/* Always-visible track: native mobile scrollbars fade after use. */}
+        {scrollMetrics ? (
+          <div
+            className="relative mt-2 h-2.5 w-full shrink-0 touch-none rounded-full bg-muted"
+            onPointerDown={handleScrollbarPointerDown}
+            onPointerMove={handleScrollbarPointerMove}
+            onPointerUp={handleScrollbarPointerUp}
+            onPointerCancel={handleScrollbarPointerUp}
+            role="scrollbar"
+            aria-orientation="horizontal"
+            aria-controls={scrollRegionId}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(
+              (scrollMetrics.thumbOffset /
+                Math.max(1 - scrollMetrics.thumbRatio, 0.001)) *
+                100,
+            )}
+          >
+            <div
+              className="absolute top-0 h-full rounded-full bg-foreground/40"
+              style={{
+                width: `${scrollMetrics.thumbRatio * 100}%`,
+                left: `${scrollMetrics.thumbOffset * 100}%`,
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* Bottom bar: success label + skip/next button */}
