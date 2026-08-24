@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../../context/auth-context';
 import { vocabulariesApi } from '@/lib/api';
-import type { ExtractionErrorCode } from '@/lib/api/vocabularies/types';
+import {
+  MAX_EXTRACT_FILE_BYTES,
+  MAX_EXTRACT_FILE_MB,
+  type ExtractionErrorCode,
+} from '@/lib/api/vocabularies/types';
 import { Vocabulary } from '../../types';
 import { Button, Dialog, Icon, Input } from '../../components/ui';
 import VocabularyEntriesList, {
@@ -101,6 +105,9 @@ function messageForExtractionFailure(
   }
   if (code === 'UNSUPPORTED_FILE_TYPE') return t('unsupportedFileType');
   if (code === 'EMPTY_FILE') return t('emptyFile');
+  if (code === 'FILE_TOO_LARGE') {
+    return t('fileTooLarge', { maxMb: MAX_EXTRACT_FILE_MB });
+  }
   if (code === 'OPENAI_NOT_CONFIGURED') return t('extractionUnavailable');
   return t('extractionFailed');
 }
@@ -241,6 +248,10 @@ export default function AddVocabulary({
 
   const handleAiExtract = async () => {
     if (!selectedFile || !user || !group) return;
+    if (selectedFile.size > MAX_EXTRACT_FILE_BYTES) {
+      setAiError(t('fileTooLarge', { maxMb: MAX_EXTRACT_FILE_MB }));
+      return;
+    }
     if (!isAllowedExtractUpload(selectedFile)) {
       setAiError(t('unsupportedFileType'));
       return;
@@ -442,7 +453,12 @@ export default function AddVocabulary({
             type="file"
             accept="image/png,image/jpeg,image/gif,image/webp,.pdf"
             onChange={(e) => {
-              if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
+              const file = e.target.files?.[0] ?? null;
+              setSelectedFile(file);
+              if (file && file.size > MAX_EXTRACT_FILE_BYTES) {
+                setAiError(t('fileTooLarge', { maxMb: MAX_EXTRACT_FILE_MB }));
+                return;
+              }
               setAiError('');
             }}
             className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-muted file:text-foreground hover:file:bg-muted/80 cursor-pointer"
