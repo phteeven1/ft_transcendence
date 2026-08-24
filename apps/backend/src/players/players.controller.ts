@@ -5,17 +5,29 @@ import {
   Param,
   Post,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { PlayersService } from './players.service';
+import { UsersService } from '../users/users.service';
 import { UserSessionGuard } from '../users/user-session.guard';
 import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
-import { PlayerOrParentSessionGuard } from './player-or-parent-session.guard';
 import { readHeader } from '../common/request-headers';
+
+function readPositiveId(
+  value: string | number | undefined,
+): number | undefined {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
 
 @Controller('players')
 export class PlayersController {
-  constructor(private readonly playersService: PlayersService) {}
+  constructor(
+    private readonly playersService: PlayersService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('create')
   @UseGuards(UserSessionGuard)
@@ -74,31 +86,40 @@ export class PlayersController {
   }
 
   @Post('clearSession')
-  @UseGuards(PlayerOrParentSessionGuard)
   async clearSession(
     @Req()
     request: {
-      playerId?: number;
-      userId?: number;
       headers: Record<string, string | string[] | undefined>;
     },
     @Body() body: { playerId: number; token?: string },
   ) {
-    if (request.playerId) {
-      const token = readHeader(request.headers, 'x-player-session-token');
-      await this.playersService.clearSession(request.playerId, { token });
-      return;
-    }
+    const bodyToken =
+      typeof body.token === 'string' && body.token.length > 0
+        ? body.token
+        : undefined;
+    const headerToken = readHeader(request.headers, 'x-player-session-token');
+    const scopedToken = bodyToken ?? headerToken;
+    const scopedPlayerId =
+      readPositiveId(body.playerId) ??
+      readPositiveId(readHeader(request.headers, 'x-player-id'));
 
-    const userId = request.userId;
-    if (!userId) return;
-    await this.playersService.assertCanManagePlayer(userId, body.playerId);
-    if (body.token) {
-      await this.playersService.clearSession(body.playerId, {
-        token: body.token,
+    // Token-scoped delete is idempotent and does not need a still-valid
+    // session: tab-close pending end runs from whatever tab is left
+    // (including sign-in), and Leave session may already have deleted it.
+    if (scopedToken && scopedPlayerId !== undefined) {
+      await this.playersService.clearSession(scopedPlayerId, {
+        token: scopedToken,
       });
       return;
     }
+
+    const userId = readPositiveId(readHeader(request.headers, 'x-user-id'));
+    const userToken = readHeader(request.headers, 'x-user-session-token');
+    if (userId === undefined || !userToken) {
+      throw new UnauthorizedException('Session required');
+    }
+    await this.usersService.validateSession(userId, userToken);
+    await this.playersService.assertCanManagePlayer(userId, body.playerId);
     await this.playersService.clearSession(body.playerId, { force: true });
   }
 
