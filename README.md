@@ -64,7 +64,7 @@ MAIL_FROM=your-gmail@example.com
 
 Optional: repo-root `.env` for `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (Compose defaults to `postgres` / `postgres` / `transcendence`). For Prisma CLI on the host (`npm run db:migrate`, `db:studio`), also set `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/transcendence` in `packages/database/.env`. The frontend does not need a `.env` — the browser calls `/api` on the current origin.
 
-`OPENAI_API_KEY` is required for AI vocabulary import. Mail uses Gmail SMTP via `MAIL_*` (app password, not the account password). In Docker, invitation links use `https://<this-machine>` (`PUBLIC_HOST` from `scripts/docker-up.sh`); that overrides `APP_URL` in `apps/backend/.env`.
+`OPENAI_API_KEY` is required for AI vocabulary import. Mail uses Gmail SMTP via `MAIL_*` (app password, not the account password). In Docker, invitation links use `https://<this-machine>:8443` (`PUBLIC_HOST` from `scripts/docker-up.sh`, `PUBLIC_PORT` default `8443`); that overrides `APP_URL` in `apps/backend/.env`.
 
 ### Recommended: local dev (Postgres in Docker only)
 
@@ -90,11 +90,13 @@ npm run dev            # start without rebuilding
 npm run down           # stop the stack
 ```
 
-`npm run build` / `npm run dev` run `[scripts/docker-up.sh](./scripts/docker-up.sh)` (not a TypeScript compile). That starts Nginx on ports 80/443, plus frontend, backend, and PostgreSQL. Nest and Next are not published on the host — only Nginx is. Postgres is bound to `127.0.0.1:5432`.
+`npm run build` / `npm run dev` run `[scripts/docker-up.sh](./scripts/docker-up.sh)` (not a TypeScript compile). That starts Nginx, frontend, backend, and PostgreSQL. Nest and Next are not published on the host — only Nginx is. Compose maps **8080→80** (HTTP) and **8443→443** (HTTPS). Postgres is bound to `127.0.0.1:5432`.
 
-The script prints this computer's addresses, for example `https://localhost` and `https://192.168.0.152`. Any phone or laptop on the **same Wi-Fi** can open the LAN URL. Pick **one** address and use it on every device (`https://localhost` and `https://192.168.x.x` are different origins, so sessions do not carry over). A printed `https://<hostname>.local` address only works if that name already resolves on your network (nothing in this stack runs mDNS).
+Open **[https://localhost:8443](https://localhost:8443)** (or `https://<LAN-IP>:8443`). `http://localhost:8080` redirects to HTTPS. If the script prints `https://localhost` without a port, append **`:8443`**. Pick **one** origin and use it on every device (`https://localhost:8443` and `https://192.168.x.x:8443` are different origins, so sessions do not carry over). A printed `https://<hostname>.local:8443` address only works if that name already resolves on your network (nothing in this stack runs mDNS).
 
-The first visit uses a self-signed certificate — accept the browser warning. A new cert is generated each time the Nginx container starts, so the warning can return after a restart. HTTP on port 80 redirects to HTTPS. Backend applies migrations on container start.
+The first visit uses a self-signed certificate — accept the browser warning. A new cert is generated each time the Nginx container starts, so the warning can return after a restart. Backend applies migrations on container start.
+
+`npm run dev:local` is HTTP only (`localhost:3000` / `:4000`). Use the Docker stack for the eval HTTPS check.
 
 ### Database commands (repo root)
 
@@ -185,21 +187,24 @@ Not claimed: SSR, LLM streaming UI, friends system, standard user management (no
 
 ## Eval demo
 
-Walk these in order. Use Chrome with the console open — no red errors.
+Grade from a fresh `git clone` in an empty folder. All five team members present. Walk these in order on **[https://localhost:8443](https://localhost:8443)** (`npm run build`). Keep Chrome DevTools **Console** open.
 
-1. **Frameworks** — show `apps/frontend/` (Next.js App Router) and `apps/backend/src/app.module.ts` (Nest modules). Run `npm run dev:local`.
-2. **Design system** — Dashboard panels, Chip tabs, `app/components/ui/index.ts`, tokens in `app/design-tokens.json`.
-3. **i18n** — home in English, flag menu → Deutsch, then Français. Refresh; language stays. Legal pages (`/privacy`, `/terms`) switch too.
-4. **Auth + groups** — register, create a group, Dashboard (members, promote). Send an invite email, open `/accept_invitation`.
-5. **ORM** — `schema.prisma` and a service using Prisma (e.g. `groups.service.ts`). Optional: `npm run db:studio`.
-6. **Image recognition** — Dashboard Vocabulary tab → Add vocabulary → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
-7. **Players + Play Now** — create 3 child profiles, start Play Now (minutes). Child lands on Select Game.
-8. **WebSockets + Word Building + remote** — two browsers, same group. Start Word Building. Place a letter in A; B updates without refresh. Show cell lock. Finish puzzle.
-9. **Multiplayer 3+** — third player joins the same pending game (or force-start). Scoreboard shows three names on one grid.
-10. **Add another game** — from the lobby, create a pending Word Soup. Second player joins that pending game, then start. Show live word-search sync.
-11. **Gamification + statistics** — after a finished game, lobby `ProgressionPanel`: XP / avatar tier, leaderboard, wins and last games (date, score, win).
+Do **not** sign out, close a Play Now tab, or mix `localhost` with a LAN IP during the graded run. Logout and tab-close call `clearSession`; if the token is already gone the API returns 401 and Chrome logs `Failed to load resource` (native network log, not an uncaught JS exception — those calls are `try/catch` / `.catch()`). Failed login can do the same. Uncaught `ApiError` would fail the sheet; a native HTTP status line should not.
 
-Talking points: server owns the crossword solution; Socket.IO rooms are `group:{id}` and `game:{id}`; Word Soup join-pending is the matchmaking demo; stats history does not list opponent names.
+1. **HTTPS + legal** — padlock on `:8443`. Footer → Privacy Policy and Terms of Service (not placeholders). Show `apps/backend/.env` is gitignored and `.env.example` exists.
+2. **Frameworks** — `apps/frontend/` (Next.js App Router) and `apps/backend/src/app.module.ts` (Nest modules). Tailwind in the UI; bcrypt in `users.service.ts` (`hash` / `compare`, 10 rounds).
+3. **Design system** — Dashboard panels, Chip tabs, `app/components/ui/index.ts` (10 components), tokens in `app/design-tokens.json`. Resize desktop and mobile.
+4. **i18n** — home in English, flag menu → Deutsch, then Français. Refresh; language stays. Legal pages (`/privacy`, `/terms`) switch too.
+5. **Auth + groups** — register, create a group, Dashboard (members, promote, rename). Send an invite email, open `/accept_invitation`.
+6. **ORM** — `schema.prisma` and a service using Prisma (e.g. `groups.service.ts`). Optional: `npm run db:studio`.
+7. **Image recognition** — needs `OPENAI_API_KEY`. Dashboard Vocabulary tab → Add vocabulary → PNG/JPEG or PDF (max 10 MB) → review ≥5 word pairs → save → set as active list.
+8. **Players + Play Now** — create 3 child profiles, start Play Now (minutes). Child lands on Select Game. Same origin on every device.
+9. **WebSockets + Word Building + remote** — two browsers, same group. Start Word Building. Place a letter in A; B updates without refresh. Show cell lock. Finish puzzle.
+10. **Multiplayer 3+** — third player joins the same pending game (or force-start). Scoreboard shows three names on one grid.
+11. **Add another game** — from the lobby, create a pending Word Soup. Second player joins that pending game (matchmaking), then start. Show live word-search sync.
+12. **Gamification + statistics** — after a finished game, lobby `ProgressionPanel`: XP + avatar tiers + leaderboard (three gamification pieces), wins and last games (date, score, win — not opponent names).
+
+Talking points: server owns the crossword solution; Socket.IO rooms are `group:{id}` and `game:{id}`; Word Soup join-pending is the matchmaking demo; stats history does not list opponent names (subject lists opponents; we still show date, score, win, and per-type stats). Parent auth is a `UserSession` token, not JWT. Play Now uses `logout({ localOnly: true })` so the child cannot open parent settings.
 
 ---
 
@@ -248,9 +253,6 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 ## Team information
 
-> **Update with 42 logins before evaluation.**
-
-
 | Member     | Role(s)         | Responsibilities                           |
 | ---------- | --------------- | ------------------------------------------ |
 | `tsternbe` | Product Owner   | Vision, backlog, feature priorities        |
@@ -279,10 +281,6 @@ Full schema: `[packages/database/prisma/schema.prisma](./packages/database/prism
 
 
 ## Individual contributions
-
-> **Each member must fill in their section before evaluation.**
-
-
 
 ### `tsternbe` (Tobias Sternberg)
 
@@ -348,10 +346,11 @@ All AI-generated code was reviewed, tested, and understood by the team before me
 ## Known limitations
 
 1. **Parent session is token-based, not JWT** — sign-in returns `{ user, session }`. The token is stored in `localStorage` (`dicteeUserSessionToken`) and sent on mutating parent requests. A second sign-in replaces the token and kicks the previous client. Fine for a local/school demo.
-2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` with that token after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. A stale pending end cannot delete a newer Play Now token. Do not sendBeacon on `pagehide`: that event also fires on refresh.
+2. **Tab-close vs refresh** — child tokens live in `sessionStorage` (cleared on tab close). Closing the tab schedules `POST /players/clearSession` with that token after a 2s grace window via a `localStorage` pending flag; a refresh cancels that pending end. A parent can still force-clear from the Play Now dialog. A stale pending end cannot delete a newer Play Now token. Do not sendBeacon on `pagehide`: that event also fires on refresh. If that request hits a session that is already gone, the API returns 401 and Chrome may log `Failed to load resource` even though the frontend catches the error.
 3. **Friends system** — not implemented; groups are the social unit.
-4. Chrome **console errors** during the demo fail the eval — check before staff arrive.
-5. **Self-signed TLS** — phones and laptops on the LAN must accept the certificate warning. Use the same printed URL on every device.
+4. **Eval console** — uncaught JS (`Uncaught (in promise)`) and leftover `console.error` fail the sheet. Chrome also logs native `Failed to load resource` for any non-2xx HTTP status; that is browser behaviour, not an unhandled exception. Avoid sign-out, failed login, and closing Play Now tabs while the console is graded.
+5. **Self-signed TLS** — phones and laptops on the LAN must accept the certificate warning. Use `https://<host>:8443` on every device (not port 443).
+6. **Host ports** — Docker Nginx is on **8080** (HTTP) and **8443** (HTTPS), not 80/443, so school machines without root can bind them.
 
 ---
 
