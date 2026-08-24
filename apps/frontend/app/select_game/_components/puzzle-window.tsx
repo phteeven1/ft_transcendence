@@ -29,6 +29,13 @@ function canPlayMeansWhat(vocabulary: VocabularyDto): boolean {
   return vocabulary.words.length >= MEANS_WHAT_MIN_WORDS;
 }
 
+function isMeansWhatPuzzle(
+  vocabulary: VocabularyDto,
+  puzzleIndex: number,
+): boolean {
+  return puzzleIndex === MEANS_WHAT_INDEX && canPlayMeansWhat(vocabulary);
+}
+
 function viablePuzzleIndices(vocabulary: VocabularyDto): number[] {
   const indices: number[] = [];
   if (canPlayScramble(vocabulary)) indices.push(SCRAMBLE_INDEX);
@@ -116,27 +123,21 @@ export default function PuzzleWindow() {
     }
 
     const props = { vocabulary, onSkip: handleSkip };
-    const isMeansWhat =
-      puzzleIndex === MEANS_WHAT_INDEX && canPlayMeansWhat(vocabulary);
-    if (isMeansWhat) {
+    if (isMeansWhatPuzzle(vocabulary, puzzleIndex)) {
       return <MeansWhatPuzzle key={key} {...props} />;
     }
     return <ScramblePuzzle key={key} {...props} />;
   };
 
   const isMeansWhat =
-    !loading &&
-    vocabulary != null &&
-    puzzleIndex === MEANS_WHAT_INDEX &&
-    canPlayMeansWhat(vocabulary);
+    !loading && vocabulary != null && isMeansWhatPuzzle(vocabulary, puzzleIndex);
 
   return (
     <div
       className={[
         'clay-panel w-full overflow-hidden',
-        isMeansWhat
-          ? 'h-auto min-h-56 md:h-52'
-          : 'h-56 md:h-52',
+        // Means-What content height varies; scramble keeps a fixed frame.
+        isMeansWhat ? 'h-auto min-h-56' : 'h-56 md:h-52',
       ].join(' ')}
     >
       {renderPuzzle()}
