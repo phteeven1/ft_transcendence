@@ -29,15 +29,27 @@ export class MailService {
     groupName: string,
     inviteLink: string,
   ): Promise<void> {
+    const escapeHtml = (value: string): string =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const safeText = escapeHtml(invitationText).replace(/\n/g, '<br>');
+    const safeGroupName = escapeHtml(groupName);
+    const safeInviteLink = escapeHtml(inviteLink);
+
     await this.transporter.sendMail({
       from: `"Dictee" <${process.env.MAIL_FROM ?? 'no-reply@localhost'}>`,
       to: toEmail,
       subject: 'Invitation to Dictée vocabulary learning space',
       text: `${invitationText}\n\n${inviteLink}`,
       html: `
-        <p>${invitationText.replace(/\n/g, '<br>')}</p>
+        <p>${safeText}</p>
         <br>
-        <a href="${inviteLink}">Click here to join ${groupName}</a>
+        <a href="${safeInviteLink}">Click here to join ${safeGroupName}</a>
       `,
     });
 
