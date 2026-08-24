@@ -11,7 +11,6 @@ import {
 } from '../_components/test-vocabulary';
 import type { MemberAction } from '../_components/member-dialog';
 import type { VocabularyAction } from '../_components/vocabulary-list';
-import { useDashboardLive } from './dashboard-live';
 
 export type PeopleTab = 'members' | 'players' | 'vocabulary';
 export type PlayerAction = 'rename' | 'delete';
@@ -163,13 +162,6 @@ export function usePeoplePanel(): UsePeoplePanelResult {
       /* keep last group snapshot */
     }
   }, [selectedGroupId, userId, syncGroup, leaveGroup, fetchMembers, fetchPlayers]);
-
-  const refreshDashboard = useCallback((): void => {
-    void syncAndRefresh();
-    if (isAdmin) void fetchVocabularies();
-  }, [syncAndRefresh, isAdmin, fetchVocabularies]);
-
-  useDashboardLive(refreshDashboard);
 
   useEffect(() => {
     if (!selectedGroupId) {

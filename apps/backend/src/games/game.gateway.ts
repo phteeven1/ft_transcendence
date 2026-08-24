@@ -121,44 +121,6 @@ export class GameGateway implements OnGatewayDisconnect, OnModuleInit {
     client.emit('lobby:update', { games });
   }
 
-  @SubscribeMessage('joinDashboard')
-  async handleJoinDashboard(
-    @ConnectedSocket() client: TypedSocket,
-    @MessageBody() data: { groupId: number; userId: number; token: string },
-  ): Promise<void> {
-    if (!Number.isInteger(data.userId) || data.userId <= 0) return;
-
-    try {
-      await this.usersService.validateSession(data.userId, data.token);
-    } catch {
-      client.emit('session:replaced');
-      return;
-    }
-
-    await client.join(`user:${data.userId}`);
-    client.data.userId = data.userId;
-
-    const previousGroupId = client.data.groupId;
-    if (previousGroupId && previousGroupId !== data.groupId) {
-      await client.leave(`group:${previousGroupId}`);
-    }
-
-    if (Number.isInteger(data.groupId) && data.groupId > 0) {
-      await client.join(`group:${data.groupId}`);
-      client.data.groupId = data.groupId;
-    } else {
-      client.data.groupId = undefined;
-    }
-  }
-
-  emitDashboardUpdate(groupId: number): void {
-    this.server.to(`group:${groupId}`).emit('dashboard:update');
-  }
-
-  emitMembershipChanged(userId: number): void {
-    this.server.to(`user:${userId}`).emit('membership:changed');
-  }
-
   /**
    * Joins a client to the in-game room used for live game updates.
    *

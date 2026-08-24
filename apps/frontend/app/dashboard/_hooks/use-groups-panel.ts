@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { groupsApi } from '@/lib/api';
 import { Group } from '../../types';
-import { useDashboardLive } from './dashboard-live';
 
 export type GroupAction = 'rename' | 'leave' | 'delete';
 
@@ -53,8 +52,6 @@ export function useGroupsPanel(): UseGroupsPanelResult {
     }, 0);
     return () => window.clearTimeout(timeoutId);
   }, [userId, player, loadGroups]);
-
-  useDashboardLive(loadGroups);
 
   const selectGroup = useCallback(
     async (groupId: number): Promise<void> => {

@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PlayersService } from './players.service';
-import { GameGateway } from '../games/game.gateway';
 import { UserSessionGuard } from '../users/user-session.guard';
 import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
 import { PlayerOrParentSessionGuard } from './player-or-parent-session.guard';
@@ -16,10 +15,7 @@ import { readHeader } from '../common/request-headers';
 
 @Controller('players')
 export class PlayersController {
-  constructor(
-    private readonly playersService: PlayersService,
-    private readonly gateway: GameGateway,
-  ) {}
+  constructor(private readonly playersService: PlayersService) {}
 
   @Post('create')
   @UseGuards(UserSessionGuard)
@@ -35,13 +31,11 @@ export class PlayersController {
       userId,
       body.playerInGroup,
     );
-    const created = await this.playersService.create(
+    return this.playersService.create(
       body.playerInGroup,
       userId,
       body.playerName,
     );
-    this.gateway.emitDashboardUpdate(created.inGroup);
-    return created;
   }
 
   @Post('rename')
@@ -51,12 +45,7 @@ export class PlayersController {
     @Body() body: { playerId: number; playerName: string },
   ) {
     await this.playersService.assertCanManagePlayer(userId, body.playerId);
-    const renamed = await this.playersService.rename(
-      body.playerId,
-      body.playerName,
-    );
-    if (renamed) this.gateway.emitDashboardUpdate(renamed.inGroup);
-    return renamed;
+    return this.playersService.rename(body.playerId, body.playerName);
   }
 
   @Post('remove')
@@ -66,10 +55,7 @@ export class PlayersController {
     @Body() body: { playerId: number },
   ) {
     await this.playersService.assertCanManagePlayer(userId, body.playerId);
-    const player = await this.playersService.findById(body.playerId);
-    const removed = await this.playersService.remove(body.playerId);
-    if (removed && player) this.gateway.emitDashboardUpdate(player.inGroup);
-    return removed;
+    return this.playersService.remove(body.playerId);
   }
 
   @Post('startSession')
