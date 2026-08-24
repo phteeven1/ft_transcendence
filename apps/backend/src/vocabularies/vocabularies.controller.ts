@@ -18,6 +18,8 @@ import { GameGateway } from '../games/game.gateway';
 import { UserSessionGuard } from '../users/user-session.guard';
 import { AuthenticatedUserId } from '../users/authenticated-user.decorator';
 
+const MAX_EXTRACT_FILE_BYTES = 10 * 1024 * 1024;
+
 @Controller('vocabularies')
 export class VocabulariesController {
   constructor(
@@ -185,7 +187,7 @@ export class VocabulariesController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024 },
+      limits: { fileSize: MAX_EXTRACT_FILE_BYTES },
     }),
   )
   async extract(

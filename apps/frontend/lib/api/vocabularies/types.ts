@@ -39,9 +39,13 @@ export type UpdateVocabularyEntriesInput = {
   vocabularyMeanings: string[];
 };
 
+export const MAX_EXTRACT_FILE_MB = 10;
+export const MAX_EXTRACT_FILE_BYTES = MAX_EXTRACT_FILE_MB * 1024 * 1024;
+
 export type ExtractionErrorCode =
   | 'UNSUPPORTED_FILE_TYPE'
   | 'EMPTY_FILE'
+  | 'FILE_TOO_LARGE'
   | 'INVALID_AI_RESPONSE'
   | 'EXTRACTION_FAILED'
   | 'OPENAI_NOT_CONFIGURED'

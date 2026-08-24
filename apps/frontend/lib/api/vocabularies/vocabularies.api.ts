@@ -88,6 +88,9 @@ export const vocabulariesApi = {
       if (response.status === 401) {
         notifyUnauthorized('/vocabularies/extract');
       }
+      if (response.status === 413) {
+        return { success: false, code: 'FILE_TOO_LARGE' };
+      }
       throw new ApiError(response.status);
     }
     return response.json() as Promise<ExtractVocabularyResult>;
