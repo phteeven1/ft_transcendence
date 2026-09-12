@@ -1,0 +1,30 @@
+{
+  "name": "ft_transcendence",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "bash scripts/docker-up.sh",
+    "dev:local": "bash scripts/dev-local.sh",
+    "dev:stop": "bash scripts/dev-stop.sh",
+    "build": "bash scripts/docker-up.sh --build",
+    "build:school": "bash scripts/setup-school-machine.sh",
+    "down": "docker compose down",
+    "db:generate": "npm run db:generate --prefix packages/database",
+    "db:migrate": "npm run db:migrate --prefix packages/database",
+    "db:migrate:deploy": "npm run db:migrate:deploy --prefix packages/database",
+    "db:studio": "npm run db:studio --prefix packages/database"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phteeven1/ft_transcendence.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/phteeven1/ft_transcendence/issues"
+  },
+  "homepage": "https://github.com/phteeven1/ft_transcendence#readme"
+}

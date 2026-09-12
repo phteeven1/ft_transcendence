@@ -1,0 +1,42 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+import { IsInt, Max, Min } from 'class-validator';
+import { AuthenticatedPlayerId } from '../players/authenticated-player.decorator';
+import { PlayerSessionGuard } from '../players/player-session.guard';
+import { ProgressionService } from './progression.service';
+
+class EquipAvatarDto {
+  @IsInt()
+  @Min(0)
+  @Max(4)
+  avatarAnimal!: number;
+}
+
+@Controller('players')
+@UseGuards(PlayerSessionGuard)
+@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+export class PlayerProgressionController {
+  constructor(private readonly progressionService: ProgressionService) {}
+
+  @Get('me/progression')
+  getMyProgression(@AuthenticatedPlayerId() playerId: number) {
+    return this.progressionService.getMyProgression(playerId);
+  }
+
+  @Patch('me/avatar')
+  equipAvatar(
+    @AuthenticatedPlayerId() playerId: number,
+    @Body() body: EquipAvatarDto,
+  ) {
+    return this.progressionService.equipAvatar(playerId, {
+      avatarAnimal: body.avatarAnimal,
+    });
+  }
+}

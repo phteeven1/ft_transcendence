@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Player" ADD COLUMN "avatarTier" INTEGER NOT NULL DEFAULT 0;

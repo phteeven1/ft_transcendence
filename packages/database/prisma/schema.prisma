@@ -1,0 +1,193 @@
+// Prisma schema. After edits: `npm run db:migrate` from repo root.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  email          String   @unique
+  password       String
+  createdAt      DateTime @default(now())
+
+  memberships  GroupMembership[]
+  players      Player[]
+  vocabularies Vocabulary[]
+  session      UserSession?
+}
+
+model Group {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  memberships  GroupMembership[]
+  players      Player[]
+  vocabularies Vocabulary[]
+  currentVocabularyId Int? @unique
+  currentVocabulary   Vocabulary? @relation("GroupCurrentVocabulary", fields: [currentVocabularyId], references: [id], onDelete: SetNull)
+  games        Game[]
+  invitations  Invitation[]
+}
+
+/// Replaces parallel admins[] / members[] on Group and isAdminOf / isMemberOf on User.
+model GroupMembership {
+  id      Int       @id @default(autoincrement())
+  userId  Int
+  groupId Int
+  role    GroupRole @default(MEMBER)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+}
+
+model Player {
+  id            Int     @id @default(autoincrement())
+  inGroupId     Int
+  ofUserId      Int
+  name          String
+  currentGameId Int?
+  xp            Int      @default(0)
+  gamesPlayed   Int      @default(0)
+  wins          Int      @default(0)
+  winStreak     Int      @default(0)
+  bestWinStreak Int      @default(0)
+  /// Peak consecutive correct words in a Word Soup match (solo or multiplayer).
+  bestWordStreak Int     @default(0)
+  /// Equipped XP rank look (0–4); clamped to unlocked tiers.
+  avatarTier    Int      @default(0)
+  /// Equipped animal species (0–4); free to change at any XP.
+  avatarAnimal  Int      @default(0)
+  
+  group          Group          @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [ofUserId], references: [id], onDelete: Cascade)
+  currentGame    Game?          @relation("PlayerCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  gamePlayers    GamePlayer[]
+  initiatedGames Game[]         @relation("GameInitiator")
+  session        PlayerSession?
+}
+
+/// One active parent session per user. Replaced on a new sign-in.
+model UserSession {
+  token     String   @id @default(uuid())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// One active browser session per player (Play Now). Orphaned tokens expire via expiresAt.
+model PlayerSession {
+  token     String   @id @default(uuid())
+  playerId  Int      @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model Vocabulary {
+  id        Int      @id @default(autoincrement())
+  inGroupId Int
+  byUserId  Int
+  name      String
+  words     String[]
+  meanings  String[]
+  wordCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [byUserId], references: [id], onDelete: Cascade)
+  currentForGroup Group? @relation("GroupCurrentVocabulary")
+
+  @@unique([inGroupId, name])
+  @@index([inGroupId])
+}
+
+model Game {
+  id            Int       @id @default(autoincrement())
+  name          String
+  inGroupId     Int
+  initiatedById Int
+  initiatedTime DateTime  @default(now())
+  startedTime   DateTime?
+  isActive      Boolean   @default(false)
+  isFinished    Boolean   @default(false)
+  endedAt               DateTime?
+  progressionAppliedAt  DateTime?
+  /// When the play clock started (after Word Soup intro, or game start for Building).
+  playStartedAt         DateTime?
+  /// Elapsed play time at finish in milliseconds.
+  durationMs            Int?
+
+  group           Group        @relation(fields: [inGroupId], references: [id], onDelete: Cascade)
+  initiatedBy     Player       @relation("GameInitiator", fields: [initiatedById], references: [id])
+  gamePlayers     GamePlayer[]
+  currentPlayers  Player[]     @relation("PlayerCurrentGame")
+  crossword       Crossword?
+
+  @@index([isActive, isFinished, initiatedTime])
+}
+
+model GamePlayer {
+  gameId   Int
+  playerId Int
+  score    Int    @default(0)
+  /// Peak in-match word-finding streak (Word Soup); 0 for other games.
+  bestWordStreak Int @default(0)
+  /// Words found in this match (Word Soup).
+  wordsFound     Int @default(0)
+  /// Times frozen for wrong guesses in this match (Word Soup).
+  freezeCount    Int @default(0)
+  /// Whether the player completed the puzzle (all words / crossword solved).
+  completed      Boolean @default(false)
+  /// Set the moment a player explicitly leaves an active match. Null while
+  /// still actively playing. The row itself is never deleted so final
+  /// results survive — this field is what distinguishes active vs left.
+  leftAt         DateTime?
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, playerId])
+}
+
+model Crossword {
+  id         Int     @id @default(autoincrement())
+  gameId     Int     @unique
+  rows       Int
+  cols       Int
+  solution   Json               // (string | null)[][] — NEVER sent to frontend
+  playerGrid Json               // (string | null)[][] — current placed letters
+  creditGrid Json?              // (number | null)[][] — first-correct-placer per cell
+  clues      Json               // { across: ClueEntry[], down: ClueEntry[] }
+  revision   Int     @default(0)
+  solved     Boolean @default(false)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  token     String   @id @default(uuid())
+  groupId   Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}

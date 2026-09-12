@@ -1,0 +1,471 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useAuth } from '../../context/auth-context';
+import { vocabulariesApi } from '@/lib/api';
+import {
+  MAX_EXTRACT_FILE_BYTES,
+  MAX_EXTRACT_FILE_MB,
+  type ExtractionErrorCode,
+} from '@/lib/api/vocabularies/types';
+import { Vocabulary } from '../../types';
+import { Button, Dialog, Icon, Input } from '../../components/ui';
+import VocabularyEntriesList, {
+  type VocabularyEntry,
+} from './vocabulary-entries-list';
+import {
+  areVocabularyEntriesValid,
+  completeEntries,
+  hasDuplicateWordOrMeaning,
+  MIN_VOCAB_PAIRS,
+} from './vocabulary-entry-rules';
+
+const LANGUAGE_CODES = ['en', 'fr', 'de'] as const;
+
+const VISION_UPLOAD_MIMES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);
+
+const VISION_UPLOAD_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+
+function isAllowedExtractUpload(file: File): boolean {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (
+    type === 'application/pdf' ||
+    type === 'application/x-pdf' ||
+    name.endsWith('.pdf')
+  ) {
+    return true;
+  }
+  if (VISION_UPLOAD_MIMES.has(type)) return true;
+  return VISION_UPLOAD_EXTENSIONS.some((extension) => name.endsWith(extension));
+}
+
+function sniffUploadKind(
+  bytes: Uint8Array,
+): 'png' | 'jpeg' | 'gif' | 'webp' | 'pdf' | null {
+  if (bytes.length < 12) return null;
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return 'png';
+  }
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'jpeg';
+  }
+  if (
+    bytes[0] === 0x47 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x38
+  ) {
+    return 'gif';
+  }
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return 'webp';
+  }
+  if (
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46
+  ) {
+    return 'pdf';
+  }
+  return null;
+}
+
+function messageForExtractionFailure(
+  t: ReturnType<typeof useTranslations<'vocabulary'>>,
+  code: ExtractionErrorCode,
+  extractedCount?: number,
+): string {
+  if (code === 'TOO_FEW_WORDS') {
+    return t('tooFewWords', {
+      count: extractedCount ?? 0,
+      min: MIN_VOCAB_PAIRS,
+    });
+  }
+  if (code === 'UNSUPPORTED_FILE_TYPE') return t('unsupportedFileType');
+  if (code === 'EMPTY_FILE') return t('emptyFile');
+  if (code === 'FILE_TOO_LARGE') {
+    return t('fileTooLarge', { maxMb: MAX_EXTRACT_FILE_MB });
+  }
+  if (code === 'OPENAI_NOT_CONFIGURED') return t('extractionUnavailable');
+  return t('extractionFailed');
+}
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  vocabulary?: Vocabulary | null;
+  onImported: (vocabulary: Vocabulary) => void;
+  onEdited: (vocabulary: Vocabulary) => void;
+};
+
+export default function AddVocabulary({
+  open,
+  onClose,
+  vocabulary = null,
+  onImported,
+  onEdited,
+}: Props) {
+  const t = useTranslations('vocabulary');
+  const tCommon = useTranslations('common');
+  const { user, group } = useAuth();
+  const [name, setName] = useState('');
+  const [entries, setEntries] = useState<VocabularyEntry[]>([]);
+  const [error, setError] = useState('');
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [fromLanguage, setFromLanguage] = useState('fr');
+  const [toLanguage, setToLanguage] = useState('en');
+  const isEditing = vocabulary !== null;
+
+  useEffect(() => {
+    if (!open) return;
+    if (vocabulary) {
+      setName(vocabulary.name);
+      setEntries(
+        vocabulary.words.map((word, index) => ({
+          word,
+          meaning: vocabulary.meanings[index] ?? '',
+        })),
+      );
+    } else {
+      setName('');
+      setEntries([]);
+    }
+    setError('');
+    setAiOpen(false);
+    setAiError('');
+    setSelectedFile(null);
+  }, [open, vocabulary]);
+
+  const handleClose = () => {
+    setName('');
+    setEntries([]);
+    setError('');
+    setAiOpen(false);
+    setAiError('');
+    setSelectedFile(null);
+    onClose();
+  };
+
+  const handleCloseAi = () => {
+    setSelectedFile(null);
+    setAiError('');
+    setAiOpen(false);
+  };
+
+  const validEntries = completeEntries(entries);
+  const hasDuplicate = hasDuplicateWordOrMeaning(entries);
+  const canSave = name.trim() !== '' && areVocabularyEntriesValid(entries);
+
+  const handleSave = async () => {
+    if (!user || !group) return;
+    if (!name.trim()) {
+      setError(t('listNameRequired'));
+      return;
+    }
+    if (validEntries.length < MIN_VOCAB_PAIRS) {
+      setError(t('minimumWordsAlert'));
+      return;
+    }
+    if (hasDuplicate) {
+      setError(t('duplicatePairAlert'));
+      return;
+    }
+    setError('');
+    const words = validEntries.map((entry) => entry.word);
+    const meanings = validEntries.map((entry) => entry.meaning);
+    try {
+      if (vocabulary) {
+        let updated = vocabulary;
+        if (name.trim() !== vocabulary.name) {
+          const renamed = await vocabulariesApi.rename({
+            vocabularyId: vocabulary.id,
+            vocabularyName: name.trim(),
+            vocabularyInGroup: group.id,
+          });
+          if (!renamed) {
+            setError(tCommon('somethingWentWrong'));
+            return;
+          }
+          updated = renamed;
+        }
+        const withEntries = await vocabulariesApi.updateEntries({
+          vocabularyId: updated.id,
+          vocabularyInGroup: group.id,
+          vocabularyWords: words,
+          vocabularyMeanings: meanings,
+        });
+        if (!withEntries) {
+          setError(tCommon('somethingWentWrong'));
+          return;
+        }
+        onEdited({ ...withEntries, name: updated.name });
+        handleClose();
+        return;
+      }
+
+      const created = await vocabulariesApi.create({
+        vocabularyInGroup: group.id,
+        byUser: user.id,
+        vocabularyName: name.trim(),
+        vocabularyWords: words,
+        vocabularyMeanings: meanings,
+      });
+      if (!created) {
+        setError(t('createFailed'));
+        return;
+      }
+      onImported(created);
+      handleClose();
+    } catch {
+      setError(isEditing ? tCommon('somethingWentWrong') : t('createFailed'));
+    }
+  };
+
+  const handleAiExtract = async () => {
+    if (!selectedFile || !user || !group) return;
+    if (selectedFile.size > MAX_EXTRACT_FILE_BYTES) {
+      setAiError(t('fileTooLarge', { maxMb: MAX_EXTRACT_FILE_MB }));
+      return;
+    }
+    if (!isAllowedExtractUpload(selectedFile)) {
+      setAiError(t('unsupportedFileType'));
+      return;
+    }
+    let header: Uint8Array;
+    try {
+      header = new Uint8Array(await selectedFile.slice(0, 16).arrayBuffer());
+    } catch {
+      setAiError(t('unsupportedFileType'));
+      return;
+    }
+    if (!sniffUploadKind(header)) {
+      setAiError(t('unsupportedFileType'));
+      return;
+    }
+    setIsExtracting(true);
+    setAiError('');
+    try {
+      const fromLangName = t(`languages.${fromLanguage}` as 'languages.en');
+      const toLangName = t(`languages.${toLanguage}` as 'languages.en');
+      const data = await vocabulariesApi.extract(
+        selectedFile,
+        fromLangName,
+        toLangName,
+        user.id,
+        group.id,
+      );
+      if (!data.success) {
+        setAiError(
+          messageForExtractionFailure(t, data.code, data.extractedCount),
+        );
+        return;
+      }
+      setName((current) => current.trim() || data.title);
+      setEntries(
+        data.words.map((word, index) => ({
+          word,
+          meaning: data.meanings[index] ?? '',
+        })),
+      );
+      handleCloseAi();
+    } catch {
+      setAiError(t('extractionFailed'));
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  return (
+    <>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        title={
+          isEditing
+            ? t('edit.title', { name: vocabulary.name })
+            : t('newVocabulary')
+        }
+        wide
+        scrollable
+        footer={
+          <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 border-t border-border pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setAiError('');
+                setAiOpen(true);
+              }}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Icon name="upload" size={16} />
+                {t('aiUpload')}
+              </span>
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={handleClose}>
+                {tCommon('cancel')}
+              </Button>
+              <Button
+                variant="accent"
+                onClick={() => void handleSave()}
+                disabled={!canSave}
+              >
+                {isEditing ? t('commitChanges') : tCommon('create')}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label={t('listNameLabel')}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('listNamePlaceholder')}
+            autoComplete="off"
+          />
+          <VocabularyEntriesList
+            entries={entries}
+            onEntriesChange={setEntries}
+            minEntries={isEditing ? MIN_VOCAB_PAIRS : 0}
+          />
+          {hasDuplicate && (
+            <p className="text-sm text-destructive">{t('duplicatePairAlert')}</p>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={aiOpen}
+        onClose={handleCloseAi}
+        title={t('importTitle')}
+        wide
+        footer={
+          <div className="flex justify-end gap-3 border-t border-border pt-4">
+            <Button variant="ghost" onClick={handleCloseAi}>
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              variant="accent"
+              onClick={() => void handleAiExtract()}
+              disabled={!selectedFile || isExtracting}
+            >
+              {isExtracting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Icon name="spinner" size={20} className="animate-spin" />
+                  {t('aiReading')}
+                </span>
+              ) : (
+                t('extractWithAi')
+              )}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="vocab-from-language"
+                className="block text-sm font-semibold text-foreground mb-1"
+              >
+                {t('fromLanguage')}
+              </label>
+              <select
+                id="vocab-from-language"
+                name="vocab-from-language"
+                value={fromLanguage}
+                onChange={(e) => {
+                  setFromLanguage(e.target.value);
+                  setAiError('');
+                }}
+                className="clay-input w-full text-sm"
+              >
+                {LANGUAGE_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {t(`languages.${code}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="vocab-to-language"
+                className="block text-sm font-semibold text-foreground mb-1"
+              >
+                {t('toLanguage')}
+              </label>
+              <select
+                id="vocab-to-language"
+                name="vocab-to-language"
+                value={toLanguage}
+                onChange={(e) => {
+                  setToLanguage(e.target.value);
+                  setAiError('');
+                }}
+                className="clay-input w-full text-sm"
+              >
+                {LANGUAGE_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {t(`languages.${code}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <label
+            htmlFor="vocab-ai-file"
+            className="block text-sm font-semibold text-foreground mb-1"
+          >
+            {t('aiUpload')}
+          </label>
+          <input
+            id="vocab-ai-file"
+            name="vocab-ai-file"
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp,.pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              setSelectedFile(file);
+              if (file && file.size > MAX_EXTRACT_FILE_BYTES) {
+                setAiError(t('fileTooLarge', { maxMb: MAX_EXTRACT_FILE_MB }));
+                return;
+              }
+              setAiError('');
+            }}
+            className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-muted file:text-foreground hover:file:bg-muted/80 cursor-pointer"
+          />
+          {aiError && <p className="text-sm text-destructive">{aiError}</p>}
+        </div>
+      </Dialog>
+    </>
+  );
+}

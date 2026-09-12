@@ -1,0 +1,794 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "ok": "OK",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "submit": "Submit",
+    "rename": "Rename",
+    "edit": "Edit",
+    "create": "Create",
+    "start": "Start",
+    "join": "Join",
+    "leave": "Leave",
+    "promote": "Promote",
+    "resign": "Resign",
+    "expel": "Expel",
+    "skip": "Skip",
+    "next": "Next",
+    "sendingEllipsis": "Sending...",
+    "starting": "Starting…",
+    "leaving": "Leaving…",
+    "ending": "Ending…",
+    "loadingGame": "Loading game...",
+    "loadingEllipsis": "Loading...",
+    "admin": "Admin",
+    "member": "Member",
+    "you": "you",
+    "unknownError": "Unknown error",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "playerNumber": "Player #{id}",
+    "email": "Email"
+  },
+  "nav": {
+    "brand": "Dicteé",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "profileMenu": "Account menu",
+    "leaveSession": "Leave session",
+    "leaveSessionConfirm": {
+      "title": "Leave this session?",
+      "stay": "Stay",
+      "confirm": "Leave session",
+      "message": "If you leave now, your play session will end immediately. You will not be able to join again — a parent must start a new session for you."
+    },
+    "selectLanguage": "Select language",
+    "footerTagline": "© {year} Dicteé — vocabulary games for kids",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "legalNav": "Legal"
+  },
+  "home": {
+    "tagline": "Learn words through play",
+    "title": "Dicteé",
+    "description": "Welcome to Dicteé — the fun app for turning vocabulary lists into learning games. Upload word lists, invite other parents from the class, then set up a direct link for your child to play with friends.",
+    "getStarted": "Get Started",
+    "signIn": "Sign In",
+    "featureUploadTitle": "Upload lists",
+    "featureUploadText": "Import vocabulary from PDFs or photos",
+    "featureInviteTitle": "Invite parents",
+    "featureInviteText": "Create a group for your class",
+    "featurePlayTitle": "Kids play",
+    "featurePlayText": "Word games that feel like toys"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign In",
+      "subtitle": "Welcome back! Please sign in to continue.",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "Enter your username",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register here",
+      "invalidCredentials": "Invalid username or password. Please try again."
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Create your account to get started.",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "Choose a username",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Create a new password",
+      "emailLabel": "Your Email",
+      "emailPlaceholder": "Enter your email",
+      "submit": "Create Account",
+      "failed": "Registration failed. Please try again."
+    }
+  },
+  "invitation": {
+    "validating": "Validating invitation...",
+    "invalid": {
+      "title": "Invalid Invitation",
+      "message": "This invitation link is invalid or has expired. Please ask for a new invitation."
+    },
+    "auth": {
+      "title": "You have been invited to join {groupName}",
+      "subtitle": "Please sign in or register to continue.",
+      "signInTab": "Sign In",
+      "registerTab": "Register",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "Enter your username",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "submit": "Submit",
+      "signInFailed": "Invalid username or password. Please try again.",
+      "registerFailed": "Registration failed. Username may already be taken.",
+      "authRequired": "Please sign in or register before joining the group."
+    },
+    "confirm": {
+      "title": "Join {groupName}?",
+      "message": "Would you like to join the learning group {groupName}?",
+      "decline": "No thanks",
+      "join": "Join Group"
+    },
+    "joining": "Joining {groupName}...",
+    "error": {
+      "title": "Something went wrong",
+      "retry": "Try Again",
+      "joinFailed": "Something went wrong while joining the group. Please try again."
+    },
+    "alreadyMember": {
+      "title": "Already a Member",
+      "message": "You are already a member of {groupName}.",
+      "goToGroup": "Go to Group"
+    },
+    "defaultInviteText": "Hi, I want to invite you to join the Dictée App, where your child can learn vocabulary lists in a fun and interactive way. Click the link below to join the learning group {groupName} which I am also part of."
+  },
+  "dashboard": {
+    "title": "Manage Groups",
+    "userSettings": "User Settings",
+    "newGroup": "New Group",
+    "selectGroup": "Select a group to manage members and players.",
+    "settings": {
+      "title": "User Settings",
+      "usernameLabel": "Username",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "changePassword": "Change Password",
+      "changePasswordTitle": "Change Password",
+      "oldPasswordLabel": "Old Password",
+      "newPasswordLabel": "New Password",
+      "confirmNewPasswordLabel": "Confirm New Password",
+      "passwordMismatch": "New passwords do not match.",
+      "passwordEmpty": "New password cannot be empty.",
+      "oldPasswordIncorrect": "Old password is incorrect. Please try again."
+    },
+    "createGroup": {
+      "title": "Create New Group",
+      "groupNameLabel": "Group Name",
+      "groupNamePlaceholder": "Enter a group name",
+      "failed": "Failed to create group. Please try again."
+    }
+  },
+  "group": {
+    "rowOptions": "Options for {name}",
+    "tabs": {
+      "members": "Members",
+      "players": "Players",
+      "vocabulary": "Vocabulary"
+    },
+    "resignAdmin": "Resign as Admin",
+    "newMember": "New Member",
+    "sendInviteModal": {
+      "title": "Send Invitation",
+      "invitationLabel": "Invitation",
+      "emailPlaceholder": "recipient@example.com",
+      "failedPrefix": "Sending invitation failed:"
+    },
+    "promote": {
+      "confirmTitle": "Promote {name}?",
+      "confirmMessage": "Promote {name} to admin of {groupName}?",
+      "promoteButton": "Promote",
+      "failed": "Something went wrong. Please try again."
+    },
+    "resign": {
+      "onlyAdminWarning": "You are the only admin of this group. Promote another member to admin before resigning.",
+      "confirm": "Are you sure you want to resign as admin of {groupName}? You will become a regular member.",
+      "failed": "Something went wrong. Please try again."
+    },
+    "rename": {
+      "title": "Rename Group",
+      "newNameLabel": "New Group Name",
+      "newNamePlaceholder": "Enter new group name",
+      "failed": "Something went wrong. Please try again."
+    },
+    "expel": {
+      "expelButton": "Expel",
+      "confirmTitle": "Are you sure?",
+      "confirmMessage": "This will expel {memberName} from {groupName}. This cannot be undone.",
+      "failed": "Something went wrong. Please try again."
+    },
+    "delete": {
+      "title": "Delete {groupName}?",
+      "confirmMessage": "This will permanently delete the group and all player profiles belonging to it. This cannot be undone.",
+      "otherAdminsBlock": "You cannot delete {groupName} while there are other admins. Please demote all other admins first.",
+      "failed": "Something went wrong. Please try again."
+    },
+    "leave": {
+      "confirmTitle": "Leave Group?",
+      "confirmMessage": "Are you sure you want to permanently leave {groupName}?",
+      "lastMemberTitle": "Group will be deleted",
+      "lastMemberMessage": "You are the last member of {groupName}. If you leave, the group will be permanently removed.",
+      "failed": "Something went wrong. Please try again."
+    }
+  },
+  "players": {
+    "newPlayer": "New Player",
+    "play": "Play",
+    "noVocabulary": "No vocabulary",
+    "create": {
+      "title": "Create Player Profile",
+      "playerNameLabel": "Player Name",
+      "playerNamePlaceholder": "e.g. Adam",
+      "allFieldsRequired": "All fields are required.",
+      "failed": "Failed to create player. Please try again."
+    },
+    "rename": {
+      "title": "Rename {name}",
+      "placeholder": "New name"
+    },
+    "delete": {
+      "title": "Delete {name}?",
+      "confirmMessage": "Deleting the player will also result in the player's data (game statistics, XP, leaderboard status) being deleted (for this group only)."
+    },
+    "invite": {
+      "activeSessionWarning": "{name} already has an active play session on another device. Starting here will kick them out. You can also end that session without starting a new one.",
+      "sessionDurationTitle": "How long can {name} play?",
+      "minutesLabel": "Minutes",
+      "minutesPlaceholder": "Enter minutes",
+      "startFailed": "Could not start session. Please try again.",
+      "endSession": "End session",
+      "endSessionFailed": "Could not end the session. Please try again."
+    }
+  },
+  "vocabulary": {
+    "newVocabulary": "New Vocabulary",
+    "listNameLabel": "List name",
+    "listNamePlaceholder": "e.g. Week 3 vocabulary",
+    "listNameRequired": "Please enter a list name.",
+    "createFailed": "Failed to create vocabulary. Please try again.",
+    "importTitle": "AI Vocabulary Import",
+    "aiUpload": "AI upload",
+    "fromLanguage": "From Language",
+    "toLanguage": "To Language",
+    "extractWithAi": "Extract with AI",
+    "aiReading": "AI is reading your file...",
+    "wordColumn": "Word",
+    "meaningColumn": "Meaning",
+    "commitChanges": "Commit Changes",
+    "addWordPair": "Add Word Pair",
+    "deleteWordTitle": "Delete word",
+    "minimumWordsTitle": "Minimum 5 words required",
+    "minimumWordsAlert": "A vocabulary list must have at least 5 words.",
+    "duplicatePairAlert": "Each word and each meaning must be unique.",
+    "extractionFailed": "AI extraction failed. Please ensure the file has at least 5 words and try again.",
+    "unsupportedFileType": "Unsupported file type. Upload a PDF or image (PNG, JPEG, GIF, WebP).",
+    "fileTooLarge": "This file is too large. Please upload a file smaller than {maxMb} MB.",
+    "emptyFile": "Uploaded file is empty.",
+    "extractionUnavailable": "AI extraction is not available. Please try again later.",
+    "tooFewWords": "AI only extracted {count} word(s), but at least {min} are required. Try a clearer photo or a file with more vocabulary.",
+    "edit": {
+      "title": "Edit: {name}"
+    },
+    "delete": {
+      "title": "Delete {name}?",
+      "confirmMessage": "This will permanently delete this vocabulary list. This cannot be undone."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "French",
+      "de": "German"
+    }
+  },
+  "games": {
+    "lobby": {
+      "greeting": "Hi, {name}!",
+      "subtitle": "Choose a game to play",
+      "wordBuilding": "Word Building",
+      "wordSoup": "Word Soup",
+      "createNewGame": "Create new game",
+      "actionFailed": "Something went wrong. Please try again.",
+      "progression": {
+        "tabsLabel": "Group progress",
+        "myStatsTabsLabel": "My stats sections",
+        "leaderboard": "Leaderboard",
+        "myStats": "My stats",
+        "loading": "Updating…",
+        "loadFailed": "Could not load group stats.",
+        "you": "You",
+        "player": "Player",
+        "columns": {
+          "xp": "XP",
+          "played": "Played",
+          "wins": "Wins",
+          "winStreak": "Win streak",
+          "wordStreak": "Word streak",
+          "winRatio": "Win ratio",
+          "completed": "Completed",
+          "fastest": "Fastest",
+          "wordsFound": "Words found",
+          "freezes": "Freezes",
+          "bestScore": "Best",
+          "soloBest": "Solo best",
+          "multiBest": "Multi best"
+        },
+        "emptyLeaderboard": "No players in this group yet.",
+        "emptyStats": "Your stats will appear here after you play.",
+        "emptyRecent": "No finished games yet. Play a round to see your scores!",
+        "recentGames": "Recent games",
+        "abandoned": "Abandoned",
+        "winner": "Win",
+        "xpValue": "{xp} XP",
+        "scoreValue": "{score} pts",
+        "noGames": "—",
+        "avatarTab": "XP & Avatar",
+        "rankTitle": "Rank",
+        "rankHint": "Your rank depends on your XP level",
+        "currentRank": "Current rank: {label}",
+        "unlockedRank": "{label} reached at {xp} XP",
+        "currentRankLabel": "Current",
+        "animalTitle": "Avatar",
+        "animalHint": "Pick your avatar animal",
+        "animalFree": "Free",
+        "equipAnimal": "Equip {label}",
+        "equipping": "Saving…",
+        "equipFailed": "Could not update your avatar.",
+        "equipped": "Equipped",
+        "unlockAt": "Unlock at {xp} XP",
+        "lockedTier": "{label} locked — needs {xp} XP",
+        "unlockToastTitle": "New rank unlocked!",
+        "unlockToastBody": "You reached {label}!",
+        "unlockToastDismiss": "Nice!",
+        "modeLabels": {
+          "solo": "Solo",
+          "multiplayer": "Multiplayer"
+        },
+        "scope": {
+          "overall": "Overall"
+        },
+        "gameTypes": {
+          "wordSoup": "Word Soup",
+          "wordBuilding": "Word Building"
+        },
+        "tiers": {
+          "0": "Apprentice",
+          "1": "Explorer",
+          "2": "Wordsmith",
+          "3": "Champion",
+          "4": "Legend"
+        },
+        "animals": {
+          "0": "Rabbit",
+          "1": "Fox",
+          "2": "Bear",
+          "3": "Tiger",
+          "4": "Lion"
+        }
+      }
+    },
+    "initiate": {
+      "message": "Do you want to create a new game? Others in your group can join before it begins."
+    },
+    "join": {
+      "title": "Join {gameName}?",
+      "message": "This game will start {timing}. Do you want to join?",
+      "timingIn": "in {minutes}m {seconds}s",
+      "timingSoon": "soon",
+      "timingOneMore": "when one more player joins",
+      "timingMorePlayers": "when {count} more players join"
+    },
+    "forceStart": {
+      "message": "Do you want to start {gameName} with {count, plural, one {# player} other {# players}}?"
+    },
+    "pending": {
+      "clickToStart": "Click to Start",
+      "waiting": "Waiting...",
+      "clickToJoin": "Click to Join",
+      "playerCount": "{count}/{max} players, {elapsed}"
+    },
+    "puzzle": {
+      "loading": "Loading puzzle…",
+      "noVocabulary": "No vocabulary list is active yet.",
+      "scrambleInstruction": "Move the scrambled letters, to find the word meaning…",
+      "success": "SUCCESS!",
+      "false": "FALSE",
+      "meansWhatPrompt": "What best translates…"
+    },
+    "controls": {
+      "backToLobby": "Back to lobby",
+      "actionFailed": "Something went wrong. Please try again."
+    },
+    "abandon": {
+      "title": "Go back to the lobby?",
+      "stayInGame": "Stay in game",
+      "backToLobby": "Back to lobby",
+      "message": "You will leave this game. The others will keep playing, and your play session will stay active.",
+      "lastPlayerMessage": "You are the last player. Going back to the lobby will end this game. Your play session will stay active.",
+      "noXpWarningLeave": "You will not earn XP for this game. Others who finish can still earn XP.",
+      "noXpWarningEndsGame": "No XP will be awarded for this game."
+    },
+    "wordBuilding": {
+      "title": "Word Building",
+      "timeLabel": "Time",
+      "scoreboardLabel": "Players",
+      "leftGame": "Left the game",
+      "generating": "Generating crossword…",
+      "directionAcross": "→ Across",
+      "directionDown": "↓ Down",
+      "noPointsYet": "No points yet",
+      "across": "Across",
+      "down": "Down",
+      "puzzleSolved": "🎉 Puzzle solved!",
+      "intro": {
+        "welcome": "Hello {name}! Ready to build some words?",
+        "briefing": "Fill in the crossword grid — click a cell and type, or drag letter tiles from the rack below.",
+        "letsGo": "OK, let's go!",
+        "startingIn": "Starting in",
+        "go": "GO!"
+      },
+      "rules": {
+        "show": "Show instructions",
+        "hide": "Hide instructions",
+        "title": "How to play",
+        "howToPlay": "Controls",
+        "howToPlay1": "Click a cell to select it — direction is auto-detected",
+        "howToPlay2": "Type letters to fill cells, or drag tiles from the rack",
+        "howToPlay3": "Space or Tab toggles direction (across ↔ down)",
+        "colorsHeading": "Cell colours",
+        "colors1": "🟢 Green — correct!",
+        "colors2": "🔵 Blue — empty",
+        "colors3": "🔴 Red — wrong letter"
+      },
+      "outro": {
+        "gameOverTitle": "Puzzle results",
+        "finalScores": "Final scores",
+        "scoresComingUp": "Scores coming up…",
+        "pointsXp": "{score} pts · +{xp} XP",
+        "winner": "Winner",
+        "returnToLobby": "Return to lobby",
+        "almostDone": "Almost done…",
+        "closingSolo": "Well done {name}, great solo game! See you again soon!",
+        "closingMulti": "Well done everyone, great game! See you again soon!",
+        "placeAnnouncement": "In {placeLabel} place, {name}, with {score} points and +{xp} XP!",
+        "firstPlaceSolo": "In 1st place, {name}, with {score} points and +{xp} XP!",
+        "winnersPrefix": "And finally, the winners! ",
+        "winnerPrefix": "And finally, the winner, ",
+        "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
+      }
+    },
+    "wordSoup": {
+      "title": "Word Soup",
+      "cellTitle": "Row {row}, Column {col}",
+      "cellHidden": "hidden",
+      "cellEmpty": "empty",
+      "timeLabel": "Time",
+      "wordsHeading": "Words",
+      "statsTotal": "Total",
+      "statsFound": "Found",
+      "statsLeft": "Left",
+      "wordsFoundProgress": "Words found",
+      "submitGuess": "Submit Guess",
+      "submitting": "Submitting…",
+      "frozen": "Frozen! 🧊 {seconds}s",
+      "reconnecting": "Reconnecting to the game server…",
+      "initErrorTitle": "Couldn't start Word Soup",
+      "tryAgain": "Try again",
+      "playersAndStats": "Players and word counts",
+      "scoreboardLabel": "Player scoreboard",
+      "leftGame": "Left the game",
+      "frozenSeconds": "Frozen: {seconds}s",
+      "scoringStreak": "Scoring streak: {streak}",
+      "playerAvatar": "{name} avatar",
+      "hostTitle": "Word Soup host",
+      "messageBanner": "Game message banner",
+      "guess": {
+        "wrongPosition": "Good guess, but the word's position is incorrect - see if you can find it elsewhere in the grid!",
+        "alreadyFoundElsewhere": "Good guess, but the word has already been found somewhere else in the grid!"
+      },
+      "intro": {
+        "welcome": "Welcome to Word Soup!",
+        "briefing": "In this game, you have to find words in the grid.",
+        "wordsIntro": "Here are the words...",
+        "letsGo": "OK, let's go!",
+        "startingIn": "Starting in",
+        "go": "GO!",
+        "wordOf": "Word {current} of {total}"
+      },
+      "outro": {
+        "gameOverTitle": "Game over results",
+        "finalScores": "Final scores",
+        "scoresComingUp": "Scores coming up…",
+        "pointsXp": "{score} pts · +{xp} XP",
+        "winner": "Winner",
+        "returnToLobby": "Return to lobby",
+        "almostDone": "Almost done…",
+        "closingSolo": "Well done {name}, great game! See you again soon!",
+        "closingMulti": "Well done everyone, great game! See you again soon!",
+        "placeAnnouncement": "In {placeLabel} place, {name}, with {score} points and +{xp} XP!",
+        "firstPlaceSolo": "Good job {name}, you scored {score} points and earned +{xp} XP!",
+        "winnersPrefix": "And the winners! ",
+        "winnerPrefix": "And the winner, ",
+        "winnerAnnouncement": "{name}, with {score} points and +{xp} XP!"
+      },
+      "events": {
+        "playerFoundWord": "{name} found {word}",
+        "lastWord": "Last word!",
+        "playerFrozen": "{name} is frozen!",
+        "playerUnfrozen": "{name} is back!",
+        "playerLeft": "{name} left the game"
+      },
+      "rules": {
+        "show": "Show game rules",
+        "hide": "Hide game rules",
+        "title": "Game rules",
+        "howToPlay": "How to play",
+        "howToPlay1": "Highlight a word on the grid (left click and drag from the first letter to the last).",
+        "howToPlay2": "Words run from left to right or top to bottom",
+        "howToPlay3": "Found words are highlighted in your player colour",
+        "rulesHeading": "Rules",
+        "rules1": "Points are awarded for each word found.",
+        "rules2": "The player with the most points at the end of the game wins.",
+        "rules3": "Wrong guesses freeze you for a few seconds",
+        "rules4": "XP are awarded for each word found.",
+        "rules5": "The winner is awarded a trophy and 35XP points."
+      }
+    }
+  },
+  "session": {
+    "over": {
+      "title": "Session over!",
+      "messageWithName": "Great playing, {name}! Your session has ended.",
+      "messageGeneric": "Your session has ended.",
+      "askParent": "Ask a parent to start a new session when you want to play again."
+    }
+  },
+  "legal": {
+    "header": "Legal",
+    "lastUpdated": "Last updated: {date}",
+    "footerQuestions": "Questions about these policies? Contact your group administrator or the Dicteé project team through your school or organization.",
+    "seeAlso": "See also:",
+    "privacy": {
+      "title": "Privacy Policy",
+      "lastUpdated": "June 30, 2026",
+      "sections": {
+        "introduction": {
+          "title": "1. Introduction",
+          "paragraphs": [
+            "Dicteé (\"we\", \"us\", \"our\") is a web application that helps families and school groups turn vocabulary lists into multiplayer learning games. This Privacy Policy explains what information we collect, why we collect it, how we use it, and the choices available to you.",
+            "Dicteé is designed for use by parents and guardians (\"Users\") who manage groups and vocabulary, and by children who play as separate \"Player\" profiles under parental supervision. By creating an account or using the service, you agree to this policy."
+          ]
+        },
+        "informationWeCollect": {
+          "title": "2. Information we collect",
+          "accountInfo": {
+            "title": "2.1 Account information (Users / parents)",
+            "items": [
+              "Username and password chosen at registration",
+              "Email address (used for group invitations and account-related messages)",
+              "Optional profile fields you choose to share with group members (e.g. display name)",
+              "Group membership, admin role, and invitation history"
+            ]
+          },
+          "playerProfiles": {
+            "title": "2.2 Player profiles (children)",
+            "items": [
+              "Player display name",
+              "Group association, game participation, and scores during active sessions",
+              "Player sessions use short-lived tokens stored in the browser session until the session ends or expires"
+            ]
+          },
+          "contentYouUpload": {
+            "title": "2.3 Content you upload or create",
+            "items": [
+              "Vocabulary lists (words, translations, notes) that you import or enter manually",
+              "Files you upload for vocabulary extraction (e.g. PDFs, photos of word lists). Images may be sent to the language model to build vocabulary entries",
+              "Group membership and administration records (roles and invitations)",
+              "Game state, moves, and scores generated during multiplayer sessions"
+            ]
+          },
+          "technicalData": {
+            "title": "2.4 Technical and usage data",
+            "items": [
+              "Browser type, device information, and IP address as part of normal web server and API logs",
+              "Language preference stored locally in your browser (localStorage)",
+              "WebSocket connection metadata needed to run real-time games and group updates"
+            ]
+          }
+        },
+        "howWeUse": {
+          "title": "3. How we use your information",
+          "intro": "We use collected information to:",
+          "items": [
+            "Create and manage User and Player accounts",
+            "Operate groups, invitations, vocabulary libraries, and multiplayer games",
+            "Send invitation emails when a group admin invites a parent by email",
+            "Extract vocabulary from uploaded documents and images",
+            "Display shared vocabulary and game results within your group",
+            "Maintain security, troubleshoot errors, and improve reliability",
+            "Comply with applicable legal obligations"
+          ],
+          "noSell": "We do not sell your personal information. We do not use your data for third-party advertising."
+        },
+        "childrensPrivacy": {
+          "title": "4. Children's privacy",
+          "paragraphs": [
+            "Player accounts are intended to be created and managed by a parent or guardian through a User account. Children should not register a User account without parental consent.",
+            "We collect only the information needed for gameplay and group participation (player name, game activity, scores). Parents control which group a child joins through invitations and can end player sessions from the parent dashboard.",
+            "If you believe we have collected personal information from a child without appropriate consent, contact us so we can review and delete the account where required."
+          ]
+        },
+        "sharing": {
+          "title": "5. Sharing and third-party services",
+          "intro": "We may share information in these limited situations:",
+          "items": [
+            {
+              "label": "Within your group:",
+              "text": "Other members of the same group can see usernames, shared vocabulary, and game activity"
+            },
+            {
+              "label": "Service providers:",
+              "text": "We use infrastructure and tools to run the app, including hosting, email delivery (SMTP), and AI services for vocabulary extraction from uploaded files. These providers process data only to perform the service on our behalf"
+            },
+            {
+              "label": "Legal requirements:",
+              "text": "We may disclose information if required by law or to protect the rights, safety, and security of users and the service"
+            }
+          ],
+          "uploadWarning": "When you upload images or documents for vocabulary import, file content may be sent to the language model to detect and structure words. Do not upload documents containing sensitive personal data unrelated to vocabulary learning."
+        },
+        "dataRetention": {
+          "title": "6. Data retention",
+          "paragraphs": [
+            "We retain account and group data for as long as your account or group exists, unless you request deletion or we must remove it for legal reasons. Game history may be kept to support group administration and learning records.",
+            "Invitation tokens expire after a limited period. Player session tokens expire when the session ends or times out."
+          ]
+        },
+        "security": {
+          "title": "7. Security",
+          "paragraphs": [
+            "We take reasonable measures to protect information against unauthorized access, loss, or misuse, including access controls on group data and secure transport (HTTPS in production deployments).",
+            "No online service is completely secure. You are responsible for keeping your password confidential and for supervising children's use of Player sessions."
+          ]
+        },
+        "yourChoices": {
+          "title": "8. Your choices and rights",
+          "intro": "Depending on your location, you may have the right to:",
+          "items": [
+            "Access or update your User profile information",
+            "Leave a group or delete a group you administer (subject to admin rules in the app)",
+            "Request correction or deletion of personal data we hold about you",
+            "Withdraw consent where processing is based on consent"
+          ],
+          "contact": "To exercise these rights, use in-app account and group management features or contact your group administrator."
+        },
+        "international": {
+          "title": "9. International users",
+          "paragraphs": [
+            "Dicteé may be hosted and operated from servers in the region chosen by your deployment or school. If you use the service from outside that region, your information may be transferred to and processed in that location."
+          ]
+        },
+        "changes": {
+          "title": "10. Changes to this policy",
+          "paragraphs": [
+            "We may update this Privacy Policy from time to time. We will post the revised version on this page and update the \"Last updated\" date. Continued use of Dicteé after changes take effect constitutes acceptance of the updated policy."
+          ]
+        }
+      }
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "lastUpdated": "June 30, 2026",
+      "sections": {
+        "agreement": {
+          "title": "1. Agreement",
+          "paragraphs": [
+            "These Terms of Service (\"Terms\") govern your access to and use of Dicteé, including our website, API, multiplayer games, group features, and related services (\"Service\"). By registering an account, joining a group, or using the Service in any way, you agree to these Terms and to our <link>Privacy Policy</link>.",
+            "If you do not agree, do not use the Service. If you are accepting these Terms on behalf of a child or organization, you represent that you have authority to do so."
+          ]
+        },
+        "whoMayUse": {
+          "title": "2. Who may use Dicteé",
+          "items": [
+            {
+              "label": "Users (parents/guardians):",
+              "text": "Must be old enough to enter a binding agreement in their jurisdiction (typically 18 or the age of majority). Users manage groups, vocabulary, invitations, and Player profiles."
+            },
+            {
+              "label": "Players (children):",
+              "text": "May use Player profiles created under a User account. Players access games through Play Now sessions started by a parent."
+            },
+            {
+              "label": "Groups:",
+              "text": "Access is invitation-only. You may only join groups to which you have been invited or that you create yourself."
+            }
+          ]
+        },
+        "accountsAndSecurity": {
+          "title": "3. Accounts and security",
+          "intro": "You agree to:",
+          "items": [
+            "Provide accurate registration information and keep it up to date",
+            "Maintain the confidentiality of your password and player session credentials",
+            "Notify your group admin or account owner if you suspect unauthorized access",
+            "Accept responsibility for activity under your account unless you report misuse promptly"
+          ],
+          "suspension": "We may suspend or terminate accounts that violate these Terms or pose a risk to other users."
+        },
+        "acceptableUse": {
+          "title": "4. Acceptable use",
+          "intro": "You may not use Dicteé to:",
+          "items": [
+            "Harass, bully, or threaten other users, especially minors",
+            "Upload unlawful, offensive, or sexually explicit content",
+            "Upload personal data of third parties without permission (beyond vocabulary learning materials)",
+            "Attempt to bypass security, scrape the Service, or disrupt games or servers",
+            "Impersonate another person or misrepresent your affiliation with a group",
+            "Use automated bots to play games or disrupt the Service",
+            "Reverse engineer or resell the Service except as permitted by applicable open-source licenses"
+          ],
+          "moderation": "Group admins may remove members who breach group rules. We may remove content or restrict access at our discretion to protect the community."
+        },
+        "userContent": {
+          "title": "5. User content and vocabulary",
+          "paragraphs": [
+            "You retain ownership of vocabulary lists and other content you submit (\"User Content\"). By submitting User Content, you grant Dicteé a non-exclusive, worldwide license to host, store, display, and process that content solely to operate the Service for you and your group—including AI-assisted extraction when you upload files.",
+            "You represent that you have the right to upload User Content and that it does not infringe third-party intellectual property or privacy rights."
+          ]
+        },
+        "groupsAndInvitations": {
+          "title": "6. Groups, invitations, and admin actions",
+          "paragraphs": [
+            "Group creators become administrators with tools to invite members, manage vocabulary, and remove members. Admin actions (expulsions, promotions, group deletion) take effect immediately for the group.",
+            "Invitations sent by email include a unique link. Do not share invitation links publicly; they are intended for specific recipients invited to your class or family group."
+          ]
+        },
+        "gamesAndMultiplayer": {
+          "title": "7. Games and multiplayer features",
+          "paragraphs": [
+            "Multiplayer games rely on real-time connections. We do not guarantee uninterrupted availability. Scores and game outcomes are stored for display within your group session. Game rules are defined in the application; disputes between players should be resolved by parents or group admins.",
+            "\"Play Now\" player sessions are time-limited. Parents are responsible for supervising online play."
+          ]
+        },
+        "thirdPartyServices": {
+          "title": "8. Third-party services",
+          "paragraphs": [
+            "The Service may integrate email delivery and language models to process uploaded vocabulary materials. Your use of those features is also subject to the policies of the underlying providers where applicable."
+          ]
+        },
+        "disclaimer": {
+          "title": "9. Disclaimer of warranties",
+          "paragraphs": [
+            "THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE\" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.",
+            "We do not warrant that the Service will be error-free, secure, or suitable for every educational context. Vocabulary extracted automatically from photos or PDFs may contain errors; always review imported lists before use in class or homework."
+          ]
+        },
+        "limitationOfLiability": {
+          "title": "10. Limitation of liability",
+          "paragraphs": [
+            "TO THE MAXIMUM EXTENT PERMITTED BY LAW, DICTEÉ AND ITS CONTRIBUTORS WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF DATA, PROFITS, OR GOODWILL, ARISING FROM YOUR USE OF THE SERVICE.",
+            "Our total liability for any claim relating to the Service is limited to the amount you paid us for the Service in the twelve months before the claim, or zero if the Service is provided free of charge."
+          ]
+        },
+        "termination": {
+          "title": "11. Termination",
+          "paragraphs": [
+            "You may stop using the Service at any time. Group admins may delete groups they manage. We may suspend or terminate access if you violate these Terms or if continued operation poses legal or security risks.",
+            "Sections that by their nature should survive termination (including disclaimers, limitation of liability, and governing law) will remain in effect."
+          ]
+        },
+        "changesToTerms": {
+          "title": "12. Changes to the Service and Terms",
+          "paragraphs": [
+            "We may modify features or these Terms from time to time. Material changes will be posted on this page with an updated date. Your continued use after changes become effective constitutes acceptance of the revised Terms."
+          ]
+        },
+        "governingLaw": {
+          "title": "13. Governing law",
+          "paragraphs": [
+            "These Terms are governed by the laws applicable in the jurisdiction of the organization operating this Dicteé deployment, without regard to conflict-of-law principles. Courts in that jurisdiction will have exclusive venue for disputes, unless mandatory consumer protection laws in your country require otherwise."
+          ]
+        },
+        "contact": {
+          "title": "14. Contact",
+          "paragraphs": [
+            "For questions about these Terms, contact your group administrator or the team responsible for hosting this Dicteé instance."
+          ]
+        }
+      }
+    }
+  }
+}

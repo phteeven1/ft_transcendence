@@ -1,0 +1,219 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import type { GameRosterPlayerDto } from '@/lib/api/games';
+import HostCharacter from '@/app/components/game/host-character';
+import { Icon } from '@/app/components/ui';
+
+type ScoreboardPlayerStatus = 'active' | 'frozen' | 'left';
+
+type PlayerScoreboardBannerProps = {
+  players: GameRosterPlayerDto[];
+  localPlayerId: number;
+  playerColours: Record<number, string>;
+  playerScores: Record<number, number>;
+  playerStreaks: Record<number, number>;
+  leftPlayers: Record<number, string>;
+  frozenPlayers: Record<number, number>;
+  freezeSecondsByPlayer: Record<number, number>;
+  /** Brief +points float over the scoring player's card. */
+  scorePopup?: { playerId: number; points: number; id: number } | null;
+  /** Vertical stack for the left rail; horizontal wrap for compact rows. */
+  orientation?: 'horizontal' | 'vertical';
+};
+
+function getPlayerStatus(
+  playerId: number,
+  leftPlayers: Record<number, string>,
+  frozenPlayers: Record<number, number>,
+): ScoreboardPlayerStatus {
+  if (leftPlayers[playerId]) return 'left';
+  if ((frozenPlayers[playerId] ?? 0) > Date.now()) return 'frozen';
+  return 'active';
+}
+
+const STATUS_BOX_CLASS: Record<ScoreboardPlayerStatus, string> = {
+  active: 'border-emerald-300 bg-emerald-100/90 text-emerald-950',
+  frozen: 'border-sky-300 bg-sky-100/90 text-sky-950',
+  left: 'border-gray-300 bg-gray-200/90 text-gray-600',
+};
+
+function FlameIcon({ className = '' }: { className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/word-soup/flame.png"
+      alt=""
+      aria-hidden="true"
+      className={['object-contain', className].filter(Boolean).join(' ')}
+      draggable={false}
+    />
+  );
+}
+
+function StatusSymbol({
+  status,
+  streak,
+  freezeSeconds,
+  t,
+}: {
+  status: ScoreboardPlayerStatus;
+  streak: number;
+  freezeSeconds: number;
+  t: ReturnType<typeof useTranslations<'games.wordSoup'>>;
+}) {
+  if (status === 'left') {
+    return (
+      <span className="inline-flex items-center text-gray-500" title={t('leftGame')}>
+        <Icon name="close" size={16} />
+      </span>
+    );
+  }
+
+  if (status === 'frozen') {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-sky-700"
+        title={t('frozenSeconds', { seconds: freezeSeconds })}
+      >
+        <Icon name="snowflake" size={16} />
+        <span className="text-xs font-bold tabular-nums">{freezeSeconds}</span>
+      </span>
+    );
+  }
+
+  if (streak >= 2) {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-orange-700"
+        title={t('scoringStreak', { streak })}
+      >
+        <FlameIcon className="h-5 w-5" />
+        <span className="text-xs font-bold tabular-nums">{streak}</span>
+      </span>
+    );
+  }
+
+  return null;
+}
+
+export default function PlayerScoreboardBanner({
+  players,
+  localPlayerId,
+  playerColours,
+  playerScores,
+  playerStreaks,
+  leftPlayers,
+  frozenPlayers,
+  freezeSecondsByPlayer,
+  scorePopup = null,
+  orientation = 'horizontal',
+}: PlayerScoreboardBannerProps) {
+  const t = useTranslations('games.wordSoup');
+  const tCommon = useTranslations('common');
+  const isVertical = orientation === 'vertical';
+
+  return (
+    <div
+      className={
+        isVertical
+          ? 'flex w-full flex-col items-stretch gap-1.5'
+          : 'flex w-full flex-wrap justify-start gap-1.5 sm:gap-2'
+      }
+      role="list"
+      aria-label={t('scoreboardLabel')}
+    >
+      {players.map((player) => {
+        const status = getPlayerStatus(player.id, leftPlayers, frozenPlayers);
+        const colour = playerColours[player.id] ?? '#9CA3AF';
+        const score = playerScores[player.id] ?? 0;
+        const streak = playerStreaks[player.id] ?? 0;
+        const freezeSeconds = freezeSecondsByPlayer[player.id] ?? 0;
+        const isYou = player.id === localPlayerId;
+        const showPointsPopup =
+          scorePopup !== null && Number(scorePopup.playerId) === Number(player.id);
+
+        const pts = Number.isFinite(Number(scorePopup?.points))
+          ? Number(scorePopup?.points)
+          : 10;
+
+        return (
+          <div
+            key={player.id}
+            role="listitem"
+            className={[
+              'relative isolate inline-flex items-center gap-1.5 overflow-hidden rounded-xl border px-2 py-1.5 shadow-sm transition-colors sm:px-2.5 sm:py-2',
+              isVertical ? 'w-full max-w-none' : 'max-w-full shrink',
+              STATUS_BOX_CLASS[status],
+              status === 'left' ? 'opacity-75' : '',
+            ].join(' ')}
+          >
+            {showPointsPopup && (
+              <div
+                key={scorePopup.id}
+                className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] bg-emerald-600"
+                aria-hidden="true"
+              />
+            )}
+
+            <HostCharacter
+              theme="animals"
+              clothesColor={colour}
+              tier={player.avatarTier ?? 0}
+              animal={player.avatarAnimal ?? 0}
+              size="thumb"
+              className="relative z-10 h-8 w-8 shrink-0 sm:h-9 sm:w-9"
+              title={t('playerAvatar', { name: player.name })}
+            />
+
+            <div
+              className={[
+                'relative z-10 min-w-0',
+                isVertical ? 'flex-1' : 'max-w-[4.5rem] sm:max-w-[7rem]',
+              ].join(' ')}
+            >
+              <div className="flex items-center gap-1">
+                <span
+                  className={[
+                    'truncate text-xs font-semibold sm:text-sm',
+                    showPointsPopup ? 'text-white' : '',
+                  ].join(' ')}
+                  title={player.name}
+                >
+                  {player.name}
+                </span>
+                {isYou && (
+                  <span
+                    className={[
+                      'hidden shrink-0 text-[10px] font-bold uppercase tracking-wide sm:inline',
+                      showPointsPopup ? 'text-white/80' : 'opacity-70',
+                    ].join(' ')}
+                  >
+                    {tCommon('you')}
+                  </span>
+                )}
+              </div>
+              <p
+                className={[
+                  'text-sm font-black tabular-nums leading-tight sm:text-base',
+                  showPointsPopup ? 'text-amber-200' : '',
+                ].join(' ')}
+              >
+                {showPointsPopup ? `+${pts}` : score}
+              </p>
+            </div>
+
+            <div className="relative z-10">
+              <StatusSymbol
+                status={status}
+                streak={streak}
+                freezeSeconds={freezeSeconds}
+                t={t}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
